@@ -1,12 +1,12 @@
 package handlers
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
+	"github.com/gofiber/fiber/v2"
+)
 
 func Health(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data": fiber.Map{
-			"status": "ok",
-		},
+	return response.OK(c, fiber.Map{
+		"status": "ok",
 	})
 }
