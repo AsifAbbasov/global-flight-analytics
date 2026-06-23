@@ -13,6 +13,7 @@ func New() *fiber.App {
 
 	v1.Get("/health", handlers.Health)
 	v1.Get("/version", handlers.Version)
+	v1.Get("/airports", handlers.ListAirports)
 
 	return app
 }
