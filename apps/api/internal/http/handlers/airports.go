@@ -19,3 +19,29 @@ func ListAirports(c *fiber.Ctx) error {
 		},
 	})
 }
+
+func GetAirport(c *fiber.Ctx) error {
+	icao := c.Params("icao")
+
+	if icao != "UBBB" {
+		return response.Error(
+			c,
+			fiber.StatusNotFound,
+			"AIRPORT_NOT_FOUND",
+			"Airport not found",
+		)
+	}
+
+	return response.OK(c, dto.AirportProfile{
+		ICAOCode:    "UBBB",
+		IATACode:    "GYD",
+		Name:        "Heydar Aliyev International Airport",
+		City:        "Baku",
+		Country:     "Azerbaijan",
+		Latitude:    40.4675,
+		Longitude:   50.0467,
+		ElevationFt: 10,
+		Timezone:    "Asia/Baku",
+		Description: "Main international airport serving Baku and Azerbaijan.",
+	})
+}
