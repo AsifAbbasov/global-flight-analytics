@@ -6,15 +6,20 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/server"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
 	cfg := config.Load()
 
+	var dbPool *pgxpool.Pool
+
 	if cfg.DatabaseURL == "" {
 		log.Println("DATABASE_URL is not set. Starting API without database connection.")
 	} else {
-		dbPool, err := database.NewPostgresPool(cfg.DatabaseURL)
+		var err error
+
+		dbPool, err = database.NewPostgresPool(cfg.DatabaseURL)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -24,7 +29,7 @@ func main() {
 		log.Println("PostgreSQL connection established.")
 	}
 
-	app := server.New()
+	app := server.New(dbPool)
 
 	if err := app.Listen(":" + cfg.Port); err != nil {
 		log.Fatal(err)

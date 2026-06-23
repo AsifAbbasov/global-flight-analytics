@@ -1,11 +1,14 @@
 package server
 
 import (
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New() *fiber.App {
+func New(dbPool *pgxpool.Pool) *fiber.App {
 	app := fiber.New()
 
 	api := app.Group("/api")
@@ -14,8 +17,14 @@ func New() *fiber.App {
 	v1.Get("/health", handlers.Health)
 	v1.Get("/version", handlers.Version)
 
-	v1.Get("/airports", handlers.ListAirports)
-	v1.Get("/airports/:icao", handlers.GetAirport)
+	if dbPool != nil {
+		airportRepository := postgres.NewAirportRepository(dbPool)
+		airportService := airport.NewService(airportRepository)
+		airportHandler := handlers.NewAirportHandler(airportService)
+
+		v1.Get("/airports", airportHandler.List)
+		v1.Get("/airports/:icao", airportHandler.GetByICAO)
+	}
 
 	return app
 }
