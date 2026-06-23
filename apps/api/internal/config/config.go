@@ -3,10 +3,12 @@ package config
 import "os"
 
 type Config struct {
-	Port string
+	Port        string
+	DatabaseURL string
 }
 
 func Load() Config {
+	databaseURL := os.Getenv("DATABASE_URL")
 	port := os.Getenv("API_PORT")
 
 	if port == "" {
@@ -14,6 +16,7 @@ func Load() Config {
 	}
 
 	return Config{
-		Port: port,
+		Port:        port,
+		DatabaseURL: databaseURL,
 	}
 }
