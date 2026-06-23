@@ -3,22 +3,15 @@ package main
 import (
 	"log"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/server"
 )
 
 func main() {
-	app := fiber.New()
+	cfg := config.Load()
+	app := server.New()
 
-	app.Get("/api/v1/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"success": true,
-			"data": fiber.Map{
-				"status": "ok",
-			},
-		})
-	})
-
-	if err := app.Listen(":8080"); err != nil {
+	if err := app.Listen(":" + cfg.Port); err != nil {
 		log.Fatal(err)
 	}
 }
