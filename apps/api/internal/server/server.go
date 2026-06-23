@@ -12,6 +12,7 @@ func New() *fiber.App {
 	v1 := api.Group("/v1")
 
 	v1.Get("/health", handlers.Health)
+	v1.Get("/version", handlers.Version)
 
 	return app
 }
