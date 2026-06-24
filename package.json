@@ -1,0 +1,11 @@
+{
+  "name": "global-flight-analytics",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --dir apps/web dev",
+    "build:web": "pnpm --dir apps/web build",
+    "lint:web": "pnpm --dir apps/web lint",
+    "dev:api": "cd apps/api && go run ./cmd/server",
+    "test:api": "cd apps/api && go test ./..."
+  }
+}
