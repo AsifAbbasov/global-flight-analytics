@@ -1,5 +1,6 @@
 import { getCurrentTraffic } from '@/lib/api/traffic'
 import { TrafficMap } from '@/components/map/traffic-map'
+import { TrafficGlobe } from '@/components/globe/traffic-globe'
 
 export default async function Home() {
   const traffic = await getCurrentTraffic()
@@ -11,6 +12,10 @@ export default async function Home() {
       <p className='mt-2 text-slate-400'>
         Current air traffic from Go API and Neon PostgreSQL.
       </p>
+
+      <div className='mt-4'>
+        <TrafficGlobe aircraft={traffic} />
+      </div>
 
       <section className='mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6'>
         <h2 className='text-xl font-semibold'>Current Traffic</h2>
