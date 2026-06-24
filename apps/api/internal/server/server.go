@@ -1,7 +1,9 @@
 package server
 
 import (
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flight"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
@@ -21,6 +23,20 @@ func New(dbPool *pgxpool.Pool) *fiber.App {
 		airportRepository := postgres.NewAirportRepository(dbPool)
 		airportService := airport.NewService(airportRepository)
 		airportHandler := handlers.NewAirportHandler(airportService)
+
+		aircraftRepository := postgres.NewAircraftRepository(dbPool)
+		aircraftService := aircraft.NewService(aircraftRepository)
+		aircraftHandler := handlers.NewAircraftHandler(aircraftService)
+
+		flightRepository := postgres.NewFlightRepository(dbPool)
+		flightService := flight.NewService(flightRepository)
+		flightHandler := handlers.NewFlightHandler(flightService)
+
+		v1.Get("/flights", flightHandler.List)
+		v1.Get("/flights/:id", flightHandler.GetByID)
+
+		v1.Get("/aircraft", aircraftHandler.List)
+		v1.Get("/aircraft/:icao24", aircraftHandler.GetByICAO24)
 
 		v1.Get("/airports", airportHandler.List)
 		v1.Get("/airports/:icao", airportHandler.GetByICAO)
