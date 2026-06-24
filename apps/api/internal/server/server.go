@@ -5,6 +5,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flight"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
@@ -36,6 +37,12 @@ func New(dbPool *pgxpool.Pool) *fiber.App {
 		flightStateRepository := postgres.NewFlightStateRepository(dbPool)
 		flightStateService := flightstate.NewService(flightStateRepository)
 		flightStateHandler := handlers.NewFlightStateHandler(flightStateService)
+
+		trafficRepository := postgres.NewTrafficRepository(dbPool)
+trafficService := traffic.NewService(trafficRepository)
+trafficHandler := handlers.NewTrafficHandler(trafficService)
+
+v1.Get("/traffic/current", trafficHandler.GetCurrent)
 
 		v1.Get("/flights/:flightID/states", flightStateHandler.ListByFlightID)
 		v1.Get("/aircraft/:icao24/latest-state", flightStateHandler.GetLatestByICAO24)
