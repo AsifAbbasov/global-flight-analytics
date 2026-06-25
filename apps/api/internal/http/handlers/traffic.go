@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"errors"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/region"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
@@ -18,8 +21,24 @@ func NewTrafficHandler(service *traffic.Service) *TrafficHandler {
 }
 
 func (h *TrafficHandler) GetCurrent(c *fiber.Ctx) error {
-	items, err := h.service.GetCurrent(c.Context())
+	regionCode := c.Query("region")
+
+	var (
+		items []traffic.CurrentTrafficItem
+		err   error
+	)
+
+	if regionCode == "" {
+		items, err = h.service.GetCurrent(c.Context())
+	} else {
+		items, err = h.service.GetCurrentByRegion(c.Context(), regionCode)
+	}
+
 	if err != nil {
+		if errors.Is(err, region.ErrRegionNotFound) {
+			return response.Error(c, fiber.StatusNotFound, "REGION_NOT_FOUND", "Region not found")
+		}
+
 		return response.Error(c, fiber.StatusInternalServerError, "CURRENT_TRAFFIC_LOAD_FAILED", "Failed to load current traffic")
 	}
 

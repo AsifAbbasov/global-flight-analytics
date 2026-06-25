@@ -5,8 +5,16 @@ interface TrafficResponse {
   data: TrafficAircraft[]
 }
 
-export async function getCurrentTraffic(): Promise<TrafficAircraft[]> {
-  const response = await fetch('http://localhost:8080/api/v1/traffic/current', {
+export async function getCurrentTraffic(
+  regionCode?: string
+): Promise<TrafficAircraft[]> {
+  const url = new URL('http://localhost:8080/api/v1/traffic/current')
+
+  if (regionCode) {
+    url.searchParams.set('region', regionCode)
+  }
+
+  const response = await fetch(url.toString(), {
     cache: 'no-store',
   })
 

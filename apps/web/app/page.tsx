@@ -1,9 +1,10 @@
+import { TrafficDashboard } from '@/components/traffic-dashboard'
+import { getRegions } from '@/lib/api/regions'
 import { getCurrentTraffic } from '@/lib/api/traffic'
-import { TrafficMap } from '@/components/map/traffic-map'
-import { TrafficGlobe } from '@/components/globe/traffic-globe'
 
 export default async function Home() {
-  const traffic = await getCurrentTraffic()
+  const regions = await getRegions()
+  const initialTraffic = await getCurrentTraffic('world')
 
   return (
     <main className='min-h-screen bg-slate-950 p-8 text-white'>
@@ -13,21 +14,7 @@ export default async function Home() {
         Current air traffic from Go API and Neon PostgreSQL.
       </p>
 
-      <div className='mt-4'>
-        <TrafficGlobe aircraft={traffic} />
-      </div>
-
-      <section className='mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6'>
-        <h2 className='text-xl font-semibold'>Current Traffic</h2>
-
-        <div className='mt-4'>
-          <TrafficMap aircraft={traffic} />
-        </div>
-
-        <pre className='mt-4 overflow-auto rounded-lg bg-black p-4 text-sm text-green-400'>
-          {JSON.stringify(traffic, null, 2)}
-        </pre>
-      </section>
+      <TrafficDashboard regions={regions} initialTraffic={initialTraffic} />
     </main>
   )
 }
