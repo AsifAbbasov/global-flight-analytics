@@ -14,12 +14,14 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func New(dbPool *pgxpool.Pool, log *slog.Logger) *fiber.App {
 	app := fiber.New()
 
+	app.Use(recover.New())
 	app.Use(middleware.RequestID())
 	app.Use(middleware.RequestLogger(log))
 
