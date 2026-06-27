@@ -8,6 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/region"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -16,6 +17,8 @@ import (
 
 func New(dbPool *pgxpool.Pool) *fiber.App {
 	app := fiber.New()
+
+	app.Use(middleware.RequestID())
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "http://localhost:3000,http://localhost:3001",
