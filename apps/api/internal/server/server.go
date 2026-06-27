@@ -1,6 +1,8 @@
 package server
 
 import (
+	"log/slog"
+
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flight"
@@ -15,10 +17,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New(dbPool *pgxpool.Pool) *fiber.App {
+func New(dbPool *pgxpool.Pool, log *slog.Logger) *fiber.App {
 	app := fiber.New()
 
 	app.Use(middleware.RequestID())
+	app.Use(middleware.RequestLogger(log))
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "http://localhost:3000,http://localhost:3001",

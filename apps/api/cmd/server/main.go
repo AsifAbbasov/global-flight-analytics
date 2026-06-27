@@ -35,7 +35,7 @@ func main() {
 		log.Info("postgres connection established")
 	}
 
-	app := server.New(dbPool)
+	app := server.New(dbPool, log)
 
 	go func() {
 		log.Info("api server starting", "port", cfg.Port)
