@@ -12,6 +12,6 @@ func DefaultHTTPClientConfig(baseURL string) HTTPClientConfig {
 	return HTTPClientConfig{
 		BaseURL:   baseURL,
 		Timeout:   15 * time.Second,
-		UserAgent: "global-flight-analytics-api/1.0",
+		UserAgent: DefaultUserAgent,
 	}
 }
