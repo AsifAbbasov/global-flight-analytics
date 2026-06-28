@@ -31,3 +31,17 @@ func mapAircraft(
 		SourceName: sourceName,
 	}
 }
+
+func MapStateResponse(response *StateResponse) []flightstate.FlightState {
+	if response == nil {
+		return []flightstate.FlightState{}
+	}
+
+	result := make([]flightstate.FlightState, 0, len(response.Aircraft))
+
+	for _, item := range response.Aircraft {
+		result = append(result, mapAircraft(item, response.Now))
+	}
+
+	return result
+}

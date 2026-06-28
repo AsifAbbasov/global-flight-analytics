@@ -1,20 +1,30 @@
 package traffic
 
 import (
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/airplaneslive"
-	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
+	"context"
+	"fmt"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 )
 
 type Service struct {
-	airplanesLive *airplaneslive.Client
+	provider Provider
 }
 
-func NewService() *Service {
-	config := integrationcommon.DefaultHTTPClientConfig(
-		airplaneslive.BaseURL,
-	)
-
+func NewService(provider Provider) *Service {
 	return &Service{
-		airplanesLive: airplaneslive.NewClient(config),
+		provider: provider,
 	}
+}
+
+func (s *Service) LoadByCallsign(
+	ctx context.Context,
+	callsign string,
+) ([]flightstate.FlightState, error) {
+	result, err := s.provider.LoadByCallsign(ctx, callsign)
+	if err != nil {
+		return nil, fmt.Errorf("load traffic by callsign: %w", err)
+	}
+
+	return result, nil
 }
