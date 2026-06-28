@@ -18,7 +18,7 @@ type AirportProfile struct {
 	Country     string  `json:"country"`
 	Latitude    float64 `json:"latitude"`
 	Longitude   float64 `json:"longitude"`
-	ElevationFt int     `json:"elevation_ft"`
+	ElevationM  float64 `json:"elevation_m"`
 	Timezone    string  `json:"timezone"`
 	Description string  `json:"description"`
 }

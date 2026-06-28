@@ -7,7 +7,7 @@ type CurrentTrafficItem struct {
 	Callsign       string    `json:"callsign"`
 	Latitude       float64   `json:"latitude"`
 	Longitude      float64   `json:"longitude"`
-	AltitudeM      int       `json:"altitude_m"`
+	AltitudeM      float64   `json:"altitude_m"`
 	VelocityMPS    float64   `json:"velocity_mps"`
 	HeadingDegrees float64   `json:"heading_degrees"`
 	OnGround       bool      `json:"on_ground"`

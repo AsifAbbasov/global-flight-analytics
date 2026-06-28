@@ -71,7 +71,7 @@ func toAirportProfile(item airport.Airport) dto.AirportProfile {
 		Country:     item.Country,
 		Latitude:    item.Latitude,
 		Longitude:   item.Longitude,
-		ElevationFt: item.ElevationFt,
+		ElevationM:  item.ElevationM,
 		Timezone:    item.Timezone,
 		Description: item.Description,
 	}

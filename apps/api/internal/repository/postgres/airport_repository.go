@@ -60,7 +60,7 @@ func (r *AirportRepository) List(ctx context.Context) ([]airport.Airport, error)
 			&item.Country,
 			&item.Latitude,
 			&item.Longitude,
-			&item.ElevationFt,
+			&item.ElevationM,
 			&item.Timezone,
 			&item.Description,
 		); err != nil {
@@ -107,7 +107,7 @@ func (r *AirportRepository) GetByICAO(ctx context.Context, icao string) (airport
 		&item.Country,
 		&item.Latitude,
 		&item.Longitude,
-		&item.ElevationFt,
+		&item.ElevationM,
 		&item.Timezone,
 		&item.Description,
 	)

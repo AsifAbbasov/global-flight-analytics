@@ -10,8 +10,8 @@ type FlightState struct {
 	Callsign            string
 	Latitude            float64
 	Longitude           float64
-	BarometricAltitudeM int
-	GeometricAltitudeM  int
+	BarometricAltitudeM float64
+	GeometricAltitudeM  float64
 	VelocityMPS         float64
 	HeadingDegrees      float64
 	VerticalRateMPS     float64

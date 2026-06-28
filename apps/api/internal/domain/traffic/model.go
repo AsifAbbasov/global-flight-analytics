@@ -7,7 +7,7 @@ type CurrentTrafficItem struct {
 	Callsign       string
 	Latitude       float64
 	Longitude      float64
-	AltitudeM      int
+	AltitudeM      float64
 	VelocityMPS    float64
 	HeadingDegrees float64
 	OnGround       bool

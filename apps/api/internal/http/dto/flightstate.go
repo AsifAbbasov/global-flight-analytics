@@ -10,8 +10,8 @@ type FlightStateItem struct {
 	Callsign            string    `json:"callsign"`
 	Latitude            float64   `json:"latitude"`
 	Longitude           float64   `json:"longitude"`
-	BarometricAltitudeM int       `json:"barometric_altitude_m"`
-	GeometricAltitudeM  int       `json:"geometric_altitude_m"`
+	BarometricAltitudeM float64   `json:"barometric_altitude_m"`
+	GeometricAltitudeM  float64   `json:"geometric_altitude_m"`
 	VelocityMPS         float64   `json:"velocity_mps"`
 	HeadingDegrees      float64   `json:"heading_degrees"`
 	VerticalRateMPS     float64   `json:"vertical_rate_mps"`
