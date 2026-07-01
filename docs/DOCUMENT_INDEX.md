@@ -12,8 +12,8 @@ This index records the documentation structure for Global Flight Analytics.
 The project documentation is divided into two groups:
 
 ```text
-Documents 01–20: existing product, system, data, and architecture foundation
-Documents 21–25: research audit deduplication, analytical core, roadmap, implementation sequence, and research scope guards
+Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
+Documents 22–26: research audit deduplication, analytical core, roadmap, implementation sequence, and research scope guards
 ```
 
 ---
@@ -23,24 +23,39 @@ Documents 21–25: research audit deduplication, analytical core, roadmap, imple
 The existing documentation foundation is retained. The new analytical core documents do not replace the earlier product and system architecture work. They extend it.
 
 ```text
-Documents 01–20
-Existing product vision, system architecture, data source planning,
-domain model, database planning, implementation planning,
-and final architecture blueprint.
+01_PRODUCT_VISION.md
+02_SYSTEM_ARCHITECTURE.md
+03_DOMAIN_MODEL.md
+04_DATABASE_DESIGN.md
+05_DATA_SOURCES.md
+06_DATA_COLLECTION_PIPELINE.md
+07_ROUTE_DETECTION_ENGINE.md
+08_AIRPORT_INTELLIGENCE_MODULE.md
+09_TRAFFIC_ANALYTICS_MODULE.md
+10_API_SPECIFICATION.md
+11_FRONTEND_ARCHITECTURE.md
+12_INFRASTRUCTURE_AND_DEPLOYMENT.md
+13_SECURITY_SPECIFICATION.md
+14_PERFORMANCE_AND_SCALABILITY.md
+15_DEVELOPMENT_ROADMAP.md
+16_MVP_SCOPE.md
+17_FUTURE_VERSIONS.md
+18_TECHNICAL_DECISIONS_RECORD.md
+19_RISK_ANALYSIS.md
+20_FINAL_ARCHITECTURE_BLUEPRINT.md
+21_ENGINEERING_AMENDMENTS_v1.1.md
 ```
-
-If any existing document conflicts with Documents 21–25, the newer analytical core documents should be treated as the updated architecture baseline for analytical modules, MVP scope, version planning, and implementation order.
 
 ---
 
 ## New Analytical Architecture Documents
 
-### Document 21 — Research Audit Deduplication
+### Document 22 — Research Audit Deduplication
 
 Path:
 
 ```text
-docs/21_RESEARCH_AUDIT_DEDUPLICATION.md
+docs/22_RESEARCH_AUDIT_DEDUPLICATION.md
 ```
 
 Purpose:
@@ -50,12 +65,12 @@ Consolidates all research audit outputs into deduplicated architecture layers,
 removes repeated module names, and defines the final accepted architecture ideas.
 ```
 
-### Document 22 — Analytical Core Architecture
+### Document 23 — Analytical Core Architecture
 
 Path:
 
 ```text
-docs/22_ANALYTICAL_CORE_ARCHITECTURE.md
+docs/23_ANALYTICAL_CORE_ARCHITECTURE.md
 ```
 
 Purpose:
@@ -68,12 +83,12 @@ Multi-Aircraft Context, Airspace Interaction, Airport Intelligence,
 and Confidence and Explainability.
 ```
 
-### Document 23 — MVP and Version Roadmap
+### Document 24 — MVP and Version Roadmap
 
 Path:
 
 ```text
-docs/23_MVP_VERSION_ROADMAP.md
+docs/24_MVP_VERSION_ROADMAP.md
 ```
 
 Purpose:
@@ -83,12 +98,12 @@ Defines MVP, Version 1, Version 2, release boundaries,
 capabilities, tables, frontend scope, and success criteria.
 ```
 
-### Document 24 — Implementation Sequence
+### Document 25 — Implementation Sequence
 
 Path:
 
 ```text
-docs/24_IMPLEMENTATION_SEQUENCE.md
+docs/25_IMPLEMENTATION_SEQUENCE.md
 ```
 
 Purpose:
@@ -98,12 +113,12 @@ Defines the exact implementation order from data foundation to advanced analytic
 including the first coding slice.
 ```
 
-### Document 25 — Research Backlog and Scope Guards
+### Document 26 — Research Backlog and Scope Guards
 
 Path:
 
 ```text
-docs/25_RESEARCH_BACKLOG_AND_SCOPE_GUARDS.md
+docs/26_RESEARCH_BACKLOG_AND_SCOPE_GUARDS.md
 ```
 
 Purpose:
@@ -116,9 +131,23 @@ weather scope guards, and open-data limitations.
 
 ---
 
-## Current Architecture Baseline
+## Superseded Duplicate Notice
 
-The active architecture baseline is:
+The file below is superseded and must not be used as the active baseline:
+
+```text
+docs/21_RESEARCH_AUDIT_DEDUPLICATION.md
+```
+
+It was created with the wrong number before the existing local document `21_ENGINEERING_AMENDMENTS_v1.1.md` was accounted for. The active replacement is:
+
+```text
+docs/22_RESEARCH_AUDIT_DEDUPLICATION.md
+```
+
+---
+
+## Current Architecture Baseline
 
 ```text
 Open Data Sources
@@ -152,8 +181,6 @@ Frontend
 
 ## Current MVP Baseline
 
-The current MVP baseline is:
-
 ```text
 OpenSky or compatible aircraft ingestion
 OurAirports import
@@ -180,8 +207,6 @@ Source Limitation Guard
 ---
 
 ## First Implementation Slice
-
-The first coding slice is:
 
 ```text
 1. OpenSky or compatible provider
