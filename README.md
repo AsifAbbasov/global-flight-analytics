@@ -2,7 +2,7 @@
 
 Global Flight Analytics is an open-data aviation research and analytics platform.
 
-The project is not a flight tracker clone, not an air traffic control system, not a flight planning system, and not a commercial aviation data platform.
+The project is not a flight tracker clone, not regulated aviation software, not a flight planning system, and not a commercial aviation data platform.
 
 The platform is centered on trajectory quality, feature engineering, historical patterns, context-aware analytics, confidence, explainability, and map-based visualization.
 
@@ -75,12 +75,14 @@ The current documentation baseline is in:
 
 ```text
 docs/DOCUMENT_INDEX.md
-docs/21_RESEARCH_AUDIT_DEDUPLICATION.md
-docs/22_ANALYTICAL_CORE_ARCHITECTURE.md
-docs/23_MVP_VERSION_ROADMAP.md
-docs/24_IMPLEMENTATION_SEQUENCE.md
-docs/25_RESEARCH_BACKLOG_AND_SCOPE_GUARDS.md
+docs/22_RESEARCH_AUDIT_DEDUPLICATION.md
+docs/23_ANALYTICAL_CORE_ARCHITECTURE.md
+docs/24_MVP_VERSION_ROADMAP.md
+docs/25_IMPLEMENTATION_SEQUENCE.md
+docs/26_RESEARCH_BACKLOG_AND_SCOPE_GUARDS.md
 ```
+
+Existing foundation documents remain in `docs/01_*` through `docs/21_ENGINEERING_AMENDMENTS_v1.1.md`.
 
 ## First Coding Slice
 
