@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
@@ -14,6 +15,8 @@ var (
 	ErrInvalidICAO24                = errors.New("invalid icao24")
 	ErrInvalidTrajectoryID          = errors.New("invalid trajectory id")
 )
+
+var icao24Pattern = regexp.MustCompile(`^[A-F0-9]{6}$`)
 
 type TrajectoryReadRepository interface {
 	GetLatestTrajectoryByICAO24(ctx context.Context, icao24 string) (trajectory.FlightTrajectory, error)
@@ -48,6 +51,10 @@ func (service *Service) GetLatestTrajectoryByICAO24(
 
 	normalizedICAO24 := normalizeICAO24(icao24)
 	if normalizedICAO24 == "" {
+		return trajectory.FlightTrajectory{}, ErrInvalidICAO24
+	}
+
+	if !icao24Pattern.MatchString(normalizedICAO24) {
 		return trajectory.FlightTrajectory{}, ErrInvalidICAO24
 	}
 

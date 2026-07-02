@@ -12,6 +12,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
+	trafficquery "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/query"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -61,10 +62,19 @@ func New(dbPool *pgxpool.Pool, log *slog.Logger) *fiber.App {
 		trafficService := traffic.NewService(trafficRepository, regionService)
 		trafficHandler := handlers.NewTrafficHandler(trafficService)
 
+		trajectoryRepository := postgres.NewTrajectoryRepository(dbPool)
+		trajectoryQueryService := trafficquery.New(trafficquery.Config{
+			TrajectoryRepository: trajectoryRepository,
+		})
+		trajectoryHandler := handlers.NewTrajectoryHandler(trajectoryQueryService)
+
 		v1.Get("/regions", regionHandler.List)
 		v1.Get("/regions/:code", regionHandler.GetByCode)
 
 		v1.Get("/traffic/current", trafficHandler.GetCurrent)
+
+		v1.Get("/aircraft/:icao24/trajectory", trajectoryHandler.GetLatestByICAO24)
+		v1.Get("/trajectories/:id", trajectoryHandler.GetByID)
 
 		v1.Get("/flights/:flightID/states", flightStateHandler.ListByFlightID)
 		v1.Get("/aircraft/:icao24/latest-state", flightStateHandler.GetLatestByICAO24)

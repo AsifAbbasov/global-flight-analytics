@@ -63,6 +63,24 @@ func TestGetLatestTrajectoryByICAO24RequiresRepository(t *testing.T) {
 	}
 }
 
+func TestGetLatestTrajectoryByICAO24RejectsMalformedICAO24(t *testing.T) {
+	repository := &fakeTrajectoryReadRepository{}
+
+	service := New(Config{
+		TrajectoryRepository: repository,
+	})
+
+	_, err := service.GetLatestTrajectoryByICAO24(context.Background(), "BAD")
+
+	if !errors.Is(err, ErrInvalidICAO24) {
+		t.Fatalf("expected ErrInvalidICAO24, got %v", err)
+	}
+
+	if repository.latestCallCount != 0 {
+		t.Fatalf("expected repository not to be called, got %d calls", repository.latestCallCount)
+	}
+}
+
 func TestGetLatestTrajectoryByICAO24WrapsRepositoryError(t *testing.T) {
 	expectedError := errors.New("repository failed")
 
