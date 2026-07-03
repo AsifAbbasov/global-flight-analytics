@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–26: research audit deduplication, analytical core, roadmap, implementation sequence, and research scope guards
+Documents 22–27: research audit deduplication, analytical core, roadmap, implementation sequence, research scope guards, and engineering principles
 ```
 
 ---
@@ -127,6 +127,22 @@ Purpose:
 Defines deferred research topics, MVP forbidden scope,
 version promotion rules, prediction scope guards,
 weather scope guards, and open-data limitations.
+```
+
+### Document 27 — Engineering Principles
+
+Path:
+
+```text
+docs/27_ENGINEERING_PRINCIPLES.md
+```
+
+Purpose:
+
+```text
+Defines the project engineering rules for simple-first implementation,
+controlled complexity, magic number avoidance, analytical policy visibility,
+unit testing, smoke testing, and documentation alignment.
 ```
 
 ---
