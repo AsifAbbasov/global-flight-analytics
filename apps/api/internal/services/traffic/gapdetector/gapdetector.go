@@ -4,11 +4,11 @@ import (
 	"math"
 	"time"
 
+	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trajectorypolicy"
 )
-
-const earthRadiusKm = 6371.0088
 
 type Config struct {
 	MaxTimeGap        time.Duration
@@ -25,8 +25,8 @@ type DetectionResult struct {
 
 func DefaultConfig() Config {
 	return Config{
-		MaxTimeGap:        90 * time.Second,
-		MaxGroundSpeedMPS: 420,
+		MaxTimeGap:        trajectorypolicy.DefaultMaxTimeGap,
+		MaxGroundSpeedMPS: trajectorypolicy.DefaultMaxGroundSpeedMetersPerSecond,
 	}
 }
 
@@ -92,7 +92,7 @@ func HaversineDistanceKm(fromLatitude float64, fromLongitude float64, toLatitude
 
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
-	return earthRadiusKm * c
+	return aviationconstraints.EarthRadiusKilometers * c
 }
 
 func degreesToRadians(value float64) float64 {

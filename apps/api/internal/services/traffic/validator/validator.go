@@ -1,13 +1,14 @@
 package validator
 
 import (
-	"math"
 	"regexp"
 	"strings"
 	"time"
 
+	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dataquality"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/qualitypolicy"
 )
 
 var icao24Pattern = regexp.MustCompile(`^[A-F0-9]{6}$`)
@@ -17,7 +18,7 @@ func EvaluateFlightState(item flightstate.FlightState, now time.Time) dataqualit
 		now = time.Now().UTC()
 	}
 
-	score := 1.0
+	score := qualitypolicy.StartingScore
 	hasCriticalError := false
 	hasMovementError := false
 
@@ -42,79 +43,79 @@ func EvaluateFlightState(item flightstate.FlightState, now time.Time) dataqualit
 		addMissingField("icao24")
 		addWarning("missing_icao24", "ICAO24 is required.", "icao24")
 		hasCriticalError = true
-		score -= 0.50
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingICAO24Penalty)
 	} else if !icao24Pattern.MatchString(icao24) {
 		addWarning("invalid_icao24", "ICAO24 must contain exactly 6 hexadecimal characters.", "icao24")
 		hasCriticalError = true
-		score -= 0.50
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidICAO24Penalty)
 	}
 
-	if !isFinite(item.Latitude) || item.Latitude < -90 || item.Latitude > 90 {
+	if !aviationconstraints.IsLatitude(item.Latitude) {
 		addWarning("invalid_latitude", "Latitude must be finite and between -90 and 90.", "latitude")
 		hasCriticalError = true
-		score -= 0.35
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidLatitudePenalty)
 	}
 
-	if !isFinite(item.Longitude) || item.Longitude < -180 || item.Longitude > 180 {
+	if !aviationconstraints.IsLongitude(item.Longitude) {
 		addWarning("invalid_longitude", "Longitude must be finite and between -180 and 180.", "longitude")
 		hasCriticalError = true
-		score -= 0.35
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidLongitudePenalty)
 	}
 
 	if item.ObservedAt.IsZero() {
 		addMissingField("observed_at")
 		addWarning("missing_observed_at", "ObservedAt is required.", "observed_at")
 		hasCriticalError = true
-		score -= 0.40
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingObservedAtPenalty)
 	} else if item.ObservedAt.After(now) {
 		addWarning("future_observed_at", "ObservedAt cannot be in the future.", "observed_at")
 		hasCriticalError = true
-		score -= 0.40
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.FutureObservedAtPenalty)
 	}
 
 	if strings.TrimSpace(item.Callsign) == "" {
 		addMissingField("callsign")
-		score -= 0.05
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingCallsignPenalty)
 	}
 
 	if strings.TrimSpace(item.OriginCountry) == "" {
 		addMissingField("origin_country")
-		score -= 0.05
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingOriginCountryPenalty)
 	}
 
 	if strings.TrimSpace(item.SourceName) == "" {
 		addMissingField("source_name")
-		score -= 0.05
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingSourceNamePenalty)
 	}
 
-	if !isFinite(item.BarometricAltitudeM) || item.BarometricAltitudeM < 0 {
+	if !aviationconstraints.IsNonNegativeFloat64(item.BarometricAltitudeM) {
 		addWarning("invalid_barometric_altitude", "Barometric altitude must be finite and non-negative.", "barometric_altitude_m")
-		score -= 0.10
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidAltitudePenalty)
 	}
 
-	if !isFinite(item.GeometricAltitudeM) || item.GeometricAltitudeM < 0 {
+	if !aviationconstraints.IsNonNegativeFloat64(item.GeometricAltitudeM) {
 		addWarning("invalid_geometric_altitude", "Geometric altitude must be finite and non-negative.", "geometric_altitude_m")
-		score -= 0.10
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidAltitudePenalty)
 	}
 
-	if !isFinite(item.VelocityMPS) || item.VelocityMPS < 0 {
+	if !aviationconstraints.IsNonNegativeFloat64(item.VelocityMPS) {
 		addWarning("invalid_velocity", "Velocity must be finite and non-negative.", "velocity_mps")
 		hasMovementError = true
-		score -= 0.15
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidVelocityPenalty)
 	}
 
-	if !isFinite(item.VerticalRateMPS) {
+	if !aviationconstraints.IsFiniteFloat64(item.VerticalRateMPS) {
 		addWarning("invalid_vertical_rate", "Vertical rate must be finite.", "vertical_rate_mps")
-		score -= 0.05
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidVerticalRatePenalty)
 	}
 
-	if !isFinite(item.HeadingDegrees) || item.HeadingDegrees < 0 || item.HeadingDegrees >= 360 {
+	if !aviationconstraints.IsHeadingDegreesExclusive(item.HeadingDegrees) {
 		addWarning("invalid_heading", "Heading must be finite and between 0 inclusive and 360 exclusive.", "heading_degrees")
 		hasMovementError = true
-		score -= 0.10
+		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidHeadingPenalty)
 	}
 
-	score = clampScore(score)
+	score = qualitypolicy.ClampScore(score)
 
 	if hasCriticalError {
 		return dataquality.DataQuality{
@@ -144,7 +145,7 @@ func EvaluateFlightState(item flightstate.FlightState, now time.Time) dataqualit
 	return dataquality.DataQuality{
 		ValidationStatus: validationStatus,
 		Completeness:     completeness,
-		Confidence:       confidenceFromScore(score),
+		Confidence:       qualitypolicy.ConfidenceFromScore(score),
 		Score:            score,
 		MissingFields:    missingFields,
 		Warnings:         warnings,
@@ -167,33 +168,4 @@ func FilterValidFlightStates(items []flightstate.FlightState, now time.Time) []f
 	}
 
 	return result
-}
-
-func confidenceFromScore(score float64) dataquality.ConfidenceLevel {
-	switch {
-	case score >= 0.85:
-		return dataquality.ConfidenceLevelHigh
-	case score >= 0.60:
-		return dataquality.ConfidenceLevelMedium
-	case score > 0:
-		return dataquality.ConfidenceLevelLow
-	default:
-		return dataquality.ConfidenceLevelNone
-	}
-}
-
-func clampScore(score float64) float64 {
-	if score < 0 {
-		return 0
-	}
-
-	if score > 1 {
-		return 1
-	}
-
-	return score
-}
-
-func isFinite(value float64) bool {
-	return !math.IsNaN(value) && !math.IsInf(value, 0)
 }

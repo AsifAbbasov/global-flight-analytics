@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
+	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -133,7 +133,8 @@ func normalizeCurrentWeatherSnapshot(snapshot weather.CurrentSnapshot) (weather.
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherProvider
 	}
 
-	if !isValidWeatherLatitude(normalizedSnapshot.Latitude) || !isValidWeatherLongitude(normalizedSnapshot.Longitude) {
+	if !aviationconstraints.IsLatitude(normalizedSnapshot.Latitude) ||
+		!aviationconstraints.IsLongitude(normalizedSnapshot.Longitude) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherCoordinates
 	}
 
@@ -149,36 +150,28 @@ func normalizeCurrentWeatherSnapshot(snapshot weather.CurrentSnapshot) (weather.
 		normalizedSnapshot.RetrievedAt = normalizedSnapshot.RetrievedAt.UTC()
 	}
 
-	if normalizedSnapshot.RelativeHumidityPercent < 0 || normalizedSnapshot.RelativeHumidityPercent > 100 {
+	if !aviationconstraints.IsPercentInt(normalizedSnapshot.RelativeHumidityPercent) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherHumidity
 	}
 
-	if normalizedSnapshot.CloudCoverPercent < 0 || normalizedSnapshot.CloudCoverPercent > 100 {
+	if !aviationconstraints.IsPercentInt(normalizedSnapshot.CloudCoverPercent) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherCloudCover
 	}
 
-	if normalizedSnapshot.PrecipitationMillimeters < 0 || normalizedSnapshot.RainMillimeters < 0 {
+	if !aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.PrecipitationMillimeters) ||
+		!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.RainMillimeters) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherPrecipitation
 	}
 
-	if normalizedSnapshot.SurfacePressureHPA < 0 {
+	if !aviationconstraints.IsPositiveFloat64(normalizedSnapshot.SurfacePressureHPA) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherPressure
 	}
 
-	if normalizedSnapshot.WindSpeedMetersPerSecond < 0 ||
-		normalizedSnapshot.WindGustsMetersPerSecond < 0 ||
-		normalizedSnapshot.WindDirectionDegrees < 0 ||
-		normalizedSnapshot.WindDirectionDegrees > 360 {
+	if !aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.WindSpeedMetersPerSecond) ||
+		!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.WindGustsMetersPerSecond) ||
+		!aviationconstraints.IsHeadingDegreesInclusive(normalizedSnapshot.WindDirectionDegrees) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherWind
 	}
 
 	return normalizedSnapshot, nil
-}
-
-func isValidWeatherLatitude(value float64) bool {
-	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= -90 && value <= 90
-}
-
-func isValidWeatherLongitude(value float64) bool {
-	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= -180 && value <= 180
 }
