@@ -10,9 +10,11 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/region"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/openmeteo"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	trafficquery "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/query"
+	weatherservice "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/weather"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -67,6 +69,22 @@ func New(dbPool *pgxpool.Pool, log *slog.Logger) *fiber.App {
 			TrajectoryRepository: trajectoryRepository,
 		})
 		trajectoryHandler := handlers.NewTrajectoryHandler(trajectoryQueryService)
+
+		openMeteoClient, err := openmeteo.New(openmeteo.Config{})
+		if err != nil {
+			if log != nil {
+				log.Error("failed to initialize open-meteo client", "error", err)
+			}
+		} else {
+			weatherRepository := postgres.NewWeatherRepository(dbPool)
+			weatherService := weatherservice.New(weatherservice.Config{
+				Client:     openMeteoClient,
+				Repository: weatherRepository,
+			})
+			weatherHandler := handlers.NewWeatherHandler(weatherService)
+
+			v1.Get("/weather/current", weatherHandler.GetCurrent)
+		}
 
 		v1.Get("/regions", regionHandler.List)
 		v1.Get("/regions/:code", regionHandler.GetByCode)
