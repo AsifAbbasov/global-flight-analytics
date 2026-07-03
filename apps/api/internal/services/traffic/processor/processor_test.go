@@ -89,6 +89,72 @@ func TestProcessValidPartialAndInvalidStates(t *testing.T) {
 	}
 }
 
+func TestProcessNormalizesStatesBeforeValidationAndTrajectoryBuilding(t *testing.T) {
+	now := fixedTime()
+	processor := New(Config{
+		Now: func() time.Time {
+			return now
+		},
+	})
+
+	state := makeProcessorFlightState(
+		"state-1",
+		" abc123 ",
+		" ahy101 ",
+		40.4100,
+		49.8700,
+		now.Add(-60*time.Second),
+	)
+	state.SourceName = " TEST "
+
+	result := processor.Process([]flightstate.FlightState{
+		state,
+	})
+
+	if result.Stats.ReceivedCount != 1 {
+		t.Fatalf("expected 1 received state, got %d", result.Stats.ReceivedCount)
+	}
+
+	if result.Stats.UsableCount != 1 {
+		t.Fatalf("expected 1 usable state, got %d", result.Stats.UsableCount)
+	}
+
+	if len(result.UsableStates) != 1 {
+		t.Fatalf("expected 1 usable state object, got %d", len(result.UsableStates))
+	}
+
+	normalizedState := result.UsableStates[0].State
+
+	if normalizedState.ICAO24 != "ABC123" {
+		t.Fatalf("expected normalized ICAO24 ABC123, got %q", normalizedState.ICAO24)
+	}
+
+	if normalizedState.Callsign != "AHY101" {
+		t.Fatalf("expected normalized callsign AHY101, got %q", normalizedState.Callsign)
+	}
+
+	if normalizedState.SourceName != "test" {
+		t.Fatalf("expected normalized source name test, got %q", normalizedState.SourceName)
+	}
+
+	trajectoryItem, exists := result.Trajectories["ABC123"]
+	if !exists {
+		t.Fatal("expected trajectory under normalized ICAO24 key ABC123")
+	}
+
+	if trajectoryItem.ICAO24 != "ABC123" {
+		t.Fatalf("expected normalized trajectory ICAO24 ABC123, got %q", trajectoryItem.ICAO24)
+	}
+
+	if trajectoryItem.Callsign != "AHY101" {
+		t.Fatalf("expected normalized trajectory callsign AHY101, got %q", trajectoryItem.Callsign)
+	}
+
+	if trajectoryItem.SourceName != "test" {
+		t.Fatalf("expected normalized trajectory source name test, got %q", trajectoryItem.SourceName)
+	}
+}
+
 func TestProcessBuildsTrajectoriesByAircraft(t *testing.T) {
 	now := fixedTime()
 	processor := New(Config{

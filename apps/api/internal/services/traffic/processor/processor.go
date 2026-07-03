@@ -6,6 +6,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dataquality"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/normalizer"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trackbuilder"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/validator"
 )
@@ -60,10 +61,11 @@ func New(config Config) *Processor {
 }
 
 func (processor *Processor) Process(states []flightstate.FlightState) ProcessingResult {
+	normalizedStates := normalizer.NormalizeFlightStates(states)
 	processedAt := processor.config.Now()
 
 	result := ProcessingResult{
-		UsableStates:  make([]ProcessedFlightState, 0, len(states)),
+		UsableStates:  make([]ProcessedFlightState, 0, len(normalizedStates)),
 		InvalidStates: make([]ProcessedFlightState, 0),
 		Trajectories:  make(map[string]trajectory.FlightTrajectory),
 		ProcessedAt:   processedAt,
@@ -72,9 +74,9 @@ func (processor *Processor) Process(states []flightstate.FlightState) Processing
 		},
 	}
 
-	usableRawStates := make([]flightstate.FlightState, 0, len(states))
+	usableRawStates := make([]flightstate.FlightState, 0, len(normalizedStates))
 
-	for _, state := range states {
+	for _, state := range normalizedStates {
 		quality := validator.EvaluateFlightState(state, processedAt)
 
 		processedState := ProcessedFlightState{
