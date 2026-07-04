@@ -3,13 +3,17 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrFlightStateNotFound = errors.New("flight state not found")
+var (
+	ErrFlightStateNotFound               = errors.New("flight state not found")
+	ErrFlightStateRepositoryPoolRequired = errors.New("flight state repository pool is required")
+)
 
 type FlightStateRepository struct {
 	db *pgxpool.Pool
@@ -19,6 +23,111 @@ func NewFlightStateRepository(db *pgxpool.Pool) *FlightStateRepository {
 	return &FlightStateRepository{
 		db: db,
 	}
+}
+
+func (r *FlightStateRepository) SaveFlightStates(
+	ctx context.Context,
+	items []flightstate.FlightState,
+) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	if r == nil || r.db == nil {
+		return ErrFlightStateRepositoryPoolRequired
+	}
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin flight states transaction: %w", err)
+	}
+
+	committed := false
+
+	defer func() {
+		if !committed {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	const query = `
+		INSERT INTO flight_states (
+			flight_id,
+			aircraft_id,
+			icao24,
+			callsign,
+			latitude,
+			longitude,
+			barometric_altitude_m,
+			geometric_altitude_m,
+			velocity_mps,
+			heading_degrees,
+			vertical_rate_mps,
+			on_ground,
+			origin_country,
+			observed_at,
+			source_name
+		)
+		VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			CAST($7::double precision AS integer),
+			CAST($8::double precision AS integer),
+			$9,
+			$10,
+			$11,
+			$12,
+			$13,
+			$14,
+			$15
+		);
+	`
+
+	for index, item := range items {
+		_, err := tx.Exec(
+			ctx,
+			query,
+			nullableUUID(item.FlightID),
+			nullableUUID(item.AircraftID),
+			item.ICAO24,
+			nullableText(item.Callsign),
+			item.Latitude,
+			item.Longitude,
+			item.BarometricAltitudeM,
+			item.GeometricAltitudeM,
+			item.VelocityMPS,
+			item.HeadingDegrees,
+			item.VerticalRateMPS,
+			item.OnGround,
+			nullableText(item.OriginCountry),
+			item.ObservedAt,
+			sourceNameOrUnknown(item.SourceName),
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"insert flight state at index %d for icao24 %s: %w",
+				index,
+				item.ICAO24,
+				err,
+			)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit flight states transaction: %w", err)
+	}
+
+	committed = true
+
+	return nil
 }
 
 func (r *FlightStateRepository) ListByFlightID(
