@@ -17,14 +17,20 @@ func NewTrafficRepository(db *pgxpool.Pool) *TrafficRepository {
 	}
 }
 
-func (r *TrafficRepository) GetCurrent(ctx context.Context) ([]traffic.CurrentTrafficItem, error) {
+func (r *TrafficRepository) GetCurrent(
+	ctx context.Context,
+) ([]traffic.CurrentTrafficItem, error) {
 	const query = `
 		SELECT DISTINCT ON (fs.icao24)
 			fs.icao24,
 			COALESCE(fs.callsign, ''),
 			COALESCE(fs.latitude, 0),
 			COALESCE(fs.longitude, 0),
-			COALESCE(fs.geometric_altitude_m, fs.barometric_altitude_m, 0),
+			COALESCE(
+				NULLIF(fs.geometric_altitude_m, 0),
+				fs.barometric_altitude_m,
+				0
+			),
 			COALESCE(fs.velocity_mps, 0),
 			COALESCE(fs.heading_degrees, 0),
 			COALESCE(fs.on_ground, false),
@@ -53,7 +59,11 @@ func (r *TrafficRepository) GetCurrentByBounds(
 			COALESCE(fs.callsign, ''),
 			COALESCE(fs.latitude, 0),
 			COALESCE(fs.longitude, 0),
-			COALESCE(fs.geometric_altitude_m, fs.barometric_altitude_m, 0),
+			COALESCE(
+				NULLIF(fs.geometric_altitude_m, 0),
+				fs.barometric_altitude_m,
+				0
+			),
 			COALESCE(fs.velocity_mps, 0),
 			COALESCE(fs.heading_degrees, 0),
 			COALESCE(fs.on_ground, false),

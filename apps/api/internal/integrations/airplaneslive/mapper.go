@@ -19,7 +19,7 @@ func mapAircraft(
 		Latitude:            item.Latitude,
 		Longitude:           item.Longitude,
 		BarometricAltitudeM: barometricAltitudeMeters(item.AltBaro),
-		GeometricAltitudeM:  feetToMeters(item.AltGeom),
+		GeometricAltitudeM:  geometricAltitudeMeters(item.AltGeom),
 		VelocityMPS:         knotsToMetersPerSecond(item.GroundSpeed),
 		HeadingDegrees:      item.Track,
 		VerticalRateMPS:     feetPerMinuteToMetersPerSecond(item.BaroRate),
@@ -31,6 +31,14 @@ func mapAircraft(
 		).UTC(),
 		SourceName: sourceName,
 	}
+}
+
+func geometricAltitudeMeters(altitudeFeet *float64) float64 {
+	if altitudeFeet == nil {
+		return 0
+	}
+
+	return feetToMeters(*altitudeFeet)
 }
 
 func MapStateResponse(response *StateResponse) []flightstate.FlightState {
