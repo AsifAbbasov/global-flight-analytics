@@ -18,20 +18,33 @@ func TestProcessAndStoreWithoutRepositories(t *testing.T) {
 		Processor: newFixedProcessor(),
 	})
 
-	result, err := service.ProcessAndStore(context.Background(), []flightstate.FlightState{
-		makeApplicationFlightState("state-1", "ABC123", "AHY101", fixedNow().Add(-60*time.Second)),
-	})
-
+	result, err := service.ProcessAndStore(
+		context.Background(),
+		[]flightstate.FlightState{
+			makeApplicationFlightState(
+				"state-1",
+				"ABC123",
+				"AHY101",
+				fixedNow().Add(-60*time.Second),
+			),
+		},
+	)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
 	if result.ProcessingResult.Stats.ReceivedCount != 1 {
-		t.Fatalf("expected 1 received state, got %d", result.ProcessingResult.Stats.ReceivedCount)
+		t.Fatalf(
+			"expected 1 received state, got %d",
+			result.ProcessingResult.Stats.ReceivedCount,
+		)
 	}
 
 	if result.ProcessingResult.Stats.TrajectoryCount != 1 {
-		t.Fatalf("expected 1 trajectory, got %d", result.ProcessingResult.Stats.TrajectoryCount)
+		t.Fatalf(
+			"expected 1 trajectory, got %d",
+			result.ProcessingResult.Stats.TrajectoryCount,
+		)
 	}
 
 	if result.StoredAt.IsZero() {
@@ -39,35 +52,108 @@ func TestProcessAndStoreWithoutRepositories(t *testing.T) {
 	}
 }
 
-func TestProcessAndStoreSavesDataQualityAndTrajectories(t *testing.T) {
+func TestProcessAndStoreSavesFlightStatesDataQualityAndTrajectories(
+	t *testing.T,
+) {
+	flightStateRepository := &fakeFlightStateRepository{}
 	trajectoryRepository := &fakeTrajectoryRepository{}
 	dataQualityRepository := &fakeDataQualityRepository{}
 
 	service := New(Config{
 		Processor:             newFixedProcessor(),
+		FlightStateRepository: flightStateRepository,
 		TrajectoryRepository:  trajectoryRepository,
 		DataQualityRepository: dataQualityRepository,
 	})
 
-	_, err := service.ProcessAndStore(context.Background(), []flightstate.FlightState{
-		makeApplicationFlightState("state-1", "ABC123", "AHY101", fixedNow().Add(-60*time.Second)),
-		makeApplicationFlightState("state-2", "ABC123", "AHY101", fixedNow().Add(-30*time.Second)),
-	})
-
+	_, err := service.ProcessAndStore(
+		context.Background(),
+		[]flightstate.FlightState{
+			makeApplicationFlightState(
+				"state-1",
+				"ABC123",
+				"AHY101",
+				fixedNow().Add(-60*time.Second),
+			),
+			makeApplicationFlightState(
+				"state-2",
+				"ABC123",
+				"AHY101",
+				fixedNow().Add(-30*time.Second),
+			),
+		},
+	)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
+	if flightStateRepository.saveCount != 1 {
+		t.Fatalf(
+			"expected 1 flight state batch save, got %d",
+			flightStateRepository.saveCount,
+		)
+	}
+
+	if len(flightStateRepository.lastStates) != 2 {
+		t.Fatalf(
+			"expected 2 usable flight states, got %d",
+			len(flightStateRepository.lastStates),
+		)
+	}
+
 	if dataQualityRepository.saveCount != 2 {
-		t.Fatalf("expected 2 data quality reports, got %d", dataQualityRepository.saveCount)
+		t.Fatalf(
+			"expected 2 data quality reports, got %d",
+			dataQualityRepository.saveCount,
+		)
 	}
 
 	if trajectoryRepository.saveCount != 1 {
-		t.Fatalf("expected 1 trajectory, got %d", trajectoryRepository.saveCount)
+		t.Fatalf(
+			"expected 1 trajectory, got %d",
+			trajectoryRepository.saveCount,
+		)
 	}
 
 	if trajectoryRepository.lastTrajectory.ICAO24 != "ABC123" {
-		t.Fatalf("expected trajectory for ABC123, got %s", trajectoryRepository.lastTrajectory.ICAO24)
+		t.Fatalf(
+			"expected trajectory for ABC123, got %s",
+			trajectoryRepository.lastTrajectory.ICAO24,
+		)
+	}
+}
+
+func TestProcessAndStoreReturnsFlightStateRepositoryError(t *testing.T) {
+	expectedError := errors.New("flight state storage failed")
+
+	service := New(Config{
+		Processor: newFixedProcessor(),
+		FlightStateRepository: &fakeFlightStateRepository{
+			err: expectedError,
+		},
+	})
+
+	_, err := service.ProcessAndStore(
+		context.Background(),
+		[]flightstate.FlightState{
+			makeApplicationFlightState(
+				"state-1",
+				"ABC123",
+				"AHY101",
+				fixedNow().Add(-60*time.Second),
+			),
+		},
+	)
+
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if !strings.Contains(err.Error(), "save usable flight states") {
+		t.Fatalf(
+			"expected contextual flight state error, got %v",
+			err,
+		)
 	}
 }
 
@@ -81,16 +167,30 @@ func TestProcessAndStoreReturnsDataQualityRepositoryError(t *testing.T) {
 		},
 	})
 
-	_, err := service.ProcessAndStore(context.Background(), []flightstate.FlightState{
-		makeApplicationFlightState("state-1", "ABC123", "AHY101", fixedNow().Add(-60*time.Second)),
-	})
+	_, err := service.ProcessAndStore(
+		context.Background(),
+		[]flightstate.FlightState{
+			makeApplicationFlightState(
+				"state-1",
+				"ABC123",
+				"AHY101",
+				fixedNow().Add(-60*time.Second),
+			),
+		},
+	)
 
 	if err == nil {
 		t.Fatal("expected error")
 	}
 
-	if !strings.Contains(err.Error(), "save usable flight state quality report") {
-		t.Fatalf("expected contextual data quality error, got %v", err)
+	if !strings.Contains(
+		err.Error(),
+		"save usable flight state quality report",
+	) {
+		t.Fatalf(
+			"expected contextual data quality error, got %v",
+			err,
+		)
 	}
 }
 
@@ -104,16 +204,30 @@ func TestProcessAndStoreReturnsTrajectoryRepositoryError(t *testing.T) {
 		},
 	})
 
-	_, err := service.ProcessAndStore(context.Background(), []flightstate.FlightState{
-		makeApplicationFlightState("state-1", "ABC123", "AHY101", fixedNow().Add(-60*time.Second)),
-	})
+	_, err := service.ProcessAndStore(
+		context.Background(),
+		[]flightstate.FlightState{
+			makeApplicationFlightState(
+				"state-1",
+				"ABC123",
+				"AHY101",
+				fixedNow().Add(-60*time.Second),
+			),
+		},
+	)
 
 	if err == nil {
 		t.Fatal("expected error")
 	}
 
-	if !strings.Contains(err.Error(), "save trajectory for icao24 ABC123") {
-		t.Fatalf("expected contextual trajectory error, got %v", err)
+	if !strings.Contains(
+		err.Error(),
+		"save trajectory for icao24 ABC123",
+	) {
+		t.Fatalf(
+			"expected contextual trajectory error, got %v",
+			err,
+		)
 	}
 }
 
@@ -128,10 +242,24 @@ func newFixedProcessor() *processor.Processor {
 }
 
 func fixedNow() time.Time {
-	return time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)
+	return time.Date(
+		2026,
+		time.July,
+		2,
+		10,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
 }
 
-func makeApplicationFlightState(id string, icao24 string, callsign string, observedAt time.Time) flightstate.FlightState {
+func makeApplicationFlightState(
+	id string,
+	icao24 string,
+	callsign string,
+	observedAt time.Time,
+) flightstate.FlightState {
 	return flightstate.FlightState{
 		ID:                  id,
 		FlightID:            "flight-" + icao24,
@@ -152,13 +280,40 @@ func makeApplicationFlightState(id string, icao24 string, callsign string, obser
 	}
 }
 
+type fakeFlightStateRepository struct {
+	saveCount  int
+	lastStates []flightstate.FlightState
+	err        error
+}
+
+func (repository *fakeFlightStateRepository) SaveFlightStates(
+	ctx context.Context,
+	items []flightstate.FlightState,
+) error {
+	if repository.err != nil {
+		return repository.err
+	}
+
+	repository.saveCount++
+
+	repository.lastStates = append(
+		[]flightstate.FlightState(nil),
+		items...,
+	)
+
+	return nil
+}
+
 type fakeTrajectoryRepository struct {
 	saveCount      int
 	lastTrajectory trajectory.FlightTrajectory
 	err            error
 }
 
-func (repository *fakeTrajectoryRepository) SaveTrajectory(ctx context.Context, item trajectory.FlightTrajectory) error {
+func (repository *fakeTrajectoryRepository) SaveTrajectory(
+	ctx context.Context,
+	item trajectory.FlightTrajectory,
+) error {
 	if repository.err != nil {
 		return repository.err
 	}
@@ -176,7 +331,11 @@ type fakeDataQualityRepository struct {
 	err         error
 }
 
-func (repository *fakeDataQualityRepository) SaveFlightStateQuality(ctx context.Context, state flightstate.FlightState, quality dataquality.DataQuality) error {
+func (repository *fakeDataQualityRepository) SaveFlightStateQuality(
+	ctx context.Context,
+	state flightstate.FlightState,
+	quality dataquality.DataQuality,
+) error {
 	if repository.err != nil {
 		return repository.err
 	}
