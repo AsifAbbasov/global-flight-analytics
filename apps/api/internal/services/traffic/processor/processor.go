@@ -6,6 +6,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dataquality"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/deduplicator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/normalizer"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trackbuilder"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/validator"
@@ -30,6 +31,7 @@ type ProcessedFlightState struct {
 
 type ProcessingStats struct {
 	ReceivedCount     int
+	DuplicateCount    int
 	UsableCount       int
 	InvalidCount      int
 	ValidCount        int
@@ -62,21 +64,24 @@ func New(config Config) *Processor {
 
 func (processor *Processor) Process(states []flightstate.FlightState) ProcessingResult {
 	normalizedStates := normalizer.NormalizeFlightStates(states)
+	deduplicationResult := deduplicator.RemoveExactDuplicates(normalizedStates)
+	uniqueStates := deduplicationResult.UniqueStates
 	processedAt := processor.config.Now()
 
 	result := ProcessingResult{
-		UsableStates:  make([]ProcessedFlightState, 0, len(normalizedStates)),
+		UsableStates:  make([]ProcessedFlightState, 0, len(uniqueStates)),
 		InvalidStates: make([]ProcessedFlightState, 0),
 		Trajectories:  make(map[string]trajectory.FlightTrajectory),
 		ProcessedAt:   processedAt,
 		Stats: ProcessingStats{
-			ReceivedCount: len(states),
+			ReceivedCount:  len(states),
+			DuplicateCount: deduplicationResult.DuplicateCount,
 		},
 	}
 
-	usableRawStates := make([]flightstate.FlightState, 0, len(normalizedStates))
+	usableRawStates := make([]flightstate.FlightState, 0, len(uniqueStates))
 
-	for _, state := range normalizedStates {
+	for _, state := range uniqueStates {
 		quality := validator.EvaluateFlightState(state, processedAt)
 
 		processedState := ProcessedFlightState{

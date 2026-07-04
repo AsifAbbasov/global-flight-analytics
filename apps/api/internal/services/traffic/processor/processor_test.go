@@ -155,6 +155,83 @@ func TestProcessNormalizesStatesBeforeValidationAndTrajectoryBuilding(t *testing
 	}
 }
 
+func TestProcessRemovesExactDuplicatesBeforeValidationAndTrajectoryBuilding(t *testing.T) {
+	now := fixedTime()
+	processor := New(Config{
+		Now: func() time.Time {
+			return now
+		},
+	})
+
+	observedAt := now.Add(-60 * time.Second)
+
+	first := makeProcessorFlightState(
+		"state-1",
+		" abc123 ",
+		"AHY101",
+		40.4100,
+		49.8700,
+		observedAt,
+	)
+
+	duplicate := makeProcessorFlightState(
+		"state-duplicate",
+		"ABC123",
+		"DIFFERENT-CALLSIGN",
+		40.4100,
+		49.8700,
+		observedAt,
+	)
+	duplicate.FlightID = "different-flight"
+	duplicate.AircraftID = "different-aircraft"
+	duplicate.SourceName = "different-source"
+	duplicate.GeometricAltitudeM = 10100
+	duplicate.VerticalRateMPS = 3
+
+	second := makeProcessorFlightState(
+		"state-2",
+		"ABC123",
+		"AHY101",
+		40.4200,
+		49.8800,
+		observedAt.Add(time.Second),
+	)
+
+	result := processor.Process([]flightstate.FlightState{
+		first,
+		duplicate,
+		second,
+	})
+
+	if result.Stats.ReceivedCount != 3 {
+		t.Fatalf("expected 3 received states, got %d", result.Stats.ReceivedCount)
+	}
+
+	if result.Stats.DuplicateCount != 1 {
+		t.Fatalf("expected 1 duplicate state, got %d", result.Stats.DuplicateCount)
+	}
+
+	if result.Stats.UsableCount != 2 {
+		t.Fatalf("expected 2 usable states after deduplication, got %d", result.Stats.UsableCount)
+	}
+
+	if len(result.UsableStates) != 2 {
+		t.Fatalf("expected 2 usable state objects after deduplication, got %d", len(result.UsableStates))
+	}
+
+	trajectoryItem, exists := result.Trajectories["ABC123"]
+	if !exists {
+		t.Fatal("expected trajectory under normalized ICAO24 key ABC123")
+	}
+
+	if trajectoryItem.PointCount != 2 {
+		t.Fatalf(
+			"expected trajectory to contain 2 unique points, got %d",
+			trajectoryItem.PointCount,
+		)
+	}
+}
+
 func TestProcessBuildsTrajectoriesByAircraft(t *testing.T) {
 	now := fixedTime()
 	processor := New(Config{
@@ -217,7 +294,14 @@ func fixedTime() time.Time {
 	return time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)
 }
 
-func makeProcessorFlightState(id string, icao24 string, callsign string, latitude float64, longitude float64, observedAt time.Time) flightstate.FlightState {
+func makeProcessorFlightState(
+	id string,
+	icao24 string,
+	callsign string,
+	latitude float64,
+	longitude float64,
+	observedAt time.Time,
+) flightstate.FlightState {
 	return flightstate.FlightState{
 		ID:                  id,
 		FlightID:            "flight-" + icao24,
