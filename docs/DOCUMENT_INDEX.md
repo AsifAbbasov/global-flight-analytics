@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.1  
+Status: Documentation Index v1.2  
 Project: Global Flight Analytics
 
 ---
@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–27: research audit deduplication, analytical core, roadmap, implementation sequence, research scope guards, and engineering principles
+Documents 22–28: research audit deduplication, analytical core, roadmap, implementation sequence, research scope guards, engineering principles, and research-to-implementation decision method
 ```
 
 ---
@@ -145,6 +145,24 @@ controlled complexity, magic number avoidance, analytical policy visibility,
 unit testing, smoke testing, and documentation alignment.
 ```
 
+### Document 28 — Research and Analytical Decision Method
+
+Path:
+
+```text
+docs/28_RESEARCH_AND_ANALYTICAL_DECISION_METHOD.md
+```
+
+Purpose:
+
+```text
+Defines the mandatory research-to-code decision method,
+the three hard constraints, decision classification labels,
+open research expansion rules, physics and mathematics rules,
+baseline-first analytics, threshold derivation, historical replay,
+metrics, confidence, limitations, and scope protection.
+```
+
 ---
 
 ## Superseded Duplicate Notice
@@ -243,6 +261,44 @@ Source Limitation Guard
 
 ---
 
+## Mandatory Research-to-Code Rule
+
+Research ideas do not automatically become implementation scope.
+
+Every non-trivial analytical proposal must follow:
+
+```text
+current documentation baseline
+↓
+research digest
+↓
+three hard constraints
+↓
+free data availability
+↓
+source-versus-hypothesis separation
+↓
+simplest measurable baseline
+↓
+tests
+↓
+historical replay when applicable
+↓
+metrics
+↓
+confidence and limitations
+↓
+only then additional complexity
+```
+
+The authoritative method is defined in:
+
+```text
+docs/28_RESEARCH_AND_ANALYTICAL_DECISION_METHOD.md
+```
+
+---
+
 ## Documentation Rule
 
 New architecture changes must not silently overwrite the earlier documents.
@@ -265,5 +321,6 @@ Global Flight Analytics documentation now recognizes the project as:
 an open-data aviation research and analytics platform
 centered on trajectory quality, feature engineering,
 historical patterns, context-aware analytics,
+physics-informed reasoning where inputs support it,
 confidence, explainability, and visualization.
 ```
