@@ -23,7 +23,32 @@ func (p *Provider) LoadByCallsign(
 ) ([]flightstate.FlightState, error) {
 	result, err := p.client.GetByCallsign(ctx, callsign)
 	if err != nil {
-		return nil, fmt.Errorf("load airplanes live traffic by callsign: %w", err)
+		return nil, fmt.Errorf(
+			"load airplanes live traffic by callsign: %w",
+			err,
+		)
+	}
+
+	return MapStateResponse(result), nil
+}
+
+func (p *Provider) LoadByPoint(
+	ctx context.Context,
+	latitude float64,
+	longitude float64,
+	radius int,
+) ([]flightstate.FlightState, error) {
+	result, err := p.client.GetByPoint(
+		ctx,
+		latitude,
+		longitude,
+		radius,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"load airplanes live traffic by point: %w",
+			err,
+		)
 	}
 
 	return MapStateResponse(result), nil
