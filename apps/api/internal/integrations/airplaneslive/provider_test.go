@@ -18,10 +18,10 @@ func TestLoadByPointReturnsCanonicalFlightStates(t *testing.T) {
 			writer.WriteHeader(http.StatusOK)
 
 			_, _ = writer.Write([]byte(`{
-				"now": 1760000000,
+				"now": 1760000000000,
 				"messages": 1,
 				"total": 1,
-				"aircraft": [
+				"ac": [
 					{
 						"hex": "abc123",
 						"flight": " AHY101 ",
@@ -112,9 +112,8 @@ func TestLoadByPointReturnsCanonicalFlightStates(t *testing.T) {
 		t.Fatal("expected aircraft state to be airborne")
 	}
 
-	expectedObservedAt := time.Unix(
-		1759999995,
-		0,
+	expectedObservedAt := time.UnixMilli(
+		1759999995000,
 	).UTC()
 
 	if !state.ObservedAt.Equal(expectedObservedAt) {

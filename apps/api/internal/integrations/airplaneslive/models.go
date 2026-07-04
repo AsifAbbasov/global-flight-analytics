@@ -4,7 +4,7 @@ type StateResponse struct {
 	Now      float64        `json:"now"`
 	Messages int            `json:"messages"`
 	Total    int            `json:"total"`
-	Aircraft []AircraftItem `json:"aircraft"`
+	Aircraft []AircraftItem `json:"ac"`
 }
 
 type AircraftItem struct {

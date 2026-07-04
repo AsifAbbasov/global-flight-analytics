@@ -24,9 +24,10 @@ func mapAircraft(
 		HeadingDegrees:      item.Track,
 		VerticalRateMPS:     feetPerMinuteToMetersPerSecond(item.BaroRate),
 		OnGround:            item.AltBaro == "ground",
-		ObservedAt: time.Unix(
-			int64(responseTime-item.Seen),
-			0,
+		ObservedAt: time.UnixMilli(
+			int64(responseTime),
+		).Add(
+			-time.Duration(item.Seen * float64(time.Second)),
 		).UTC(),
 		SourceName: sourceName,
 	}
@@ -37,10 +38,17 @@ func MapStateResponse(response *StateResponse) []flightstate.FlightState {
 		return []flightstate.FlightState{}
 	}
 
-	result := make([]flightstate.FlightState, 0, len(response.Aircraft))
+	result := make(
+		[]flightstate.FlightState,
+		0,
+		len(response.Aircraft),
+	)
 
 	for _, item := range response.Aircraft {
-		result = append(result, mapAircraft(item, response.Now))
+		result = append(
+			result,
+			mapAircraft(item, response.Now),
+		)
 	}
 
 	return result
