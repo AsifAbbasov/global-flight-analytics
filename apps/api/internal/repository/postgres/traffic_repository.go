@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -21,6 +22,21 @@ func (r *TrafficRepository) GetCurrent(
 	ctx context.Context,
 ) ([]traffic.CurrentTrafficItem, error) {
 	const query = `
+		WITH latest_successful_run AS (
+			SELECT ir.id
+			FROM ingestion_runs ir
+			WHERE ir.status = $1
+			AND ir.finished_at IS NOT NULL
+			AND EXISTS (
+				SELECT 1
+				FROM flight_states candidate
+				WHERE candidate.ingestion_run_id = ir.id
+			)
+			ORDER BY
+				ir.finished_at DESC,
+				ir.created_at DESC
+			LIMIT 1
+		)
 		SELECT DISTINCT ON (fs.icao24)
 			fs.icao24,
 			COALESCE(fs.callsign, ''),
@@ -39,14 +55,19 @@ func (r *TrafficRepository) GetCurrent(
 			COALESCE(al.name, ''),
 			COALESCE(fs.origin_country, '')
 		FROM flight_states fs
+		JOIN latest_successful_run latest_run
+			ON latest_run.id = fs.ingestion_run_id
 		LEFT JOIN aircraft a ON a.id = fs.aircraft_id
 		LEFT JOIN aircraft_models am ON am.id = a.model_id
 		LEFT JOIN airlines al ON al.id = a.airline_id
-		ORDER BY fs.icao24, fs.observed_at DESC
-		LIMIT 500;
+		ORDER BY fs.icao24, fs.observed_at DESC;
 	`
 
-	return r.queryCurrentTraffic(ctx, query)
+	return r.queryCurrentTraffic(
+		ctx,
+		query,
+		string(ingestionrun.StatusSuccess),
+	)
 }
 
 func (r *TrafficRepository) GetCurrentByBounds(
@@ -54,6 +75,21 @@ func (r *TrafficRepository) GetCurrentByBounds(
 	bounds traffic.Bounds,
 ) ([]traffic.CurrentTrafficItem, error) {
 	const query = `
+		WITH latest_successful_run AS (
+			SELECT ir.id
+			FROM ingestion_runs ir
+			WHERE ir.status = $1
+			AND ir.finished_at IS NOT NULL
+			AND EXISTS (
+				SELECT 1
+				FROM flight_states candidate
+				WHERE candidate.ingestion_run_id = ir.id
+			)
+			ORDER BY
+				ir.finished_at DESC,
+				ir.created_at DESC
+			LIMIT 1
+		)
 		SELECT DISTINCT ON (fs.icao24)
 			fs.icao24,
 			COALESCE(fs.callsign, ''),
@@ -72,18 +108,20 @@ func (r *TrafficRepository) GetCurrentByBounds(
 			COALESCE(al.name, ''),
 			COALESCE(fs.origin_country, '')
 		FROM flight_states fs
+		JOIN latest_successful_run latest_run
+			ON latest_run.id = fs.ingestion_run_id
 		LEFT JOIN aircraft a ON a.id = fs.aircraft_id
 		LEFT JOIN aircraft_models am ON am.id = a.model_id
 		LEFT JOIN airlines al ON al.id = a.airline_id
-		WHERE fs.latitude BETWEEN $1 AND $2
-		AND fs.longitude BETWEEN $3 AND $4
-		ORDER BY fs.icao24, fs.observed_at DESC
-		LIMIT 500;
+		WHERE fs.latitude BETWEEN $2 AND $3
+		AND fs.longitude BETWEEN $4 AND $5
+		ORDER BY fs.icao24, fs.observed_at DESC;
 	`
 
 	return r.queryCurrentTraffic(
 		ctx,
 		query,
+		string(ingestionrun.StatusSuccess),
 		bounds.MinLatitude,
 		bounds.MaxLatitude,
 		bounds.MinLongitude,

@@ -17,6 +17,10 @@ func NewProvider(client *Client) *Provider {
 	}
 }
 
+func (p *Provider) SourceName() string {
+	return sourceName
+}
+
 func (p *Provider) LoadByCallsign(
 	ctx context.Context,
 	callsign string,

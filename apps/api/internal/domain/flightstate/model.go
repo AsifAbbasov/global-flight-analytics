@@ -6,6 +6,7 @@ type FlightState struct {
 	ID                  string
 	FlightID            string
 	AircraftID          string
+	IngestionRunID      string
 	ICAO24              string
 	Callsign            string
 	Latitude            float64

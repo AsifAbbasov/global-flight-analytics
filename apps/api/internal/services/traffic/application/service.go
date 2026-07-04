@@ -48,8 +48,9 @@ type Service struct {
 }
 
 type ProcessAndStoreResult struct {
-	ProcessingResult processor.ProcessingResult
-	StoredAt         time.Time
+	ProcessingResult       processor.ProcessingResult
+	StoredFlightStateCount int
+	StoredAt               time.Time
 }
 
 func New(config Config) *Service {
@@ -75,39 +76,51 @@ func (service *Service) ProcessAndStore(
 		ctx = context.Background()
 	}
 
-	result := service.processor.Process(states)
+	processingResult := service.processor.Process(states)
+
+	result := ProcessAndStoreResult{
+		ProcessingResult: processingResult,
+	}
 
 	if service.flightStateRepository != nil {
-		if err := service.saveUsableFlightStates(ctx, result); err != nil {
-			return ProcessAndStoreResult{}, err
+		storedFlightStateCount, err := service.saveUsableFlightStates(
+			ctx,
+			processingResult,
+		)
+		if err != nil {
+			return result, err
 		}
+
+		result.StoredFlightStateCount = storedFlightStateCount
 	}
 
 	if service.dataQualityRepository != nil {
-		if err := service.saveDataQualityReports(ctx, result); err != nil {
-			return ProcessAndStoreResult{}, err
+		if err := service.saveDataQualityReports(
+			ctx,
+			processingResult,
+		); err != nil {
+			return result, err
 		}
 	}
 
 	if service.trajectoryRepository != nil {
 		if err := service.saveTrajectories(
 			ctx,
-			result.Trajectories,
+			processingResult.Trajectories,
 		); err != nil {
-			return ProcessAndStoreResult{}, err
+			return result, err
 		}
 	}
 
-	return ProcessAndStoreResult{
-		ProcessingResult: result,
-		StoredAt:         time.Now().UTC(),
-	}, nil
+	result.StoredAt = time.Now().UTC()
+
+	return result, nil
 }
 
 func (service *Service) saveUsableFlightStates(
 	ctx context.Context,
 	result processor.ProcessingResult,
-) error {
+) (int, error) {
 	states := make(
 		[]flightstate.FlightState,
 		0,
@@ -122,13 +135,13 @@ func (service *Service) saveUsableFlightStates(
 		ctx,
 		states,
 	); err != nil {
-		return fmt.Errorf(
+		return 0, fmt.Errorf(
 			"save usable flight states: %w",
 			err,
 		)
 	}
 
-	return nil
+	return len(states), nil
 }
 
 func (service *Service) saveDataQualityReports(

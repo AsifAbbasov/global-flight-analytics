@@ -11,15 +11,21 @@ import (
 )
 
 var (
-	ErrFlightStateNotFound               = errors.New("flight state not found")
-	ErrFlightStateRepositoryPoolRequired = errors.New("flight state repository pool is required")
+	ErrFlightStateNotFound = errors.New(
+		"flight state not found",
+	)
+	ErrFlightStateRepositoryPoolRequired = errors.New(
+		"flight state repository pool is required",
+	)
 )
 
 type FlightStateRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewFlightStateRepository(db *pgxpool.Pool) *FlightStateRepository {
+func NewFlightStateRepository(
+	db *pgxpool.Pool,
+) *FlightStateRepository {
 	return &FlightStateRepository{
 		db: db,
 	}
@@ -43,7 +49,10 @@ func (r *FlightStateRepository) SaveFlightStates(
 
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return fmt.Errorf("begin flight states transaction: %w", err)
+		return fmt.Errorf(
+			"begin flight states transaction: %w",
+			err,
+		)
 	}
 
 	committed := false
@@ -70,7 +79,8 @@ func (r *FlightStateRepository) SaveFlightStates(
 			on_ground,
 			origin_country,
 			observed_at,
-			source_name
+			source_name,
+			ingestion_run_id
 		)
 		VALUES (
 			$1,
@@ -87,7 +97,8 @@ func (r *FlightStateRepository) SaveFlightStates(
 			$12,
 			$13,
 			$14,
-			$15
+			$15,
+			$16
 		);
 	`
 
@@ -110,6 +121,7 @@ func (r *FlightStateRepository) SaveFlightStates(
 			nullableText(item.OriginCountry),
 			item.ObservedAt,
 			sourceNameOrUnknown(item.SourceName),
+			nullableUUID(item.IngestionRunID),
 		)
 		if err != nil {
 			return fmt.Errorf(
@@ -122,7 +134,10 @@ func (r *FlightStateRepository) SaveFlightStates(
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit flight states transaction: %w", err)
+		return fmt.Errorf(
+			"commit flight states transaction: %w",
+			err,
+		)
 	}
 
 	committed = true
@@ -139,6 +154,7 @@ func (r *FlightStateRepository) ListByFlightID(
 			id::text,
 			COALESCE(flight_id::text, ''),
 			COALESCE(aircraft_id::text, ''),
+			COALESCE(ingestion_run_id::text, ''),
 			icao24,
 			COALESCE(callsign, ''),
 			COALESCE(latitude, 0),
@@ -172,6 +188,7 @@ func (r *FlightStateRepository) ListByFlightID(
 			&item.ID,
 			&item.FlightID,
 			&item.AircraftID,
+			&item.IngestionRunID,
 			&item.ICAO24,
 			&item.Callsign,
 			&item.Latitude,
@@ -208,6 +225,7 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 			id::text,
 			COALESCE(flight_id::text, ''),
 			COALESCE(aircraft_id::text, ''),
+			COALESCE(ingestion_run_id::text, ''),
 			icao24,
 			COALESCE(callsign, ''),
 			COALESCE(latitude, 0),
@@ -229,10 +247,15 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 
 	var item flightstate.FlightState
 
-	err := r.db.QueryRow(ctx, query, icao24).Scan(
+	err := r.db.QueryRow(
+		ctx,
+		query,
+		icao24,
+	).Scan(
 		&item.ID,
 		&item.FlightID,
 		&item.AircraftID,
+		&item.IngestionRunID,
 		&item.ICAO24,
 		&item.Callsign,
 		&item.Latitude,
@@ -249,7 +272,8 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return flightstate.FlightState{}, ErrFlightStateNotFound
+			return flightstate.FlightState{},
+				ErrFlightStateNotFound
 		}
 
 		return flightstate.FlightState{}, err

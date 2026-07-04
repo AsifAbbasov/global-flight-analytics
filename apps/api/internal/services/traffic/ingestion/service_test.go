@@ -5,13 +5,16 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 )
 
 func TestLoadAndProcessByPoint(t *testing.T) {
 	provider := &testRegionalProvider{
+		sourceName: "test-provider",
 		states: []flightstate.FlightState{
 			{ICAO24: "ABC123"},
 			{ICAO24: "DEF456"},
@@ -20,9 +23,17 @@ func TestLoadAndProcessByPoint(t *testing.T) {
 
 	processor := &testProcessingService{}
 
+	runRepository := &testIngestionRunRepository{
+		run: ingestionrun.Run{
+			ID: "run-1",
+		},
+	}
+
 	service := New(Config{
-		Provider:          provider,
-		ProcessingService: processor,
+		Provider:               provider,
+		ProcessingService:      processor,
+		IngestionRunRepository: runRepository,
+		Now:                    fixedIngestionTime,
 	})
 
 	result, err := service.LoadAndProcessByPoint(
@@ -33,6 +44,13 @@ func TestLoadAndProcessByPoint(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if result.IngestionRunID != "run-1" {
+		t.Fatalf(
+			"expected ingestion run id run-1, got %s",
+			result.IngestionRunID,
+		)
 	}
 
 	if result.LoadedStateCount != 2 {
@@ -62,14 +80,68 @@ func TestLoadAndProcessByPoint(t *testing.T) {
 			len(processor.lastStates),
 		)
 	}
+
+	for _, state := range processor.lastStates {
+		if state.IngestionRunID != "run-1" {
+			t.Fatalf(
+				"expected ingestion run id run-1 for state %s, got %s",
+				state.ICAO24,
+				state.IngestionRunID,
+			)
+		}
+	}
+
+	if runRepository.createCount != 1 {
+		t.Fatalf(
+			"expected ingestion run create count 1, got %d",
+			runRepository.createCount,
+		)
+	}
+
+	if runRepository.successCount != 1 {
+		t.Fatalf(
+			"expected ingestion run success count 1, got %d",
+			runRepository.successCount,
+		)
+	}
+
+	if runRepository.failedCount != 0 {
+		t.Fatalf(
+			"expected ingestion run failed count 0, got %d",
+			runRepository.failedCount,
+		)
+	}
+
+	if runRepository.lastRecordsReceived != 2 {
+		t.Fatalf(
+			"expected 2 received records, got %d",
+			runRepository.lastRecordsReceived,
+		)
+	}
+
+	if runRepository.lastRecordsInserted != 2 {
+		t.Fatalf(
+			"expected 2 inserted records, got %d",
+			runRepository.lastRecordsInserted,
+		)
+	}
 }
 
 func TestLoadAndProcessByPointWrapsProviderError(t *testing.T) {
+	runRepository := &testIngestionRunRepository{
+		run: ingestionrun.Run{
+			ID: "run-1",
+		},
+	}
+
 	service := New(Config{
 		Provider: &testRegionalProvider{
-			err: errors.New("provider failed"),
+			sourceName: "test-provider",
+			err:        errors.New("provider failed"),
 		},
-		ProcessingService: &testProcessingService{},
+		ProcessingService:      &testProcessingService{},
+		IngestionRunRepository: runRepository,
+		Now:                    fixedIngestionTime,
 	})
 
 	_, err := service.LoadAndProcessByPoint(
@@ -86,12 +158,51 @@ func TestLoadAndProcessByPointWrapsProviderError(t *testing.T) {
 	if !strings.Contains(err.Error(), "load regional flight states") {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
+	if runRepository.createCount != 1 {
+		t.Fatalf(
+			"expected ingestion run create count 1, got %d",
+			runRepository.createCount,
+		)
+	}
+
+	if runRepository.failedCount != 1 {
+		t.Fatalf(
+			"expected ingestion run failed count 1, got %d",
+			runRepository.failedCount,
+		)
+	}
+
+	if runRepository.successCount != 0 {
+		t.Fatalf(
+			"expected ingestion run success count 0, got %d",
+			runRepository.successCount,
+		)
+	}
+}
+
+func fixedIngestionTime() time.Time {
+	return time.Date(
+		2026,
+		time.July,
+		4,
+		12,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
 }
 
 type testRegionalProvider struct {
-	states    []flightstate.FlightState
-	err       error
-	callCount int
+	sourceName string
+	states     []flightstate.FlightState
+	err        error
+	callCount  int
+}
+
+func (provider *testRegionalProvider) SourceName() string {
+	return provider.sourceName
 }
 
 func (provider *testRegionalProvider) LoadByPoint(
@@ -119,7 +230,67 @@ func (service *testProcessingService) ProcessAndStore(
 	states []flightstate.FlightState,
 ) (trafficapplication.ProcessAndStoreResult, error) {
 	service.callCount++
-	service.lastStates = states
 
-	return trafficapplication.ProcessAndStoreResult{}, nil
+	service.lastStates = append(
+		[]flightstate.FlightState(nil),
+		states...,
+	)
+
+	return trafficapplication.ProcessAndStoreResult{
+		StoredFlightStateCount: len(states),
+	}, nil
+}
+
+type testIngestionRunRepository struct {
+	run                 ingestionrun.Run
+	createCount         int
+	successCount        int
+	failedCount         int
+	lastRecordsReceived int
+	lastRecordsInserted int
+	lastRecordsUpdated  int
+}
+
+func (repository *testIngestionRunRepository) CreateRunning(
+	ctx context.Context,
+	sourceName string,
+	regionID string,
+	startedAt time.Time,
+) (ingestionrun.Run, error) {
+	repository.createCount++
+
+	return repository.run, nil
+}
+
+func (repository *testIngestionRunRepository) MarkSuccess(
+	ctx context.Context,
+	id string,
+	finishedAt time.Time,
+	recordsReceived int,
+	recordsInserted int,
+	recordsUpdated int,
+) error {
+	repository.successCount++
+	repository.lastRecordsReceived = recordsReceived
+	repository.lastRecordsInserted = recordsInserted
+	repository.lastRecordsUpdated = recordsUpdated
+
+	return nil
+}
+
+func (repository *testIngestionRunRepository) MarkFailed(
+	ctx context.Context,
+	id string,
+	finishedAt time.Time,
+	recordsReceived int,
+	recordsInserted int,
+	recordsUpdated int,
+	errorMessage string,
+) error {
+	repository.failedCount++
+	repository.lastRecordsReceived = recordsReceived
+	repository.lastRecordsInserted = recordsInserted
+	repository.lastRecordsUpdated = recordsUpdated
+
+	return nil
 }

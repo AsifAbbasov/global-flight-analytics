@@ -2,13 +2,18 @@ package ingestion
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 )
 
 type RegionalProvider interface {
+	SourceName() string
+
 	LoadByPoint(
 		ctx context.Context,
 		latitude float64,
@@ -24,25 +29,68 @@ type ProcessingService interface {
 	) (trafficapplication.ProcessAndStoreResult, error)
 }
 
+type IngestionRunRepository interface {
+	CreateRunning(
+		ctx context.Context,
+		sourceName string,
+		regionID string,
+		startedAt time.Time,
+	) (ingestionrun.Run, error)
+
+	MarkSuccess(
+		ctx context.Context,
+		id string,
+		finishedAt time.Time,
+		recordsReceived int,
+		recordsInserted int,
+		recordsUpdated int,
+	) error
+
+	MarkFailed(
+		ctx context.Context,
+		id string,
+		finishedAt time.Time,
+		recordsReceived int,
+		recordsInserted int,
+		recordsUpdated int,
+		errorMessage string,
+	) error
+}
+
 type Config struct {
-	Provider          RegionalProvider
-	ProcessingService ProcessingService
+	Provider               RegionalProvider
+	ProcessingService      ProcessingService
+	IngestionRunRepository IngestionRunRepository
+	RegionID               string
+	Now                    func() time.Time
 }
 
 type Service struct {
-	provider          RegionalProvider
-	processingService ProcessingService
+	provider               RegionalProvider
+	processingService      ProcessingService
+	ingestionRunRepository IngestionRunRepository
+	regionID               string
+	now                    func() time.Time
 }
 
 type LoadAndProcessResult struct {
+	IngestionRunID   string
 	LoadedStateCount int
 	ProcessingResult trafficapplication.ProcessAndStoreResult
 }
 
 func New(config Config) *Service {
+	now := config.Now
+	if now == nil {
+		now = time.Now
+	}
+
 	return &Service{
-		provider:          config.Provider,
-		processingService: config.ProcessingService,
+		provider:               config.Provider,
+		processingService:      config.ProcessingService,
+		ingestionRunRepository: config.IngestionRunRepository,
+		regionID:               config.RegionID,
+		now:                    now,
 	}
 }
 
@@ -68,6 +116,27 @@ func (service *Service) LoadAndProcessByPoint(
 		)
 	}
 
+	if service.ingestionRunRepository == nil {
+		return LoadAndProcessResult{}, fmt.Errorf(
+			"ingestion run repository is required",
+		)
+	}
+
+	startedAt := service.now().UTC()
+
+	run, err := service.ingestionRunRepository.CreateRunning(
+		ctx,
+		service.provider.SourceName(),
+		service.regionID,
+		startedAt,
+	)
+	if err != nil {
+		return LoadAndProcessResult{}, fmt.Errorf(
+			"create traffic ingestion run: %w",
+			err,
+		)
+	}
+
 	states, err := service.provider.LoadByPoint(
 		ctx,
 		latitude,
@@ -75,10 +144,29 @@ func (service *Service) LoadAndProcessByPoint(
 		radius,
 	)
 	if err != nil {
-		return LoadAndProcessResult{}, fmt.Errorf(
+		operationErr := fmt.Errorf(
 			"load regional flight states: %w",
 			err,
 		)
+
+		markErr := service.ingestionRunRepository.MarkFailed(
+			ctx,
+			run.ID,
+			service.now().UTC(),
+			len(states),
+			0,
+			0,
+			operationErr.Error(),
+		)
+
+		return LoadAndProcessResult{
+			IngestionRunID:   run.ID,
+			LoadedStateCount: len(states),
+		}, errors.Join(operationErr, markErr)
+	}
+
+	for index := range states {
+		states[index].IngestionRunID = run.ID
 	}
 
 	processingResult, err := service.processingService.ProcessAndStore(
@@ -86,13 +174,49 @@ func (service *Service) LoadAndProcessByPoint(
 		states,
 	)
 	if err != nil {
-		return LoadAndProcessResult{}, fmt.Errorf(
+		operationErr := fmt.Errorf(
 			"process and store regional flight states: %w",
 			err,
 		)
+
+		markErr := service.ingestionRunRepository.MarkFailed(
+			ctx,
+			run.ID,
+			service.now().UTC(),
+			len(states),
+			processingResult.StoredFlightStateCount,
+			0,
+			operationErr.Error(),
+		)
+
+		return LoadAndProcessResult{
+			IngestionRunID:   run.ID,
+			LoadedStateCount: len(states),
+			ProcessingResult: processingResult,
+		}, errors.Join(operationErr, markErr)
+	}
+
+	err = service.ingestionRunRepository.MarkSuccess(
+		ctx,
+		run.ID,
+		service.now().UTC(),
+		len(states),
+		processingResult.StoredFlightStateCount,
+		0,
+	)
+	if err != nil {
+		return LoadAndProcessResult{
+				IngestionRunID:   run.ID,
+				LoadedStateCount: len(states),
+				ProcessingResult: processingResult,
+			}, fmt.Errorf(
+				"mark traffic ingestion run success: %w",
+				err,
+			)
 	}
 
 	return LoadAndProcessResult{
+		IngestionRunID:   run.ID,
 		LoadedStateCount: len(states),
 		ProcessingResult: processingResult,
 	}, nil

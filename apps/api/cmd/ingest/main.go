@@ -50,6 +50,7 @@ func main() {
 
 	flightStateRepository := postgres.NewFlightStateRepository(dbPool)
 	trajectoryRepository := postgres.NewTrajectoryRepository(dbPool)
+	ingestionRunRepository := postgres.NewIngestionRunRepository(dbPool)
 
 	processingService := trafficapplication.New(
 		trafficapplication.Config{
@@ -60,8 +61,9 @@ func main() {
 
 	ingestionService := trafficingestion.New(
 		trafficingestion.Config{
-			Provider:          provider,
-			ProcessingService: processingService,
+			Provider:               provider,
+			ProcessingService:      processingService,
+			IngestionRunRepository: ingestionRunRepository,
 		},
 	)
 
@@ -76,11 +78,13 @@ func main() {
 	}
 
 	fmt.Printf(
-		"loaded=%d received=%d usable=%d invalid=%d trajectories=%d stored_at=%s\n",
+		"ingestion_run_id=%s loaded=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
+		result.IngestionRunID,
 		result.LoadedStateCount,
 		result.ProcessingResult.ProcessingResult.Stats.ReceivedCount,
 		result.ProcessingResult.ProcessingResult.Stats.UsableCount,
 		result.ProcessingResult.ProcessingResult.Stats.InvalidCount,
+		result.ProcessingResult.StoredFlightStateCount,
 		result.ProcessingResult.ProcessingResult.Stats.TrajectoryCount,
 		result.ProcessingResult.StoredAt.Format(time.RFC3339),
 	)
