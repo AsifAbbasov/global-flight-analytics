@@ -31,9 +31,21 @@ type Client struct {
 	now            func() time.Time
 }
 
+type ConditionalRequest struct {
+	ETag         string
+	LastModified string
+}
+
 type LoadResult struct {
-	Airports    []airport.ImportRecord
+	Airports []airport.ImportRecord
+
 	RetrievedAt time.Time
+	CheckedAt   time.Time
+
+	ETag         string
+	LastModified string
+
+	NotModified bool
 }
 
 func NewClient(
@@ -73,6 +85,16 @@ func NewClient(
 func (client *Client) LoadAirports(
 	ctx context.Context,
 ) (LoadResult, error) {
+	return client.LoadAirportsConditional(
+		ctx,
+		ConditionalRequest{},
+	)
+}
+
+func (client *Client) LoadAirportsConditional(
+	ctx context.Context,
+	conditionalRequest ConditionalRequest,
+) (LoadResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -95,7 +117,29 @@ func (client *Client) LoadAirports(
 		"global-flight-analytics-airports-import",
 	)
 
-	response, err := client.httpClient.Do(request)
+	requestETag := strings.TrimSpace(
+		conditionalRequest.ETag,
+	)
+	if requestETag != "" {
+		request.Header.Set(
+			"If-None-Match",
+			requestETag,
+		)
+	}
+
+	requestLastModified := strings.TrimSpace(
+		conditionalRequest.LastModified,
+	)
+	if requestLastModified != "" {
+		request.Header.Set(
+			"If-Modified-Since",
+			requestLastModified,
+		)
+	}
+
+	response, err := client.httpClient.Do(
+		request,
+	)
 	if err != nil {
 		return LoadResult{}, fmt.Errorf(
 			"download OurAirports airports CSV: %w",
@@ -104,6 +148,35 @@ func (client *Client) LoadAirports(
 	}
 	defer response.Body.Close()
 
+	checkedAt := client.now().UTC()
+
+	responseETag := strings.TrimSpace(
+		response.Header.Get(
+			"ETag",
+		),
+	)
+
+	responseLastModified := strings.TrimSpace(
+		response.Header.Get(
+			"Last-Modified",
+		),
+	)
+
+	if response.StatusCode == http.StatusNotModified {
+		return LoadResult{
+			CheckedAt: checkedAt,
+			ETag: firstNonEmpty(
+				responseETag,
+				requestETag,
+			),
+			LastModified: firstNonEmpty(
+				responseLastModified,
+				requestLastModified,
+			),
+			NotModified: true,
+		}, nil
+	}
+
 	if response.StatusCode != http.StatusOK {
 		return LoadResult{}, fmt.Errorf(
 			"download OurAirports airports CSV: unexpected HTTP status %s",
@@ -111,11 +184,9 @@ func (client *Client) LoadAirports(
 		)
 	}
 
-	retrievedAt := client.now().UTC()
-
 	items, err := client.parseAirports(
 		response,
-		retrievedAt,
+		checkedAt,
 	)
 	if err != nil {
 		return LoadResult{}, fmt.Errorf(
@@ -125,8 +196,12 @@ func (client *Client) LoadAirports(
 	}
 
 	return LoadResult{
-		Airports:    items,
-		RetrievedAt: retrievedAt,
+		Airports:     items,
+		RetrievedAt:  checkedAt,
+		CheckedAt:    checkedAt,
+		ETag:         responseETag,
+		LastModified: responseLastModified,
+		NotModified:  false,
 	}, nil
 }
 
@@ -146,4 +221,20 @@ func (client *Client) parseAirports(
 		retrievedAt,
 		client.countryCodes,
 	)
+}
+
+func firstNonEmpty(
+	values ...string,
+) string {
+	for _, value := range values {
+		trimmedValue := strings.TrimSpace(
+			value,
+		)
+
+		if trimmedValue != "" {
+			return trimmedValue
+		}
+	}
+
+	return ""
 }
