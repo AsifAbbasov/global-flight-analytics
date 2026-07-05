@@ -11,18 +11,32 @@ import (
 )
 
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
-	userAgent  string
+	baseURL          string
+	httpClient       *http.Client
+	userAgent        string
+	responseObserver integrationcommon.ProviderResponseObserver
 }
 
-func NewClient(config integrationcommon.HTTPClientConfig) *Client {
+func NewClient(
+	config integrationcommon.HTTPClientConfig,
+) *Client {
+	return NewClientWithResponseObserver(
+		config,
+		nil,
+	)
+}
+
+func NewClientWithResponseObserver(
+	config integrationcommon.HTTPClientConfig,
+	responseObserver integrationcommon.ProviderResponseObserver,
+) *Client {
 	return &Client{
 		baseURL: config.BaseURL,
 		httpClient: &http.Client{
 			Timeout: config.Timeout,
 		},
-		userAgent: config.UserAgent,
+		userAgent:        config.UserAgent,
+		responseObserver: responseObserver,
 	}
 }
 
@@ -31,7 +45,9 @@ func (c *Client) GetByCallsign(
 	callsign string,
 ) (*StateResponse, error) {
 	if callsign == "" {
-		return nil, fmt.Errorf("callsign is required")
+		return nil, fmt.Errorf(
+			"callsign is required",
+		)
 	}
 
 	endpointPath := fmt.Sprintf(
@@ -39,7 +55,10 @@ func (c *Client) GetByCallsign(
 		url.PathEscape(callsign),
 	)
 
-	requestURL, err := url.JoinPath(c.baseURL, endpointPath)
+	requestURL, err := url.JoinPath(
+		c.baseURL,
+		endpointPath,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"build airplanes live callsign url: %w",
@@ -61,7 +80,10 @@ func (c *Client) GetByCallsign(
 
 	var result StateResponse
 
-	if err := c.do(request, &result); err != nil {
+	if err := c.do(
+		request,
+		&result,
+	); err != nil {
 		return nil, fmt.Errorf(
 			"execute airplanes live callsign request: %w",
 			err,
@@ -77,13 +99,17 @@ func (c *Client) GetByPoint(
 	longitude float64,
 	radius int,
 ) (*StateResponse, error) {
-	if !aviationconstraints.IsLatitude(latitude) {
+	if !aviationconstraints.IsLatitude(
+		latitude,
+	) {
 		return nil, fmt.Errorf(
 			"latitude must be finite and between -90 and 90",
 		)
 	}
 
-	if !aviationconstraints.IsLongitude(longitude) {
+	if !aviationconstraints.IsLongitude(
+		longitude,
+	) {
 		return nil, fmt.Errorf(
 			"longitude must be finite and between -180 and 180",
 		)
@@ -102,7 +128,10 @@ func (c *Client) GetByPoint(
 		radius,
 	)
 
-	requestURL, err := url.JoinPath(c.baseURL, endpointPath)
+	requestURL, err := url.JoinPath(
+		c.baseURL,
+		endpointPath,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"build airplanes live point url: %w",
@@ -124,7 +153,10 @@ func (c *Client) GetByPoint(
 
 	var result StateResponse
 
-	if err := c.do(request, &result); err != nil {
+	if err := c.do(
+		request,
+		&result,
+	); err != nil {
 		return nil, fmt.Errorf(
 			"execute airplanes live point request: %w",
 			err,

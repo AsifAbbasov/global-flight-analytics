@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
+	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
 
 const (
@@ -25,14 +26,16 @@ var (
 )
 
 type Config struct {
-	BaseURL    string
-	HTTPClient *http.Client
-	Timeout    time.Duration
+	BaseURL          string
+	HTTPClient       *http.Client
+	Timeout          time.Duration
+	ResponseObserver integrationcommon.ProviderResponseObserver
 }
 
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
+	baseURL          string
+	httpClient       *http.Client
+	responseObserver integrationcommon.ProviderResponseObserver
 }
 
 type CurrentWeatherRequest struct {
@@ -40,14 +43,22 @@ type CurrentWeatherRequest struct {
 	Longitude float64
 }
 
-func New(config Config) (*Client, error) {
-	baseURL := strings.TrimSpace(config.BaseURL)
+func New(
+	config Config,
+) (*Client, error) {
+	baseURL := strings.TrimSpace(
+		config.BaseURL,
+	)
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
 
-	parsedURL, err := url.Parse(baseURL)
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+	parsedURL, err := url.Parse(
+		baseURL,
+	)
+	if err != nil ||
+		parsedURL.Scheme == "" ||
+		parsedURL.Host == "" {
 		return nil, ErrInvalidBaseURL
 	}
 
@@ -64,53 +75,135 @@ func New(config Config) (*Client, error) {
 	}
 
 	return &Client{
-		baseURL:    strings.TrimRight(baseURL, "/"),
-		httpClient: httpClient,
+		baseURL:          strings.TrimRight(baseURL, "/"),
+		httpClient:       httpClient,
+		responseObserver: config.ResponseObserver,
 	}, nil
 }
 
-func (client *Client) GetCurrentWeather(ctx context.Context, request CurrentWeatherRequest) (weather.CurrentSnapshot, error) {
-	if !isValidLatitude(request.Latitude) || !isValidLongitude(request.Longitude) {
+func (client *Client) GetCurrentWeather(
+	ctx context.Context,
+	request CurrentWeatherRequest,
+) (weather.CurrentSnapshot, error) {
+	if !isValidLatitude(request.Latitude) ||
+		!isValidLongitude(request.Longitude) {
 		return weather.CurrentSnapshot{}, ErrInvalidCoordinates
 	}
 
-	endpoint, err := url.Parse(client.baseURL + "/v1/forecast")
+	endpoint, err := url.Parse(
+		client.baseURL + "/v1/forecast",
+	)
 	if err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf("build open-meteo endpoint: %w", err)
+		return weather.CurrentSnapshot{}, fmt.Errorf(
+			"build open-meteo endpoint: %w",
+			err,
+		)
 	}
 
 	query := endpoint.Query()
-	query.Set("latitude", formatCoordinate(request.Latitude))
-	query.Set("longitude", formatCoordinate(request.Longitude))
-	query.Set("current", strings.Join(currentWeatherVariables(), ","))
-	query.Set("wind_speed_unit", "ms")
-	query.Set("timezone", "UTC")
-	query.Set("forecast_days", "1")
+
+	query.Set(
+		"latitude",
+		formatCoordinate(request.Latitude),
+	)
+
+	query.Set(
+		"longitude",
+		formatCoordinate(request.Longitude),
+	)
+
+	query.Set(
+		"current",
+		strings.Join(
+			currentWeatherVariables(),
+			",",
+		),
+	)
+
+	query.Set(
+		"wind_speed_unit",
+		"ms",
+	)
+
+	query.Set(
+		"timezone",
+		"UTC",
+	)
+
+	query.Set(
+		"forecast_days",
+		"1",
+	)
+
 	endpoint.RawQuery = query.Encode()
 
-	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
+	httpRequest, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		endpoint.String(),
+		nil,
+	)
 	if err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf("create open-meteo request: %w", err)
+		return weather.CurrentSnapshot{}, fmt.Errorf(
+			"create open-meteo request: %w",
+			err,
+		)
 	}
 
-	response, err := client.httpClient.Do(httpRequest)
+	response, err := client.httpClient.Do(
+		httpRequest,
+	)
 	if err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf("open-meteo request failed: %w", err)
+		return weather.CurrentSnapshot{}, fmt.Errorf(
+			"open-meteo request failed: %w",
+			err,
+		)
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return weather.CurrentSnapshot{}, fmt.Errorf("open-meteo unexpected status: %d", response.StatusCode)
+	if client.responseObserver != nil {
+		err := client.responseObserver.ObserveProviderResponse(
+			weather.ProviderOpenMeteo,
+			response.StatusCode,
+			response.Header.Clone(),
+		)
+		if err != nil {
+			return weather.CurrentSnapshot{}, fmt.Errorf(
+				"observe open-meteo response: %w",
+				err,
+			)
+		}
+	}
+
+	if response.StatusCode < http.StatusOK ||
+		response.StatusCode >= http.StatusMultipleChoices {
+		return weather.CurrentSnapshot{}, fmt.Errorf(
+			"open-meteo unexpected status: %d",
+			response.StatusCode,
+		)
 	}
 
 	var payload forecastResponse
-	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf("decode open-meteo response: %w", err)
+
+	if err := json.NewDecoder(
+		response.Body,
+	).Decode(
+		&payload,
+	); err != nil {
+		return weather.CurrentSnapshot{}, fmt.Errorf(
+			"decode open-meteo response: %w",
+			err,
+		)
 	}
 
-	observedAt, err := parseOpenMeteoTime(payload.Current.Time)
+	observedAt, err := parseOpenMeteoTime(
+		payload.Current.Time,
+	)
 	if err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf("parse open-meteo current time: %w", err)
+		return weather.CurrentSnapshot{}, fmt.Errorf(
+			"parse open-meteo current time: %w",
+			err,
+		)
 	}
 
 	return weather.CurrentSnapshot{
@@ -147,30 +240,59 @@ func currentWeatherVariables() []string {
 	}
 }
 
-func isValidLatitude(value float64) bool {
-	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= -90 && value <= 90
+func isValidLatitude(
+	value float64,
+) bool {
+	return !math.IsNaN(value) &&
+		!math.IsInf(value, 0) &&
+		value >= -90 &&
+		value <= 90
 }
 
-func isValidLongitude(value float64) bool {
-	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= -180 && value <= 180
+func isValidLongitude(
+	value float64,
+) bool {
+	return !math.IsNaN(value) &&
+		!math.IsInf(value, 0) &&
+		value >= -180 &&
+		value <= 180
 }
 
-func formatCoordinate(value float64) string {
-	return fmt.Sprintf("%.6f", value)
+func formatCoordinate(
+	value float64,
+) string {
+	return fmt.Sprintf(
+		"%.6f",
+		value,
+	)
 }
 
-func parseOpenMeteoTime(value string) (time.Time, error) {
-	trimmed := strings.TrimSpace(value)
+func parseOpenMeteoTime(
+	value string,
+) (time.Time, error) {
+	trimmed := strings.TrimSpace(
+		value,
+	)
+
 	if trimmed == "" {
-		return time.Time{}, errors.New("empty time")
+		return time.Time{}, errors.New(
+			"empty time",
+		)
 	}
 
-	parsed, err := time.Parse(time.RFC3339, trimmed)
+	parsed, err := time.Parse(
+		time.RFC3339,
+		trimmed,
+	)
 	if err == nil {
 		return parsed.UTC(), nil
 	}
 
-	parsed, err = time.ParseInLocation("2006-01-02T15:04", trimmed, time.UTC)
+	parsed, err = time.ParseInLocation(
+		"2006-01-02T15:04",
+		trimmed,
+		time.UTC,
+	)
 	if err == nil {
 		return parsed.UTC(), nil
 	}
