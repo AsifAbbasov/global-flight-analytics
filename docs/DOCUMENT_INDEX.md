@@ -1,26 +1,66 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.2  
-Project: Global Flight Analytics
+Status: Documentation Index v1.3
+Project Lineage: Global Flight Analytics
+Active Product Positioning: Open Aviation Metrics API
 
 ---
 
 ## Purpose
 
-This index records the documentation structure for Global Flight Analytics.
+This index records the documentation structure and active authority model for the project.
 
-The project documentation is divided into two groups:
+The documentation is divided into three groups:
 
 ```text
-Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–28: research audit deduplication, analytical core, roadmap, implementation sequence, research scope guards, engineering principles, and research-to-implementation decision method
+Documents 01–21:
+existing product, system, data, architecture foundation, and engineering amendments
+
+Documents 22–28:
+research audit deduplication, analytical core, roadmap, implementation sequence,
+research scope guards, engineering principles, and research-to-implementation method
+
+Documents 29–30:
+canonical product repositioning and explicit documentation amendment
 ```
 
 ---
 
-## Existing Foundation Documents
+## Active Authority and Precedence
 
-The existing documentation foundation is retained. The new analytical core documents do not replace the earlier product and system architecture work. They extend it.
+The active product authority is:
+
+```text
+docs/29_PRODUCT_POSITIONING_AND_SCOPE.md
+```
+
+The active documentation amendment is:
+
+```text
+docs/30_PRODUCT_REPOSITIONING_AND_DOCUMENTATION_AMENDMENT.md
+```
+
+The authoritative research-to-code method remains:
+
+```text
+docs/28_RESEARCH_AND_ANALYTICAL_DECISION_METHOD.md
+```
+
+When a conflict exists in product positioning, MVP scope, geographic policy, metric semantics, or rollout order, use:
+
+```text
+Document 29
+        ↓
+Document 30
+        ↓
+earlier conflicting text
+```
+
+When no conflict exists, earlier documentation remains valid.
+
+---
+
+## Existing Foundation Documents
 
 ```text
 01_PRODUCT_VISION.md
@@ -48,7 +88,7 @@ The existing documentation foundation is retained. The new analytical core docum
 
 ---
 
-## New Analytical Architecture Documents
+## Analytical Architecture Documents
 
 ### Document 22 — Research Audit Deduplication
 
@@ -61,8 +101,8 @@ docs/22_RESEARCH_AUDIT_DEDUPLICATION.md
 Purpose:
 
 ```text
-Consolidates all research audit outputs into deduplicated architecture layers,
-removes repeated module names, and defines the final accepted architecture ideas.
+Consolidates research audit outputs into deduplicated architecture layers
+and defines accepted analytical architecture ideas.
 ```
 
 ### Document 23 — Analytical Core Architecture
@@ -76,11 +116,17 @@ docs/23_ANALYTICAL_CORE_ARCHITECTURE.md
 Purpose:
 
 ```text
-Defines the analytical core of Global Flight Analytics:
-Trajectory Intelligence, Route Intelligence, Historical Similarity,
-Historical Patterns, Weather-Aware Intelligence, Projection,
-Multi-Aircraft Context, Airspace Interaction, Airport Intelligence,
-and Confidence and Explainability.
+Defines the analytical core, including trajectory intelligence,
+route intelligence, historical similarity, historical patterns,
+weather-aware intelligence, projection, multi-aircraft context,
+airport intelligence, confidence, and explainability.
+```
+
+Interpretation note:
+
+```text
+Advanced capabilities remain valid future architecture,
+but are not automatically MVP priorities after Document 29.
 ```
 
 ### Document 24 — MVP and Version Roadmap
@@ -91,12 +137,13 @@ Path:
 docs/24_MVP_VERSION_ROADMAP.md
 ```
 
-Purpose:
+Status:
 
 ```text
-Defines MVP, Version 1, Version 2, release boundaries,
-capabilities, tables, frontend scope, and success criteria.
+PARTIALLY SUPERSEDED
 ```
+
+Interpret through Documents 29 and 30 where conflicts exist.
 
 ### Document 25 — Implementation Sequence
 
@@ -106,11 +153,23 @@ Path:
 docs/25_IMPLEMENTATION_SEQUENCE.md
 ```
 
-Purpose:
+Status:
 
 ```text
-Defines the exact implementation order from data foundation to advanced analytics,
-including the first coding slice.
+SEQUENCE AMENDED
+```
+
+Technical foundation stages remain valid.
+
+After trajectory evidence, the active direction prioritizes:
+
+```text
+metric evidence
+five MVP metrics
+metrics API
+pilot validation
+simple dashboard
+regional trends
 ```
 
 ### Document 26 — Research Backlog and Scope Guards
@@ -125,8 +184,8 @@ Purpose:
 
 ```text
 Defines deferred research topics, MVP forbidden scope,
-version promotion rules, prediction scope guards,
-weather scope guards, and open-data limitations.
+promotion rules, prediction guards, weather guards,
+and open-data limitations.
 ```
 
 ### Document 27 — Engineering Principles
@@ -140,9 +199,9 @@ docs/27_ENGINEERING_PRINCIPLES.md
 Purpose:
 
 ```text
-Defines the project engineering rules for simple-first implementation,
-controlled complexity, magic number avoidance, analytical policy visibility,
-unit testing, smoke testing, and documentation alignment.
+Defines simple-first implementation, controlled complexity,
+magic number avoidance, policy visibility, testing,
+and documentation alignment.
 ```
 
 ### Document 28 — Research and Analytical Decision Method
@@ -153,14 +212,205 @@ Path:
 docs/28_RESEARCH_AND_ANALYTICAL_DECISION_METHOD.md
 ```
 
+Status:
+
+```text
+AUTHORITATIVE RESEARCH-TO-CODE METHOD
+```
+
 Purpose:
 
 ```text
-Defines the mandatory research-to-code decision method,
-the three hard constraints, decision classification labels,
-open research expansion rules, physics and mathematics rules,
-baseline-first analytics, threshold derivation, historical replay,
-metrics, confidence, limitations, and scope protection.
+Defines mandatory decision classification,
+open research expansion, physics and mathematics rules,
+baseline-first analytics, threshold derivation,
+historical replay, metrics, confidence, limitations,
+and scope protection.
+```
+
+---
+
+## Product Repositioning Documents
+
+### Document 29 — Product Positioning and Scope
+
+Path:
+
+```text
+docs/29_PRODUCT_POSITIONING_AND_SCOPE.md
+```
+
+Status:
+
+```text
+CANONICAL PRODUCT AUTHORITY
+```
+
+Purpose:
+
+```text
+Defines Open Aviation Metrics API positioning,
+MVP boundaries, candidate pilot scope,
+five public metrics, confidence requirements,
+proxy honesty, API-first delivery,
+geographic scope, and expansion gates.
+```
+
+### Document 30 — Product Repositioning and Documentation Amendment
+
+Path:
+
+```text
+docs/30_PRODUCT_REPOSITIONING_AND_DOCUMENTATION_AMENDMENT.md
+```
+
+Status:
+
+```text
+AUTHORITATIVE DOCUMENTATION AMENDMENT
+```
+
+Purpose:
+
+```text
+Defines how Documents 01–28 are interpreted after Document 29,
+records supersession and amendment status,
+preserves valid engineering foundations,
+and makes precedence explicit.
+```
+
+---
+
+## Active Product Baseline
+
+```text
+Open Aviation Metrics API
+
+small evidence-qualified pilot scope
+        ↓
+five public metrics
+        ↓
+confidence and limitation metadata
+        ↓
+metrics API
+        ↓
+pilot validation
+        ↓
+simple dashboard
+        ↓
+regional trends
+        ↓
+controlled expansion
+```
+
+Five public MVP metrics:
+
+```text
+1. Active Aircraft
+2. Arrivals Proxy
+3. Departures Proxy
+4. Data Freshness
+5. Coverage Score
+```
+
+Confidence Score is evidence metadata, not a sixth activity metric.
+
+---
+
+## Active Architecture Baseline
+
+```text
+Open Data Sources
+        ↓
+Source Adapters
+        ↓
+Canonical Flight State
+        ↓
+Normalization
+        ↓
+Deduplication
+        ↓
+Validation
+        ↓
+Data Quality
+        ↓
+Trajectory Evidence
+        ↓
+Metric Evidence Windows
+        ↓
+Airport Metric Calculators
+        ↓
+Metric Confidence
+        ↓
+Metrics API
+        ↓
+Regional Aggregation
+        ↓
+Simple Dashboard
+```
+
+This baseline does not authorize a rewrite.
+
+Existing working architecture must be evolved incrementally.
+
+---
+
+## Active Implementation Direction
+
+Preferred order:
+
+```text
+data foundation
+        ↓
+data quality
+        ↓
+trajectory evidence
+        ↓
+metric evidence
+        ↓
+five MVP metrics
+        ↓
+metrics API
+        ↓
+pilot validation
+        ↓
+simple dashboard
+        ↓
+regional trends
+        ↓
+controlled expansion
+```
+
+---
+
+## Metric Honesty Rules
+
+Mandatory distinctions:
+
+```text
+arrivals_proxy != actual arrivals
+departures_proxy != actual departures
+zero != unknown
+zero != unavailable
+zero != insufficient evidence
+```
+
+Metric confidence computation must remain acyclic.
+
+Known limitations must not be hidden.
+
+---
+
+## Required Precedence Notices
+
+The following documents carry high-risk conflicting product or MVP claims and must be interpreted with Documents 29 and 30:
+
+```text
+01_PRODUCT_VISION.md
+16_MVP_SCOPE.md
+20_FINAL_ARCHITECTURE_BLUEPRINT.md
+24_MVP_VERSION_ROADMAP.md
+25_IMPLEMENTATION_SEQUENCE.md
 ```
 
 ---
@@ -173,7 +423,7 @@ The file below is superseded and must not be used as the active baseline:
 docs/21_RESEARCH_AUDIT_DEDUPLICATION.md
 ```
 
-It was created with the wrong number before the existing local document `21_ENGINEERING_AMENDMENTS_v1.1.md` was accounted for. The active replacement is:
+The active replacement is:
 
 ```text
 docs/22_RESEARCH_AUDIT_DEDUPLICATION.md
@@ -181,146 +431,88 @@ docs/22_RESEARCH_AUDIT_DEDUPLICATION.md
 
 ---
 
-## Current Architecture Baseline
-
-```text
-Open Data Sources
-↓
-Source Adapters
-↓
-Canonical Flight State
-↓
-Data Quality and Provenance Layer
-↓
-Track Builder
-↓
-Trajectory Segment
-↓
-Flight Trajectory
-↓
-Feature Engineering Layer
-↓
-Context Enrichment Layer
-↓
-Analytical Core
-↓
-Confidence and Explainability Layer
-↓
-API
-↓
-Frontend
-```
-
----
-
-## Current MVP Baseline
-
-```text
-OpenSky or compatible aircraft ingestion
-OurAirports import
-Canonical FlightState
-TrackPoint4D
-Data normalization
-Duplicate removal
-Gap and jump detection
-Motion plausibility check
-Track Builder
-TrajectorySegment
-FlightTrajectory
-CoverageGap
-Track Quality Score
-Basic Airport Context
-Basic Route Intelligence
-Basic Flight Phase Detection
-MapLibre frontend
-Aircraft Detail Panel
-Data Quality Explanation
-Source Limitation Guard
-```
-
----
-
-## First Implementation Slice
-
-```text
-1. OpenSky or compatible provider
-2. Canonical FlightState model
-3. aircraft_states table
-4. data normalization
-5. duplicate removal
-6. gap detection
-7. motion plausibility check
-8. trajectory_segments table
-9. Track Builder
-10. track_quality_score
-11. /api/aircraft/live
-12. /api/aircraft/{icao24}
-13. MapLibre frontend
-14. Aircraft detail panel
-```
-
----
-
 ## Mandatory Research-to-Code Rule
-
-Research ideas do not automatically become implementation scope.
 
 Every non-trivial analytical proposal must follow:
 
 ```text
 current documentation baseline
-↓
+        ↓
 research digest
-↓
+        ↓
 three hard constraints
-↓
+        ↓
 free data availability
-↓
+        ↓
 source-versus-hypothesis separation
-↓
+        ↓
 simplest measurable baseline
-↓
+        ↓
 tests
-↓
+        ↓
 historical replay when applicable
-↓
+        ↓
 metrics
-↓
+        ↓
 confidence and limitations
-↓
+        ↓
 only then additional complexity
 ```
 
-The authoritative method is defined in:
-
-```text
-docs/28_RESEARCH_AND_ANALYTICAL_DECISION_METHOD.md
-```
+The authoritative method is defined in Document 28.
 
 ---
 
 ## Documentation Rule
 
-New architecture changes must not silently overwrite the earlier documents.
+New changes must not silently overwrite earlier documents.
 
-Future changes should be added as:
+Future changes should use:
 
 ```text
 new numbered documents
-or explicit amendments
-or clearly marked updates to the relevant existing document
+explicit amendments
+clearly marked direct updates
+precedence notices
 ```
+
+Mass semantic replacement without review is forbidden.
 
 ---
 
 ## Final Documentation Statement
 
-Global Flight Analytics documentation now recognizes the project as:
+The project documentation now recognizes:
 
 ```text
-an open-data aviation research and analytics platform
-centered on trajectory quality, feature engineering,
-historical patterns, context-aware analytics,
-physics-informed reasoning where inputs support it,
-confidence, explainability, and visualization.
+Global Flight Analytics
+        ↓
+historical repository and documentation lineage
+
+Open Aviation Metrics API
+        ↓
+active product positioning
+```
+
+The active product is a backend and data engineering platform centered on:
+
+```text
+airport activity metrics
+regional traffic trends
+trajectory completeness evidence
+data freshness
+coverage quality
+confidence-aware outputs
+explicit limitations
+```
+
+The final documentation rule is:
+
+```text
+preserve valid engineering foundations
+make supersession explicit
+keep uncertainty visible
+build metrics before visualization
+fix known technical debt
+continue incrementally
 ```

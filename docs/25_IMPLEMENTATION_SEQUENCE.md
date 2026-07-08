@@ -1,5 +1,12 @@
 # Document 25 — Implementation Sequence
 
+> Amendment Notice
+>
+> Product positioning, MVP scope, geographic policy, metric semantics, and implementation ordering in this document must be interpreted together with Documents 29 and 30.
+>
+> Where conflicts exist, Documents 29 and 30 take precedence. Unrelated technical and architectural content remains valid.
+
+
 Status: Architecture Baseline v1.1  
 Project: Global Flight Analytics  
 Scope: Ordered implementation stages and first coding slice

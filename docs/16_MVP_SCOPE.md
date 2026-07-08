@@ -1,5 +1,12 @@
 # DOCUMENT 16
 
+> Amendment Notice
+>
+> Product positioning, MVP scope, geographic policy, metric semantics, and implementation ordering in this document must be interpreted together with Documents 29 and 30.
+>
+> Where conflicts exist, Documents 29 and 30 take precedence. Unrelated technical and architectural content remains valid.
+
+
 # MVP SCOPE
 
 # Global Flight Analytics
