@@ -93,19 +93,17 @@ func (c *Client) GetByCallsign(
 		)
 	}
 
-	var result StateResponse
-
-	if err := c.do(
+	result, err := c.doStateRequest(
 		request,
-		&result,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, fmt.Errorf(
 			"execute airplanes live callsign request: %w",
 			err,
 		)
 	}
 
-	return &result, nil
+	return result, nil
 }
 
 func (c *Client) GetByPoint(
@@ -166,17 +164,15 @@ func (c *Client) GetByPoint(
 		)
 	}
 
-	var result StateResponse
-
-	if err := c.do(
+	result, err := c.doStateRequest(
 		request,
-		&result,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, fmt.Errorf(
 			"execute airplanes live point request: %w",
 			err,
 		)
 	}
 
-	return &result, nil
+	return result, nil
 }

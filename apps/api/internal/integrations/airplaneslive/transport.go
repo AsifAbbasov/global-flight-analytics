@@ -6,15 +6,14 @@ import (
 	"net/http"
 )
 
-func (c *Client) do(
+func (c *Client) doStateRequest(
 	request *http.Request,
-	target any,
-) error {
+) (*StateResponse, error) {
 	response, err := c.httpClient.Do(
 		request,
 	)
 	if err != nil {
-		return fmt.Errorf(
+		return nil, fmt.Errorf(
 			"execute request: %w",
 			err,
 		)
@@ -28,7 +27,7 @@ func (c *Client) do(
 			response.Header.Clone(),
 		)
 		if err != nil {
-			return fmt.Errorf(
+			return nil, fmt.Errorf(
 				"observe airplanes live response: %w",
 				err,
 			)
@@ -37,22 +36,24 @@ func (c *Client) do(
 
 	if response.StatusCode < http.StatusOK ||
 		response.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf(
+		return nil, fmt.Errorf(
 			"request failed with status %d",
 			response.StatusCode,
 		)
 	}
 
+	var result StateResponse
+
 	if err := json.NewDecoder(
 		response.Body,
 	).Decode(
-		target,
+		&result,
 	); err != nil {
-		return fmt.Errorf(
+		return nil, fmt.Errorf(
 			"decode response: %w",
 			err,
 		)
 	}
 
-	return nil
+	return &result, nil
 }
