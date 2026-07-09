@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
+	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 )
 
 const SourceName = "ourairports"
@@ -247,6 +248,16 @@ func parseAirportRow(
 		return airport.ImportRecord{}, err
 	}
 
+	if !aviationconstraints.IsLatitude(
+		latitude,
+	) {
+		return airport.ImportRecord{}, fmt.Errorf(
+			"latitude_deg must be finite and between %.0f and %.0f",
+			aviationconstraints.MinimumLatitudeDegrees,
+			aviationconstraints.MaximumLatitudeDegrees,
+		)
+	}
+
 	longitude, err := parseRequiredFloat(
 		csvValue(
 			row,
@@ -257,6 +268,16 @@ func parseAirportRow(
 	)
 	if err != nil {
 		return airport.ImportRecord{}, err
+	}
+
+	if !aviationconstraints.IsLongitude(
+		longitude,
+	) {
+		return airport.ImportRecord{}, fmt.Errorf(
+			"longitude_deg must be finite and between %.0f and %.0f",
+			aviationconstraints.MinimumLongitudeDegrees,
+			aviationconstraints.MaximumLongitudeDegrees,
+		)
 	}
 
 	elevationFT, err := parseOptionalInt(
