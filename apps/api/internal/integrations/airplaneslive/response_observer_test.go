@@ -56,7 +56,7 @@ func TestHTTPResponseMetadataIsObserved(
 
 	observer := &responseObserverStub{}
 
-	client := NewClientWithResponseObserver(
+	client, err := NewClientWithResponseObserver(
 		integrationcommon.HTTPClientConfig{
 			BaseURL:   server.URL,
 			Timeout:   time.Second,
@@ -64,8 +64,14 @@ func TestHTTPResponseMetadataIsObserved(
 		},
 		observer,
 	)
+	if err != nil {
+		t.Fatalf(
+			"create airplanes.live client with response observer: %v",
+			err,
+		)
+	}
 
-	_, err := client.GetByPoint(
+	_, err = client.GetByPoint(
 		context.Background(),
 		40.4093,
 		49.8671,

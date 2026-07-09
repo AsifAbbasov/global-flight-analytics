@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database/migrator"
 	applogger "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/logger"
@@ -18,90 +18,175 @@ func main() {
 	_ = godotenv.Load(".env")
 	_ = godotenv.Load("apps/api/.env")
 
-	baseline := flag.Bool("baseline", false, "record existing migrations as applied without executing SQL")
-	status := flag.Bool("status", false, "print migration status without applying SQL")
-	migrationsDirFlag := flag.String("dir", "", "path to database migrations directory")
+	baseline := flag.Bool(
+		"baseline",
+		false,
+		"record existing migrations as applied without executing SQL",
+	)
+
+	status := flag.Bool(
+		"status",
+		false,
+		"print migration status without applying SQL",
+	)
+
+	migrationsDirFlag := flag.String(
+		"dir",
+		"",
+		"path to database migrations directory",
+	)
+
 	flag.Parse()
 
 	log := applogger.New()
 
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		log.Error("DATABASE_URL is not set")
+	cfg, err := config.LoadMigrationConfig()
+	if err != nil {
+		log.Error(
+			"failed to load migration configuration",
+			"error",
+			err,
+		)
 		os.Exit(1)
 	}
 
-	migrationsDir, err := resolveMigrationsDir(*migrationsDirFlag)
+	migrationsDir, err := resolveMigrationsDir(
+		*migrationsDirFlag,
+	)
 	if err != nil {
-		log.Error("failed to resolve migrations directory", "error", err)
+		log.Error(
+			"failed to resolve migrations directory",
+			"error",
+			err,
+		)
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	pool, err := database.NewPostgresPool(databaseURL)
+	pool, err := database.NewPostgresPool(
+		cfg.Database.URL,
+		cfg.Database.ConnectTimeout,
+	)
 	if err != nil {
-		log.Error("failed to connect postgres", "error", err)
+		log.Error(
+			"failed to connect postgres",
+			"error",
+			err,
+		)
 		os.Exit(1)
 	}
 	defer pool.Close()
 
-	runner, err := migrator.NewRunner(pool, migrationsDir)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		cfg.MigrationTimeout,
+	)
+	defer cancel()
+
+	runner, err := migrator.NewRunner(
+		pool,
+		migrationsDir,
+	)
 	if err != nil {
-		log.Error("failed to create migration runner", "error", err)
+		log.Error(
+			"failed to create migration runner",
+			"error",
+			err,
+		)
 		os.Exit(1)
 	}
 
 	if *status {
-		statuses, err := runner.Status(ctx)
+		statuses, err := runner.Status(
+			ctx,
+		)
 		if err != nil {
-			log.Error("failed to load migration status", "error", err)
+			log.Error(
+				"failed to load migration status",
+				"error",
+				err,
+			)
 			os.Exit(1)
 		}
 
-		printStatuses(statuses)
+		printStatuses(
+			statuses,
+		)
+
 		return
 	}
 
 	if *baseline {
-		baselined, err := runner.Baseline(ctx)
+		baselined, err := runner.Baseline(
+			ctx,
+		)
 		if err != nil {
-			log.Error("failed to baseline migrations", "error", err)
+			log.Error(
+				"failed to baseline migrations",
+				"error",
+				err,
+			)
 			os.Exit(1)
 		}
 
 		if len(baselined) == 0 {
-			log.Info("no migrations were baselined")
+			log.Info(
+				"no migrations were baselined",
+			)
+
 			return
 		}
 
 		for _, migration := range baselined {
-			log.Info("migration baselined", "version", migration.Version, "name", migration.Name)
+			log.Info(
+				"migration baselined",
+				"version",
+				migration.Version,
+				"name",
+				migration.Name,
+			)
 		}
 
 		return
 	}
 
-	applied, err := runner.ApplyPending(ctx)
+	applied, err := runner.ApplyPending(
+		ctx,
+	)
 	if err != nil {
-		log.Error("failed to apply migrations", "error", err)
+		log.Error(
+			"failed to apply migrations",
+			"error",
+			err,
+		)
 		os.Exit(1)
 	}
 
 	if len(applied) == 0 {
-		log.Info("no pending migrations")
+		log.Info(
+			"no pending migrations",
+		)
+
 		return
 	}
 
 	for _, migration := range applied {
-		log.Info("migration applied", "version", migration.Version, "name", migration.Name)
+		log.Info(
+			"migration applied",
+			"version",
+			migration.Version,
+			"name",
+			migration.Name,
+		)
 	}
 }
 
-func resolveMigrationsDir(flagValue string) (string, error) {
+func resolveMigrationsDir(
+	flagValue string,
+) (string, error) {
 	if flagValue != "" {
-		return validateMigrationsDir(flagValue)
+		return validateMigrationsDir(
+			flagValue,
+		)
 	}
 
 	candidates := []string{
@@ -112,42 +197,66 @@ func resolveMigrationsDir(flagValue string) (string, error) {
 	}
 
 	for _, candidate := range candidates {
-		resolved, err := validateMigrationsDir(candidate)
+		resolved, err := validateMigrationsDir(
+			candidate,
+		)
 		if err == nil {
 			return resolved, nil
 		}
 	}
 
-	return "", fmt.Errorf("database migrations directory was not found")
+	return "", fmt.Errorf(
+		"database migrations directory was not found",
+	)
 }
 
-func validateMigrationsDir(path string) (string, error) {
-	cleanPath := filepath.Clean(path)
+func validateMigrationsDir(
+	path string,
+) (string, error) {
+	cleanPath := filepath.Clean(
+		path,
+	)
 
-	info, err := os.Stat(cleanPath)
+	info, err := os.Stat(
+		cleanPath,
+	)
 	if err != nil {
 		return "", err
 	}
 
 	if !info.IsDir() {
-		return "", fmt.Errorf("%s is not a directory", cleanPath)
+		return "", fmt.Errorf(
+			"%s is not a directory",
+			cleanPath,
+		)
 	}
 
 	return cleanPath, nil
 }
 
-func printStatuses(statuses []migrator.MigrationStatus) {
+func printStatuses(
+	statuses []migrator.MigrationStatus,
+) {
 	if len(statuses) == 0 {
-		fmt.Println("No migrations found")
+		fmt.Println(
+			"No migrations found",
+		)
+
 		return
 	}
 
 	for _, status := range statuses {
 		state := "pending"
+
 		if status.Applied {
 			state = "applied"
 		}
 
-		fmt.Printf("%s %s %s\n", status.Migration.Version, status.Migration.Name, state)
+		fmt.Printf(
+			"%s %s %s\n",
+			status.Migration.Version,
+			status.Migration.Name,
+			state,
+		)
 	}
 }

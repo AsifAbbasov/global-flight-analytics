@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
 )
 
@@ -21,9 +22,84 @@ func TestFromEnvelopeRejectsZeroAssembledAt(
 		)
 	}
 
-	if !errors.Is(err, ErrAssembledAtRequired) {
+	if !errors.Is(
+		err,
+		ErrAssembledAtRequired,
+	) {
 		t.Fatalf(
 			"expected ErrAssembledAtRequired, got %v",
+			err,
+		)
+	}
+}
+
+func TestFromEnvelopeRejectsRegionalTrafficValueTypeMismatch(
+	t *testing.T,
+) {
+	_, err := FromEnvelope(
+		time.Now(),
+		providerfanin.Envelope{
+			Status: providerfanin.BatchStatusSucceeded,
+
+			TotalCount:   1,
+			SuccessCount: 1,
+
+			Successes: []providerfanin.Success{
+				{
+					TaskID: TaskIDRegionalTraffic,
+					Value:  "unexpected-traffic-value",
+				},
+			},
+		},
+	)
+	if err == nil {
+		t.Fatal(
+			"expected regional traffic value type mismatch error",
+		)
+	}
+
+	if !errors.Is(
+		err,
+		ErrSuccessValueTypeMismatch,
+	) {
+		t.Fatalf(
+			"expected ErrSuccessValueTypeMismatch, got %v",
+			err,
+		)
+	}
+}
+
+func TestFromEnvelopeRejectsUnsupportedSuccessTask(
+	t *testing.T,
+) {
+	_, err := FromEnvelope(
+		time.Now(),
+		providerfanin.Envelope{
+			Status: providerfanin.BatchStatusSucceeded,
+
+			TotalCount:   1,
+			SuccessCount: 1,
+
+			Successes: []providerfanin.Success{
+				{
+					TaskID: "unsupported-task",
+					Value:  "unsupported-value",
+				},
+			},
+		},
+	)
+	if err == nil {
+		t.Fatal(
+			"expected unsupported success task error",
+		)
+	}
+
+	if !errors.Is(
+		err,
+		ErrUnsupportedSuccessTask,
+	) {
+		t.Fatalf(
+			"expected ErrUnsupportedSuccessTask, got %v",
 			err,
 		)
 	}
@@ -61,10 +137,12 @@ func TestFromEnvelopeCopiesEnvelopeAndNormalizesAssembledAtToUTC(
 
 		Successes: []providerfanin.Success{
 			{
-				TaskID:     "traffic",
+				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Value:      "traffic-value",
-				Shared:     true,
+				Value: []flightstate.FlightState{
+					{},
+				},
+				Shared: true,
 			},
 		},
 
@@ -151,10 +229,46 @@ func TestFromEnvelopeCopiesEnvelopeAndNormalizesAssembledAtToUTC(
 		)
 	}
 
-	if snapshot.Successes[0].TaskID != "traffic" {
+	if snapshot.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatalf(
 			"unexpected success task identifier: %q",
 			snapshot.Successes[0].TaskID,
+		)
+	}
+
+	trafficPayload, ok := snapshot.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected success payload type: %T",
+			snapshot.Successes[0].Payload,
+		)
+	}
+
+	if len(trafficPayload.States) != 1 {
+		t.Fatalf(
+			"unexpected traffic state count: got %d, want 1",
+			len(trafficPayload.States),
+		)
+	}
+
+	sourceStates, ok := envelope.Successes[0].Value.([]flightstate.FlightState)
+	if !ok {
+		t.Fatalf(
+			"unexpected source traffic value type: %T",
+			envelope.Successes[0].Value,
+		)
+	}
+
+	if len(sourceStates) != 1 {
+		t.Fatalf(
+			"unexpected source traffic state count: got %d, want 1",
+			len(sourceStates),
+		)
+	}
+
+	if &sourceStates[0] == &trafficPayload.States[0] {
+		t.Fatal(
+			"expected snapshot traffic payload to use an independent backing array",
 		)
 	}
 
@@ -178,7 +292,7 @@ func TestFromEnvelopeCopiesEnvelopeAndNormalizesAssembledAtToUTC(
 	envelope.Successes[0].TaskID = "mutated-success"
 	envelope.Failures[0].TaskID = "mutated-failure"
 
-	if snapshot.Successes[0].TaskID != "traffic" {
+	if snapshot.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatal(
 			"expected snapshot success slice to be independent from envelope",
 		)
@@ -191,7 +305,7 @@ func TestFromEnvelopeCopiesEnvelopeAndNormalizesAssembledAtToUTC(
 	}
 }
 
-func TestSnapshotCloneReturnsIndependentSlices(
+func TestSnapshotCloneReturnsIndependentSlicesAndPayloads(
 	t *testing.T,
 ) {
 	original := Snapshot{
@@ -211,12 +325,16 @@ func TestSnapshotCloneReturnsIndependentSlices(
 		TotalCount:   1,
 		SuccessCount: 1,
 
-		Successes: []providerfanin.Success{
+		Successes: []Success{
 			{
-				TaskID:     "traffic",
+				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Value:      "traffic-value",
-				Shared:     true,
+				Payload: RegionalTrafficPayload{
+					States: []flightstate.FlightState{
+						{},
+					},
+				},
+				Shared: true,
 			},
 		},
 	}
@@ -225,9 +343,45 @@ func TestSnapshotCloneReturnsIndependentSlices(
 
 	cloned.Successes[0].TaskID = "mutated"
 
-	if original.Successes[0].TaskID != "traffic" {
+	if original.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatal(
 			"expected original snapshot success slice to remain unchanged",
+		)
+	}
+
+	originalPayload, ok := original.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected original payload type: %T",
+			original.Successes[0].Payload,
+		)
+	}
+
+	clonedPayload, ok := cloned.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected cloned payload type: %T",
+			cloned.Successes[0].Payload,
+		)
+	}
+
+	if len(originalPayload.States) != 1 {
+		t.Fatalf(
+			"unexpected original traffic state count: got %d, want 1",
+			len(originalPayload.States),
+		)
+	}
+
+	if len(clonedPayload.States) != 1 {
+		t.Fatalf(
+			"unexpected cloned traffic state count: got %d, want 1",
+			len(clonedPayload.States),
+		)
+	}
+
+	if &originalPayload.States[0] == &clonedPayload.States[0] {
+		t.Fatal(
+			"expected cloned traffic payload to use an independent backing array",
 		)
 	}
 }

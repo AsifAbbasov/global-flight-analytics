@@ -15,14 +15,20 @@ import (
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
 
-const (
-	defaultBaseURL = "https://api.open-meteo.com"
-	defaultTimeout = 10 * time.Second
-)
+const defaultBaseURL = "https://api.open-meteo.com"
 
 var (
-	ErrInvalidCoordinates = errors.New("invalid coordinates")
-	ErrInvalidBaseURL     = errors.New("invalid open-meteo base url")
+	ErrInvalidCoordinates = errors.New(
+		"invalid coordinates",
+	)
+
+	ErrInvalidBaseURL = errors.New(
+		"invalid open-meteo base url",
+	)
+
+	ErrInvalidTimeout = errors.New(
+		"open-meteo timeout must be greater than zero",
+	)
 )
 
 type Config struct {
@@ -64,18 +70,20 @@ func New(
 
 	httpClient := config.HTTPClient
 	if httpClient == nil {
-		timeout := config.Timeout
-		if timeout <= 0 {
-			timeout = defaultTimeout
+		if config.Timeout <= 0 {
+			return nil, ErrInvalidTimeout
 		}
 
 		httpClient = &http.Client{
-			Timeout: timeout,
+			Timeout: config.Timeout,
 		}
 	}
 
 	return &Client{
-		baseURL:          strings.TrimRight(baseURL, "/"),
+		baseURL: strings.TrimRight(
+			baseURL,
+			"/",
+		),
 		httpClient:       httpClient,
 		responseObserver: config.ResponseObserver,
 	}, nil
@@ -85,8 +93,12 @@ func (client *Client) GetCurrentWeather(
 	ctx context.Context,
 	request CurrentWeatherRequest,
 ) (weather.CurrentSnapshot, error) {
-	if !isValidLatitude(request.Latitude) ||
-		!isValidLongitude(request.Longitude) {
+	if !isValidLatitude(
+		request.Latitude,
+	) ||
+		!isValidLongitude(
+			request.Longitude,
+		) {
 		return weather.CurrentSnapshot{}, ErrInvalidCoordinates
 	}
 
@@ -104,12 +116,16 @@ func (client *Client) GetCurrentWeather(
 
 	query.Set(
 		"latitude",
-		formatCoordinate(request.Latitude),
+		formatCoordinate(
+			request.Latitude,
+		),
 	)
 
 	query.Set(
 		"longitude",
-		formatCoordinate(request.Longitude),
+		formatCoordinate(
+			request.Longitude,
+		),
 	)
 
 	query.Set(
@@ -243,8 +259,13 @@ func currentWeatherVariables() []string {
 func isValidLatitude(
 	value float64,
 ) bool {
-	return !math.IsNaN(value) &&
-		!math.IsInf(value, 0) &&
+	return !math.IsNaN(
+		value,
+	) &&
+		!math.IsInf(
+			value,
+			0,
+		) &&
 		value >= -90 &&
 		value <= 90
 }
@@ -252,8 +273,13 @@ func isValidLatitude(
 func isValidLongitude(
 	value float64,
 ) bool {
-	return !math.IsNaN(value) &&
-		!math.IsInf(value, 0) &&
+	return !math.IsNaN(
+		value,
+	) &&
+		!math.IsInf(
+			value,
+			0,
+		) &&
 		value >= -180 &&
 		value <= 180
 }

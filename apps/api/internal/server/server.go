@@ -1,7 +1,8 @@
 package server
 
 import (
-	"log/slog"
+	"fmt"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
@@ -26,9 +27,8 @@ import (
 )
 
 func New(
-	dbPool *pgxpool.Pool,
-	log *slog.Logger,
-) *fiber.App {
+	cfg Config,
+) (*fiber.App, error) {
 	app := fiber.New()
 
 	app.Use(
@@ -40,7 +40,9 @@ func New(
 	)
 
 	app.Use(
-		middleware.RequestLogger(log),
+		middleware.RequestLogger(
+			cfg.Logger,
+		),
 	)
 
 	app.Use(
@@ -71,7 +73,9 @@ func New(
 		handlers.Version,
 	)
 
-	if dbPool != nil {
+	if cfg.DatabasePool != nil {
+		dbPool := cfg.DatabasePool
+
 		airportRepository := postgres.NewAirportRepository(
 			dbPool,
 		)
@@ -153,11 +157,16 @@ func New(
 			trajectoryQueryService,
 		)
 
-		registerWeatherRoute(
+		if err := registerWeatherRoute(
 			v1,
 			dbPool,
-			log,
-		)
+			cfg.OpenMeteoTimeout,
+		); err != nil {
+			return nil, fmt.Errorf(
+				"register weather route: %w",
+				err,
+			)
+		}
 
 		v1.Get(
 			"/regions",
@@ -225,25 +234,28 @@ func New(
 		)
 	}
 
-	return app
+	return app, nil
 }
 
 func registerWeatherRoute(
 	v1 fiber.Router,
 	dbPool *pgxpool.Pool,
-	log *slog.Logger,
-) {
+	openMeteoTimeout time.Duration,
+) error {
+	if openMeteoTimeout <= 0 {
+		return fmt.Errorf(
+			"open-meteo timeout must be greater than zero",
+		)
+	}
+
 	budgetManager, err := providerbudget.New(
 		nil,
 	)
 	if err != nil {
-		logInitializationError(
-			log,
-			"failed to initialize provider budget manager",
+		return fmt.Errorf(
+			"initialize provider budget manager: %w",
 			err,
 		)
-
-		return
 	}
 
 	responseController, err := providerresponse.New(
@@ -252,54 +264,43 @@ func registerWeatherRoute(
 		},
 	)
 	if err != nil {
-		logInitializationError(
-			log,
-			"failed to initialize provider response controller",
+		return fmt.Errorf(
+			"initialize provider response controller: %w",
 			err,
 		)
-
-		return
 	}
 
 	responseObserver, err := providerresponse.NewIntegrationObserver(
 		responseController,
 	)
 	if err != nil {
-		logInitializationError(
-			log,
-			"failed to initialize provider response observer",
+		return fmt.Errorf(
+			"initialize provider response observer: %w",
 			err,
 		)
-
-		return
 	}
 
 	orchestrator, err := ingestionorchestrator.NewDefault(
 		responseController,
 	)
 	if err != nil {
-		logInitializationError(
-			log,
-			"failed to initialize ingestion orchestrator",
+		return fmt.Errorf(
+			"initialize ingestion orchestrator: %w",
 			err,
 		)
-
-		return
 	}
 
 	openMeteoClient, err := openmeteo.New(
 		openmeteo.Config{
+			Timeout:          openMeteoTimeout,
 			ResponseObserver: responseObserver,
 		},
 	)
 	if err != nil {
-		logInitializationError(
-			log,
-			"failed to initialize open-meteo client",
+		return fmt.Errorf(
+			"initialize open-meteo client: %w",
 			err,
 		)
-
-		return
 	}
 
 	orchestratedWeatherClient, err := weatherprovider.New(
@@ -309,13 +310,10 @@ func registerWeatherRoute(
 		},
 	)
 	if err != nil {
-		logInitializationError(
-			log,
-			"failed to initialize orchestrated weather client",
+		return fmt.Errorf(
+			"initialize orchestrated weather client: %w",
 			err,
 		)
-
-		return
 	}
 
 	weatherRepository := postgres.NewWeatherRepository(
@@ -337,20 +335,6 @@ func registerWeatherRoute(
 		"/weather/current",
 		weatherHandler.GetCurrent,
 	)
-}
 
-func logInitializationError(
-	log *slog.Logger,
-	message string,
-	err error,
-) {
-	if log == nil {
-		return
-	}
-
-	log.Error(
-		message,
-		"error",
-		err,
-	)
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanout"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
@@ -57,7 +58,9 @@ func TestRuntimeRunsTasksAndPublishesCurrentSnapshot(
 
 	executor := &runtimeExecutor{
 		values: map[string]any{
-			"regional-traffic": "traffic-value",
+			"regional-traffic": []flightstate.FlightState{
+				{},
+			},
 		},
 		errors: map[string]error{
 			"current-weather": errors.New(
@@ -83,12 +86,12 @@ func TestRuntimeRunsTasksAndPublishesCurrentSnapshot(
 
 	tasks := []providerfanout.Task{
 		{
-			ID:         "traffic",
+			ID:         TaskIDRegionalTraffic,
 			Provider:   providerpolicy.ProviderAirplanesLive,
 			RequestKey: "regional-traffic",
 		},
 		{
-			ID:         "weather",
+			ID:         TaskIDCurrentWeather,
 			Provider:   providerpolicy.ProviderOpenMeteo,
 			RequestKey: "current-weather",
 		},
@@ -133,14 +136,43 @@ func TestRuntimeRunsTasksAndPublishesCurrentSnapshot(
 		)
 	}
 
-	if currentSnapshot.Successes[0].TaskID != "traffic" {
+	if len(currentSnapshot.Successes) != 1 {
+		t.Fatalf(
+			"unexpected current success count: got %d, want 1",
+			len(currentSnapshot.Successes),
+		)
+	}
+
+	if len(currentSnapshot.Failures) != 1 {
+		t.Fatalf(
+			"unexpected current failure count: got %d, want 1",
+			len(currentSnapshot.Failures),
+		)
+	}
+
+	if currentSnapshot.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatalf(
 			"unexpected success task identifier: %q",
 			currentSnapshot.Successes[0].TaskID,
 		)
 	}
 
-	if currentSnapshot.Failures[0].TaskID != "weather" {
+	trafficPayload, ok := currentSnapshot.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected success payload type: %T",
+			currentSnapshot.Successes[0].Payload,
+		)
+	}
+
+	if len(trafficPayload.States) != 1 {
+		t.Fatalf(
+			"unexpected traffic state count: got %d, want 1",
+			len(trafficPayload.States),
+		)
+	}
+
+	if currentSnapshot.Failures[0].TaskID != TaskIDCurrentWeather {
 		t.Fatalf(
 			"unexpected failure task identifier: %q",
 			currentSnapshot.Failures[0].TaskID,

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 type responseObserverStub struct {
@@ -56,6 +57,7 @@ func TestHTTPResponseMetadataIsObserved(
 	client, err := New(
 		Config{
 			BaseURL:          server.URL,
+			Timeout:          time.Second,
 			ResponseObserver: observer,
 		},
 	)

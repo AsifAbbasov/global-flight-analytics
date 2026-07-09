@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
@@ -14,44 +12,41 @@ import (
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerresponse"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/regionalprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/gapdetector"
 	trafficingestion "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/ingestion"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trackbuilder"
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	_ = godotenv.Load()
 
-	cfg := config.Load()
-
-	if cfg.DatabaseURL == "" {
-		log.Fatal(
-			"DATABASE_URL is required",
+	cfg, err := config.LoadIngestConfig()
+	if err != nil {
+		log.Fatalf(
+			"load ingest configuration: %v",
+			err,
 		)
 	}
 
-	latitude := mustFloat64Env(
-		"TRAFFIC_INGESTION_LATITUDE",
-	)
+	latitude := cfg.TrafficIngestionLatitude
+	longitude := cfg.TrafficIngestionLongitude
+	radius := cfg.TrafficIngestionRadius
 
-	longitude := mustFloat64Env(
-		"TRAFFIC_INGESTION_LONGITUDE",
-	)
+	airplanesLiveTimeout := cfg.AirplanesLiveTimeout
 
-	radius := mustIntEnv(
-		"TRAFFIC_INGESTION_RADIUS",
-	)
+	trajectoryMaxTimeGap := cfg.TrajectoryMaxTimeGap
+	trajectoryMaxGroundSpeedMPS := cfg.TrajectoryMaxGroundSpeedMPS
 
-	timeout := mustDurationEnv(
-		"AIRPLANES_LIVE_TIMEOUT",
-	)
+	operationContext := context.Background()
 
 	dbPool, err := database.NewPostgresPool(
-		cfg.DatabaseURL,
+		cfg.Database.URL,
+		cfg.Database.ConnectTimeout,
 	)
 	if err != nil {
 		log.Fatalf(
@@ -103,29 +98,49 @@ func main() {
 		)
 	}
 
-	client := airplaneslive.NewClientWithResponseObserver(
+	airplanesLiveClient, err := airplaneslive.NewClientWithResponseObserver(
 		integrationcommon.HTTPClientConfig{
 			BaseURL:   airplaneslive.BaseURL,
-			Timeout:   timeout,
+			Timeout:   airplanesLiveTimeout,
 			UserAgent: "global-flight-analytics-ingest",
 		},
 		responseObserver,
 	)
+	if err != nil {
+		log.Fatalf(
+			"create airplanes.live client: %v",
+			err,
+		)
+	}
 
-	rawProvider := airplaneslive.NewProvider(
-		client,
+	rawTrafficProvider := airplaneslive.NewProvider(
+		airplanesLiveClient,
 	)
 
-	provider, err := regionalprovider.New(
-		regionalprovider.Config{
-			Provider:   rawProvider,
-			ProviderID: providerpolicy.ProviderAirplanesLive,
-			Executor:   orchestrator,
+	snapshot, err := runSharedSnapshot(
+		operationContext,
+		sharedSnapshotRunConfig{
+			Executor:      orchestrator,
+			TrafficSource: rawTrafficProvider,
+			Latitude:      latitude,
+			Longitude:     longitude,
+			Radius:        radius,
 		},
 	)
 	if err != nil {
 		log.Fatalf(
-			"create orchestrated regional provider: %v",
+			"shared snapshot collection failed: %v",
+			err,
+		)
+	}
+
+	snapshotTrafficProvider, err := newSnapshotTrafficProvider(
+		snapshot,
+		rawTrafficProvider.SourceName(),
+	)
+	if err != nil {
+		log.Fatalf(
+			"create snapshot-backed traffic provider: %v",
 			err,
 		)
 	}
@@ -142,36 +157,66 @@ func main() {
 		dbPool,
 	)
 
-	processingService := trafficapplication.New(
+	trafficProcessor, err := processor.New(
+		processor.Config{
+			TrackBuilderConfig: trackbuilder.Config{
+				GapDetectorConfig: gapdetector.Config{
+					MaxTimeGap:        trajectoryMaxTimeGap,
+					MaxGroundSpeedMPS: trajectoryMaxGroundSpeedMPS,
+				},
+			},
+		},
+	)
+	if err != nil {
+		log.Fatalf(
+			"create traffic processor: %v",
+			err,
+		)
+	}
+
+	processingService, err := trafficapplication.New(
 		trafficapplication.Config{
+			Processor:             trafficProcessor,
 			FlightStateRepository: flightStateRepository,
 			TrajectoryRepository:  trajectoryRepository,
 		},
 	)
+	if err != nil {
+		log.Fatalf(
+			"create traffic application service: %v",
+			err,
+		)
+	}
 
 	ingestionService := trafficingestion.New(
 		trafficingestion.Config{
-			Provider:               provider,
+			Provider:               snapshotTrafficProvider,
 			ProcessingService:      processingService,
 			IngestionRunRepository: ingestionRunRepository,
 		},
 	)
 
 	result, err := ingestionService.LoadAndProcessByPoint(
-		context.Background(),
+		operationContext,
 		latitude,
 		longitude,
 		radius,
 	)
 	if err != nil {
 		log.Fatalf(
-			"regional traffic ingestion failed: %v",
+			"snapshot-backed regional traffic ingestion failed: %v",
 			err,
 		)
 	}
 
 	fmt.Printf(
-		"ingestion_run_id=%s loaded=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
+		"snapshot_status=%s snapshot_total=%d snapshot_successes=%d snapshot_failures=%d snapshot_cycle_started_at=%s snapshot_assembled_at=%s ingestion_run_id=%s loaded=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
+		snapshot.Status,
+		snapshot.TotalCount,
+		snapshot.SuccessCount,
+		snapshot.FailureCount,
+		snapshot.CycleStartedAt.Format(time.RFC3339Nano),
+		snapshot.AssembledAt.Format(time.RFC3339Nano),
 		result.IngestionRunID,
 		result.LoadedStateCount,
 		result.ProcessingResult.ProcessingResult.Stats.ReceivedCount,
@@ -181,93 +226,4 @@ func main() {
 		result.ProcessingResult.ProcessingResult.Stats.TrajectoryCount,
 		result.ProcessingResult.StoredAt.Format(time.RFC3339),
 	)
-}
-
-func mustFloat64Env(
-	name string,
-) float64 {
-	value := os.Getenv(
-		name,
-	)
-	if value == "" {
-		log.Fatalf(
-			"%s is required",
-			name,
-		)
-	}
-
-	parsed, err := strconv.ParseFloat(
-		value,
-		64,
-	)
-	if err != nil {
-		log.Fatalf(
-			"parse %s: %v",
-			name,
-			err,
-		)
-	}
-
-	return parsed
-}
-
-func mustIntEnv(
-	name string,
-) int {
-	value := os.Getenv(
-		name,
-	)
-	if value == "" {
-		log.Fatalf(
-			"%s is required",
-			name,
-		)
-	}
-
-	parsed, err := strconv.Atoi(
-		value,
-	)
-	if err != nil {
-		log.Fatalf(
-			"parse %s: %v",
-			name,
-			err,
-		)
-	}
-
-	return parsed
-}
-
-func mustDurationEnv(
-	name string,
-) time.Duration {
-	value := os.Getenv(
-		name,
-	)
-	if value == "" {
-		log.Fatalf(
-			"%s is required",
-			name,
-		)
-	}
-
-	parsed, err := time.ParseDuration(
-		value,
-	)
-	if err != nil {
-		log.Fatalf(
-			"parse %s: %v",
-			name,
-			err,
-		)
-	}
-
-	if parsed <= 0 {
-		log.Fatalf(
-			"%s must be greater than zero",
-			name,
-		)
-	}
-
-	return parsed
 }

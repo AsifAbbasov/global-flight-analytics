@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
 )
 
@@ -56,12 +57,16 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 		TotalCount:   1,
 		SuccessCount: 1,
 
-		Successes: []providerfanin.Success{
+		Successes: []Success{
 			{
-				TaskID:     "traffic",
+				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Value:      "traffic-value",
-				Shared:     true,
+				Payload: RegionalTrafficPayload{
+					States: []flightstate.FlightState{
+						{},
+					},
+				},
+				Shared: true,
 			},
 		},
 	}
@@ -75,6 +80,14 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 
 	snapshot.Successes[0].TaskID = "caller-mutated"
 
+	sourcePayload, ok := snapshot.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected caller payload type: %T",
+			snapshot.Successes[0].Payload,
+		)
+	}
+
 	current, exists := store.Current()
 	if !exists {
 		t.Fatal(
@@ -82,9 +95,37 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 		)
 	}
 
-	if current.Successes[0].TaskID != "traffic" {
+	if current.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatal(
 			"expected stored snapshot to be protected from caller mutation",
+		)
+	}
+
+	currentPayload, ok := current.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected current payload type: %T",
+			current.Successes[0].Payload,
+		)
+	}
+
+	if len(sourcePayload.States) != 1 {
+		t.Fatalf(
+			"unexpected caller traffic state count: got %d, want 1",
+			len(sourcePayload.States),
+		)
+	}
+
+	if len(currentPayload.States) != 1 {
+		t.Fatalf(
+			"unexpected current traffic state count: got %d, want 1",
+			len(currentPayload.States),
+		)
+	}
+
+	if &sourcePayload.States[0] == &currentPayload.States[0] {
+		t.Fatal(
+			"expected stored traffic payload to use an independent backing array",
 		)
 	}
 
@@ -97,9 +138,30 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 		)
 	}
 
-	if currentAgain.Successes[0].TaskID != "traffic" {
+	if currentAgain.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatal(
 			"expected stored snapshot to be protected from reader mutation",
+		)
+	}
+
+	currentAgainPayload, ok := currentAgain.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected repeated current payload type: %T",
+			currentAgain.Successes[0].Payload,
+		)
+	}
+
+	if len(currentAgainPayload.States) != 1 {
+		t.Fatalf(
+			"unexpected repeated current traffic state count: got %d, want 1",
+			len(currentAgainPayload.States),
+		)
+	}
+
+	if &currentPayload.States[0] == &currentAgainPayload.States[0] {
+		t.Fatal(
+			"expected each store read to return an independent traffic payload backing array",
 		)
 	}
 }
@@ -127,7 +189,7 @@ func TestStorePublishRejectsSnapshotOlderThanCurrent(
 	currentSnapshot := Snapshot{
 		AssembledAt: currentAssembledAt,
 		Status:      providerfanin.BatchStatusSucceeded,
-		Successes: []providerfanin.Success{
+		Successes: []Success{
 			{
 				TaskID: "current",
 			},
@@ -137,7 +199,7 @@ func TestStorePublishRejectsSnapshotOlderThanCurrent(
 	olderSnapshot := Snapshot{
 		AssembledAt: olderAssembledAt,
 		Status:      providerfanin.BatchStatusSucceeded,
-		Successes: []providerfanin.Success{
+		Successes: []Success{
 			{
 				TaskID: "older",
 			},
@@ -216,7 +278,7 @@ func TestStorePublishAcceptsNewerSnapshot(
 	firstSnapshot := Snapshot{
 		AssembledAt: firstAssembledAt,
 		Status:      providerfanin.BatchStatusSucceeded,
-		Successes: []providerfanin.Success{
+		Successes: []Success{
 			{
 				TaskID: "first",
 			},
@@ -226,7 +288,7 @@ func TestStorePublishAcceptsNewerSnapshot(
 	newerSnapshot := Snapshot{
 		AssembledAt: newerAssembledAt,
 		Status:      providerfanin.BatchStatusSucceeded,
-		Successes: []providerfanin.Success{
+		Successes: []Success{
 			{
 				TaskID: "newer",
 			},

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
@@ -19,7 +20,7 @@ type Client struct {
 
 func NewClient(
 	config integrationcommon.HTTPClientConfig,
-) *Client {
+) (*Client, error) {
 	return NewClientWithResponseObserver(
 		config,
 		nil,
@@ -29,15 +30,29 @@ func NewClient(
 func NewClientWithResponseObserver(
 	config integrationcommon.HTTPClientConfig,
 	responseObserver integrationcommon.ProviderResponseObserver,
-) *Client {
+) (*Client, error) {
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf(
+			"validate airplanes.live http client config: %w",
+			err,
+		)
+	}
+
 	return &Client{
-		baseURL: config.BaseURL,
+		baseURL: strings.TrimRight(
+			strings.TrimSpace(
+				config.BaseURL,
+			),
+			"/",
+		),
 		httpClient: &http.Client{
 			Timeout: config.Timeout,
 		},
-		userAgent:        config.UserAgent,
+		userAgent: strings.TrimSpace(
+			config.UserAgent,
+		),
 		responseObserver: responseObserver,
-	}
+	}, nil
 }
 
 func (c *Client) GetByCallsign(

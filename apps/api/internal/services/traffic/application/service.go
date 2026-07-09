@@ -53,11 +53,23 @@ type ProcessAndStoreResult struct {
 	StoredAt               time.Time
 }
 
-func New(config Config) *Service {
+func New(
+	config Config,
+) (*Service, error) {
 	trafficProcessor := config.Processor
 
 	if trafficProcessor == nil {
-		trafficProcessor = processor.New(processor.Config{})
+		var err error
+
+		trafficProcessor, err = processor.New(
+			processor.Config{},
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"create default traffic processor: %w",
+				err,
+			)
+		}
 	}
 
 	return &Service{
@@ -65,7 +77,7 @@ func New(config Config) *Service {
 		flightStateRepository: config.FlightStateRepository,
 		trajectoryRepository:  config.TrajectoryRepository,
 		dataQualityRepository: config.DataQualityRepository,
-	}
+	}, nil
 }
 
 func (service *Service) ProcessAndStore(

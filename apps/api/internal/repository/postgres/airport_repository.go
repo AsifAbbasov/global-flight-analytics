@@ -9,19 +9,30 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrAirportNotFound = errors.New("airport not found")
+const (
+	// The international foot is defined exactly as 0.3048 metres.
+	internationalFootInMeters = 0.3048
+)
+
+var ErrAirportNotFound = errors.New(
+	"airport not found",
+)
 
 type AirportRepository struct {
 	pool *pgxpool.Pool
 }
 
-func NewAirportRepository(pool *pgxpool.Pool) *AirportRepository {
+func NewAirportRepository(
+	pool *pgxpool.Pool,
+) *AirportRepository {
 	return &AirportRepository{
 		pool: pool,
 	}
 }
 
-func (r *AirportRepository) List(ctx context.Context) ([]airport.Airport, error) {
+func (repository *AirportRepository) List(
+	ctx context.Context,
+) ([]airport.Airport, error) {
 	const query = `
 		SELECT
 			COALESCE(a.icao_code, ''),
@@ -37,20 +48,26 @@ func (r *AirportRepository) List(ctx context.Context) ([]airport.Airport, error)
 		FROM airports a
 		LEFT JOIN countries c ON c.id = a.country_id
 		LEFT JOIN airport_profiles ap ON ap.airport_id = a.id
-		ORDER BY a.name ASC
-		LIMIT 100;
+		ORDER BY a.name ASC;
 	`
 
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := repository.pool.Query(
+		ctx,
+		query,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	airports := make([]airport.Airport, 0)
+	airports := make(
+		[]airport.Airport,
+		0,
+	)
 
 	for rows.Next() {
 		var item airport.Airport
+		var elevationFeet float64
 
 		if err := rows.Scan(
 			&item.ICAOCode,
@@ -60,14 +77,21 @@ func (r *AirportRepository) List(ctx context.Context) ([]airport.Airport, error)
 			&item.Country,
 			&item.Latitude,
 			&item.Longitude,
-			&item.ElevationM,
+			&elevationFeet,
 			&item.Timezone,
 			&item.Description,
 		); err != nil {
 			return nil, err
 		}
 
-		airports = append(airports, item)
+		item.ElevationM = feetToMeters(
+			elevationFeet,
+		)
+
+		airports = append(
+			airports,
+			item,
+		)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -77,7 +101,10 @@ func (r *AirportRepository) List(ctx context.Context) ([]airport.Airport, error)
 	return airports, nil
 }
 
-func (r *AirportRepository) GetByICAO(ctx context.Context, icao string) (airport.Airport, error) {
+func (repository *AirportRepository) GetByICAO(
+	ctx context.Context,
+	icao string,
+) (airport.Airport, error) {
 	const query = `
 		SELECT
 			COALESCE(a.icao_code, ''),
@@ -98,8 +125,13 @@ func (r *AirportRepository) GetByICAO(ctx context.Context, icao string) (airport
 	`
 
 	var item airport.Airport
+	var elevationFeet float64
 
-	err := r.pool.QueryRow(ctx, query, icao).Scan(
+	err := repository.pool.QueryRow(
+		ctx,
+		query,
+		icao,
+	).Scan(
 		&item.ICAOCode,
 		&item.IATACode,
 		&item.Name,
@@ -107,17 +139,30 @@ func (r *AirportRepository) GetByICAO(ctx context.Context, icao string) (airport
 		&item.Country,
 		&item.Latitude,
 		&item.Longitude,
-		&item.ElevationM,
+		&elevationFeet,
 		&item.Timezone,
 		&item.Description,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(
+			err,
+			pgx.ErrNoRows,
+		) {
 			return airport.Airport{}, ErrAirportNotFound
 		}
 
 		return airport.Airport{}, err
 	}
 
+	item.ElevationM = feetToMeters(
+		elevationFeet,
+	)
+
 	return item, nil
+}
+
+func feetToMeters(
+	feet float64,
+) float64 {
+	return feet * internationalFootInMeters
 }

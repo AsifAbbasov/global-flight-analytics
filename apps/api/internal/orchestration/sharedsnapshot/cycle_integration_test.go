@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanout"
 )
@@ -53,13 +54,15 @@ func TestCyclePublishesAggregatedEnvelopeIntoStore(
 	runner := &integrationFanOutRunner{
 		results: []providerfanout.Result{
 			{
-				TaskID:     "traffic",
+				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Value:      "traffic-value",
-				Shared:     false,
+				Value: []flightstate.FlightState{
+					{},
+				},
+				Shared: false,
 			},
 			{
-				TaskID:     "weather",
+				TaskID:     TaskIDCurrentWeather,
 				RequestKey: "current-weather",
 				Err:        weatherError,
 			},
@@ -186,14 +189,29 @@ func TestCyclePublishesAggregatedEnvelopeIntoStore(
 		)
 	}
 
-	if currentSnapshot.Successes[0].TaskID != "traffic" {
+	if currentSnapshot.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatalf(
 			"unexpected stored success task identifier: %q",
 			currentSnapshot.Successes[0].TaskID,
 		)
 	}
 
-	if currentSnapshot.Failures[0].TaskID != "weather" {
+	trafficPayload, ok := currentSnapshot.Successes[0].Payload.(RegionalTrafficPayload)
+	if !ok {
+		t.Fatalf(
+			"unexpected stored success payload type: %T",
+			currentSnapshot.Successes[0].Payload,
+		)
+	}
+
+	if len(trafficPayload.States) != 1 {
+		t.Fatalf(
+			"unexpected stored traffic state count: got %d, want 1",
+			len(trafficPayload.States),
+		)
+	}
+
+	if currentSnapshot.Failures[0].TaskID != TaskIDCurrentWeather {
 		t.Fatalf(
 			"unexpected stored failure task identifier: %q",
 			currentSnapshot.Failures[0].TaskID,
