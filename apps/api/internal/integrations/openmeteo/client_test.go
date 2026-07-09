@@ -3,6 +3,7 @@ package openmeteo
 import (
 	"context"
 	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -184,6 +185,207 @@ func TestGetCurrentWeatherRejectsInvalidCoordinates(
 		t.Fatalf(
 			"expected ErrInvalidCoordinates, got %v",
 			err,
+		)
+	}
+}
+
+func TestGetCurrentWeatherAcceptsCanonicalCoordinateBoundaries(
+	t *testing.T,
+) {
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				writer http.ResponseWriter,
+				request *http.Request,
+			) {
+				query := request.URL.Query()
+
+				if query.Get("latitude") == "" {
+					t.Error(
+						"expected latitude query parameter",
+					)
+				}
+
+				if query.Get("longitude") == "" {
+					t.Error(
+						"expected longitude query parameter",
+					)
+				}
+
+				writer.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+
+				_, _ = writer.Write(
+					[]byte(`{
+						"latitude": 0,
+						"longitude": 0,
+						"current": {
+							"time": "2026-07-03T06:00",
+							"temperature_2m": 20.0,
+							"relative_humidity_2m": 50,
+							"precipitation": 0.0,
+							"rain": 0.0,
+							"weather_code": 0,
+							"cloud_cover": 0,
+							"surface_pressure": 1013.0,
+							"wind_speed_10m": 1.0,
+							"wind_direction_10m": 180,
+							"wind_gusts_10m": 2.0
+						}
+					}`),
+				)
+			},
+		),
+	)
+	defer server.Close()
+
+	client, err := New(
+		Config{
+			BaseURL: server.URL,
+			Timeout: time.Second,
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected no error, got %v",
+			err,
+		)
+	}
+
+	testCases := []struct {
+		name      string
+		latitude  float64
+		longitude float64
+	}{
+		{
+			name:      "maximum boundaries",
+			latitude:  90,
+			longitude: 180,
+		},
+		{
+			name:      "minimum boundaries",
+			latitude:  -90,
+			longitude: -180,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(
+			testCase.name,
+			func(t *testing.T) {
+				_, err := client.GetCurrentWeather(
+					context.Background(),
+					CurrentWeatherRequest{
+						Latitude:  testCase.latitude,
+						Longitude: testCase.longitude,
+					},
+				)
+				if err != nil {
+					t.Fatalf(
+						"expected canonical boundary coordinates to be accepted, got %v",
+						err,
+					)
+				}
+			},
+		)
+	}
+}
+
+func TestGetCurrentWeatherRejectsCoordinatesOutsideCanonicalContract(
+	t *testing.T,
+) {
+	client, err := New(
+		Config{
+			Timeout: time.Second,
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected no error, got %v",
+			err,
+		)
+	}
+
+	testCases := []struct {
+		name      string
+		latitude  float64
+		longitude float64
+	}{
+		{
+			name:      "latitude above maximum",
+			latitude:  90.0001,
+			longitude: 49.8671,
+		},
+		{
+			name:      "latitude below minimum",
+			latitude:  -90.0001,
+			longitude: 49.8671,
+		},
+		{
+			name:      "latitude NaN",
+			latitude:  math.NaN(),
+			longitude: 49.8671,
+		},
+		{
+			name:      "latitude positive infinity",
+			latitude:  math.Inf(1),
+			longitude: 49.8671,
+		},
+		{
+			name:      "latitude negative infinity",
+			latitude:  math.Inf(-1),
+			longitude: 49.8671,
+		},
+		{
+			name:      "longitude above maximum",
+			latitude:  40.4093,
+			longitude: 180.0001,
+		},
+		{
+			name:      "longitude below minimum",
+			latitude:  40.4093,
+			longitude: -180.0001,
+		},
+		{
+			name:      "longitude NaN",
+			latitude:  40.4093,
+			longitude: math.NaN(),
+		},
+		{
+			name:      "longitude positive infinity",
+			latitude:  40.4093,
+			longitude: math.Inf(1),
+		},
+		{
+			name:      "longitude negative infinity",
+			latitude:  40.4093,
+			longitude: math.Inf(-1),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(
+			testCase.name,
+			func(t *testing.T) {
+				_, err := client.GetCurrentWeather(
+					context.Background(),
+					CurrentWeatherRequest{
+						Latitude:  testCase.latitude,
+						Longitude: testCase.longitude,
+					},
+				)
+				if !errors.Is(
+					err,
+					ErrInvalidCoordinates,
+				) {
+					t.Fatalf(
+						"expected ErrInvalidCoordinates, got %v",
+						err,
+					)
+				}
+			},
 		)
 	}
 }
