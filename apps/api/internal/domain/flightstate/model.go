@@ -12,6 +12,37 @@ const (
 	AltitudeStatusInvalid     AltitudeStatus = "invalid"
 )
 
+func ResolveAltitudeStatus(
+	value float64,
+	status AltitudeStatus,
+) AltitudeStatus {
+	if status != "" {
+		return status
+	}
+
+	if value != 0 {
+		return AltitudeStatusObserved
+	}
+
+	return AltitudeStatusUnavailable
+}
+
+func IsKnownAltitudeStatus(
+	status AltitudeStatus,
+) bool {
+	switch status {
+	case AltitudeStatusObserved,
+		AltitudeStatusGround,
+		AltitudeStatusUnknown,
+		AltitudeStatusUnavailable,
+		AltitudeStatusInvalid:
+		return true
+
+	default:
+		return false
+	}
+}
+
 type FlightState struct {
 	ID                       string
 	FlightID                 string

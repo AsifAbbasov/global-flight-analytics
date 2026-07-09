@@ -1,6 +1,10 @@
 package trajectory
 
-import "time"
+import (
+	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+)
 
 type SegmentStatus string
 
@@ -20,23 +24,25 @@ const (
 )
 
 type TrackPoint4D struct {
-	ID                  string
-	FlightStateID       string
-	FlightID            string
-	AircraftID          string
-	ICAO24              string
-	Callsign            string
-	Latitude            float64
-	Longitude           float64
-	BarometricAltitudeM float64
-	GeometricAltitudeM  float64
-	VelocityMPS         float64
-	HeadingDegrees      float64
-	VerticalRateMPS     float64
-	OnGround            bool
-	OriginCountry       string
-	ObservedAt          time.Time
-	SourceName          string
+	ID                       string
+	FlightStateID            string
+	FlightID                 string
+	AircraftID               string
+	ICAO24                   string
+	Callsign                 string
+	Latitude                 float64
+	Longitude                float64
+	BarometricAltitudeM      float64
+	BarometricAltitudeStatus flightstate.AltitudeStatus
+	GeometricAltitudeM       float64
+	GeometricAltitudeStatus  flightstate.AltitudeStatus
+	VelocityMPS              float64
+	HeadingDegrees           float64
+	VerticalRateMPS          float64
+	OnGround                 bool
+	OriginCountry            string
+	ObservedAt               time.Time
+	SourceName               string
 }
 
 type CoverageGap struct {
