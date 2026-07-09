@@ -1,18 +1,50 @@
 package gapdetector
 
 import (
+	"fmt"
 	"math"
 	"time"
 
 	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trajectorypolicy"
 )
+
+const metersPerKilometer = 1000.0
 
 type Config struct {
 	MaxTimeGap        time.Duration
 	MaxGroundSpeedMPS float64
+}
+
+func (config Config) Validate() error {
+	if config.MaxTimeGap < 0 {
+		return fmt.Errorf(
+			"max time gap must be non-negative, got %s",
+			config.MaxTimeGap,
+		)
+	}
+
+	if math.IsNaN(config.MaxGroundSpeedMPS) {
+		return fmt.Errorf(
+			"max ground speed must be a finite non-negative value",
+		)
+	}
+
+	if math.IsInf(config.MaxGroundSpeedMPS, 0) {
+		return fmt.Errorf(
+			"max ground speed must be a finite non-negative value",
+		)
+	}
+
+	if config.MaxGroundSpeedMPS < 0 {
+		return fmt.Errorf(
+			"max ground speed must be non-negative, got %f",
+			config.MaxGroundSpeedMPS,
+		)
+	}
+
+	return nil
 }
 
 type DetectionResult struct {
@@ -24,21 +56,14 @@ type DetectionResult struct {
 }
 
 func DefaultConfig() Config {
-	return Config{
-		MaxTimeGap:        trajectorypolicy.DefaultMaxTimeGap,
-		MaxGroundSpeedMPS: trajectorypolicy.DefaultMaxGroundSpeedMetersPerSecond,
-	}
+	return Config{}
 }
 
-func Detect(previous flightstate.FlightState, next flightstate.FlightState, config Config) DetectionResult {
-	if config.MaxTimeGap <= 0 {
-		config.MaxTimeGap = DefaultConfig().MaxTimeGap
-	}
-
-	if config.MaxGroundSpeedMPS <= 0 {
-		config.MaxGroundSpeedMPS = DefaultConfig().MaxGroundSpeedMPS
-	}
-
+func Detect(
+	previous flightstate.FlightState,
+	next flightstate.FlightState,
+	config Config,
+) DetectionResult {
 	duration := next.ObservedAt.Sub(previous.ObservedAt)
 
 	distanceKm := HaversineDistanceKm(
@@ -60,15 +85,18 @@ func Detect(previous flightstate.FlightState, next flightstate.FlightState, conf
 		return result
 	}
 
-	result.EstimatedSpeedMPS = distanceKm * 1000 / duration.Seconds()
+	result.EstimatedSpeedMPS =
+		distanceKm * metersPerKilometer / duration.Seconds()
 
-	if duration > config.MaxTimeGap {
+	if config.MaxTimeGap > 0 &&
+		duration > config.MaxTimeGap {
 		result.HasGap = true
 		result.Reason = trajectory.CoverageGapReasonTimeGap
 		return result
 	}
 
-	if result.EstimatedSpeedMPS > config.MaxGroundSpeedMPS {
+	if config.MaxGroundSpeedMPS > 0 &&
+		result.EstimatedSpeedMPS > config.MaxGroundSpeedMPS {
 		result.HasGap = true
 		result.Reason = trajectory.CoverageGapReasonMovementJump
 		return result
@@ -77,7 +105,12 @@ func Detect(previous flightstate.FlightState, next flightstate.FlightState, conf
 	return result
 }
 
-func HaversineDistanceKm(fromLatitude float64, fromLongitude float64, toLatitude float64, toLongitude float64) float64 {
+func HaversineDistanceKm(
+	fromLatitude float64,
+	fromLongitude float64,
+	toLatitude float64,
+	toLongitude float64,
+) float64 {
 	fromLatRad := degreesToRadians(fromLatitude)
 	fromLonRad := degreesToRadians(fromLongitude)
 	toLatRad := degreesToRadians(toLatitude)
@@ -90,7 +123,10 @@ func HaversineDistanceKm(fromLatitude float64, fromLongitude float64, toLatitude
 		math.Cos(fromLatRad)*math.Cos(toLatRad)*
 			math.Sin(lonDelta/2)*math.Sin(lonDelta/2)
 
-	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	c := 2 * math.Atan2(
+		math.Sqrt(a),
+		math.Sqrt(1-a),
+	)
 
 	return aviationconstraints.EarthRadiusKilometers * c
 }

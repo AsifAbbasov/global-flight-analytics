@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -164,7 +165,10 @@ func TestNormalizeCurrentWeatherSnapshotRejectsInvalidWind(t *testing.T) {
 func TestSaveCurrentSnapshotRequiresPool(t *testing.T) {
 	repository := NewWeatherRepository(nil)
 
-	_, err := repository.SaveCurrentSnapshot(nil, weather.CurrentSnapshot{})
+	_, err := repository.SaveCurrentSnapshot(
+		context.Background(),
+		weather.CurrentSnapshot{},
+	)
 	if !errors.Is(err, ErrWeatherRepositoryPoolRequired) {
 		t.Fatalf("expected ErrWeatherRepositoryPoolRequired, got %v", err)
 	}

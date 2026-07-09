@@ -43,11 +43,17 @@ func TestLoadByPointReturnsCanonicalFlightStates(t *testing.T) {
 	))
 	defer server.Close()
 
-	client := NewClient(integrationcommon.HTTPClientConfig{
+	client, err := NewClient(integrationcommon.HTTPClientConfig{
 		BaseURL:   server.URL,
 		Timeout:   time.Second,
 		UserAgent: "global-flight-analytics-test",
 	})
+	if err != nil {
+		t.Fatalf(
+			"create airplanes.live client: %v",
+			err,
+		)
+	}
 
 	provider := NewProvider(client)
 
@@ -133,11 +139,17 @@ func TestLoadByPointReturnsCanonicalFlightStates(t *testing.T) {
 }
 
 func TestLoadByPointWrapsClientValidationError(t *testing.T) {
-	client := NewClient(integrationcommon.HTTPClientConfig{
+	client, err := NewClient(integrationcommon.HTTPClientConfig{
 		BaseURL:   "http://127.0.0.1",
 		Timeout:   time.Second,
 		UserAgent: "global-flight-analytics-test",
 	})
+	if err != nil {
+		t.Fatalf(
+			"create airplanes.live client: %v",
+			err,
+		)
+	}
 
 	provider := NewProvider(client)
 

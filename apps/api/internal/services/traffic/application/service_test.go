@@ -14,9 +14,12 @@ import (
 )
 
 func TestProcessAndStoreWithoutRepositories(t *testing.T) {
-	service := New(Config{
-		Processor: newFixedProcessor(),
-	})
+	service := mustNewService(
+		t,
+		Config{
+			Processor: newFixedProcessor(t),
+		},
+	)
 
 	result, err := service.ProcessAndStore(
 		context.Background(),
@@ -59,12 +62,15 @@ func TestProcessAndStoreSavesFlightStatesDataQualityAndTrajectories(
 	trajectoryRepository := &fakeTrajectoryRepository{}
 	dataQualityRepository := &fakeDataQualityRepository{}
 
-	service := New(Config{
-		Processor:             newFixedProcessor(),
-		FlightStateRepository: flightStateRepository,
-		TrajectoryRepository:  trajectoryRepository,
-		DataQualityRepository: dataQualityRepository,
-	})
+	service := mustNewService(
+		t,
+		Config{
+			Processor:             newFixedProcessor(t),
+			FlightStateRepository: flightStateRepository,
+			TrajectoryRepository:  trajectoryRepository,
+			DataQualityRepository: dataQualityRepository,
+		},
+	)
 
 	_, err := service.ProcessAndStore(
 		context.Background(),
@@ -126,12 +132,15 @@ func TestProcessAndStoreSavesFlightStatesDataQualityAndTrajectories(
 func TestProcessAndStoreReturnsFlightStateRepositoryError(t *testing.T) {
 	expectedError := errors.New("flight state storage failed")
 
-	service := New(Config{
-		Processor: newFixedProcessor(),
-		FlightStateRepository: &fakeFlightStateRepository{
-			err: expectedError,
+	service := mustNewService(
+		t,
+		Config{
+			Processor: newFixedProcessor(t),
+			FlightStateRepository: &fakeFlightStateRepository{
+				err: expectedError,
+			},
 		},
-	})
+	)
 
 	_, err := service.ProcessAndStore(
 		context.Background(),
@@ -160,12 +169,15 @@ func TestProcessAndStoreReturnsFlightStateRepositoryError(t *testing.T) {
 func TestProcessAndStoreReturnsDataQualityRepositoryError(t *testing.T) {
 	expectedError := errors.New("data quality storage failed")
 
-	service := New(Config{
-		Processor: newFixedProcessor(),
-		DataQualityRepository: &fakeDataQualityRepository{
-			err: expectedError,
+	service := mustNewService(
+		t,
+		Config{
+			Processor: newFixedProcessor(t),
+			DataQualityRepository: &fakeDataQualityRepository{
+				err: expectedError,
+			},
 		},
-	})
+	)
 
 	_, err := service.ProcessAndStore(
 		context.Background(),
@@ -197,12 +209,15 @@ func TestProcessAndStoreReturnsDataQualityRepositoryError(t *testing.T) {
 func TestProcessAndStoreReturnsTrajectoryRepositoryError(t *testing.T) {
 	expectedError := errors.New("trajectory storage failed")
 
-	service := New(Config{
-		Processor: newFixedProcessor(),
-		TrajectoryRepository: &fakeTrajectoryRepository{
-			err: expectedError,
+	service := mustNewService(
+		t,
+		Config{
+			Processor: newFixedProcessor(t),
+			TrajectoryRepository: &fakeTrajectoryRepository{
+				err: expectedError,
+			},
 		},
-	})
+	)
 
 	_, err := service.ProcessAndStore(
 		context.Background(),
@@ -231,14 +246,73 @@ func TestProcessAndStoreReturnsTrajectoryRepositoryError(t *testing.T) {
 	}
 }
 
-func newFixedProcessor() *processor.Processor {
+func TestNewCreatesServiceWithDefaultProcessor(
+	t *testing.T,
+) {
+	service, err := New(
+		Config{},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected no constructor error, got %v",
+			err,
+		)
+	}
+
+	if service == nil {
+		t.Fatal(
+			"expected non-nil service",
+		)
+	}
+
+	if service.processor == nil {
+		t.Fatal(
+			"expected default processor to be created",
+		)
+	}
+}
+
+func mustNewService(
+	t *testing.T,
+	config Config,
+) *Service {
+	t.Helper()
+
+	service, err := New(
+		config,
+	)
+	if err != nil {
+		t.Fatalf(
+			"create traffic application service: %v",
+			err,
+		)
+	}
+
+	return service
+}
+
+func newFixedProcessor(
+	t *testing.T,
+) *processor.Processor {
+	t.Helper()
+
 	now := fixedNow()
 
-	return processor.New(processor.Config{
-		Now: func() time.Time {
-			return now
+	trafficProcessor, err := processor.New(
+		processor.Config{
+			Now: func() time.Time {
+				return now
+			},
 		},
-	})
+	)
+	if err != nil {
+		t.Fatalf(
+			"create fixed processor: %v",
+			err,
+		)
+	}
+
+	return trafficProcessor
 }
 
 func fixedNow() time.Time {

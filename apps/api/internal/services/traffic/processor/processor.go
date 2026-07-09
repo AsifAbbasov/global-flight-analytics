@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dataquality"
@@ -49,75 +50,154 @@ type ProcessingResult struct {
 	ProcessedAt   time.Time
 }
 
-func New(config Config) *Processor {
+func New(
+	config Config,
+) (*Processor, error) {
 	if config.Now == nil {
 		config.Now = func() time.Time {
 			return time.Now().UTC()
 		}
 	}
 
+	trackBuilder, err := trackbuilder.NewBuilder(
+		config.TrackBuilderConfig,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"create track builder: %w",
+			err,
+		)
+	}
+
 	return &Processor{
 		config:       config,
-		trackBuilder: trackbuilder.NewBuilder(config.TrackBuilderConfig),
-	}
+		trackBuilder: trackBuilder,
+	}, nil
 }
 
-func (processor *Processor) Process(states []flightstate.FlightState) ProcessingResult {
-	normalizedStates := normalizer.NormalizeFlightStates(states)
-	deduplicationResult := deduplicator.RemoveExactDuplicates(normalizedStates)
+func (processor *Processor) Process(
+	states []flightstate.FlightState,
+) ProcessingResult {
+	normalizedStates := normalizer.NormalizeFlightStates(
+		states,
+	)
+
+	deduplicationResult := deduplicator.RemoveExactDuplicates(
+		normalizedStates,
+	)
+
 	uniqueStates := deduplicationResult.UniqueStates
 	processedAt := processor.config.Now()
 
 	result := ProcessingResult{
-		UsableStates:  make([]ProcessedFlightState, 0, len(uniqueStates)),
-		InvalidStates: make([]ProcessedFlightState, 0),
-		Trajectories:  make(map[string]trajectory.FlightTrajectory),
-		ProcessedAt:   processedAt,
+		UsableStates: make(
+			[]ProcessedFlightState,
+			0,
+			len(uniqueStates),
+		),
+		InvalidStates: make(
+			[]ProcessedFlightState,
+			0,
+		),
+		Trajectories: make(
+			map[string]trajectory.FlightTrajectory,
+		),
+		ProcessedAt: processedAt,
 		Stats: ProcessingStats{
 			ReceivedCount:  len(states),
 			DuplicateCount: deduplicationResult.DuplicateCount,
 		},
 	}
 
-	usableRawStates := make([]flightstate.FlightState, 0, len(uniqueStates))
+	usableInputs := make(
+		[]trackbuilder.InputState,
+		0,
+		len(uniqueStates),
+	)
 
 	for _, state := range uniqueStates {
-		quality := validator.EvaluateFlightState(state, processedAt)
+		quality := validator.EvaluateFlightState(
+			state,
+			processedAt,
+		)
 
 		processedState := ProcessedFlightState{
 			State:   state,
 			Quality: quality,
 		}
 
-		result.Stats.TotalWarningCount += len(quality.Warnings)
+		result.Stats.TotalWarningCount += len(
+			quality.Warnings,
+		)
 
 		switch quality.ValidationStatus {
 		case dataquality.ValidationStatusInvalid:
-			result.InvalidStates = append(result.InvalidStates, processedState)
+			result.InvalidStates = append(
+				result.InvalidStates,
+				processedState,
+			)
+
 			result.Stats.InvalidCount++
 
 		case dataquality.ValidationStatusPartial:
-			result.UsableStates = append(result.UsableStates, processedState)
-			usableRawStates = append(usableRawStates, state)
+			recordUsableState(
+				&result,
+				&usableInputs,
+				processedState,
+			)
+
 			result.Stats.PartialCount++
-			result.Stats.UsableCount++
 
 		default:
-			result.UsableStates = append(result.UsableStates, processedState)
-			usableRawStates = append(usableRawStates, state)
+			recordUsableState(
+				&result,
+				&usableInputs,
+				processedState,
+			)
+
 			result.Stats.ValidCount++
-			result.Stats.UsableCount++
 		}
 	}
 
-	result.Trajectories = processor.trackBuilder.BuildMany(usableRawStates)
-	result.Stats.TrajectoryCount = len(result.Trajectories)
-	result.Stats.CoverageGapCount = countCoverageGaps(result.Trajectories)
+	result.Trajectories = processor.trackBuilder.BuildMany(
+		usableInputs,
+	)
+
+	result.Stats.TrajectoryCount = len(
+		result.Trajectories,
+	)
+
+	result.Stats.CoverageGapCount = countCoverageGaps(
+		result.Trajectories,
+	)
 
 	return result
 }
 
-func countCoverageGaps(trajectories map[string]trajectory.FlightTrajectory) int {
+func recordUsableState(
+	result *ProcessingResult,
+	usableInputs *[]trackbuilder.InputState,
+	processedState ProcessedFlightState,
+) {
+	result.UsableStates = append(
+		result.UsableStates,
+		processedState,
+	)
+
+	*usableInputs = append(
+		*usableInputs,
+		trackbuilder.InputState{
+			State:        processedState.State,
+			QualityScore: processedState.Quality.Score,
+		},
+	)
+
+	result.Stats.UsableCount++
+}
+
+func countCoverageGaps(
+	trajectories map[string]trajectory.FlightTrajectory,
+) int {
 	count := 0
 
 	for _, item := range trajectories {

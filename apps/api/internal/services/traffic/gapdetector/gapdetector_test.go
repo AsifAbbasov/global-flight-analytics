@@ -10,15 +10,50 @@ import (
 )
 
 func TestHaversineDistanceKmSamePoint(t *testing.T) {
-	distanceKm := HaversineDistanceKm(40.4093, 49.8671, 40.4093, 49.8671)
+	distanceKm := HaversineDistanceKm(
+		40.4093,
+		49.8671,
+		40.4093,
+		49.8671,
+	)
 
 	if math.Abs(distanceKm) > 0.000001 {
-		t.Fatalf("expected zero distance, got %f", distanceKm)
+		t.Fatalf(
+			"expected zero distance, got %f",
+			distanceKm,
+		)
 	}
 }
 
-func TestDetectWithoutGap(t *testing.T) {
-	observedAt := time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)
+func TestDefaultConfigDisablesEmpiricalThresholds(t *testing.T) {
+	config := DefaultConfig()
+
+	if config.MaxTimeGap != 0 {
+		t.Fatalf(
+			"expected disabled max time gap, got %s",
+			config.MaxTimeGap,
+		)
+	}
+
+	if config.MaxGroundSpeedMPS != 0 {
+		t.Fatalf(
+			"expected disabled max ground speed, got %f",
+			config.MaxGroundSpeedMPS,
+		)
+	}
+}
+
+func TestDetectWithoutConfiguredThresholds(t *testing.T) {
+	observedAt := time.Date(
+		2026,
+		7,
+		2,
+		10,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
 
 	previous := flightstate.FlightState{
 		ICAO24:     "ABC123",
@@ -28,25 +63,46 @@ func TestDetectWithoutGap(t *testing.T) {
 	}
 
 	next := flightstate.FlightState{
-		ICAO24:     "ABC123",
-		Latitude:   40.4100,
-		Longitude:  49.8680,
-		ObservedAt: observedAt.Add(30 * time.Second),
+		ICAO24:    "ABC123",
+		Latitude:  41.4093,
+		Longitude: 50.8671,
+		ObservedAt: observedAt.Add(
+			2 * time.Minute,
+		),
 	}
 
-	result := Detect(previous, next, DefaultConfig())
+	result := Detect(
+		previous,
+		next,
+		DefaultConfig(),
+	)
 
 	if result.HasGap {
-		t.Fatalf("expected no coverage gap, got reason %s", result.Reason)
+		t.Fatalf(
+			"expected no heuristic gap without configured thresholds, got reason %s",
+			result.Reason,
+		)
 	}
 
 	if result.EstimatedSpeedMPS <= 0 {
-		t.Fatalf("expected positive estimated speed, got %f", result.EstimatedSpeedMPS)
+		t.Fatalf(
+			"expected positive estimated speed, got %f",
+			result.EstimatedSpeedMPS,
+		)
 	}
 }
 
-func TestDetectTimeGap(t *testing.T) {
-	observedAt := time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)
+func TestDetectTimeGapWithExplicitThreshold(t *testing.T) {
+	observedAt := time.Date(
+		2026,
+		7,
+		2,
+		10,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
 
 	previous := flightstate.FlightState{
 		ICAO24:     "ABC123",
@@ -56,25 +112,93 @@ func TestDetectTimeGap(t *testing.T) {
 	}
 
 	next := flightstate.FlightState{
-		ICAO24:     "ABC123",
-		Latitude:   40.4100,
-		Longitude:  49.8680,
-		ObservedAt: observedAt.Add(2 * time.Minute),
+		ICAO24:    "ABC123",
+		Latitude:  40.4100,
+		Longitude: 49.8680,
+		ObservedAt: observedAt.Add(
+			2 * time.Minute,
+		),
 	}
 
-	result := Detect(previous, next, DefaultConfig())
+	result := Detect(
+		previous,
+		next,
+		Config{
+			MaxTimeGap: time.Minute,
+		},
+	)
 
 	if !result.HasGap {
 		t.Fatal("expected coverage gap")
 	}
 
 	if result.Reason != trajectory.CoverageGapReasonTimeGap {
-		t.Fatalf("expected time gap reason, got %s", result.Reason)
+		t.Fatalf(
+			"expected time gap reason, got %s",
+			result.Reason,
+		)
 	}
 }
 
-func TestDetectMovementJump(t *testing.T) {
-	observedAt := time.Date(2026, 7, 2, 10, 0, 0, 0, time.UTC)
+func TestDetectMovementJumpWithExplicitThreshold(t *testing.T) {
+	observedAt := time.Date(
+		2026,
+		7,
+		2,
+		10,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
+
+	previous := flightstate.FlightState{
+		ICAO24:     "ABC123",
+		Latitude:   40.4093,
+		Longitude:  49.8671,
+		ObservedAt: observedAt,
+	}
+
+	next := flightstate.FlightState{
+		ICAO24:    "ABC123",
+		Latitude:  41.4093,
+		Longitude: 50.8671,
+		ObservedAt: observedAt.Add(
+			30 * time.Second,
+		),
+	}
+
+	result := Detect(
+		previous,
+		next,
+		Config{
+			MaxGroundSpeedMPS: 100,
+		},
+	)
+
+	if !result.HasGap {
+		t.Fatal("expected coverage gap")
+	}
+
+	if result.Reason != trajectory.CoverageGapReasonMovementJump {
+		t.Fatalf(
+			"expected movement jump reason, got %s",
+			result.Reason,
+		)
+	}
+}
+
+func TestDetectRejectsNonPositiveDuration(t *testing.T) {
+	observedAt := time.Date(
+		2026,
+		7,
+		2,
+		10,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
 
 	previous := flightstate.FlightState{
 		ICAO24:     "ABC123",
@@ -85,18 +209,25 @@ func TestDetectMovementJump(t *testing.T) {
 
 	next := flightstate.FlightState{
 		ICAO24:     "ABC123",
-		Latitude:   41.4093,
-		Longitude:  50.8671,
-		ObservedAt: observedAt.Add(30 * time.Second),
+		Latitude:   40.4100,
+		Longitude:  49.8680,
+		ObservedAt: observedAt,
 	}
 
-	result := Detect(previous, next, DefaultConfig())
+	result := Detect(
+		previous,
+		next,
+		DefaultConfig(),
+	)
 
 	if !result.HasGap {
-		t.Fatal("expected coverage gap")
+		t.Fatal("expected non-positive duration to remain invalid")
 	}
 
-	if result.Reason != trajectory.CoverageGapReasonMovementJump {
-		t.Fatalf("expected movement jump reason, got %s", result.Reason)
+	if result.Reason != trajectory.CoverageGapReasonUnknown {
+		t.Fatalf(
+			"expected unknown gap reason, got %s",
+			result.Reason,
+		)
 	}
 }

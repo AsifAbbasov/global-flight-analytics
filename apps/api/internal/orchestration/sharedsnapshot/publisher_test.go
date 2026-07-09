@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
 )
 
@@ -102,16 +103,18 @@ func TestPublisherPublishesEnvelopeWithInjectedAssemblyTime(
 
 		Successes: []providerfanin.Success{
 			{
-				TaskID:     "traffic",
+				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Value:      "traffic-value",
-				Shared:     true,
+				Value: []flightstate.FlightState{
+					{},
+				},
+				Shared: true,
 			},
 		},
 
 		Failures: []providerfanin.Failure{
 			{
-				TaskID:     "weather",
+				TaskID:     TaskIDCurrentWeather,
 				RequestKey: "current-weather",
 				Err: errors.New(
 					"weather provider unavailable",

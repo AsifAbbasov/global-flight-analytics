@@ -1,0 +1,44 @@
+package config
+
+import "time"
+
+type PostgresConfig struct {
+	URL            string
+	ConnectTimeout time.Duration
+}
+
+type ServerConfig struct {
+	Port             string
+	Database         *PostgresConfig
+	OpenMeteoTimeout time.Duration
+}
+
+type IngestConfig struct {
+	Database PostgresConfig
+
+	TrafficIngestionLatitude  float64
+	TrafficIngestionLongitude float64
+	TrafficIngestionRadius    int
+
+	AirplanesLiveTimeout time.Duration
+
+	TrajectoryMaxTimeGap        time.Duration
+	TrajectoryMaxGroundSpeedMPS float64
+}
+
+type ImportAirportsConfig struct {
+	Database PostgresConfig
+
+	OurAirportsTimeout      time.Duration
+	OurAirportsCountryCodes []string
+}
+
+type MigrationConfig struct {
+	Database PostgresConfig
+
+	MigrationTimeout time.Duration
+}
+
+type VerifyAirportsConfig struct {
+	DatabaseURL string
+}

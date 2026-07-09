@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
@@ -13,16 +13,19 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		log.Fatal("DATABASE_URL is required")
+	cfg, err := config.LoadVerifyAirportsConfig()
+	if err != nil {
+		log.Fatalf(
+			"load verify-airports configuration: %v",
+			err,
+		)
 	}
 
 	ctx := context.Background()
 
 	conn, err := pgx.Connect(
 		ctx,
-		databaseURL,
+		cfg.DatabaseURL,
 	)
 	if err != nil {
 		log.Fatalf(

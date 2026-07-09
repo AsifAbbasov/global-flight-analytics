@@ -2,9 +2,11 @@ package sharedsnapshot
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 )
 
 var (
@@ -20,6 +22,14 @@ var (
 		"shared snapshot assembled time cannot precede cycle start time",
 	)
 )
+
+type Success struct {
+	TaskID     string
+	Provider   providerpolicy.Provider
+	RequestKey string
+	Payload    Payload
+	Shared     bool
+}
 
 type Snapshot struct {
 	// CycleStartedAt is the time when the provider collection cycle
@@ -41,7 +51,7 @@ type Snapshot struct {
 	SuccessCount int
 	FailureCount int
 
-	Successes []providerfanin.Success
+	Successes []Success
 	Failures  []providerfanin.Failure
 }
 
@@ -77,6 +87,16 @@ func FromEnvelopeForCycle(
 		return Snapshot{}, ErrAssembledBeforeCycleStart
 	}
 
+	successes, err := successesFromProvider(
+		envelope.Successes,
+	)
+	if err != nil {
+		return Snapshot{}, fmt.Errorf(
+			"convert shared snapshot successes: %w",
+			err,
+		)
+	}
+
 	return Snapshot{
 		CycleStartedAt: cycleStartedAt.UTC(),
 		AssembledAt:    assembledAt.UTC(),
@@ -87,9 +107,7 @@ func FromEnvelopeForCycle(
 		SuccessCount: envelope.SuccessCount,
 		FailureCount: envelope.FailureCount,
 
-		Successes: cloneSuccesses(
-			envelope.Successes,
-		),
+		Successes: successes,
 		Failures: cloneFailures(
 			envelope.Failures,
 		),
@@ -126,22 +144,69 @@ func snapshotOrderTime(
 	return snapshot.AssembledAt
 }
 
-func cloneSuccesses(
+func successesFromProvider(
 	successes []providerfanin.Success,
-) []providerfanin.Success {
+) ([]Success, error) {
+	if successes == nil {
+		return nil, nil
+	}
+
+	convertedSuccesses := make(
+		[]Success,
+		0,
+		len(successes),
+	)
+
+	for index, success := range successes {
+		payload, err := payloadFromProviderSuccess(
+			success,
+		)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"convert success at index %d: %w",
+				index,
+				err,
+			)
+		}
+
+		convertedSuccesses = append(
+			convertedSuccesses,
+			Success{
+				TaskID:     success.TaskID,
+				Provider:   success.Provider,
+				RequestKey: success.RequestKey,
+				Payload:    payload,
+				Shared:     success.Shared,
+			},
+		)
+	}
+
+	return convertedSuccesses, nil
+}
+
+func cloneSuccesses(
+	successes []Success,
+) []Success {
 	if successes == nil {
 		return nil
 	}
 
 	clonedSuccesses := make(
-		[]providerfanin.Success,
+		[]Success,
 		len(successes),
 	)
 
-	copy(
-		clonedSuccesses,
-		successes,
-	)
+	for index, success := range successes {
+		clonedSuccesses[index] = Success{
+			TaskID:     success.TaskID,
+			Provider:   success.Provider,
+			RequestKey: success.RequestKey,
+			Payload: clonePayload(
+				success.Payload,
+			),
+			Shared: success.Shared,
+		}
+	}
 
 	return clonedSuccesses
 }

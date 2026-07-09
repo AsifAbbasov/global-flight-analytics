@@ -2,6 +2,7 @@ package airplaneslive
 
 import (
 	"context"
+	"errors"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -11,30 +12,119 @@ import (
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
 
-func TestGetByPointBuildsExpectedRequest(t *testing.T) {
+func TestNewClientRejectsInvalidHTTPConfiguration(
+	t *testing.T,
+) {
+	tests := []struct {
+		name        string
+		config      integrationcommon.HTTPClientConfig
+		expectedErr error
+	}{
+		{
+			name: "missing base url",
+			config: integrationcommon.HTTPClientConfig{
+				Timeout:   time.Second,
+				UserAgent: "global-flight-analytics-test",
+			},
+			expectedErr: integrationcommon.ErrHTTPClientBaseURLRequired,
+		},
+		{
+			name: "zero timeout",
+			config: integrationcommon.HTTPClientConfig{
+				BaseURL:   "https://example.com",
+				Timeout:   0,
+				UserAgent: "global-flight-analytics-test",
+			},
+			expectedErr: integrationcommon.ErrHTTPClientTimeoutInvalid,
+		},
+		{
+			name: "missing user agent",
+			config: integrationcommon.HTTPClientConfig{
+				BaseURL: "https://example.com",
+				Timeout: time.Second,
+			},
+			expectedErr: integrationcommon.ErrHTTPClientUserAgentRequired,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(
+			test.name,
+			func(t *testing.T) {
+				client, err := NewClient(
+					test.config,
+				)
+
+				if client != nil {
+					t.Fatal(
+						"expected nil client for invalid configuration",
+					)
+				}
+
+				if !errors.Is(
+					err,
+					test.expectedErr,
+				) {
+					t.Fatalf(
+						"expected error %v, got %v",
+						test.expectedErr,
+						err,
+					)
+				}
+			},
+		)
+	}
+}
+
+func TestGetByPointBuildsExpectedRequest(
+	t *testing.T,
+) {
 	var receivedMethod string
 	var receivedPath string
 
-	server := httptest.NewServer(http.HandlerFunc(
-		func(writer http.ResponseWriter, request *http.Request) {
-			receivedMethod = request.Method
-			receivedPath = request.URL.Path
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				writer http.ResponseWriter,
+				request *http.Request,
+			) {
+				receivedMethod = request.Method
+				receivedPath = request.URL.Path
 
-			writer.Header().Set("Content-Type", "application/json")
-			writer.WriteHeader(http.StatusOK)
+				writer.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				writer.WriteHeader(
+					http.StatusOK,
+				)
 
-			if _, err := writer.Write([]byte(`{}`)); err != nil {
-				t.Fatalf("write test response: %v", err)
-			}
-		},
-	))
+				if _, err := writer.Write(
+					[]byte(`{}`),
+				); err != nil {
+					t.Fatalf(
+						"write test response: %v",
+						err,
+					)
+				}
+			},
+		),
+	)
 	defer server.Close()
 
-	client := NewClient(integrationcommon.HTTPClientConfig{
-		BaseURL:   server.URL,
-		Timeout:   time.Second,
-		UserAgent: "global-flight-analytics-test",
-	})
+	client, err := NewClient(
+		integrationcommon.HTTPClientConfig{
+			BaseURL:   server.URL,
+			Timeout:   time.Second,
+			UserAgent: "global-flight-analytics-test",
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"create airplanes.live client: %v",
+			err,
+		)
+	}
 
 	result, err := client.GetByPoint(
 		context.Background(),
@@ -43,11 +133,16 @@ func TestGetByPointBuildsExpectedRequest(t *testing.T) {
 		250,
 	)
 	if err != nil {
-		t.Fatalf("expected successful point request, got error: %v", err)
+		t.Fatalf(
+			"expected successful point request, got error: %v",
+			err,
+		)
 	}
 
 	if result == nil {
-		t.Fatal("expected non-nil state response")
+		t.Fatal(
+			"expected non-nil state response",
+		)
 	}
 
 	if receivedMethod != http.MethodGet {
@@ -69,28 +164,53 @@ func TestGetByPointBuildsExpectedRequest(t *testing.T) {
 	}
 }
 
-func TestGetByPointRejectsInvalidInputBeforeRequest(t *testing.T) {
+func TestGetByPointRejectsInvalidInputBeforeRequest(
+	t *testing.T,
+) {
 	requestCount := 0
 
-	server := httptest.NewServer(http.HandlerFunc(
-		func(writer http.ResponseWriter, request *http.Request) {
-			requestCount++
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(
+				writer http.ResponseWriter,
+				_ *http.Request,
+			) {
+				requestCount++
 
-			writer.Header().Set("Content-Type", "application/json")
-			writer.WriteHeader(http.StatusOK)
+				writer.Header().Set(
+					"Content-Type",
+					"application/json",
+				)
+				writer.WriteHeader(
+					http.StatusOK,
+				)
 
-			if _, err := writer.Write([]byte(`{}`)); err != nil {
-				t.Fatalf("write test response: %v", err)
-			}
-		},
-	))
+				if _, err := writer.Write(
+					[]byte(`{}`),
+				); err != nil {
+					t.Fatalf(
+						"write test response: %v",
+						err,
+					)
+				}
+			},
+		),
+	)
 	defer server.Close()
 
-	client := NewClient(integrationcommon.HTTPClientConfig{
-		BaseURL:   server.URL,
-		Timeout:   time.Second,
-		UserAgent: "global-flight-analytics-test",
-	})
+	client, err := NewClient(
+		integrationcommon.HTTPClientConfig{
+			BaseURL:   server.URL,
+			Timeout:   time.Second,
+			UserAgent: "global-flight-analytics-test",
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"create airplanes.live client: %v",
+			err,
+		)
+	}
 
 	tests := []struct {
 		name      string
@@ -137,22 +257,29 @@ func TestGetByPointRejectsInvalidInputBeforeRequest(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			result, err := client.GetByPoint(
-				context.Background(),
-				test.latitude,
-				test.longitude,
-				test.radius,
-			)
+		t.Run(
+			test.name,
+			func(t *testing.T) {
+				result, err := client.GetByPoint(
+					context.Background(),
+					test.latitude,
+					test.longitude,
+					test.radius,
+				)
 
-			if err == nil {
-				t.Fatal("expected validation error")
-			}
+				if err == nil {
+					t.Fatal(
+						"expected validation error",
+					)
+				}
 
-			if result != nil {
-				t.Fatal("expected nil result for invalid input")
-			}
-		})
+				if result != nil {
+					t.Fatal(
+						"expected nil result for invalid input",
+					)
+				}
+			},
+		)
 	}
 
 	if requestCount != 0 {

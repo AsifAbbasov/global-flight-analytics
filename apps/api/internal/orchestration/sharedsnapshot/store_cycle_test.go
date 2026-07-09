@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
 )
 
@@ -33,9 +34,15 @@ func TestStoreRejectsOlderCycleThatFinishesLater(
 		newerCycleStartedAt.Add(time.Minute),
 		providerfanin.Envelope{
 			Status: providerfanin.BatchStatusSucceeded,
+
+			TotalCount:   1,
+			SuccessCount: 1,
+
 			Successes: []providerfanin.Success{
 				{
-					TaskID: "newer-cycle",
+					TaskID:     TaskIDRegionalTraffic,
+					RequestKey: "newer-cycle",
+					Value:      []flightstate.FlightState{},
 				},
 			},
 		},
@@ -52,9 +59,15 @@ func TestStoreRejectsOlderCycleThatFinishesLater(
 		newerCycleStartedAt.Add(2*time.Minute),
 		providerfanin.Envelope{
 			Status: providerfanin.BatchStatusSucceeded,
+
+			TotalCount:   1,
+			SuccessCount: 1,
+
 			Successes: []providerfanin.Success{
 				{
-					TaskID: "older-cycle",
+					TaskID:     TaskIDRegionalTraffic,
+					RequestKey: "older-cycle",
+					Value:      []flightstate.FlightState{},
 				},
 			},
 		},
@@ -97,10 +110,25 @@ func TestStoreRejectsOlderCycleThatFinishesLater(
 		)
 	}
 
-	if current.Successes[0].TaskID != "newer-cycle" {
+	if len(current.Successes) != 1 {
+		t.Fatalf(
+			"unexpected current success count: got %d, want 1",
+			len(current.Successes),
+		)
+	}
+
+	if current.Successes[0].TaskID != TaskIDRegionalTraffic {
 		t.Fatalf(
 			"unexpected current snapshot task identifier: %q",
 			current.Successes[0].TaskID,
+		)
+	}
+
+	if current.Successes[0].RequestKey != "newer-cycle" {
+		t.Fatalf(
+			"unexpected current snapshot request key: got %q, want %q",
+			current.Successes[0].RequestKey,
+			"newer-cycle",
 		)
 	}
 }

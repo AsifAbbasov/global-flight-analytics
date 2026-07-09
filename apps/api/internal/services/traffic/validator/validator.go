@@ -8,114 +8,319 @@ import (
 	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dataquality"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/qualitypolicy"
 )
 
 var icao24Pattern = regexp.MustCompile(`^[A-F0-9]{6}$`)
 
-func EvaluateFlightState(item flightstate.FlightState, now time.Time) dataquality.DataQuality {
+type assessmentCounter struct {
+	assessed int
+	passed   int
+}
+
+func (counter *assessmentCounter) Assess(
+	condition bool,
+) {
+	counter.assessed++
+
+	if condition {
+		counter.passed++
+	}
+}
+
+func (counter assessmentCounter) PassRatio() float64 {
+	if counter.assessed == 0 {
+		return 0
+	}
+
+	return float64(counter.passed) /
+		float64(counter.assessed)
+}
+
+func EvaluateFlightState(
+	item flightstate.FlightState,
+	now time.Time,
+) dataquality.DataQuality {
 	if now.IsZero() {
 		now = time.Now().UTC()
 	}
 
-	score := qualitypolicy.StartingScore
 	hasCriticalError := false
 	hasMovementError := false
 
-	missingFields := make([]string, 0)
-	warnings := make([]dataquality.Warning, 0)
+	missingFields := make(
+		[]string,
+		0,
+	)
 
-	addMissingField := func(field string) {
-		missingFields = append(missingFields, field)
+	warnings := make(
+		[]dataquality.Warning,
+		0,
+	)
+
+	assessment := assessmentCounter{}
+
+	addMissingField := func(
+		field string,
+	) {
+		missingFields = append(
+			missingFields,
+			field,
+		)
 	}
 
-	addWarning := func(code string, message string, field string) {
-		warnings = append(warnings, dataquality.Warning{
-			Code:    code,
-			Message: message,
-			Field:   field,
-		})
+	addWarning := func(
+		code string,
+		message string,
+		field string,
+	) {
+		warnings = append(
+			warnings,
+			dataquality.Warning{
+				Code:    code,
+				Message: message,
+				Field:   field,
+			},
+		)
 	}
 
-	icao24 := strings.ToUpper(strings.TrimSpace(item.ICAO24))
+	icao24 := strings.ToUpper(
+		strings.TrimSpace(
+			item.ICAO24,
+		),
+	)
+
+	icao24Valid := icao24 != "" &&
+		icao24Pattern.MatchString(
+			icao24,
+		)
+
+	assessment.Assess(
+		icao24Valid,
+	)
 
 	if icao24 == "" {
-		addMissingField("icao24")
-		addWarning("missing_icao24", "ICAO24 is required.", "icao24")
+		addMissingField(
+			"icao24",
+		)
+
+		addWarning(
+			"missing_icao24",
+			"ICAO24 is required.",
+			"icao24",
+		)
+
 		hasCriticalError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingICAO24Penalty)
-	} else if !icao24Pattern.MatchString(icao24) {
-		addWarning("invalid_icao24", "ICAO24 must contain exactly 6 hexadecimal characters.", "icao24")
+	} else if !icao24Pattern.MatchString(
+		icao24,
+	) {
+		addWarning(
+			"invalid_icao24",
+			"ICAO24 must contain exactly 6 hexadecimal characters.",
+			"icao24",
+		)
+
 		hasCriticalError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidICAO24Penalty)
 	}
 
-	if !aviationconstraints.IsLatitude(item.Latitude) {
-		addWarning("invalid_latitude", "Latitude must be finite and between -90 and 90.", "latitude")
+	latitudeValid := aviationconstraints.IsLatitude(
+		item.Latitude,
+	)
+
+	assessment.Assess(
+		latitudeValid,
+	)
+
+	if !latitudeValid {
+		addWarning(
+			"invalid_latitude",
+			"Latitude must be finite and between -90 and 90.",
+			"latitude",
+		)
+
 		hasCriticalError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidLatitudePenalty)
 	}
 
-	if !aviationconstraints.IsLongitude(item.Longitude) {
-		addWarning("invalid_longitude", "Longitude must be finite and between -180 and 180.", "longitude")
+	longitudeValid := aviationconstraints.IsLongitude(
+		item.Longitude,
+	)
+
+	assessment.Assess(
+		longitudeValid,
+	)
+
+	if !longitudeValid {
+		addWarning(
+			"invalid_longitude",
+			"Longitude must be finite and between -180 and 180.",
+			"longitude",
+		)
+
 		hasCriticalError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidLongitudePenalty)
 	}
+
+	observedAtValid := !item.ObservedAt.IsZero() &&
+		!item.ObservedAt.After(
+			now,
+		)
+
+	assessment.Assess(
+		observedAtValid,
+	)
 
 	if item.ObservedAt.IsZero() {
-		addMissingField("observed_at")
-		addWarning("missing_observed_at", "ObservedAt is required.", "observed_at")
+		addMissingField(
+			"observed_at",
+		)
+
+		addWarning(
+			"missing_observed_at",
+			"ObservedAt is required.",
+			"observed_at",
+		)
+
 		hasCriticalError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingObservedAtPenalty)
-	} else if item.ObservedAt.After(now) {
-		addWarning("future_observed_at", "ObservedAt cannot be in the future.", "observed_at")
+	} else if item.ObservedAt.After(
+		now,
+	) {
+		addWarning(
+			"future_observed_at",
+			"ObservedAt cannot be in the future.",
+			"observed_at",
+		)
+
 		hasCriticalError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.FutureObservedAtPenalty)
 	}
 
-	if strings.TrimSpace(item.Callsign) == "" {
-		addMissingField("callsign")
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingCallsignPenalty)
+	callsignPresent := strings.TrimSpace(
+		item.Callsign,
+	) != ""
+
+	assessment.Assess(
+		callsignPresent,
+	)
+
+	if !callsignPresent {
+		addMissingField(
+			"callsign",
+		)
 	}
 
-	if strings.TrimSpace(item.OriginCountry) == "" {
-		addMissingField("origin_country")
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingOriginCountryPenalty)
+	originCountryPresent := strings.TrimSpace(
+		item.OriginCountry,
+	) != ""
+
+	assessment.Assess(
+		originCountryPresent,
+	)
+
+	if !originCountryPresent {
+		addMissingField(
+			"origin_country",
+		)
 	}
 
-	if strings.TrimSpace(item.SourceName) == "" {
-		addMissingField("source_name")
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.MissingSourceNamePenalty)
+	sourceNamePresent := strings.TrimSpace(
+		item.SourceName,
+	) != ""
+
+	assessment.Assess(
+		sourceNamePresent,
+	)
+
+	if !sourceNamePresent {
+		addMissingField(
+			"source_name",
+		)
 	}
 
-	if !aviationconstraints.IsNonNegativeFloat64(item.BarometricAltitudeM) {
-		addWarning("invalid_barometric_altitude", "Barometric altitude must be finite and non-negative.", "barometric_altitude_m")
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidAltitudePenalty)
+	barometricAltitudeValid :=
+		aviationconstraints.IsNonNegativeFloat64(
+			item.BarometricAltitudeM,
+		)
+
+	assessment.Assess(
+		barometricAltitudeValid,
+	)
+
+	if !barometricAltitudeValid {
+		addWarning(
+			"invalid_barometric_altitude",
+			"Barometric altitude must be finite and non-negative.",
+			"barometric_altitude_m",
+		)
 	}
 
-	if !aviationconstraints.IsNonNegativeFloat64(item.GeometricAltitudeM) {
-		addWarning("invalid_geometric_altitude", "Geometric altitude must be finite and non-negative.", "geometric_altitude_m")
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidAltitudePenalty)
+	geometricAltitudeValid :=
+		aviationconstraints.IsNonNegativeFloat64(
+			item.GeometricAltitudeM,
+		)
+
+	assessment.Assess(
+		geometricAltitudeValid,
+	)
+
+	if !geometricAltitudeValid {
+		addWarning(
+			"invalid_geometric_altitude",
+			"Geometric altitude must be finite and non-negative.",
+			"geometric_altitude_m",
+		)
 	}
 
-	if !aviationconstraints.IsNonNegativeFloat64(item.VelocityMPS) {
-		addWarning("invalid_velocity", "Velocity must be finite and non-negative.", "velocity_mps")
+	velocityValid :=
+		aviationconstraints.IsNonNegativeFloat64(
+			item.VelocityMPS,
+		)
+
+	assessment.Assess(
+		velocityValid,
+	)
+
+	if !velocityValid {
+		addWarning(
+			"invalid_velocity",
+			"Velocity must be finite and non-negative.",
+			"velocity_mps",
+		)
+
 		hasMovementError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidVelocityPenalty)
 	}
 
-	if !aviationconstraints.IsFiniteFloat64(item.VerticalRateMPS) {
-		addWarning("invalid_vertical_rate", "Vertical rate must be finite.", "vertical_rate_mps")
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidVerticalRatePenalty)
+	verticalRateValid :=
+		aviationconstraints.IsFiniteFloat64(
+			item.VerticalRateMPS,
+		)
+
+	assessment.Assess(
+		verticalRateValid,
+	)
+
+	if !verticalRateValid {
+		addWarning(
+			"invalid_vertical_rate",
+			"Vertical rate must be finite.",
+			"vertical_rate_mps",
+		)
 	}
 
-	if !aviationconstraints.IsHeadingDegreesExclusive(item.HeadingDegrees) {
-		addWarning("invalid_heading", "Heading must be finite and between 0 inclusive and 360 exclusive.", "heading_degrees")
+	headingValid :=
+		aviationconstraints.IsHeadingDegreesExclusive(
+			item.HeadingDegrees,
+		)
+
+	assessment.Assess(
+		headingValid,
+	)
+
+	if !headingValid {
+		addWarning(
+			"invalid_heading",
+			"Heading must be finite and between 0 inclusive and 360 exclusive.",
+			"heading_degrees",
+		)
+
 		hasMovementError = true
-		score = qualitypolicy.ApplyPenalty(score, qualitypolicy.InvalidHeadingPenalty)
 	}
-
-	score = qualitypolicy.ClampScore(score)
 
 	if hasCriticalError {
 		return dataquality.DataQuality{
@@ -132,7 +337,12 @@ func EvaluateFlightState(item flightstate.FlightState, now time.Time) dataqualit
 
 	if hasMovementError {
 		completeness = dataquality.CompletenessLevelPositionOnly
-	} else if len(missingFields) > 0 || len(warnings) > 0 {
+	} else if len(
+		missingFields,
+	) > 0 ||
+		len(
+			warnings,
+		) > 0 {
 		completeness = dataquality.CompletenessLevelPartial
 	}
 
@@ -145,25 +355,65 @@ func EvaluateFlightState(item flightstate.FlightState, now time.Time) dataqualit
 	return dataquality.DataQuality{
 		ValidationStatus: validationStatus,
 		Completeness:     completeness,
-		Confidence:       qualitypolicy.ConfidenceFromScore(score),
-		Score:            score,
-		MissingFields:    missingFields,
-		Warnings:         warnings,
+		Confidence: confidenceFromCompleteness(
+			completeness,
+		),
+		Score:         assessment.PassRatio(),
+		MissingFields: missingFields,
+		Warnings:      warnings,
 	}
 }
 
-func IsValidFlightState(item flightstate.FlightState, now time.Time) bool {
-	quality := EvaluateFlightState(item, now)
+func confidenceFromCompleteness(
+	completeness dataquality.CompletenessLevel,
+) dataquality.ConfidenceLevel {
+	switch completeness {
+	case dataquality.CompletenessLevelComplete:
+		return dataquality.ConfidenceLevelHigh
 
-	return quality.ValidationStatus != dataquality.ValidationStatusInvalid
+	case dataquality.CompletenessLevelPartial:
+		return dataquality.ConfidenceLevelMedium
+
+	case dataquality.CompletenessLevelPositionOnly:
+		return dataquality.ConfidenceLevelLow
+
+	default:
+		return dataquality.ConfidenceLevelNone
+	}
 }
 
-func FilterValidFlightStates(items []flightstate.FlightState, now time.Time) []flightstate.FlightState {
-	result := make([]flightstate.FlightState, 0, len(items))
+func IsValidFlightState(
+	item flightstate.FlightState,
+	now time.Time,
+) bool {
+	quality := EvaluateFlightState(
+		item,
+		now,
+	)
+
+	return quality.ValidationStatus !=
+		dataquality.ValidationStatusInvalid
+}
+
+func FilterValidFlightStates(
+	items []flightstate.FlightState,
+	now time.Time,
+) []flightstate.FlightState {
+	result := make(
+		[]flightstate.FlightState,
+		0,
+		len(items),
+	)
 
 	for _, item := range items {
-		if IsValidFlightState(item, now) {
-			result = append(result, item)
+		if IsValidFlightState(
+			item,
+			now,
+		) {
+			result = append(
+				result,
+				item,
+			)
 		}
 	}
 
