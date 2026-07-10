@@ -10,7 +10,7 @@ import (
 )
 
 type sharedSnapshotRunConfig struct {
-	Executor providerfanout.Executor
+	Executor providerfanout.Executor[sharedsnapshot.Payload]
 
 	TrafficSource sharedsnapshot.RegionalTrafficSource
 
@@ -33,10 +33,11 @@ func runSharedSnapshot(
 		},
 	)
 	if err != nil {
-		return sharedsnapshot.Snapshot{}, fmt.Errorf(
-			"build shared snapshot regional traffic task: %w",
-			err,
-		)
+		return sharedsnapshot.Snapshot{},
+			fmt.Errorf(
+				"build shared snapshot regional traffic task: %w",
+				err,
+			)
 	}
 
 	runtime, err := sharedsnapshot.NewRuntime(
@@ -45,23 +46,25 @@ func runSharedSnapshot(
 		},
 	)
 	if err != nil {
-		return sharedsnapshot.Snapshot{}, fmt.Errorf(
-			"create shared snapshot runtime: %w",
-			err,
-		)
+		return sharedsnapshot.Snapshot{},
+			fmt.Errorf(
+				"create shared snapshot runtime: %w",
+				err,
+			)
 	}
 
 	snapshot, err := runtime.Run(
 		ctx,
-		[]providerfanout.Task{
+		[]providerfanout.Task[sharedsnapshot.Payload]{
 			trafficTask,
 		},
 	)
 	if err != nil {
-		return sharedsnapshot.Snapshot{}, fmt.Errorf(
-			"run shared snapshot runtime: %w",
-			err,
-		)
+		return sharedsnapshot.Snapshot{},
+			fmt.Errorf(
+				"run shared snapshot runtime: %w",
+				err,
+			)
 	}
 
 	return snapshot, nil

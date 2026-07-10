@@ -280,7 +280,7 @@ func registerWeatherRoute(
 		)
 	}
 
-	orchestrator, err := ingestionorchestrator.NewDefault(
+	orchestrator, err := ingestionorchestrator.NewDefault[weatherprovider.ExecutionValue](
 		responseController,
 	)
 	if err != nil {

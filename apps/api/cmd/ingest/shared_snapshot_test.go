@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	domainweather "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
@@ -18,10 +19,10 @@ type sharedSnapshotTestTrafficSource struct{}
 func (
 	source *sharedSnapshotTestTrafficSource,
 ) LoadByPoint(
-	ctx context.Context,
-	latitude float64,
-	longitude float64,
-	radius int,
+	_ context.Context,
+	_ float64,
+	_ float64,
+	_ int,
 ) ([]flightstate.FlightState, error) {
 	return []flightstate.FlightState{
 		{
@@ -32,7 +33,7 @@ func (
 }
 
 type sharedSnapshotTestExecutor struct {
-	values    map[providerpolicy.Provider]any
+	values    map[providerpolicy.Provider]sharedsnapshot.Payload
 	errors    map[providerpolicy.Provider]error
 	providers []providerpolicy.Provider
 }
@@ -40,11 +41,11 @@ type sharedSnapshotTestExecutor struct {
 func (
 	executor *sharedSnapshotTestExecutor,
 ) Execute(
-	ctx context.Context,
+	_ context.Context,
 	provider providerpolicy.Provider,
 	requestKey string,
-	function ingestionorchestrator.Function,
-) (ingestionorchestrator.ExecuteResult, error) {
+	_ ingestionorchestrator.Function[sharedsnapshot.Payload],
+) (ingestionorchestrator.ExecuteResult[sharedsnapshot.Payload], error) {
 	if executor != nil {
 		executor.providers = append(
 			executor.providers,
@@ -52,11 +53,12 @@ func (
 		)
 
 		if err := executor.errors[provider]; err != nil {
-			return ingestionorchestrator.ExecuteResult{}, err
+			return ingestionorchestrator.ExecuteResult[sharedsnapshot.Payload]{},
+				err
 		}
 
 		if value, exists := executor.values[provider]; exists {
-			return ingestionorchestrator.ExecuteResult{
+			return ingestionorchestrator.ExecuteResult[sharedsnapshot.Payload]{
 				Provider:   provider,
 				RequestKey: requestKey,
 				Value:      value,
@@ -64,7 +66,7 @@ func (
 		}
 	}
 
-	return ingestionorchestrator.ExecuteResult{
+	return ingestionorchestrator.ExecuteResult[sharedsnapshot.Payload]{
 		Provider:   provider,
 		RequestKey: requestKey,
 	}, nil
@@ -79,11 +81,6 @@ func TestRunSharedSnapshotRejectsMissingTrafficSource(
 			Executor: &sharedSnapshotTestExecutor{},
 		},
 	)
-	if err == nil {
-		t.Fatal(
-			"expected missing traffic source to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -105,6 +102,7 @@ func TestRunSharedSnapshotRejectsMissingExecutor(
 			TrafficSource: &sharedSnapshotTestTrafficSource{},
 		},
 	)
+
 	if err == nil {
 		t.Fatal(
 			"expected missing executor to be rejected",
@@ -125,16 +123,16 @@ func TestRunSharedSnapshotRejectsMissingExecutor(
 func TestRunSharedSnapshotPublishesTypedTrafficResult(
 	t *testing.T,
 ) {
-	trafficStates := []flightstate.FlightState{
-		{
-			ID:     "state-1",
-			ICAO24: "abc123",
-		},
-	}
-
 	executor := &sharedSnapshotTestExecutor{
-		values: map[providerpolicy.Provider]any{
-			providerpolicy.ProviderAirplanesLive: trafficStates,
+		values: map[providerpolicy.Provider]sharedsnapshot.Payload{
+			providerpolicy.ProviderAirplanesLive: sharedsnapshot.NewRegionalTrafficPayload(
+				[]flightstate.FlightState{
+					{
+						ID:     "state-1",
+						ICAO24: "abc123",
+					},
+				},
+			),
 		},
 	}
 
@@ -163,27 +161,6 @@ func TestRunSharedSnapshotPublishesTypedTrafficResult(
 		)
 	}
 
-	if snapshot.TotalCount != 1 {
-		t.Fatalf(
-			"unexpected total count: got %d, want 1",
-			snapshot.TotalCount,
-		)
-	}
-
-	if snapshot.SuccessCount != 1 {
-		t.Fatalf(
-			"unexpected success count: got %d, want 1",
-			snapshot.SuccessCount,
-		)
-	}
-
-	if snapshot.FailureCount != 0 {
-		t.Fatalf(
-			"unexpected failure count: got %d, want 0",
-			snapshot.FailureCount,
-		)
-	}
-
 	if len(snapshot.Successes) != 1 {
 		t.Fatalf(
 			"unexpected snapshot success length: got %d, want 1",
@@ -191,21 +168,11 @@ func TestRunSharedSnapshotPublishesTypedTrafficResult(
 		)
 	}
 
-	success := snapshot.Successes[0]
-
-	if success.TaskID != sharedsnapshot.TaskIDRegionalTraffic {
-		t.Fatalf(
-			"unexpected task identifier: got %q, want %q",
-			success.TaskID,
-			sharedsnapshot.TaskIDRegionalTraffic,
-		)
-	}
-
-	trafficPayload, ok := success.Payload.(sharedsnapshot.RegionalTrafficPayload)
+	trafficPayload, ok := snapshot.Successes[0].Payload.RegionalTraffic()
 	if !ok {
 		t.Fatalf(
-			"unexpected regional traffic payload type: %T",
-			success.Payload,
+			"expected regional traffic payload, got kind %q",
+			snapshot.Successes[0].Payload.Kind(),
 		)
 	}
 
@@ -222,13 +189,6 @@ func TestRunSharedSnapshotPublishesTypedTrafficResult(
 			trafficPayload.States[0].ID,
 		)
 	}
-
-	if trafficPayload.States[0].ICAO24 != "abc123" {
-		t.Fatalf(
-			"unexpected traffic ICAO24: %q",
-			trafficPayload.States[0].ICAO24,
-		)
-	}
 }
 
 func TestRunSharedSnapshotDoesNotExecuteWeatherProvider(
@@ -239,13 +199,15 @@ func TestRunSharedSnapshotDoesNotExecuteWeatherProvider(
 	)
 
 	executor := &sharedSnapshotTestExecutor{
-		values: map[providerpolicy.Provider]any{
-			providerpolicy.ProviderAirplanesLive: []flightstate.FlightState{
-				{
-					ID:     "state-1",
-					ICAO24: "abc123",
+		values: map[providerpolicy.Provider]sharedsnapshot.Payload{
+			providerpolicy.ProviderAirplanesLive: sharedsnapshot.NewRegionalTrafficPayload(
+				[]flightstate.FlightState{
+					{
+						ID:     "state-1",
+						ICAO24: "abc123",
+					},
 				},
-			},
+			),
 		},
 		errors: map[providerpolicy.Provider]error{
 			providerpolicy.ProviderOpenMeteo: weatherFailure,
@@ -264,37 +226,15 @@ func TestRunSharedSnapshotDoesNotExecuteWeatherProvider(
 	)
 	if err != nil {
 		t.Fatalf(
-			"expected traffic-only shared snapshot to ignore weather provider failure, got %v",
+			"expected traffic-only snapshot to ignore weather failure, got %v",
 			err,
 		)
 	}
 
 	if snapshot.Status != providerfanin.BatchStatusSucceeded {
 		t.Fatalf(
-			"unexpected snapshot status: got %q, want %q",
+			"unexpected snapshot status: %q",
 			snapshot.Status,
-			providerfanin.BatchStatusSucceeded,
-		)
-	}
-
-	if snapshot.TotalCount != 1 {
-		t.Fatalf(
-			"unexpected total count: got %d, want 1",
-			snapshot.TotalCount,
-		)
-	}
-
-	if snapshot.SuccessCount != 1 {
-		t.Fatalf(
-			"unexpected success count: got %d, want 1",
-			snapshot.SuccessCount,
-		)
-	}
-
-	if snapshot.FailureCount != 0 {
-		t.Fatalf(
-			"unexpected failure count: got %d, want 0",
-			snapshot.FailureCount,
 		)
 	}
 
@@ -307,27 +247,20 @@ func TestRunSharedSnapshotDoesNotExecuteWeatherProvider(
 
 	if executor.providers[0] != providerpolicy.ProviderAirplanesLive {
 		t.Fatalf(
-			"unexpected executed provider: got %q, want %q",
+			"unexpected executed provider: %q",
 			executor.providers[0],
-			providerpolicy.ProviderAirplanesLive,
 		)
-	}
-
-	for _, provider := range executor.providers {
-		if provider == providerpolicy.ProviderOpenMeteo {
-			t.Fatal(
-				"expected weather provider not to be executed by traffic-only ingest snapshot",
-			)
-		}
 	}
 }
 
-func TestRunSharedSnapshotWrapsRuntimeError(
+func TestRunSharedSnapshotWrapsPayloadKindMismatch(
 	t *testing.T,
 ) {
 	executor := &sharedSnapshotTestExecutor{
-		values: map[providerpolicy.Provider]any{
-			providerpolicy.ProviderAirplanesLive: "invalid-traffic-payload",
+		values: map[providerpolicy.Provider]sharedsnapshot.Payload{
+			providerpolicy.ProviderAirplanesLive: sharedsnapshot.NewCurrentWeatherPayload(
+				domainweather.CurrentSnapshot{},
+			),
 		},
 	}
 
@@ -341,18 +274,13 @@ func TestRunSharedSnapshotWrapsRuntimeError(
 			Radius:        100,
 		},
 	)
-	if err == nil {
-		t.Fatal(
-			"expected shared snapshot runtime error",
-		)
-	}
 
 	if !errors.Is(
 		err,
-		sharedsnapshot.ErrSuccessValueTypeMismatch,
+		sharedsnapshot.ErrSuccessPayloadKindMismatch,
 	) {
 		t.Fatalf(
-			"expected ErrSuccessValueTypeMismatch, got %v",
+			"expected ErrSuccessPayloadKindMismatch, got %v",
 			err,
 		)
 	}

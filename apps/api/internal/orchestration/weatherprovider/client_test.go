@@ -14,7 +14,9 @@ type delegateStub struct {
 	callCount int
 }
 
-func (stub *delegateStub) GetCurrentWeather(
+func (
+	stub *delegateStub,
+) GetCurrentWeather(
 	_ context.Context,
 	request openmeteo.CurrentWeatherRequest,
 ) (domainweather.CurrentSnapshot, error) {
@@ -33,12 +35,14 @@ type executorStub struct {
 	requestKey string
 }
 
-func (stub *executorStub) Execute(
+func (
+	stub *executorStub,
+) Execute(
 	ctx context.Context,
 	provider providerpolicy.Provider,
 	requestKey string,
-	function ingestionorchestrator.Function,
-) (ingestionorchestrator.ExecuteResult, error) {
+	function ingestionorchestrator.Function[ExecutionValue],
+) (ingestionorchestrator.ExecuteResult[ExecutionValue], error) {
 	stub.callCount++
 	stub.provider = provider
 	stub.requestKey = requestKey
@@ -47,17 +51,18 @@ func (stub *executorStub) Execute(
 		ctx,
 	)
 	if err != nil {
-		return ingestionorchestrator.ExecuteResult{}, err
+		return ingestionorchestrator.ExecuteResult[ExecutionValue]{},
+			err
 	}
 
-	return ingestionorchestrator.ExecuteResult{
+	return ingestionorchestrator.ExecuteResult[ExecutionValue]{
 		Provider:   provider,
 		RequestKey: requestKey,
 		Value:      value,
 	}, nil
 }
 
-func TestGetCurrentWeatherExecutesThroughOrchestrator(
+func TestGetCurrentWeatherExecutesThroughTypedOrchestrator(
 	t *testing.T,
 ) {
 	delegate := &delegateStub{}

@@ -83,18 +83,18 @@ type TaskConfig struct {
 
 func BuildRegionalTrafficTask(
 	config RegionalTrafficTaskConfig,
-) (providerfanout.Task, error) {
+) (providerfanout.Task[Payload], error) {
 	if config.TrafficSource == nil {
-		return providerfanout.Task{},
+		return providerfanout.Task[Payload]{},
 			ErrRegionalTrafficSourceRequired
 	}
 
 	if config.Provider == "" {
-		return providerfanout.Task{},
+		return providerfanout.Task[Payload]{},
 			ErrRegionalTrafficProviderRequired
 	}
 
-	return providerfanout.Task{
+	return providerfanout.Task[Payload]{
 		ID:       TaskIDRegionalTraffic,
 		Provider: config.Provider,
 		RequestKey: regionalprovider.PointRequestKey(
@@ -104,27 +104,35 @@ func BuildRegionalTrafficTask(
 		),
 		Function: func(
 			ctx context.Context,
-		) (any, error) {
-			return config.TrafficSource.LoadByPoint(
+		) (Payload, error) {
+			states, err := config.TrafficSource.LoadByPoint(
 				ctx,
 				config.Latitude,
 				config.Longitude,
 				config.Radius,
 			)
+			if err != nil {
+				return Payload{},
+					err
+			}
+
+			return NewRegionalTrafficPayload(
+				states,
+			), nil
 		},
 	}, nil
 }
 
 func BuildCurrentWeatherTask(
 	config CurrentWeatherTaskConfig,
-) (providerfanout.Task, error) {
+) (providerfanout.Task[Payload], error) {
 	if config.WeatherSource == nil {
-		return providerfanout.Task{},
+		return providerfanout.Task[Payload]{},
 			ErrCurrentWeatherSourceRequired
 	}
 
 	if config.Provider == "" {
-		return providerfanout.Task{},
+		return providerfanout.Task[Payload]{},
 			ErrCurrentWeatherProviderRequired
 	}
 
@@ -133,7 +141,7 @@ func BuildCurrentWeatherTask(
 		Longitude: config.Longitude,
 	}
 
-	return providerfanout.Task{
+	return providerfanout.Task[Payload]{
 		ID:       TaskIDCurrentWeather,
 		Provider: config.Provider,
 		RequestKey: weatherprovider.CurrentWeatherRequestKey(
@@ -141,18 +149,26 @@ func BuildCurrentWeatherTask(
 		),
 		Function: func(
 			ctx context.Context,
-		) (any, error) {
-			return config.WeatherSource.GetCurrentWeather(
+		) (Payload, error) {
+			snapshot, err := config.WeatherSource.GetCurrentWeather(
 				ctx,
 				weatherRequest,
 			)
+			if err != nil {
+				return Payload{},
+					err
+			}
+
+			return NewCurrentWeatherPayload(
+				snapshot,
+			), nil
 		},
 	}, nil
 }
 
 func BuildTasks(
 	config TaskConfig,
-) ([]providerfanout.Task, error) {
+) ([]providerfanout.Task[Payload], error) {
 	trafficTask, err := BuildRegionalTrafficTask(
 		RegionalTrafficTaskConfig{
 			TrafficSource: config.TrafficSource,
@@ -178,7 +194,7 @@ func BuildTasks(
 		return nil, err
 	}
 
-	return []providerfanout.Task{
+	return []providerfanout.Task[Payload]{
 		trafficTask,
 		weatherTask,
 	}, nil

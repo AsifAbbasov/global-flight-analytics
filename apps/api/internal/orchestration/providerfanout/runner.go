@@ -9,6 +9,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/requestcoalescing"
 )
 
 var (
@@ -25,51 +26,53 @@ var (
 	)
 )
 
-type Executor interface {
+type Executor[T requestcoalescing.Value] interface {
 	Execute(
 		ctx context.Context,
 		provider providerpolicy.Provider,
 		requestKey string,
-		function ingestionorchestrator.Function,
-	) (ingestionorchestrator.ExecuteResult, error)
+		function ingestionorchestrator.Function[T],
+	) (ingestionorchestrator.ExecuteResult[T], error)
 }
 
-type Task struct {
+type Task[T requestcoalescing.Value] struct {
 	ID         string
 	Provider   providerpolicy.Provider
 	RequestKey string
-	Function   ingestionorchestrator.Function
+	Function   ingestionorchestrator.Function[T]
 }
 
-type Result struct {
+type Result[T requestcoalescing.Value] struct {
 	TaskID     string
 	Provider   providerpolicy.Provider
 	RequestKey string
-	Value      any
+	Value      T
 	Shared     bool
 	Err        error
 }
 
-type Runner struct {
-	executor Executor
+type Runner[T requestcoalescing.Value] struct {
+	executor Executor[T]
 }
 
-func New(
-	executor Executor,
-) (*Runner, error) {
+func New[T requestcoalescing.Value](
+	executor Executor[T],
+) (*Runner[T], error) {
 	if executor == nil {
 		return nil, ErrExecutorRequired
 	}
 
-	return &Runner{
+	return &Runner[T]{
 		executor: executor,
 	}, nil
 }
 
-func (runner *Runner) Run(
+func (
+	runner *Runner[T],
+) Run(
 	ctx context.Context,
-	tasks []Task,
-) ([]Result, error) {
+	tasks []Task[T],
+) ([]Result[T], error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -82,7 +85,7 @@ func (runner *Runner) Run(
 	}
 
 	results := make(
-		[]Result,
+		[]Result[T],
 		len(tasks),
 	)
 
@@ -98,7 +101,7 @@ func (runner *Runner) Run(
 
 		go func(
 			resultIndex int,
-			currentTask Task,
+			currentTask Task[T],
 			normalizedTaskID string,
 		) {
 			defer waitGroup.Done()
@@ -110,7 +113,7 @@ func (runner *Runner) Run(
 				currentTask.Function,
 			)
 
-			results[resultIndex] = Result{
+			results[resultIndex] = Result[T]{
 				TaskID:     normalizedTaskID,
 				Provider:   currentTask.Provider,
 				RequestKey: currentTask.RequestKey,
@@ -130,8 +133,8 @@ func (runner *Runner) Run(
 	return results, nil
 }
 
-func validateTaskIDs(
-	tasks []Task,
+func validateTaskIDs[T requestcoalescing.Value](
+	tasks []Task[T],
 ) ([]string, error) {
 	normalizedTaskIDs := make(
 		[]string,

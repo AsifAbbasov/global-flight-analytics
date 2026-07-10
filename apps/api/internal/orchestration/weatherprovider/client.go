@@ -19,11 +19,13 @@ var (
 	ErrExecutorRequired = errors.New(
 		"weather provider executor is required",
 	)
-
-	ErrUnexpectedResultType = errors.New(
-		"unexpected weather provider result type",
-	)
 )
+
+type ExecutionValue struct {
+	Snapshot domainweather.CurrentSnapshot
+}
+
+func (ExecutionValue) RequestCoalescingValue() {}
 
 type Delegate interface {
 	GetCurrentWeather(
@@ -37,8 +39,8 @@ type Executor interface {
 		ctx context.Context,
 		provider providerpolicy.Provider,
 		requestKey string,
-		function ingestionorchestrator.Function,
-	) (ingestionorchestrator.ExecuteResult, error)
+		function ingestionorchestrator.Function[ExecutionValue],
+	) (ingestionorchestrator.ExecuteResult[ExecutionValue], error)
 }
 
 type Config struct {
@@ -68,7 +70,9 @@ func New(
 	}, nil
 }
 
-func (client *Client) GetCurrentWeather(
+func (
+	client *Client,
+) GetCurrentWeather(
 	ctx context.Context,
 	request openmeteo.CurrentWeatherRequest,
 ) (domainweather.CurrentSnapshot, error) {
@@ -80,30 +84,31 @@ func (client *Client) GetCurrentWeather(
 		),
 		func(
 			operationContext context.Context,
-		) (any, error) {
-			return client.delegate.GetCurrentWeather(
+		) (ExecutionValue, error) {
+			snapshot, err := client.delegate.GetCurrentWeather(
 				operationContext,
 				request,
 			)
+			if err != nil {
+				return ExecutionValue{},
+					err
+			}
+
+			return ExecutionValue{
+				Snapshot: snapshot,
+			}, nil
 		},
 	)
 	if err != nil {
-		return domainweather.CurrentSnapshot{}, fmt.Errorf(
-			"execute orchestrated weather request: %w",
-			err,
-		)
+		return domainweather.CurrentSnapshot{},
+			fmt.Errorf(
+				"execute orchestrated weather request: %w",
+				err,
+			)
 	}
 
-	snapshot, ok := result.Value.(domainweather.CurrentSnapshot)
-	if !ok {
-		return domainweather.CurrentSnapshot{}, fmt.Errorf(
-			"%w: provider=%s",
-			ErrUnexpectedResultType,
-			providerpolicy.ProviderOpenMeteo,
-		)
-	}
-
-	return snapshot, nil
+	return result.Value.Snapshot,
+		nil
 }
 
 func currentWeatherRequestKey(

@@ -13,6 +13,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerresponse"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/sharedsnapshot"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/gapdetector"
@@ -88,7 +89,7 @@ func main() {
 		)
 	}
 
-	orchestrator, err := ingestionorchestrator.NewDefault(
+	orchestrator, err := ingestionorchestrator.NewDefault[sharedsnapshot.Payload](
 		responseController,
 	)
 	if err != nil {

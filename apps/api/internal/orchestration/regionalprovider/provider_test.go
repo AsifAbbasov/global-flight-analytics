@@ -13,11 +13,15 @@ type delegateStub struct {
 	loadCount int
 }
 
-func (stub *delegateStub) SourceName() string {
+func (
+	stub *delegateStub,
+) SourceName() string {
 	return "airplanes.live"
 }
 
-func (stub *delegateStub) LoadByPoint(
+func (
+	stub *delegateStub,
+) LoadByPoint(
 	_ context.Context,
 	_ float64,
 	_ float64,
@@ -38,12 +42,14 @@ type executorStub struct {
 	requestKey   string
 }
 
-func (stub *executorStub) Execute(
+func (
+	stub *executorStub,
+) Execute(
 	ctx context.Context,
 	provider providerpolicy.Provider,
 	requestKey string,
-	function ingestionorchestrator.Function,
-) (ingestionorchestrator.ExecuteResult, error) {
+	function ingestionorchestrator.Function[ExecutionValue],
+) (ingestionorchestrator.ExecuteResult[ExecutionValue], error) {
 	stub.executeCount++
 	stub.provider = provider
 	stub.requestKey = requestKey
@@ -52,17 +58,18 @@ func (stub *executorStub) Execute(
 		ctx,
 	)
 	if err != nil {
-		return ingestionorchestrator.ExecuteResult{}, err
+		return ingestionorchestrator.ExecuteResult[ExecutionValue]{},
+			err
 	}
 
-	return ingestionorchestrator.ExecuteResult{
+	return ingestionorchestrator.ExecuteResult[ExecutionValue]{
 		Provider:   provider,
 		RequestKey: requestKey,
 		Value:      value,
 	}, nil
 }
 
-func TestLoadByPointExecutesThroughOrchestrator(
+func TestLoadByPointExecutesThroughTypedOrchestrator(
 	t *testing.T,
 ) {
 	delegate := &delegateStub{}

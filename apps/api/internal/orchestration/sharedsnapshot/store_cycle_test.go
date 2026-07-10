@@ -31,18 +31,22 @@ func TestStoreRejectsOlderCycleThatFinishesLater(
 
 	newerSnapshot, err := FromEnvelopeForCycle(
 		newerCycleStartedAt,
-		newerCycleStartedAt.Add(time.Minute),
-		providerfanin.Envelope{
+		newerCycleStartedAt.Add(
+			time.Minute,
+		),
+		providerfanin.Envelope[Payload]{
 			Status: providerfanin.BatchStatusSucceeded,
 
 			TotalCount:   1,
 			SuccessCount: 1,
 
-			Successes: []providerfanin.Success{
+			Successes: []providerfanin.Success[Payload]{
 				{
 					TaskID:     TaskIDRegionalTraffic,
 					RequestKey: "newer-cycle",
-					Value:      []flightstate.FlightState{},
+					Value: NewRegionalTrafficPayload(
+						[]flightstate.FlightState{},
+					),
 				},
 			},
 		},
@@ -56,18 +60,22 @@ func TestStoreRejectsOlderCycleThatFinishesLater(
 
 	olderSnapshot, err := FromEnvelopeForCycle(
 		olderCycleStartedAt,
-		newerCycleStartedAt.Add(2*time.Minute),
-		providerfanin.Envelope{
+		newerCycleStartedAt.Add(
+			2*time.Minute,
+		),
+		providerfanin.Envelope[Payload]{
 			Status: providerfanin.BatchStatusSucceeded,
 
 			TotalCount:   1,
 			SuccessCount: 1,
 
-			Successes: []providerfanin.Success{
+			Successes: []providerfanin.Success[Payload]{
 				{
 					TaskID:     TaskIDRegionalTraffic,
 					RequestKey: "older-cycle",
-					Value:      []flightstate.FlightState{},
+					Value: NewRegionalTrafficPayload(
+						[]flightstate.FlightState{},
+					),
 				},
 			},
 		},
@@ -79,14 +87,18 @@ func TestStoreRejectsOlderCycleThatFinishesLater(
 		)
 	}
 
-	if err := store.Publish(newerSnapshot); err != nil {
+	if err := store.Publish(
+		newerSnapshot,
+	); err != nil {
 		t.Fatalf(
 			"publish newer cycle snapshot: %v",
 			err,
 		)
 	}
 
-	err = store.Publish(olderSnapshot)
+	err = store.Publish(
+		olderSnapshot,
+	)
 	if err == nil {
 		t.Fatal(
 			"expected older cycle snapshot to be rejected",
@@ -117,14 +129,16 @@ func TestStoreRejectsOlderCycleThatFinishesLater(
 		)
 	}
 
-	if current.Successes[0].TaskID != TaskIDRegionalTraffic {
+	if current.Successes[0].TaskID !=
+		TaskIDRegionalTraffic {
 		t.Fatalf(
 			"unexpected current snapshot task identifier: %q",
 			current.Successes[0].TaskID,
 		)
 	}
 
-	if current.Successes[0].RequestKey != "newer-cycle" {
+	if current.Successes[0].RequestKey !=
+		"newer-cycle" {
 		t.Fatalf(
 			"unexpected current snapshot request key: got %q, want %q",
 			current.Successes[0].RequestKey,

@@ -34,9 +34,9 @@ var (
 	)
 )
 
-type Function func(
+type Function[T requestcoalescing.Value] func(
 	ctx context.Context,
-) (any, error)
+) (T, error)
 
 type BudgetManager interface {
 	Acquire(
@@ -49,28 +49,28 @@ type BudgetManager interface {
 	) (providerbudget.Decision, error)
 }
 
-type Coalescer interface {
+type Coalescer[T requestcoalescing.Value] interface {
 	Do(
 		ctx context.Context,
 		key string,
-		function requestcoalescing.Function[any],
-	) (requestcoalescing.Result[any], error)
+		function requestcoalescing.Function[T],
+	) (requestcoalescing.Result[T], error)
 }
 
-type Config struct {
+type Config[T requestcoalescing.Value] struct {
 	BudgetManager BudgetManager
-	Coalescer     Coalescer
+	Coalescer     Coalescer[T]
 }
 
-type Orchestrator struct {
+type Orchestrator[T requestcoalescing.Value] struct {
 	budgetManager BudgetManager
-	coalescer     Coalescer
+	coalescer     Coalescer[T]
 }
 
-type ExecuteResult struct {
+type ExecuteResult[T requestcoalescing.Value] struct {
 	Provider   providerpolicy.Provider
 	RequestKey string
-	Value      any
+	Value      T
 	Shared     bool
 }
 
@@ -97,13 +97,15 @@ func (err *AccessDeniedError) Error() string {
 		"provider access denied: provider=%s reason=%s retry_at=%s",
 		err.Provider,
 		err.Reason,
-		err.RetryAt.UTC().Format(time.RFC3339Nano),
+		err.RetryAt.UTC().Format(
+			time.RFC3339Nano,
+		),
 	)
 }
 
-func New(
-	config Config,
-) (*Orchestrator, error) {
+func New[T requestcoalescing.Value](
+	config Config[T],
+) (*Orchestrator[T], error) {
 	if config.BudgetManager == nil {
 		return nil, ErrBudgetManagerRequired
 	}
@@ -112,39 +114,43 @@ func New(
 		return nil, ErrCoalescerRequired
 	}
 
-	return &Orchestrator{
+	return &Orchestrator[T]{
 		budgetManager: config.BudgetManager,
 		coalescer:     config.Coalescer,
 	}, nil
 }
 
-func NewDefault(
+func NewDefault[T requestcoalescing.Value](
 	budgetManager BudgetManager,
-) (*Orchestrator, error) {
+) (*Orchestrator[T], error) {
 	return New(
-		Config{
+		Config[T]{
 			BudgetManager: budgetManager,
-			Coalescer:     requestcoalescing.New[any](),
+			Coalescer:     requestcoalescing.New[T](),
 		},
 	)
 }
 
-func (orchestrator *Orchestrator) Execute(
+func (
+	orchestrator *Orchestrator[T],
+) Execute(
 	ctx context.Context,
 	provider providerpolicy.Provider,
 	requestKey string,
-	function Function,
-) (ExecuteResult, error) {
+	function Function[T],
+) (ExecuteResult[T], error) {
 	normalizedRequestKey := strings.TrimSpace(
 		requestKey,
 	)
 
 	if normalizedRequestKey == "" {
-		return ExecuteResult{}, ErrRequestKeyRequired
+		return ExecuteResult[T]{},
+			ErrRequestKeyRequired
 	}
 
 	if function == nil {
-		return ExecuteResult{}, ErrFunctionRequired
+		return ExecuteResult[T]{},
+			ErrFunctionRequired
 	}
 
 	if ctx == nil {
@@ -159,19 +165,23 @@ func (orchestrator *Orchestrator) Execute(
 		),
 		func(
 			operationContext context.Context,
-		) (any, error) {
+		) (T, error) {
 			decision, err := orchestrator.budgetManager.Acquire(
 				provider,
 			)
 			if err != nil {
-				return nil, fmt.Errorf(
+				var zero T
+
+				return zero, fmt.Errorf(
 					"acquire provider budget: %w",
 					err,
 				)
 			}
 
 			if !decision.Allowed {
-				return nil, &AccessDeniedError{
+				var zero T
+
+				return zero, &AccessDeniedError{
 					Provider: decision.Provider,
 					Reason:   decision.Reason,
 					RetryAt:  decision.RetryAt,
@@ -184,10 +194,11 @@ func (orchestrator *Orchestrator) Execute(
 		},
 	)
 	if err != nil {
-		return ExecuteResult{}, err
+		return ExecuteResult[T]{},
+			err
 	}
 
-	return ExecuteResult{
+	return ExecuteResult[T]{
 		Provider:   provider,
 		RequestKey: normalizedRequestKey,
 		Value:      result.Value,
@@ -195,19 +206,22 @@ func (orchestrator *Orchestrator) Execute(
 	}, nil
 }
 
-func (orchestrator *Orchestrator) ExecutePublication(
+func (
+	orchestrator *Orchestrator[T],
+) ExecutePublication(
 	ctx context.Context,
 	provider providerpolicy.Provider,
 	requestKey string,
 	publicationID string,
-	function Function,
-) (ExecuteResult, error) {
+	function Function[T],
+) (ExecuteResult[T], error) {
 	normalizedRequestKey := strings.TrimSpace(
 		requestKey,
 	)
 
 	if normalizedRequestKey == "" {
-		return ExecuteResult{}, ErrRequestKeyRequired
+		return ExecuteResult[T]{},
+			ErrRequestKeyRequired
 	}
 
 	normalizedPublicationID := strings.TrimSpace(
@@ -215,11 +229,13 @@ func (orchestrator *Orchestrator) ExecutePublication(
 	)
 
 	if normalizedPublicationID == "" {
-		return ExecuteResult{}, ErrPublicationIDRequired
+		return ExecuteResult[T]{},
+			ErrPublicationIDRequired
 	}
 
 	if function == nil {
-		return ExecuteResult{}, ErrFunctionRequired
+		return ExecuteResult[T]{},
+			ErrFunctionRequired
 	}
 
 	if ctx == nil {
@@ -235,20 +251,24 @@ func (orchestrator *Orchestrator) ExecutePublication(
 		),
 		func(
 			operationContext context.Context,
-		) (any, error) {
+		) (T, error) {
 			decision, err := orchestrator.budgetManager.AcquirePublication(
 				provider,
 				normalizedPublicationID,
 			)
 			if err != nil {
-				return nil, fmt.Errorf(
+				var zero T
+
+				return zero, fmt.Errorf(
 					"acquire publication provider budget: %w",
 					err,
 				)
 			}
 
 			if !decision.Allowed {
-				return nil, &AccessDeniedError{
+				var zero T
+
+				return zero, &AccessDeniedError{
 					Provider: decision.Provider,
 					Reason:   decision.Reason,
 					RetryAt:  decision.RetryAt,
@@ -261,10 +281,11 @@ func (orchestrator *Orchestrator) ExecutePublication(
 		},
 	)
 	if err != nil {
-		return ExecuteResult{}, err
+		return ExecuteResult[T]{},
+			err
 	}
 
-	return ExecuteResult{
+	return ExecuteResult[T]{
 		Provider:   provider,
 		RequestKey: normalizedRequestKey,
 		Value:      result.Value,

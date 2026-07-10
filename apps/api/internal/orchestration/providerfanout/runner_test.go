@@ -12,21 +12,27 @@ import (
 
 const testWatchdog = time.Second
 
+type testPayload string
+
+func (testPayload) RequestCoalescingValue() {}
+
 type executorStub struct {
 	executeFunction func(
 		ctx context.Context,
 		provider providerpolicy.Provider,
 		requestKey string,
-		function ingestionorchestrator.Function,
-	) (ingestionorchestrator.ExecuteResult, error)
+		function ingestionorchestrator.Function[testPayload],
+	) (ingestionorchestrator.ExecuteResult[testPayload], error)
 }
 
-func (stub *executorStub) Execute(
+func (
+	stub *executorStub,
+) Execute(
 	ctx context.Context,
 	provider providerpolicy.Provider,
 	requestKey string,
-	function ingestionorchestrator.Function,
-) (ingestionorchestrator.ExecuteResult, error) {
+	function ingestionorchestrator.Function[testPayload],
+) (ingestionorchestrator.ExecuteResult[testPayload], error) {
 	return stub.executeFunction(
 		ctx,
 		provider,
@@ -52,21 +58,21 @@ func TestRunExecutesIndependentTasksConcurrently(
 			_ context.Context,
 			provider providerpolicy.Provider,
 			requestKey string,
-			_ ingestionorchestrator.Function,
-		) (ingestionorchestrator.ExecuteResult, error) {
+			_ ingestionorchestrator.Function[testPayload],
+		) (ingestionorchestrator.ExecuteResult[testPayload], error) {
 			startedTasks <- requestKey
 
 			<-releaseTasks
 
-			return ingestionorchestrator.ExecuteResult{
+			return ingestionorchestrator.ExecuteResult[testPayload]{
 				Provider:   provider,
 				RequestKey: requestKey,
-				Value:      requestKey,
+				Value:      testPayload(requestKey),
 			}, nil
 		},
 	}
 
-	runner, err := New(
+	runner, err := New[testPayload](
 		executor,
 	)
 	if err != nil {
@@ -77,7 +83,7 @@ func TestRunExecutesIndependentTasksConcurrently(
 	}
 
 	resultChannel := make(
-		chan []Result,
+		chan []Result[testPayload],
 		1,
 	)
 
@@ -89,7 +95,7 @@ func TestRunExecutesIndependentTasksConcurrently(
 	go func() {
 		results, runErr := runner.Run(
 			context.Background(),
-			[]Task{
+			[]Task[testPayload]{
 				{
 					ID:         "traffic",
 					Provider:   providerpolicy.ProviderAirplanesLive,
@@ -124,7 +130,9 @@ func TestRunExecutesIndependentTasksConcurrently(
 		)
 	}
 
-	close(releaseTasks)
+	close(
+		releaseTasks,
+	)
 
 	results := <-resultChannel
 	runErr := <-errorChannel
@@ -170,22 +178,22 @@ func TestRunPreservesSuccessfulResultsWhenOneTaskFails(
 			_ context.Context,
 			provider providerpolicy.Provider,
 			requestKey string,
-			_ ingestionorchestrator.Function,
-		) (ingestionorchestrator.ExecuteResult, error) {
+			_ ingestionorchestrator.Function[testPayload],
+		) (ingestionorchestrator.ExecuteResult[testPayload], error) {
 			if requestKey == "traffic:regional-snapshot" {
-				return ingestionorchestrator.ExecuteResult{},
+				return ingestionorchestrator.ExecuteResult[testPayload]{},
 					providerFailure
 			}
 
-			return ingestionorchestrator.ExecuteResult{
+			return ingestionorchestrator.ExecuteResult[testPayload]{
 				Provider:   provider,
 				RequestKey: requestKey,
-				Value:      "weather-snapshot",
+				Value:      testPayload("weather-snapshot"),
 			}, nil
 		},
 	}
 
-	runner, err := New(
+	runner, err := New[testPayload](
 		executor,
 	)
 	if err != nil {
@@ -197,7 +205,7 @@ func TestRunPreservesSuccessfulResultsWhenOneTaskFails(
 
 	results, err := runner.Run(
 		context.Background(),
-		[]Task{
+		[]Task[testPayload]{
 			{
 				ID:         "traffic",
 				Provider:   providerpolicy.ProviderAirplanesLive,
@@ -234,9 +242,9 @@ func TestRunPreservesSuccessfulResultsWhenOneTaskFails(
 		)
 	}
 
-	if results[1].Value != "weather-snapshot" {
+	if results[1].Value != testPayload("weather-snapshot") {
 		t.Fatalf(
-			"unexpected weather value: %v",
+			"unexpected weather value: %s",
 			results[1].Value,
 		)
 	}
@@ -250,13 +258,14 @@ func TestRunRejectsDuplicateTaskIdentifiers(
 			_ context.Context,
 			_ providerpolicy.Provider,
 			_ string,
-			_ ingestionorchestrator.Function,
-		) (ingestionorchestrator.ExecuteResult, error) {
-			return ingestionorchestrator.ExecuteResult{}, nil
+			_ ingestionorchestrator.Function[testPayload],
+		) (ingestionorchestrator.ExecuteResult[testPayload], error) {
+			return ingestionorchestrator.ExecuteResult[testPayload]{},
+				nil
 		},
 	}
 
-	runner, err := New(
+	runner, err := New[testPayload](
 		executor,
 	)
 	if err != nil {
@@ -268,7 +277,7 @@ func TestRunRejectsDuplicateTaskIdentifiers(
 
 	_, err = runner.Run(
 		context.Background(),
-		[]Task{
+		[]Task[testPayload]{
 			{
 				ID:       "traffic",
 				Provider: providerpolicy.ProviderAirplanesLive,
@@ -301,7 +310,9 @@ func waitForStartedTask(
 	case taskID := <-startedTasks:
 		return taskID
 
-	case <-time.After(testWatchdog):
+	case <-time.After(
+		testWatchdog,
+	):
 		t.Fatal(
 			"parallel provider task did not start before test watchdog expired",
 		)

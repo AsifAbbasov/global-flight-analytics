@@ -32,7 +32,8 @@ func NewPublisher(
 	config PublisherConfig,
 ) (*Publisher, error) {
 	if config.Store == nil {
-		return nil, ErrSnapshotStoreRequired
+		return nil,
+			ErrSnapshotStoreRequired
 	}
 
 	now := config.Now
@@ -46,9 +47,11 @@ func NewPublisher(
 	}, nil
 }
 
-func (publisher *Publisher) PublishEnvelope(
+func (
+	publisher *Publisher,
+) PublishEnvelope(
 	cycleStartedAt time.Time,
-	envelope providerfanin.Envelope,
+	envelope providerfanin.Envelope[Payload],
 ) (Snapshot, error) {
 	assembledAt := publisher.now()
 
@@ -58,18 +61,23 @@ func (publisher *Publisher) PublishEnvelope(
 		envelope,
 	)
 	if err != nil {
-		return Snapshot{}, fmt.Errorf(
-			"assemble shared snapshot: %w",
-			err,
-		)
+		return Snapshot{},
+			fmt.Errorf(
+				"assemble shared snapshot: %w",
+				err,
+			)
 	}
 
-	if err := publisher.store.Publish(snapshot); err != nil {
-		return Snapshot{}, fmt.Errorf(
-			"publish shared snapshot: %w",
-			err,
-		)
+	if err := publisher.store.Publish(
+		snapshot,
+	); err != nil {
+		return Snapshot{},
+			fmt.Errorf(
+				"publish shared snapshot: %w",
+				err,
+			)
 	}
 
-	return snapshot.Clone(), nil
+	return snapshot.Clone(),
+		nil
 }
