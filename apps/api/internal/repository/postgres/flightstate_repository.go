@@ -11,13 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var (
-	ErrFlightStateNotFound = errors.New(
-		"flight state not found",
-	)
-	ErrFlightStateRepositoryPoolRequired = errors.New(
-		"flight state repository pool is required",
-	)
+var ErrFlightStateRepositoryPoolRequired = errors.New(
+	"flight state repository pool is required",
 )
 
 type FlightStateRepository struct {
@@ -352,7 +347,7 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 			pgx.ErrNoRows,
 		) {
 			return flightstate.FlightState{},
-				ErrFlightStateNotFound
+				flightstate.ErrNotFound
 		}
 
 		return flightstate.FlightState{}, err

@@ -9,10 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var ErrTrajectoryNotFound = errors.New(
-	"trajectory not found",
-)
-
 func (
 	repository *TrajectoryRepository,
 ) GetLatestTrajectoryByICAO24(
@@ -28,7 +24,7 @@ func (
 	)
 	if normalizedICAO24 == "" {
 		return trajectory.FlightTrajectory{},
-			ErrTrajectoryNotFound
+			trajectory.ErrNotFound
 	}
 
 	const query = `
@@ -91,7 +87,7 @@ func (
 	)
 	if trimmedTrajectoryID == "" {
 		return trajectory.FlightTrajectory{},
-			ErrTrajectoryNotFound
+			trajectory.ErrNotFound
 	}
 
 	const query = `
@@ -174,7 +170,7 @@ func (
 			pgx.ErrNoRows,
 		) {
 			return trajectory.FlightTrajectory{},
-				ErrTrajectoryNotFound
+				trajectory.ErrNotFound
 		}
 
 		return trajectory.FlightTrajectory{},

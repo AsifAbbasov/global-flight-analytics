@@ -7,7 +7,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -65,7 +64,7 @@ func (h *FlightStateHandler) GetLatestByICAO24(
 	if err != nil {
 		if errors.Is(
 			err,
-			postgres.ErrFlightStateNotFound,
+			flightstate.ErrNotFound,
 		) {
 			return response.Error(
 				c,
