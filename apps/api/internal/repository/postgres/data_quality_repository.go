@@ -15,9 +15,7 @@ type DataQualityRepository struct {
 }
 
 func NewDataQualityRepository(db *pgxpool.Pool) *DataQualityRepository {
-	return &DataQualityRepository{
-		db: db,
-	}
+	return &DataQualityRepository{db: db}
 }
 
 func (repository *DataQualityRepository) SaveFlightStateQuality(
@@ -36,8 +34,8 @@ func (repository *DataQualityRepository) SaveFlightStateQuality(
 
 	const query = `
 		INSERT INTO data_quality_reports (
-			object_type,
-			object_id,
+			state_id,
+			flight_state_id,
 			validation_status,
 			completeness,
 			confidence,
@@ -46,8 +44,12 @@ func (repository *DataQualityRepository) SaveFlightStateQuality(
 			warnings_json
 		)
 		VALUES (
-			'flight_state',
 			$1,
+			(
+				SELECT persisted_state.id
+				FROM flight_states AS persisted_state
+				WHERE persisted_state.id = $1
+			),
 			$2,
 			$3,
 			$4,
@@ -69,7 +71,7 @@ func (repository *DataQualityRepository) SaveFlightStateQuality(
 		string(warningsJSON),
 	)
 	if err != nil {
-		return fmt.Errorf("insert data quality report: %w", err)
+		return fmt.Errorf("insert flight state quality report: %w", err)
 	}
 
 	return nil
