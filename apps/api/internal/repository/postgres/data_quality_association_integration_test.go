@@ -297,7 +297,7 @@ func createLegacyQualitySchema(t *testing.T, pool *pgxpool.Pool) {
 			);
 
 			CREATE TABLE data_quality_reports (
-				id uuid PRIMARY KEY,
+				id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 				object_type text NOT NULL,
 				object_id uuid,
 				validation_status text NOT NULL,
