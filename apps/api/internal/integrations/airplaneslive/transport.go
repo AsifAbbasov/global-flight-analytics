@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
 
 func (c *Client) doStateRequest(
@@ -37,8 +39,10 @@ func (c *Client) doStateRequest(
 	if response.StatusCode < http.StatusOK ||
 		response.StatusCode >= http.StatusMultipleChoices {
 		return nil, fmt.Errorf(
-			"request failed with status %d",
-			response.StatusCode,
+			"airplanes live request failed: %w",
+			integrationcommon.ProviderStatusError(
+				response.StatusCode,
+			),
 		)
 	}
 
