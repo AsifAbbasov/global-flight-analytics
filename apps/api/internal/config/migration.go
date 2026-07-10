@@ -2,7 +2,10 @@ package config
 
 import "fmt"
 
-const migrationTimeoutEnvironmentVariable = "MIGRATION_TIMEOUT"
+const (
+	migrationsDirEnvironmentVariable    = "MIGRATIONS_DIR"
+	migrationTimeoutEnvironmentVariable = "MIGRATION_TIMEOUT"
+)
 
 func LoadMigrationConfig() (
 	MigrationConfig,
@@ -28,6 +31,16 @@ func LoadMigrationConfig() (
 		)
 	}
 
+	migrationsDir, err := requiredTrimmedStringEnvironmentVariable(
+		migrationsDirEnvironmentVariable,
+	)
+	if err != nil {
+		return MigrationConfig{}, fmt.Errorf(
+			"load migrations directory: %w",
+			err,
+		)
+	}
+
 	migrationTimeout, err := requiredPositiveDurationEnvironmentVariable(
 		migrationTimeoutEnvironmentVariable,
 	)
@@ -43,6 +56,7 @@ func LoadMigrationConfig() (
 			URL:            databaseURL,
 			ConnectTimeout: databaseConnectTimeout,
 		},
+		MigrationsDir:    migrationsDir,
 		MigrationTimeout: migrationTimeout,
 	}, nil
 }

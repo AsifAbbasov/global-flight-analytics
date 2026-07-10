@@ -36,6 +36,7 @@ type ImportAirportsConfig struct {
 type MigrationConfig struct {
 	Database PostgresConfig
 
+	MigrationsDir    string
 	MigrationTimeout time.Duration
 }
 
