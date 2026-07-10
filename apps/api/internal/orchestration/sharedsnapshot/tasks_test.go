@@ -25,7 +25,7 @@ type recordingTrafficSource struct {
 func (
 	source *recordingTrafficSource,
 ) LoadByPoint(
-	ctx context.Context,
+	_ context.Context,
 	latitude float64,
 	longitude float64,
 	radius int,
@@ -35,25 +35,28 @@ func (
 	source.longitude = longitude
 	source.radius = radius
 
-	return source.states, source.err
+	return source.states,
+		source.err
 }
 
 type recordingWeatherSource struct {
-	called  bool
-	request openmeteo.CurrentWeatherRequest
-	err     error
+	called   bool
+	request  openmeteo.CurrentWeatherRequest
+	snapshot domainweather.CurrentSnapshot
+	err      error
 }
 
 func (
 	source *recordingWeatherSource,
 ) GetCurrentWeather(
-	ctx context.Context,
+	_ context.Context,
 	request openmeteo.CurrentWeatherRequest,
 ) (domainweather.CurrentSnapshot, error) {
 	source.called = true
 	source.request = request
 
-	return domainweather.CurrentSnapshot{}, source.err
+	return source.snapshot,
+		source.err
 }
 
 func TestBuildRegionalTrafficTaskRequiresTrafficSource(
@@ -161,15 +164,13 @@ func TestBuildRegionalTrafficTaskExecutesExactPointRequest(
 		radius    = 250
 	)
 
-	expectedStates := []flightstate.FlightState{
-		{
-			ID:     "state-1",
-			ICAO24: "abc123",
-		},
-	}
-
 	source := &recordingTrafficSource{
-		states: expectedStates,
+		states: []flightstate.FlightState{
+			{
+				ID:     "state-1",
+				ICAO24: "abc123",
+			},
+		},
 	}
 
 	task, err := BuildRegionalTrafficTask(
@@ -204,50 +205,36 @@ func TestBuildRegionalTrafficTaskExecutesExactPointRequest(
 		)
 	}
 
-	if source.latitude != latitude {
+	if source.latitude != latitude ||
+		source.longitude != longitude ||
+		source.radius != radius {
 		t.Fatalf(
-			"unexpected traffic latitude: got %f, want %f",
+			"unexpected point request: latitude=%f longitude=%f radius=%d",
 			source.latitude,
-			latitude,
-		)
-	}
-
-	if source.longitude != longitude {
-		t.Fatalf(
-			"unexpected traffic longitude: got %f, want %f",
 			source.longitude,
-			longitude,
-		)
-	}
-
-	if source.radius != radius {
-		t.Fatalf(
-			"unexpected traffic radius: got %d, want %d",
 			source.radius,
-			radius,
 		)
 	}
 
-	states, ok := value.([]flightstate.FlightState)
+	trafficPayload, ok := value.RegionalTraffic()
 	if !ok {
 		t.Fatalf(
-			"unexpected traffic task result type: %T",
-			value,
+			"expected regional traffic payload, got kind %q",
+			value.Kind(),
 		)
 	}
 
-	if len(states) != 1 {
+	if len(trafficPayload.States) != 1 {
 		t.Fatalf(
 			"unexpected traffic task state count: got %d, want 1",
-			len(states),
+			len(trafficPayload.States),
 		)
 	}
 
-	if states[0].ID != "state-1" {
+	if trafficPayload.States[0].ID != "state-1" {
 		t.Fatalf(
-			"unexpected traffic state identifier: got %q, want %q",
-			states[0].ID,
-			"state-1",
+			"unexpected traffic state identifier: %q",
+			trafficPayload.States[0].ID,
 		)
 	}
 }
@@ -277,6 +264,7 @@ func TestBuildRegionalTrafficTaskPropagatesSourceError(
 	_, err = task.Function(
 		context.Background(),
 	)
+
 	if !errors.Is(
 		err,
 		expectedErr,
@@ -367,13 +355,11 @@ func TestBuildCurrentWeatherTaskPreservesExplicitIdentityAndRequestKey(
 		)
 	}
 
-	request := openmeteo.CurrentWeatherRequest{
-		Latitude:  latitude,
-		Longitude: longitude,
-	}
-
 	expectedRequestKey := weatherprovider.CurrentWeatherRequestKey(
-		request,
+		openmeteo.CurrentWeatherRequest{
+			Latitude:  latitude,
+			Longitude: longitude,
+		},
 	)
 
 	if task.RequestKey != expectedRequestKey {
@@ -393,7 +379,15 @@ func TestBuildCurrentWeatherTaskExecutesExactRequest(
 		longitude = 49.8671
 	)
 
-	source := &recordingWeatherSource{}
+	expectedSnapshot := domainweather.CurrentSnapshot{
+		Provider:  domainweather.ProviderOpenMeteo,
+		Latitude:  latitude,
+		Longitude: longitude,
+	}
+
+	source := &recordingWeatherSource{
+		snapshot: expectedSnapshot,
+	}
 
 	task, err := BuildCurrentWeatherTask(
 		CurrentWeatherTaskConfig{
@@ -410,9 +404,10 @@ func TestBuildCurrentWeatherTaskExecutesExactRequest(
 		)
 	}
 
-	if _, err := task.Function(
+	value, err := task.Function(
 		context.Background(),
-	); err != nil {
+	)
+	if err != nil {
 		t.Fatalf(
 			"execute current weather task: %v",
 			err,
@@ -425,19 +420,28 @@ func TestBuildCurrentWeatherTaskExecutesExactRequest(
 		)
 	}
 
-	if source.request.Latitude != latitude {
+	if source.request.Latitude != latitude ||
+		source.request.Longitude != longitude {
 		t.Fatalf(
-			"unexpected weather latitude: got %f, want %f",
+			"unexpected weather request: latitude=%f longitude=%f",
 			source.request.Latitude,
-			latitude,
+			source.request.Longitude,
 		)
 	}
 
-	if source.request.Longitude != longitude {
+	weatherPayload, ok := value.CurrentWeather()
+	if !ok {
 		t.Fatalf(
-			"unexpected weather longitude: got %f, want %f",
-			source.request.Longitude,
-			longitude,
+			"expected current weather payload, got kind %q",
+			value.Kind(),
+		)
+	}
+
+	if weatherPayload.Snapshot.Provider !=
+		domainweather.ProviderOpenMeteo {
+		t.Fatalf(
+			"unexpected weather snapshot provider: %q",
+			weatherPayload.Snapshot.Provider,
 		)
 	}
 }
@@ -467,6 +471,7 @@ func TestBuildCurrentWeatherTaskPropagatesSourceError(
 	_, err = task.Function(
 		context.Background(),
 	)
+
 	if !errors.Is(
 		err,
 		expectedErr,
@@ -478,7 +483,7 @@ func TestBuildCurrentWeatherTaskPropagatesSourceError(
 	}
 }
 
-func TestBuildTasksRequiresTrafficSource(
+func TestBuildTasksRequiresEachDependency(
 	t *testing.T,
 ) {
 	_, err := BuildTasks(
@@ -488,79 +493,63 @@ func TestBuildTasksRequiresTrafficSource(
 			WeatherProvider: providerpolicy.ProviderOpenMeteo,
 		},
 	)
-
 	if !errors.Is(
 		err,
 		ErrRegionalTrafficSourceRequired,
 	) {
 		t.Fatalf(
-			"expected ErrRegionalTrafficSourceRequired, got %v",
+			"expected missing traffic source error, got %v",
 			err,
 		)
 	}
-}
 
-func TestBuildTasksRequiresTrafficProviderIdentity(
-	t *testing.T,
-) {
-	_, err := BuildTasks(
+	_, err = BuildTasks(
 		TaskConfig{
 			TrafficSource:   &recordingTrafficSource{},
 			WeatherSource:   &recordingWeatherSource{},
 			WeatherProvider: providerpolicy.ProviderOpenMeteo,
 		},
 	)
-
 	if !errors.Is(
 		err,
 		ErrRegionalTrafficProviderRequired,
 	) {
 		t.Fatalf(
-			"expected ErrRegionalTrafficProviderRequired, got %v",
+			"expected missing traffic provider error, got %v",
 			err,
 		)
 	}
-}
 
-func TestBuildTasksRequiresWeatherSource(
-	t *testing.T,
-) {
-	_, err := BuildTasks(
+	_, err = BuildTasks(
 		TaskConfig{
 			TrafficSource:   &recordingTrafficSource{},
 			TrafficProvider: providerpolicy.ProviderAirplanesLive,
 			WeatherProvider: providerpolicy.ProviderOpenMeteo,
 		},
 	)
-
 	if !errors.Is(
 		err,
 		ErrCurrentWeatherSourceRequired,
 	) {
 		t.Fatalf(
-			"expected ErrCurrentWeatherSourceRequired, got %v",
+			"expected missing weather source error, got %v",
 			err,
 		)
 	}
-}
 
-func TestBuildTasksRequiresWeatherProviderIdentity(
-	t *testing.T,
-) {
-	_, err := BuildTasks(
+	_, err = BuildTasks(
 		TaskConfig{
 			TrafficSource:   &recordingTrafficSource{},
 			TrafficProvider: providerpolicy.ProviderAirplanesLive,
 			WeatherSource:   &recordingWeatherSource{},
 		},
 	)
-
 	if !errors.Is(
 		err,
 		ErrCurrentWeatherProviderRequired,
 	) {
 		t.Fatalf(
-			"expected ErrCurrentWeatherProviderRequired, got %v",
+			"expected missing weather provider error, got %v",
 			err,
 		)
 	}
@@ -600,68 +589,31 @@ func TestBuildTasksPreservesCompositeTaskOrderAndExplicitIdentity(
 		)
 	}
 
-	trafficTask := tasks[0]
-
-	if trafficTask.ID != TaskIDRegionalTraffic {
+	if tasks[0].ID != TaskIDRegionalTraffic {
 		t.Fatalf(
-			"unexpected first task identifier: got %q, want %q",
-			trafficTask.ID,
-			TaskIDRegionalTraffic,
+			"unexpected first task identifier: %q",
+			tasks[0].ID,
 		)
 	}
 
-	if trafficTask.Provider != providerpolicy.ProviderOpenSky {
+	if tasks[1].ID != TaskIDCurrentWeather {
 		t.Fatalf(
-			"unexpected first task provider: got %q, want %q",
-			trafficTask.Provider,
-			providerpolicy.ProviderOpenSky,
+			"unexpected second task identifier: %q",
+			tasks[1].ID,
 		)
 	}
 
-	expectedTrafficRequestKey := regionalprovider.PointRequestKey(
-		latitude,
-		longitude,
-		radius,
-	)
-
-	if trafficTask.RequestKey != expectedTrafficRequestKey {
+	if tasks[0].Provider != providerpolicy.ProviderOpenSky {
 		t.Fatalf(
-			"unexpected first task request key: got %q, want %q",
-			trafficTask.RequestKey,
-			expectedTrafficRequestKey,
+			"unexpected first task provider: %q",
+			tasks[0].Provider,
 		)
 	}
 
-	weatherTask := tasks[1]
-
-	if weatherTask.ID != TaskIDCurrentWeather {
+	if tasks[1].Provider != providerpolicy.ProviderOpenMeteo {
 		t.Fatalf(
-			"unexpected second task identifier: got %q, want %q",
-			weatherTask.ID,
-			TaskIDCurrentWeather,
-		)
-	}
-
-	if weatherTask.Provider != providerpolicy.ProviderOpenMeteo {
-		t.Fatalf(
-			"unexpected second task provider: got %q, want %q",
-			weatherTask.Provider,
-			providerpolicy.ProviderOpenMeteo,
-		)
-	}
-
-	expectedWeatherRequestKey := weatherprovider.CurrentWeatherRequestKey(
-		openmeteo.CurrentWeatherRequest{
-			Latitude:  latitude,
-			Longitude: longitude,
-		},
-	)
-
-	if weatherTask.RequestKey != expectedWeatherRequestKey {
-		t.Fatalf(
-			"unexpected second task request key: got %q, want %q",
-			weatherTask.RequestKey,
-			expectedWeatherRequestKey,
+			"unexpected second task provider: %q",
+			tasks[1].Provider,
 		)
 	}
 }

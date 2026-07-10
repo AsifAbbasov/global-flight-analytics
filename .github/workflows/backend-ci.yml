@@ -1,0 +1,145 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'database/**'
+      - '.github/workflows/backend-ci.yml'
+
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/api/**'
+      - 'database/**'
+      - '.github/workflows/backend-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-quality:
+    name: Backend Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Verify Go formatting
+        shell: bash
+        run: |
+          unformatted_files="$(gofmt -l .)"
+
+          if [ -n "$unformatted_files" ]; then
+            printf '%s\n' "The following Go files are not formatted:"
+            printf '%s\n' "$unformatted_files"
+            exit 1
+          fi
+
+      - name: Run Go tests
+        run: go test -count=1 ./...
+
+      - name: Run Go vet
+        run: go vet ./...
+
+  backend-race:
+    name: Backend Race Safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run critical package race tests
+        run: |
+          go test -count=1 -race \
+            ./internal/config \
+            ./internal/database \
+            ./internal/integrations/common \
+            ./internal/integrations/airplaneslive \
+            ./internal/integrations/openmeteo \
+            ./internal/orchestration/sharedsnapshot \
+            ./internal/services/traffic/processor \
+            ./internal/services/traffic/trackbuilder \
+            ./internal/services/traffic/trajectoryquality \
+            ./internal/services/traffic/validator
+
+  postgres-integration:
+    name: PostgreSQL 16 Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: global_flight_analytics_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d global_flight_analytics_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/global_flight_analytics_test?sslmode=disable
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run PostgreSQL repository integration tests
+        run: go test -count=1 ./internal/repository/postgres

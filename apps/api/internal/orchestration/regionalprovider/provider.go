@@ -22,11 +22,13 @@ var (
 	ErrProviderIDRequired = errors.New(
 		"regional provider identifier is required",
 	)
-
-	ErrUnexpectedResultType = errors.New(
-		"unexpected regional provider result type",
-	)
 )
+
+type ExecutionValue struct {
+	States []flightstate.FlightState
+}
+
+func (ExecutionValue) RequestCoalescingValue() {}
 
 type Delegate interface {
 	SourceName() string
@@ -44,8 +46,8 @@ type Executor interface {
 		ctx context.Context,
 		provider providerpolicy.Provider,
 		requestKey string,
-		function ingestionorchestrator.Function,
-	) (ingestionorchestrator.ExecuteResult, error)
+		function ingestionorchestrator.Function[ExecutionValue],
+	) (ingestionorchestrator.ExecuteResult[ExecutionValue], error)
 }
 
 type Config struct {
@@ -82,11 +84,15 @@ func New(
 	}, nil
 }
 
-func (provider *Provider) SourceName() string {
+func (
+	provider *Provider,
+) SourceName() string {
 	return provider.delegate.SourceName()
 }
 
-func (provider *Provider) LoadByPoint(
+func (
+	provider *Provider,
+) LoadByPoint(
 	ctx context.Context,
 	latitude float64,
 	longitude float64,
@@ -102,13 +108,21 @@ func (provider *Provider) LoadByPoint(
 		),
 		func(
 			operationContext context.Context,
-		) (any, error) {
-			return provider.delegate.LoadByPoint(
+		) (ExecutionValue, error) {
+			states, err := provider.delegate.LoadByPoint(
 				operationContext,
 				latitude,
 				longitude,
 				radius,
 			)
+			if err != nil {
+				return ExecutionValue{},
+					err
+			}
+
+			return ExecutionValue{
+				States: states,
+			}, nil
 		},
 	)
 	if err != nil {
@@ -118,16 +132,8 @@ func (provider *Provider) LoadByPoint(
 		)
 	}
 
-	states, ok := result.Value.([]flightstate.FlightState)
-	if !ok {
-		return nil, fmt.Errorf(
-			"%w: provider=%s",
-			ErrUnexpectedResultType,
-			provider.providerID,
-		)
-	}
-
-	return states, nil
+	return result.Value.States,
+		nil
 }
 
 func regionalRequestKey(

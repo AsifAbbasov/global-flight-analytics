@@ -14,10 +14,6 @@ const (
 	internationalFootInMeters = 0.3048
 )
 
-var ErrAirportNotFound = errors.New(
-	"airport not found",
-)
-
 type AirportRepository struct {
 	pool *pgxpool.Pool
 }
@@ -148,7 +144,7 @@ func (repository *AirportRepository) GetByICAO(
 			err,
 			pgx.ErrNoRows,
 		) {
-			return airport.Airport{}, ErrAirportNotFound
+			return airport.Airport{}, airport.ErrNotFound
 		}
 
 		return airport.Airport{}, err

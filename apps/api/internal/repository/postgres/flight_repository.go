@@ -9,8 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrFlightNotFound = errors.New("flight not found")
-
 type FlightRepository struct {
 	db *pgxpool.Pool
 }
@@ -117,7 +115,7 @@ func (r *FlightRepository) GetByID(ctx context.Context, id string) (flight.Fligh
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return flight.Flight{}, ErrFlightNotFound
+			return flight.Flight{}, flight.ErrNotFound
 		}
 
 		return flight.Flight{}, err

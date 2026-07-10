@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
@@ -30,12 +31,6 @@ func main() {
 		"print migration status without applying SQL",
 	)
 
-	migrationsDirFlag := flag.String(
-		"dir",
-		"",
-		"path to database migrations directory",
-	)
-
 	flag.Parse()
 
 	log := applogger.New()
@@ -50,12 +45,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	migrationsDir, err := resolveMigrationsDir(
-		*migrationsDirFlag,
+	migrationsDir, err := validateMigrationsDir(
+		cfg.MigrationsDir,
 	)
 	if err != nil {
 		log.Error(
-			"failed to resolve migrations directory",
+			"failed to validate migrations directory",
 			"error",
 			err,
 		)
@@ -180,53 +175,47 @@ func main() {
 	}
 }
 
-func resolveMigrationsDir(
-	flagValue string,
-) (string, error) {
-	if flagValue != "" {
-		return validateMigrationsDir(
-			flagValue,
-		)
-	}
-
-	candidates := []string{
-		"database/migrations",
-		"../database/migrations",
-		"../../database/migrations",
-		"../../../database/migrations",
-	}
-
-	for _, candidate := range candidates {
-		resolved, err := validateMigrationsDir(
-			candidate,
-		)
-		if err == nil {
-			return resolved, nil
-		}
-	}
-
-	return "", fmt.Errorf(
-		"database migrations directory was not found",
-	)
-}
-
 func validateMigrationsDir(
 	path string,
 ) (string, error) {
-	cleanPath := filepath.Clean(
+	trimmedPath := strings.TrimSpace(
 		path,
+	)
+	if trimmedPath == "" {
+		return "", fmt.Errorf(
+			"migrations directory path is required",
+		)
+	}
+
+	absolutePath, err := filepath.Abs(
+		trimmedPath,
+	)
+	if err != nil {
+		return "", fmt.Errorf(
+			"resolve migrations directory path %q: %w",
+			trimmedPath,
+			err,
+		)
+	}
+
+	cleanPath := filepath.Clean(
+		absolutePath,
 	)
 
 	info, err := os.Stat(
 		cleanPath,
 	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf(
+			"stat migrations directory %q: %w",
+			cleanPath,
+			err,
+		)
 	}
 
 	if !info.IsDir() {
 		return "", fmt.Errorf(
-			"%s is not a directory",
+			"%q is not a directory",
 			cleanPath,
 		)
 	}

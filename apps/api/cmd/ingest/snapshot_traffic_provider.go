@@ -20,8 +20,8 @@ var (
 		"regional traffic result is missing from shared snapshot",
 	)
 
-	errSnapshotTrafficResultType = errors.New(
-		"regional traffic result has unexpected type",
+	errSnapshotTrafficPayloadKind = errors.New(
+		"regional traffic result has unexpected payload kind",
 	)
 
 	errSnapshotTrafficRequestKeyMissing = errors.New(
@@ -47,7 +47,8 @@ func newSnapshotTrafficProvider(
 		sourceName,
 	)
 	if normalizedSourceName == "" {
-		return nil, errSnapshotTrafficSourceNameRequired
+		return nil,
+			errSnapshotTrafficSourceNameRequired
 	}
 
 	for _, success := range snapshot.Successes {
@@ -55,22 +56,26 @@ func newSnapshotTrafficProvider(
 			continue
 		}
 
-		trafficPayload, ok := success.Payload.(sharedsnapshot.RegionalTrafficPayload)
+		trafficPayload, ok := success.Payload.RegionalTraffic()
 		if !ok {
-			return nil, fmt.Errorf(
-				"%w: task_id=%s payload_type=%T",
-				errSnapshotTrafficResultType,
-				success.TaskID,
-				success.Payload,
-			)
+			return nil,
+				fmt.Errorf(
+					"%w: task_id=%s payload_kind=%s",
+					errSnapshotTrafficPayloadKind,
+					success.TaskID,
+					success.Payload.Kind(),
+				)
 		}
 
-		if strings.TrimSpace(success.RequestKey) == "" {
-			return nil, fmt.Errorf(
-				"%w: task_id=%s",
-				errSnapshotTrafficRequestKeyMissing,
-				success.TaskID,
-			)
+		if strings.TrimSpace(
+			success.RequestKey,
+		) == "" {
+			return nil,
+				fmt.Errorf(
+					"%w: task_id=%s",
+					errSnapshotTrafficRequestKeyMissing,
+					success.TaskID,
+				)
 		}
 
 		return &snapshotTrafficProvider{
@@ -88,20 +93,23 @@ func newSnapshotTrafficProvider(
 		}
 
 		if failure.Err == nil {
-			return nil, fmt.Errorf(
-				"%w: task_id=%s",
-				errSnapshotTrafficResultMissing,
-				failure.TaskID,
-			)
+			return nil,
+				fmt.Errorf(
+					"%w: task_id=%s",
+					errSnapshotTrafficResultMissing,
+					failure.TaskID,
+				)
 		}
 
-		return nil, fmt.Errorf(
-			"regional traffic shared snapshot task failed: %w",
-			failure.Err,
-		)
+		return nil,
+			fmt.Errorf(
+				"regional traffic shared snapshot task failed: %w",
+				failure.Err,
+			)
 	}
 
-	return nil, errSnapshotTrafficResultMissing
+	return nil,
+		errSnapshotTrafficResultMissing
 }
 
 func (
@@ -123,13 +131,16 @@ func (
 	radius int,
 ) ([]flightstate.FlightState, error) {
 	if provider == nil {
-		return nil, errSnapshotTrafficResultMissing
+		return nil,
+			errSnapshotTrafficResultMissing
 	}
 
 	if ctx != nil {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil,
+				ctx.Err()
+
 		default:
 		}
 	}
@@ -141,12 +152,13 @@ func (
 	)
 
 	if actualRequestKey != provider.requestKey {
-		return nil, fmt.Errorf(
-			"%w: expected=%q actual=%q",
-			errSnapshotTrafficRequestMismatch,
-			provider.requestKey,
-			actualRequestKey,
-		)
+		return nil,
+			fmt.Errorf(
+				"%w: expected=%q actual=%q",
+				errSnapshotTrafficRequestMismatch,
+				provider.requestKey,
+				actualRequestKey,
+			)
 	}
 
 	return cloneFlightStates(

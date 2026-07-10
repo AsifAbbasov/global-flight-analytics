@@ -6,7 +6,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -34,7 +33,7 @@ func (h *AirportHandler) GetByICAO(c *fiber.Ctx) error {
 
 	item, err := h.service.GetByICAO(c.Context(), icao)
 	if err != nil {
-		if errors.Is(err, postgres.ErrAirportNotFound) {
+		if errors.Is(err, airport.ErrNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "AIRPORT_NOT_FOUND", "Airport not found")
 		}
 

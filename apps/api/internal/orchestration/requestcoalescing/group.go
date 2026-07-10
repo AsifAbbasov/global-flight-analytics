@@ -17,21 +17,25 @@ var (
 	)
 )
 
-type Function[T any] func(
+type Value interface {
+	RequestCoalescingValue()
+}
+
+type Function[T Value] func(
 	ctx context.Context,
 ) (T, error)
 
-type Result[T any] struct {
+type Result[T Value] struct {
 	Value  T
 	Shared bool
 }
 
-type Group[T any] struct {
+type Group[T Value] struct {
 	mu    sync.Mutex
 	calls map[string]*call[T]
 }
 
-type call[T any] struct {
+type call[T Value] struct {
 	done chan struct{}
 
 	value T
@@ -42,9 +46,11 @@ type call[T any] struct {
 	cancel   context.CancelFunc
 }
 
-func New[T any]() *Group[T] {
+func New[T Value]() *Group[T] {
 	return &Group[T]{
-		calls: make(map[string]*call[T]),
+		calls: make(
+			map[string]*call[T],
+		),
 	}
 }
 
@@ -55,7 +61,9 @@ func (group *Group[T]) Do(
 ) (Result[T], error) {
 	var zero Result[T]
 
-	normalizedKey := strings.TrimSpace(key)
+	normalizedKey := strings.TrimSpace(
+		key,
+	)
 	if normalizedKey == "" {
 		return zero, ErrKeyRequired
 	}
@@ -89,7 +97,9 @@ func (group *Group[T]) Do(
 	}
 
 	operationContext, cancel := context.WithCancel(
-		context.WithoutCancel(ctx),
+		context.WithoutCancel(
+			ctx,
+		),
 	)
 
 	newCall := &call[T]{
@@ -122,7 +132,9 @@ func (group *Group[T]) run(
 	ctx context.Context,
 	function Function[T],
 ) {
-	value, err := function(ctx)
+	value, err := function(
+		ctx,
+	)
 
 	group.mu.Lock()
 
@@ -135,7 +147,9 @@ func (group *Group[T]) run(
 		key,
 	)
 
-	close(currentCall.done)
+	close(
+		currentCall.done,
+	)
 	currentCall.cancel()
 
 	group.mu.Unlock()

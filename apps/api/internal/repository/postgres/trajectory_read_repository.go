@@ -9,9 +9,9 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var ErrTrajectoryNotFound = errors.New("trajectory not found")
-
-func (repository *TrajectoryRepository) GetLatestTrajectoryByICAO24(
+func (
+	repository *TrajectoryRepository,
+) GetLatestTrajectoryByICAO24(
 	ctx context.Context,
 	icao24 string,
 ) (trajectory.FlightTrajectory, error) {
@@ -19,9 +19,12 @@ func (repository *TrajectoryRepository) GetLatestTrajectoryByICAO24(
 		ctx = context.Background()
 	}
 
-	normalizedICAO24 := normalizeICAO24Lookup(icao24)
+	normalizedICAO24 := normalizeICAO24Lookup(
+		icao24,
+	)
 	if normalizedICAO24 == "" {
-		return trajectory.FlightTrajectory{}, ErrTrajectoryNotFound
+		return trajectory.FlightTrajectory{},
+			trajectory.ErrNotFound
 	}
 
 	const query = `
@@ -47,19 +50,31 @@ func (repository *TrajectoryRepository) GetLatestTrajectoryByICAO24(
 		LIMIT 1;
 	`
 
-	item, err := repository.queryTrajectory(ctx, query, normalizedICAO24)
+	item, err := repository.queryTrajectory(
+		ctx,
+		query,
+		normalizedICAO24,
+	)
 	if err != nil {
-		return trajectory.FlightTrajectory{}, err
+		return trajectory.FlightTrajectory{},
+			err
 	}
 
-	if err := repository.loadTrajectoryChildren(ctx, &item); err != nil {
-		return trajectory.FlightTrajectory{}, err
+	if err := repository.loadTrajectoryChildren(
+		ctx,
+		&item,
+	); err != nil {
+		return trajectory.FlightTrajectory{},
+			err
 	}
 
-	return item, nil
+	return item,
+		nil
 }
 
-func (repository *TrajectoryRepository) GetTrajectoryByID(
+func (
+	repository *TrajectoryRepository,
+) GetTrajectoryByID(
 	ctx context.Context,
 	trajectoryID string,
 ) (trajectory.FlightTrajectory, error) {
@@ -67,9 +82,12 @@ func (repository *TrajectoryRepository) GetTrajectoryByID(
 		ctx = context.Background()
 	}
 
-	trimmedTrajectoryID := strings.TrimSpace(trajectoryID)
+	trimmedTrajectoryID := strings.TrimSpace(
+		trajectoryID,
+	)
 	if trimmedTrajectoryID == "" {
-		return trajectory.FlightTrajectory{}, ErrTrajectoryNotFound
+		return trajectory.FlightTrajectory{},
+			trajectory.ErrNotFound
 	}
 
 	const query = `
@@ -94,26 +112,42 @@ func (repository *TrajectoryRepository) GetTrajectoryByID(
 		LIMIT 1;
 	`
 
-	item, err := repository.queryTrajectory(ctx, query, trimmedTrajectoryID)
+	item, err := repository.queryTrajectory(
+		ctx,
+		query,
+		trimmedTrajectoryID,
+	)
 	if err != nil {
-		return trajectory.FlightTrajectory{}, err
+		return trajectory.FlightTrajectory{},
+			err
 	}
 
-	if err := repository.loadTrajectoryChildren(ctx, &item); err != nil {
-		return trajectory.FlightTrajectory{}, err
+	if err := repository.loadTrajectoryChildren(
+		ctx,
+		&item,
+	); err != nil {
+		return trajectory.FlightTrajectory{},
+			err
 	}
 
-	return item, nil
+	return item,
+		nil
 }
 
-func (repository *TrajectoryRepository) queryTrajectory(
+func (
+	repository *TrajectoryRepository,
+) queryTrajectory(
 	ctx context.Context,
 	query string,
-	args ...any,
+	argument string,
 ) (trajectory.FlightTrajectory, error) {
 	var item trajectory.FlightTrajectory
 
-	err := repository.db.QueryRow(ctx, query, args...).Scan(
+	err := repository.db.QueryRow(
+		ctx,
+		query,
+		argument,
+	).Scan(
 		&item.ID,
 		&item.FlightID,
 		&item.AircraftID,
@@ -131,26 +165,40 @@ func (repository *TrajectoryRepository) queryTrajectory(
 		&item.UpdatedAt,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return trajectory.FlightTrajectory{}, ErrTrajectoryNotFound
+		if errors.Is(
+			err,
+			pgx.ErrNoRows,
+		) {
+			return trajectory.FlightTrajectory{},
+				trajectory.ErrNotFound
 		}
 
-		return trajectory.FlightTrajectory{}, err
+		return trajectory.FlightTrajectory{},
+			err
 	}
 
-	return item, nil
+	return item,
+		nil
 }
 
-func (repository *TrajectoryRepository) loadTrajectoryChildren(
+func (
+	repository *TrajectoryRepository,
+) loadTrajectoryChildren(
 	ctx context.Context,
 	item *trajectory.FlightTrajectory,
 ) error {
-	segments, err := repository.ListTrajectorySegments(ctx, item.ID)
+	segments, err := repository.ListTrajectorySegments(
+		ctx,
+		item.ID,
+	)
 	if err != nil {
 		return err
 	}
 
-	coverageGaps, err := repository.ListCoverageGaps(ctx, item.ID)
+	coverageGaps, err := repository.ListCoverageGaps(
+		ctx,
+		item.ID,
+	)
 	if err != nil {
 		return err
 	}
@@ -161,7 +209,9 @@ func (repository *TrajectoryRepository) loadTrajectoryChildren(
 	return nil
 }
 
-func (repository *TrajectoryRepository) ListTrajectorySegments(
+func (
+	repository *TrajectoryRepository,
+) ListTrajectorySegments(
 	ctx context.Context,
 	trajectoryID string,
 ) ([]trajectory.TrajectorySegment, error) {
@@ -195,13 +245,23 @@ func (repository *TrajectoryRepository) ListTrajectorySegments(
 		ORDER BY sequence_number ASC;
 	`
 
-	rows, err := repository.db.Query(ctx, query, strings.TrimSpace(trajectoryID))
+	rows, err := repository.db.Query(
+		ctx,
+		query,
+		strings.TrimSpace(
+			trajectoryID,
+		),
+	)
 	if err != nil {
-		return nil, err
+		return nil,
+			err
 	}
 	defer rows.Close()
 
-	items := make([]trajectory.TrajectorySegment, 0)
+	items := make(
+		[]trajectory.TrajectorySegment,
+		0,
+	)
 
 	for rows.Next() {
 		var item trajectory.TrajectorySegment
@@ -228,21 +288,32 @@ func (repository *TrajectoryRepository) ListTrajectorySegments(
 			&item.SourceName,
 			&item.CreatedAt,
 		); err != nil {
-			return nil, err
+			return nil,
+				err
 		}
 
-		item.Status = trajectory.SegmentStatus(status)
-		items = append(items, item)
+		item.Status = trajectory.SegmentStatus(
+			status,
+		)
+
+		items = append(
+			items,
+			item,
+		)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil,
+			err
 	}
 
-	return items, nil
+	return items,
+		nil
 }
 
-func (repository *TrajectoryRepository) ListCoverageGaps(
+func (
+	repository *TrajectoryRepository,
+) ListCoverageGaps(
 	ctx context.Context,
 	trajectoryID string,
 ) ([]trajectory.CoverageGap, error) {
@@ -269,13 +340,23 @@ func (repository *TrajectoryRepository) ListCoverageGaps(
 		ORDER BY gap_start_time ASC;
 	`
 
-	rows, err := repository.db.Query(ctx, query, strings.TrimSpace(trajectoryID))
+	rows, err := repository.db.Query(
+		ctx,
+		query,
+		strings.TrimSpace(
+			trajectoryID,
+		),
+	)
 	if err != nil {
-		return nil, err
+		return nil,
+			err
 	}
 	defer rows.Close()
 
-	items := make([]trajectory.CoverageGap, 0)
+	items := make(
+		[]trajectory.CoverageGap,
+		0,
+	)
 
 	for rows.Next() {
 		var item trajectory.CoverageGap
@@ -295,20 +376,35 @@ func (repository *TrajectoryRepository) ListCoverageGaps(
 			&item.FilledBy,
 			&item.CreatedAt,
 		); err != nil {
-			return nil, err
+			return nil,
+				err
 		}
 
-		item.Reason = trajectory.CoverageGapReason(reason)
-		items = append(items, item)
+		item.Reason = trajectory.CoverageGapReason(
+			reason,
+		)
+
+		items = append(
+			items,
+			item,
+		)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil,
+			err
 	}
 
-	return items, nil
+	return items,
+		nil
 }
 
-func normalizeICAO24Lookup(value string) string {
-	return strings.ToUpper(strings.TrimSpace(value))
+func normalizeICAO24Lookup(
+	value string,
+) string {
+	return strings.ToUpper(
+		strings.TrimSpace(
+			value,
+		),
+	)
 }

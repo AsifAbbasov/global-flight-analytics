@@ -85,7 +85,9 @@ func (builder *Builder) build(
 	for _, input := range sortedInputs {
 		points = append(
 			points,
-			toTrackPoint4D(input.State),
+			toTrackPoint4D(
+				input.State,
+			),
 		)
 	}
 
@@ -288,14 +290,22 @@ func toTrackPoint4D(
 		Latitude:            state.Latitude,
 		Longitude:           state.Longitude,
 		BarometricAltitudeM: state.BarometricAltitudeM,
-		GeometricAltitudeM:  state.GeometricAltitudeM,
-		VelocityMPS:         state.VelocityMPS,
-		HeadingDegrees:      state.HeadingDegrees,
-		VerticalRateMPS:     state.VerticalRateMPS,
-		OnGround:            state.OnGround,
-		OriginCountry:       state.OriginCountry,
-		ObservedAt:          state.ObservedAt,
-		SourceName:          state.SourceName,
+		BarometricAltitudeStatus: flightstate.ResolveAltitudeStatus(
+			state.BarometricAltitudeM,
+			state.BarometricAltitudeStatus,
+		),
+		GeometricAltitudeM: state.GeometricAltitudeM,
+		GeometricAltitudeStatus: flightstate.ResolveAltitudeStatus(
+			state.GeometricAltitudeM,
+			state.GeometricAltitudeStatus,
+		),
+		VelocityMPS:     state.VelocityMPS,
+		HeadingDegrees:  state.HeadingDegrees,
+		VerticalRateMPS: state.VerticalRateMPS,
+		OnGround:        state.OnGround,
+		OriginCountry:   state.OriginCountry,
+		ObservedAt:      state.ObservedAt,
+		SourceName:      state.SourceName,
 	}
 }
 

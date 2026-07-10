@@ -13,32 +13,29 @@ import (
 )
 
 type runtimeExecutor struct {
-	values map[string]any
+	values map[string]Payload
 	errors map[string]error
 }
 
-func (executor *runtimeExecutor) Execute(
-	ctx context.Context,
+func (
+	executor *runtimeExecutor,
+) Execute(
+	_ context.Context,
 	provider providerpolicy.Provider,
 	requestKey string,
-	function ingestionorchestrator.Function,
-) (ingestionorchestrator.ExecuteResult, error) {
+	_ ingestionorchestrator.Function[Payload],
+) (ingestionorchestrator.ExecuteResult[Payload], error) {
 	if err := executor.errors[requestKey]; err != nil {
-		return ingestionorchestrator.ExecuteResult{}, err
+		return ingestionorchestrator.ExecuteResult[Payload]{},
+			err
 	}
 
-	value, exists := executor.values[requestKey]
-	if exists {
-		return ingestionorchestrator.ExecuteResult{
-			Provider:   provider,
-			RequestKey: requestKey,
-			Value:      value,
-		}, nil
-	}
+	value := executor.values[requestKey]
 
-	return ingestionorchestrator.ExecuteResult{
+	return ingestionorchestrator.ExecuteResult[Payload]{
 		Provider:   provider,
 		RequestKey: requestKey,
+		Value:      value,
 	}, nil
 }
 
@@ -57,10 +54,12 @@ func TestRuntimeRunsTasksAndPublishesCurrentSnapshot(
 	)
 
 	executor := &runtimeExecutor{
-		values: map[string]any{
-			"regional-traffic": []flightstate.FlightState{
-				{},
-			},
+		values: map[string]Payload{
+			"regional-traffic": NewRegionalTrafficPayload(
+				[]flightstate.FlightState{
+					{},
+				},
+			),
 		},
 		errors: map[string]error{
 			"current-weather": errors.New(
@@ -84,7 +83,7 @@ func TestRuntimeRunsTasksAndPublishesCurrentSnapshot(
 		)
 	}
 
-	tasks := []providerfanout.Task{
+	tasks := []providerfanout.Task[Payload]{
 		{
 			ID:         TaskIDRegionalTraffic,
 			Provider:   providerpolicy.ProviderAirplanesLive,
@@ -136,32 +135,19 @@ func TestRuntimeRunsTasksAndPublishesCurrentSnapshot(
 		)
 	}
 
-	if len(currentSnapshot.Successes) != 1 {
-		t.Fatalf(
-			"unexpected current success count: got %d, want 1",
-			len(currentSnapshot.Successes),
-		)
-	}
-
-	if len(currentSnapshot.Failures) != 1 {
-		t.Fatalf(
-			"unexpected current failure count: got %d, want 1",
-			len(currentSnapshot.Failures),
-		)
-	}
-
-	if currentSnapshot.Successes[0].TaskID != TaskIDRegionalTraffic {
+	if currentSnapshot.Successes[0].TaskID !=
+		TaskIDRegionalTraffic {
 		t.Fatalf(
 			"unexpected success task identifier: %q",
 			currentSnapshot.Successes[0].TaskID,
 		)
 	}
 
-	trafficPayload, ok := currentSnapshot.Successes[0].Payload.(RegionalTrafficPayload)
+	trafficPayload, ok := currentSnapshot.Successes[0].Payload.RegionalTraffic()
 	if !ok {
 		t.Fatalf(
-			"unexpected success payload type: %T",
-			currentSnapshot.Successes[0].Payload,
+			"expected regional traffic payload, got kind %q",
+			currentSnapshot.Successes[0].Payload.Kind(),
 		)
 	}
 
@@ -172,7 +158,8 @@ func TestRuntimeRunsTasksAndPublishesCurrentSnapshot(
 		)
 	}
 
-	if currentSnapshot.Failures[0].TaskID != TaskIDCurrentWeather {
+	if currentSnapshot.Failures[0].TaskID !=
+		TaskIDCurrentWeather {
 		t.Fatalf(
 			"unexpected failure task identifier: %q",
 			currentSnapshot.Failures[0].TaskID,

@@ -36,6 +36,75 @@ func (counter assessmentCounter) PassRatio() float64 {
 		float64(counter.assessed)
 }
 
+type altitudeAssessment struct {
+	valid   bool
+	missing bool
+	code    string
+	message string
+}
+
+func evaluateAltitude(
+	value float64,
+	status flightstate.AltitudeStatus,
+	onGround bool,
+	fieldName string,
+) altitudeAssessment {
+	effectiveStatus := flightstate.ResolveAltitudeStatus(
+		value,
+		status,
+	)
+
+	switch effectiveStatus {
+	case flightstate.AltitudeStatusObserved:
+		if aviationconstraints.IsNonNegativeFloat64(
+			value,
+		) {
+			return altitudeAssessment{
+				valid: true,
+			}
+		}
+
+		return altitudeAssessment{
+			code: "invalid_" + fieldName,
+			message: fieldName +
+				" must be finite and non-negative when status is observed.",
+		}
+
+	case flightstate.AltitudeStatusGround:
+		if value == 0 && onGround {
+			return altitudeAssessment{
+				valid: true,
+			}
+		}
+
+		return altitudeAssessment{
+			code: "invalid_" + fieldName,
+			message: fieldName +
+				" ground status requires zero altitude and on_ground=true.",
+		}
+
+	case flightstate.AltitudeStatusUnknown,
+		flightstate.AltitudeStatusUnavailable:
+		return altitudeAssessment{
+			missing: true,
+		}
+
+	case flightstate.AltitudeStatusInvalid:
+		return altitudeAssessment{
+			code: "invalid_" + fieldName,
+			message: fieldName +
+				" provider value is marked invalid.",
+		}
+
+	default:
+		return altitudeAssessment{
+			code: "invalid_" + fieldName,
+			message: fieldName +
+				" has an unsupported altitude status.",
+		}
+	}
+}
+
 func EvaluateFlightState(
 	item flightstate.FlightState,
 	now time.Time,
@@ -233,36 +302,52 @@ func EvaluateFlightState(
 		)
 	}
 
-	barometricAltitudeValid :=
-		aviationconstraints.IsNonNegativeFloat64(
-			item.BarometricAltitudeM,
-		)
-
-	assessment.Assess(
-		barometricAltitudeValid,
+	barometricAltitude := evaluateAltitude(
+		item.BarometricAltitudeM,
+		item.BarometricAltitudeStatus,
+		item.OnGround,
+		"barometric_altitude",
 	)
 
-	if !barometricAltitudeValid {
-		addWarning(
-			"invalid_barometric_altitude",
-			"Barometric altitude must be finite and non-negative.",
+	assessment.Assess(
+		barometricAltitude.valid,
+	)
+
+	if barometricAltitude.missing {
+		addMissingField(
 			"barometric_altitude_m",
 		)
 	}
 
-	geometricAltitudeValid :=
-		aviationconstraints.IsNonNegativeFloat64(
-			item.GeometricAltitudeM,
+	if barometricAltitude.code != "" {
+		addWarning(
+			barometricAltitude.code,
+			barometricAltitude.message,
+			"barometric_altitude_m",
 		)
+	}
 
-	assessment.Assess(
-		geometricAltitudeValid,
+	geometricAltitude := evaluateAltitude(
+		item.GeometricAltitudeM,
+		item.GeometricAltitudeStatus,
+		item.OnGround,
+		"geometric_altitude",
 	)
 
-	if !geometricAltitudeValid {
+	assessment.Assess(
+		geometricAltitude.valid,
+	)
+
+	if geometricAltitude.missing {
+		addMissingField(
+			"geometric_altitude_m",
+		)
+	}
+
+	if geometricAltitude.code != "" {
 		addWarning(
-			"invalid_geometric_altitude",
-			"Geometric altitude must be finite and non-negative.",
+			geometricAltitude.code,
+			geometricAltitude.message,
 			"geometric_altitude_m",
 		)
 	}

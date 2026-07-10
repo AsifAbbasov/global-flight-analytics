@@ -23,14 +23,14 @@ var (
 type FanOutRunner interface {
 	Run(
 		ctx context.Context,
-		tasks []providerfanout.Task,
-	) ([]providerfanout.Result, error)
+		tasks []providerfanout.Task[Payload],
+	) ([]providerfanout.Result[Payload], error)
 }
 
 type EnvelopePublisher interface {
 	PublishEnvelope(
 		cycleStartedAt time.Time,
-		envelope providerfanin.Envelope,
+		envelope providerfanin.Envelope[Payload],
 	) (Snapshot, error)
 }
 
@@ -50,11 +50,13 @@ func NewCycle(
 	config CycleConfig,
 ) (*Cycle, error) {
 	if config.Runner == nil {
-		return nil, ErrFanOutRunnerRequired
+		return nil,
+			ErrFanOutRunnerRequired
 	}
 
 	if config.Publisher == nil {
-		return nil, ErrEnvelopePublisherRequired
+		return nil,
+			ErrEnvelopePublisherRequired
 	}
 
 	now := config.Now
@@ -69,9 +71,11 @@ func NewCycle(
 	}, nil
 }
 
-func (cycle *Cycle) Run(
+func (
+	cycle *Cycle,
+) Run(
 	ctx context.Context,
-	tasks []providerfanout.Task,
+	tasks []providerfanout.Task[Payload],
 ) (Snapshot, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -84,10 +88,11 @@ func (cycle *Cycle) Run(
 		tasks,
 	)
 	if err != nil {
-		return Snapshot{}, fmt.Errorf(
-			"run shared snapshot provider fan-out: %w",
-			err,
-		)
+		return Snapshot{},
+			fmt.Errorf(
+				"run shared snapshot provider fan-out: %w",
+				err,
+			)
 	}
 
 	envelope := providerfanin.Aggregate(
@@ -99,10 +104,11 @@ func (cycle *Cycle) Run(
 		envelope,
 	)
 	if err != nil {
-		return Snapshot{}, fmt.Errorf(
-			"publish shared snapshot cycle: %w",
-			err,
-		)
+		return Snapshot{},
+			fmt.Errorf(
+				"publish shared snapshot cycle: %w",
+				err,
+			)
 	}
 
 	return snapshot, nil

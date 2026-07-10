@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	trafficquery "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/query"
 	"github.com/gofiber/fiber/v2"
 )
@@ -132,7 +131,7 @@ func (repository *fakeTrajectoryHTTPRepository) GetLatestTrajectoryByICAO24(
 ) (trajectory.FlightTrajectory, error) {
 	item, ok := repository.latestByICAO24[icao24]
 	if !ok {
-		return trajectory.FlightTrajectory{}, postgres.ErrTrajectoryNotFound
+		return trajectory.FlightTrajectory{}, trajectory.ErrNotFound
 	}
 
 	return item, nil
@@ -144,7 +143,7 @@ func (repository *fakeTrajectoryHTTPRepository) GetTrajectoryByID(
 ) (trajectory.FlightTrajectory, error) {
 	item, ok := repository.byID[trajectoryID]
 	if !ok {
-		return trajectory.FlightTrajectory{}, postgres.ErrTrajectoryNotFound
+		return trajectory.FlightTrajectory{}, trajectory.ErrNotFound
 	}
 
 	return item, nil

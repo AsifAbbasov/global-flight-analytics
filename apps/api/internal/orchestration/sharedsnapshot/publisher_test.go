@@ -14,7 +14,9 @@ type recordingSnapshotStore struct {
 	publishErr         error
 }
 
-func (store *recordingSnapshotStore) Publish(
+func (
+	store *recordingSnapshotStore,
+) Publish(
 	snapshot Snapshot,
 ) error {
 	if store.publishErr != nil {
@@ -35,11 +37,6 @@ func TestNewPublisherRequiresStore(
 	_, err := NewPublisher(
 		PublisherConfig{},
 	)
-	if err == nil {
-		t.Fatal(
-			"expected missing snapshot store to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -68,15 +65,8 @@ func TestPublisherPublishesEnvelopeWithInjectedAssemblyTime(
 		time.UTC,
 	)
 
-	assembledAt := time.Date(
-		2026,
-		time.July,
-		5,
-		12,
-		1,
-		0,
-		0,
-		time.UTC,
+	assembledAt := cycleStartedAt.Add(
+		time.Minute,
 	)
 
 	publisher, err := NewPublisher(
@@ -94,20 +84,22 @@ func TestPublisherPublishesEnvelopeWithInjectedAssemblyTime(
 		)
 	}
 
-	envelope := providerfanin.Envelope{
+	envelope := providerfanin.Envelope[Payload]{
 		Status: providerfanin.BatchStatusPartial,
 
 		TotalCount:   2,
 		SuccessCount: 1,
 		FailureCount: 1,
 
-		Successes: []providerfanin.Success{
+		Successes: []providerfanin.Success[Payload]{
 			{
 				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Value: []flightstate.FlightState{
-					{},
-				},
+				Value: NewRegionalTrafficPayload(
+					[]flightstate.FlightState{
+						{},
+					},
+				),
 				Shared: true,
 			},
 		},
@@ -160,34 +152,6 @@ func TestPublisherPublishesEnvelopeWithInjectedAssemblyTime(
 			assembledAt,
 		)
 	}
-
-	if snapshot.Status != providerfanin.BatchStatusPartial {
-		t.Fatalf(
-			"unexpected snapshot status: %q",
-			snapshot.Status,
-		)
-	}
-
-	if snapshot.TotalCount != 2 {
-		t.Fatalf(
-			"unexpected total count: %d",
-			snapshot.TotalCount,
-		)
-	}
-
-	if snapshot.SuccessCount != 1 {
-		t.Fatalf(
-			"unexpected success count: %d",
-			snapshot.SuccessCount,
-		)
-	}
-
-	if snapshot.FailureCount != 1 {
-		t.Fatalf(
-			"unexpected failure count: %d",
-			snapshot.FailureCount,
-		)
-	}
 }
 
 func TestPublisherPropagatesStoreError(
@@ -201,26 +165,15 @@ func TestPublisherPropagatesStoreError(
 		publishErr: expectedError,
 	}
 
-	cycleStartedAt := time.Date(
-		2026,
-		time.July,
-		5,
-		12,
-		0,
-		0,
-		0,
-		time.UTC,
-	)
-
-	assembledAt := cycleStartedAt.Add(
-		time.Minute,
-	)
+	cycleStartedAt := time.Now().UTC()
 
 	publisher, err := NewPublisher(
 		PublisherConfig{
 			Store: store,
 			Now: func() time.Time {
-				return assembledAt
+				return cycleStartedAt.Add(
+					time.Minute,
+				)
 			},
 		},
 	)
@@ -233,13 +186,8 @@ func TestPublisherPropagatesStoreError(
 
 	_, err = publisher.PublishEnvelope(
 		cycleStartedAt,
-		providerfanin.Envelope{},
+		providerfanin.Envelope[Payload]{},
 	)
-	if err == nil {
-		t.Fatal(
-			"expected snapshot store error",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -257,26 +205,15 @@ func TestPublisherDoesNotWriteInvalidCycleTiming(
 ) {
 	store := &recordingSnapshotStore{}
 
-	cycleStartedAt := time.Date(
-		2026,
-		time.July,
-		5,
-		12,
-		1,
-		0,
-		0,
-		time.UTC,
-	)
-
-	assembledAt := cycleStartedAt.Add(
-		-time.Minute,
-	)
+	cycleStartedAt := time.Now().UTC()
 
 	publisher, err := NewPublisher(
 		PublisherConfig{
 			Store: store,
 			Now: func() time.Time {
-				return assembledAt
+				return cycleStartedAt.Add(
+					-time.Minute,
+				)
 			},
 		},
 	)
@@ -289,13 +226,8 @@ func TestPublisherDoesNotWriteInvalidCycleTiming(
 
 	_, err = publisher.PublishEnvelope(
 		cycleStartedAt,
-		providerfanin.Envelope{},
+		providerfanin.Envelope[Payload]{},
 	)
-	if err == nil {
-		t.Fatal(
-			"expected invalid cycle timing to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,

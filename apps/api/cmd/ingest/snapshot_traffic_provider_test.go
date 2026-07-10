@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	domainweather "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanin"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/regionalprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/sharedsnapshot"
@@ -18,11 +19,6 @@ func TestNewSnapshotTrafficProviderRejectsBlankSourceName(
 		sharedsnapshot.Snapshot{},
 		"   ",
 	)
-	if err == nil {
-		t.Fatal(
-			"expected blank source name to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -42,11 +38,6 @@ func TestNewSnapshotTrafficProviderRejectsMissingTrafficResult(
 		sharedsnapshot.Snapshot{},
 		"airplanes_live",
 	)
-	if err == nil {
-		t.Fatal(
-			"expected missing traffic result to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -77,11 +68,6 @@ func TestNewSnapshotTrafficProviderPropagatesTrafficFailure(
 		},
 		"airplanes_live",
 	)
-	if err == nil {
-		t.Fatal(
-			"expected traffic failure",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -107,11 +93,6 @@ func TestNewSnapshotTrafficProviderRejectsTrafficFailureWithoutError(
 		},
 		"airplanes_live",
 	)
-	if err == nil {
-		t.Fatal(
-			"expected missing traffic result error",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -124,32 +105,29 @@ func TestNewSnapshotTrafficProviderRejectsTrafficFailureWithoutError(
 	}
 }
 
-func TestNewSnapshotTrafficProviderRejectsUnexpectedTrafficPayload(
+func TestNewSnapshotTrafficProviderRejectsUnexpectedTrafficPayloadKind(
 	t *testing.T,
 ) {
 	_, err := newSnapshotTrafficProvider(
 		sharedsnapshot.Snapshot{
 			Successes: []sharedsnapshot.Success{
 				{
-					TaskID:  sharedsnapshot.TaskIDRegionalTraffic,
-					Payload: sharedsnapshot.CurrentWeatherPayload{},
+					TaskID: sharedsnapshot.TaskIDRegionalTraffic,
+					Payload: sharedsnapshot.NewCurrentWeatherPayload(
+						domainweather.CurrentSnapshot{},
+					),
 				},
 			},
 		},
 		"airplanes_live",
 	)
-	if err == nil {
-		t.Fatal(
-			"expected unexpected traffic payload type to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,
-		errSnapshotTrafficResultType,
+		errSnapshotTrafficPayloadKind,
 	) {
 		t.Fatalf(
-			"expected errSnapshotTrafficResultType, got %v",
+			"expected errSnapshotTrafficPayloadKind, got %v",
 			err,
 		)
 	}
@@ -163,24 +141,19 @@ func TestNewSnapshotTrafficProviderRejectsMissingTrafficRequestKey(
 			Successes: []sharedsnapshot.Success{
 				{
 					TaskID: sharedsnapshot.TaskIDRegionalTraffic,
-					Payload: sharedsnapshot.RegionalTrafficPayload{
-						States: []flightstate.FlightState{
+					Payload: sharedsnapshot.NewRegionalTrafficPayload(
+						[]flightstate.FlightState{
 							{
 								ID:     "state-1",
 								ICAO24: "abc123",
 							},
 						},
-					},
+					),
 				},
 			},
 		},
 		"airplanes_live",
 	)
-	if err == nil {
-		t.Fatal(
-			"expected missing traffic request key to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -215,9 +188,9 @@ func TestNewSnapshotTrafficProviderCreatesProviderFromTrafficPayload(
 				{
 					TaskID:     sharedsnapshot.TaskIDRegionalTraffic,
 					RequestKey: requestKey,
-					Payload: sharedsnapshot.RegionalTrafficPayload{
-						States: sourceStates,
-					},
+					Payload: sharedsnapshot.NewRegionalTrafficPayload(
+						sourceStates,
+					),
 				},
 			},
 		},
@@ -232,9 +205,8 @@ func TestNewSnapshotTrafficProviderCreatesProviderFromTrafficPayload(
 
 	if provider.SourceName() != "airplanes_live" {
 		t.Fatalf(
-			"unexpected source name: got %q, want %q",
+			"unexpected source name: %q",
 			provider.SourceName(),
-			"airplanes_live",
 		)
 	}
 
@@ -250,13 +222,6 @@ func TestNewSnapshotTrafficProviderCreatesProviderFromTrafficPayload(
 		t.Fatalf(
 			"load snapshot traffic states: %v",
 			err,
-		)
-	}
-
-	if len(loadedStates) != 1 {
-		t.Fatalf(
-			"unexpected loaded state count: got %d, want 1",
-			len(loadedStates),
 		)
 	}
 
@@ -279,13 +244,6 @@ func TestNewSnapshotTrafficProviderCreatesProviderFromTrafficPayload(
 		t.Fatalf(
 			"load snapshot traffic states again: %v",
 			err,
-		)
-	}
-
-	if len(loadedAgain) != 1 {
-		t.Fatalf(
-			"unexpected repeated loaded state count: got %d, want 1",
-			len(loadedAgain),
 		)
 	}
 
@@ -320,11 +278,6 @@ func TestSnapshotTrafficProviderLoadByPointRejectsMismatchedRequest(
 		44.8271,
 		100,
 	)
-	if err == nil {
-		t.Fatal(
-			"expected mismatched point request to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -352,11 +305,6 @@ func TestSnapshotTrafficProviderLoadByPointReturnsCancelledContextError(
 			49.8671,
 			100,
 		),
-		states: []flightstate.FlightState{
-			{
-				ID: "state-1",
-			},
-		},
 	}
 
 	_, err := provider.LoadByPoint(
@@ -365,11 +313,6 @@ func TestSnapshotTrafficProviderLoadByPointReturnsCancelledContextError(
 		49.8671,
 		100,
 	)
-	if err == nil {
-		t.Fatal(
-			"expected cancelled context error",
-		)
-	}
 
 	if !errors.Is(
 		err,
@@ -382,35 +325,7 @@ func TestSnapshotTrafficProviderLoadByPointReturnsCancelledContextError(
 	}
 }
 
-func TestNilSnapshotTrafficProviderLoadByPointReturnsMissingResult(
-	t *testing.T,
-) {
-	var provider *snapshotTrafficProvider
-
-	_, err := provider.LoadByPoint(
-		context.Background(),
-		40.4093,
-		49.8671,
-		100,
-	)
-	if err == nil {
-		t.Fatal(
-			"expected nil provider error",
-		)
-	}
-
-	if !errors.Is(
-		err,
-		errSnapshotTrafficResultMissing,
-	) {
-		t.Fatalf(
-			"expected errSnapshotTrafficResultMissing, got %v",
-			err,
-		)
-	}
-}
-
-func TestNilSnapshotTrafficProviderSourceNameReturnsEmptyString(
+func TestNilSnapshotTrafficProviderContracts(
 	t *testing.T,
 ) {
 	var provider *snapshotTrafficProvider
@@ -419,6 +334,23 @@ func TestNilSnapshotTrafficProviderSourceNameReturnsEmptyString(
 		t.Fatalf(
 			"expected empty source name for nil provider, got %q",
 			provider.SourceName(),
+		)
+	}
+
+	_, err := provider.LoadByPoint(
+		context.Background(),
+		40.4093,
+		49.8671,
+		100,
+	)
+
+	if !errors.Is(
+		err,
+		errSnapshotTrafficResultMissing,
+	) {
+		t.Fatalf(
+			"expected errSnapshotTrafficResultMissing, got %v",
+			err,
 		)
 	}
 }

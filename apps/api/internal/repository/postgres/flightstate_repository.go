@@ -7,16 +7,12 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var (
-	ErrFlightStateNotFound = errors.New(
-		"flight state not found",
-	)
-	ErrFlightStateRepositoryPoolRequired = errors.New(
-		"flight state repository pool is required",
-	)
+var ErrFlightStateRepositoryPoolRequired = errors.New(
+	"flight state repository pool is required",
 )
 
 type FlightStateRepository struct {
@@ -47,7 +43,10 @@ func (r *FlightStateRepository) SaveFlightStates(
 		ctx = context.Background()
 	}
 
-	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := r.db.BeginTx(
+		ctx,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return fmt.Errorf(
 			"begin flight states transaction: %w",
@@ -59,7 +58,9 @@ func (r *FlightStateRepository) SaveFlightStates(
 
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(ctx)
+			_ = tx.Rollback(
+				ctx,
+			)
 		}
 	}()
 
@@ -72,7 +73,9 @@ func (r *FlightStateRepository) SaveFlightStates(
 			latitude,
 			longitude,
 			barometric_altitude_m,
+			barometric_altitude_status,
 			geometric_altitude_m,
+			geometric_altitude_status,
 			velocity_mps,
 			heading_degrees,
 			vertical_rate_mps,
@@ -90,20 +93,50 @@ func (r *FlightStateRepository) SaveFlightStates(
 			$5,
 			$6,
 			CAST($7::double precision AS integer),
-			CAST($8::double precision AS integer),
-			$9,
+			$8,
+			CAST($9::double precision AS integer),
 			$10,
 			$11,
 			$12,
 			$13,
 			$14,
 			$15,
-			$16
+			$16,
+			$17,
+			$18
 		);
 	`
 
 	for index, item := range items {
-		_, err := tx.Exec(
+		barometricAltitude, barometricStatus, err :=
+			altitudeDatabaseValue(
+				item.BarometricAltitudeM,
+				item.BarometricAltitudeStatus,
+			)
+		if err != nil {
+			return fmt.Errorf(
+				"prepare barometric altitude at index %d for icao24 %s: %w",
+				index,
+				item.ICAO24,
+				err,
+			)
+		}
+
+		geometricAltitude, geometricStatus, err :=
+			altitudeDatabaseValue(
+				item.GeometricAltitudeM,
+				item.GeometricAltitudeStatus,
+			)
+		if err != nil {
+			return fmt.Errorf(
+				"prepare geometric altitude at index %d for icao24 %s: %w",
+				index,
+				item.ICAO24,
+				err,
+			)
+		}
+
+		_, err = tx.Exec(
 			ctx,
 			query,
 			nullableUUID(item.FlightID),
@@ -112,8 +145,10 @@ func (r *FlightStateRepository) SaveFlightStates(
 			nullableText(item.Callsign),
 			item.Latitude,
 			item.Longitude,
-			item.BarometricAltitudeM,
-			item.GeometricAltitudeM,
+			barometricAltitude,
+			barometricStatus,
+			geometricAltitude,
+			geometricStatus,
 			item.VelocityMPS,
 			item.HeadingDegrees,
 			item.VerticalRateMPS,
@@ -133,7 +168,9 @@ func (r *FlightStateRepository) SaveFlightStates(
 		}
 	}
 
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit(
+		ctx,
+	); err != nil {
 		return fmt.Errorf(
 			"commit flight states transaction: %w",
 			err,
@@ -159,8 +196,10 @@ func (r *FlightStateRepository) ListByFlightID(
 			COALESCE(callsign, ''),
 			COALESCE(latitude, 0),
 			COALESCE(longitude, 0),
-			COALESCE(barometric_altitude_m, 0),
-			COALESCE(geometric_altitude_m, 0),
+			barometric_altitude_m::double precision,
+			barometric_altitude_status,
+			geometric_altitude_m::double precision,
+			geometric_altitude_status,
 			COALESCE(velocity_mps, 0),
 			COALESCE(heading_degrees, 0),
 			COALESCE(vertical_rate_mps, 0),
@@ -173,16 +212,27 @@ func (r *FlightStateRepository) ListByFlightID(
 		ORDER BY observed_at ASC;
 	`
 
-	rows, err := r.db.Query(ctx, query, flightID)
+	rows, err := r.db.Query(
+		ctx,
+		query,
+		flightID,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	items := make([]flightstate.FlightState, 0)
+	items := make(
+		[]flightstate.FlightState,
+		0,
+	)
 
 	for rows.Next() {
 		var item flightstate.FlightState
+		var barometricAltitude pgtype.Float8
+		var geometricAltitude pgtype.Float8
+		var barometricStatus string
+		var geometricStatus string
 
 		if err := rows.Scan(
 			&item.ID,
@@ -193,8 +243,10 @@ func (r *FlightStateRepository) ListByFlightID(
 			&item.Callsign,
 			&item.Latitude,
 			&item.Longitude,
-			&item.BarometricAltitudeM,
-			&item.GeometricAltitudeM,
+			&barometricAltitude,
+			&barometricStatus,
+			&geometricAltitude,
+			&geometricStatus,
 			&item.VelocityMPS,
 			&item.HeadingDegrees,
 			&item.VerticalRateMPS,
@@ -206,7 +258,18 @@ func (r *FlightStateRepository) ListByFlightID(
 			return nil, err
 		}
 
-		items = append(items, item)
+		applyAltitudeDatabaseValues(
+			&item,
+			barometricAltitude,
+			barometricStatus,
+			geometricAltitude,
+			geometricStatus,
+		)
+
+		items = append(
+			items,
+			item,
+		)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -230,8 +293,10 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 			COALESCE(callsign, ''),
 			COALESCE(latitude, 0),
 			COALESCE(longitude, 0),
-			COALESCE(barometric_altitude_m, 0),
-			COALESCE(geometric_altitude_m, 0),
+			barometric_altitude_m::double precision,
+			barometric_altitude_status,
+			geometric_altitude_m::double precision,
+			geometric_altitude_status,
 			COALESCE(velocity_mps, 0),
 			COALESCE(heading_degrees, 0),
 			COALESCE(vertical_rate_mps, 0),
@@ -246,6 +311,10 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 	`
 
 	var item flightstate.FlightState
+	var barometricAltitude pgtype.Float8
+	var geometricAltitude pgtype.Float8
+	var barometricStatus string
+	var geometricStatus string
 
 	err := r.db.QueryRow(
 		ctx,
@@ -260,8 +329,10 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		&item.Callsign,
 		&item.Latitude,
 		&item.Longitude,
-		&item.BarometricAltitudeM,
-		&item.GeometricAltitudeM,
+		&barometricAltitude,
+		&barometricStatus,
+		&geometricAltitude,
+		&geometricStatus,
 		&item.VelocityMPS,
 		&item.HeadingDegrees,
 		&item.VerticalRateMPS,
@@ -271,13 +342,110 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		&item.SourceName,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(
+			err,
+			pgx.ErrNoRows,
+		) {
 			return flightstate.FlightState{},
-				ErrFlightStateNotFound
+				flightstate.ErrNotFound
 		}
 
 		return flightstate.FlightState{}, err
 	}
 
+	applyAltitudeDatabaseValues(
+		&item,
+		barometricAltitude,
+		barometricStatus,
+		geometricAltitude,
+		geometricStatus,
+	)
+
 	return item, nil
+}
+
+func altitudeDatabaseValue(
+	value float64,
+	status flightstate.AltitudeStatus,
+) (
+	pgtype.Float8,
+	string,
+	error,
+) {
+	effectiveStatus := flightstate.ResolveAltitudeStatus(
+		value,
+		status,
+	)
+
+	if !flightstate.IsKnownAltitudeStatus(
+		effectiveStatus,
+	) {
+		return pgtype.Float8{},
+			"",
+			fmt.Errorf(
+				"unsupported altitude status %q",
+				effectiveStatus,
+			)
+	}
+
+	switch effectiveStatus {
+	case flightstate.AltitudeStatusObserved:
+		return pgtype.Float8{
+				Float64: value,
+				Valid:   true,
+			},
+			string(effectiveStatus),
+			nil
+
+	case flightstate.AltitudeStatusGround:
+		return pgtype.Float8{
+				Float64: 0,
+				Valid:   true,
+			},
+			string(effectiveStatus),
+			nil
+
+	case flightstate.AltitudeStatusUnknown,
+		flightstate.AltitudeStatusUnavailable,
+		flightstate.AltitudeStatusInvalid:
+		return pgtype.Float8{
+				Valid: false,
+			},
+			string(effectiveStatus),
+			nil
+
+	default:
+		return pgtype.Float8{},
+			"",
+			fmt.Errorf(
+				"unsupported altitude status %q",
+				effectiveStatus,
+			)
+	}
+}
+
+func applyAltitudeDatabaseValues(
+	item *flightstate.FlightState,
+	barometricAltitude pgtype.Float8,
+	barometricStatus string,
+	geometricAltitude pgtype.Float8,
+	geometricStatus string,
+) {
+	item.BarometricAltitudeM = 0
+	if barometricAltitude.Valid {
+		item.BarometricAltitudeM = barometricAltitude.Float64
+	}
+
+	item.BarometricAltitudeStatus = flightstate.AltitudeStatus(
+		barometricStatus,
+	)
+
+	item.GeometricAltitudeM = 0
+	if geometricAltitude.Valid {
+		item.GeometricAltitudeM = geometricAltitude.Float64
+	}
+
+	item.GeometricAltitudeStatus = flightstate.AltitudeStatus(
+		geometricStatus,
+	)
 }

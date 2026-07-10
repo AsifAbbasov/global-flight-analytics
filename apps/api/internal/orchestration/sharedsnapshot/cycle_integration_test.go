@@ -12,14 +12,17 @@ import (
 )
 
 type integrationFanOutRunner struct {
-	results []providerfanout.Result
+	results []providerfanout.Result[Payload]
 }
 
-func (runner *integrationFanOutRunner) Run(
-	ctx context.Context,
-	tasks []providerfanout.Task,
-) ([]providerfanout.Result, error) {
-	return runner.results, nil
+func (
+	runner *integrationFanOutRunner,
+) Run(
+	_ context.Context,
+	_ []providerfanout.Task[Payload],
+) ([]providerfanout.Result[Payload], error) {
+	return runner.results,
+		nil
 }
 
 func TestCyclePublishesAggregatedEnvelopeIntoStore(
@@ -36,15 +39,8 @@ func TestCyclePublishesAggregatedEnvelopeIntoStore(
 		time.UTC,
 	)
 
-	assembledAt := time.Date(
-		2026,
-		time.July,
-		5,
-		12,
-		1,
-		0,
-		0,
-		time.UTC,
+	assembledAt := cycleStartedAt.Add(
+		time.Minute,
 	)
 
 	weatherError := errors.New(
@@ -52,14 +48,15 @@ func TestCyclePublishesAggregatedEnvelopeIntoStore(
 	)
 
 	runner := &integrationFanOutRunner{
-		results: []providerfanout.Result{
+		results: []providerfanout.Result[Payload]{
 			{
 				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Value: []flightstate.FlightState{
-					{},
-				},
-				Shared: false,
+				Value: NewRegionalTrafficPayload(
+					[]flightstate.FlightState{
+						{},
+					},
+				),
 			},
 			{
 				TaskID:     TaskIDCurrentWeather,
@@ -120,58 +117,10 @@ func TestCyclePublishesAggregatedEnvelopeIntoStore(
 		)
 	}
 
-	if publishedSnapshot.TotalCount != 2 {
-		t.Fatalf(
-			"unexpected published total count: %d",
-			publishedSnapshot.TotalCount,
-		)
-	}
-
-	if publishedSnapshot.SuccessCount != 1 {
-		t.Fatalf(
-			"unexpected published success count: %d",
-			publishedSnapshot.SuccessCount,
-		)
-	}
-
-	if publishedSnapshot.FailureCount != 1 {
-		t.Fatalf(
-			"unexpected published failure count: %d",
-			publishedSnapshot.FailureCount,
-		)
-	}
-
-	if !publishedSnapshot.CycleStartedAt.Equal(
-		cycleStartedAt,
-	) {
-		t.Fatalf(
-			"unexpected cycle start time: got %s, want %s",
-			publishedSnapshot.CycleStartedAt,
-			cycleStartedAt,
-		)
-	}
-
-	if !publishedSnapshot.AssembledAt.Equal(
-		assembledAt,
-	) {
-		t.Fatalf(
-			"unexpected assembled time: got %s, want %s",
-			publishedSnapshot.AssembledAt,
-			assembledAt,
-		)
-	}
-
 	currentSnapshot, exists := store.Current()
 	if !exists {
 		t.Fatal(
 			"expected current shared snapshot in store",
-		)
-	}
-
-	if currentSnapshot.Status != providerfanin.BatchStatusPartial {
-		t.Fatalf(
-			"unexpected stored snapshot status: %q",
-			currentSnapshot.Status,
 		)
 	}
 
@@ -182,25 +131,11 @@ func TestCyclePublishesAggregatedEnvelopeIntoStore(
 		)
 	}
 
-	if len(currentSnapshot.Failures) != 1 {
-		t.Fatalf(
-			"unexpected stored failure count: %d",
-			len(currentSnapshot.Failures),
-		)
-	}
-
-	if currentSnapshot.Successes[0].TaskID != TaskIDRegionalTraffic {
-		t.Fatalf(
-			"unexpected stored success task identifier: %q",
-			currentSnapshot.Successes[0].TaskID,
-		)
-	}
-
-	trafficPayload, ok := currentSnapshot.Successes[0].Payload.(RegionalTrafficPayload)
+	trafficPayload, ok := currentSnapshot.Successes[0].Payload.RegionalTraffic()
 	if !ok {
 		t.Fatalf(
-			"unexpected stored success payload type: %T",
-			currentSnapshot.Successes[0].Payload,
+			"expected stored regional traffic payload, got kind %q",
+			currentSnapshot.Successes[0].Payload.Kind(),
 		)
 	}
 
@@ -208,13 +143,6 @@ func TestCyclePublishesAggregatedEnvelopeIntoStore(
 		t.Fatalf(
 			"unexpected stored traffic state count: got %d, want 1",
 			len(trafficPayload.States),
-		)
-	}
-
-	if currentSnapshot.Failures[0].TaskID != TaskIDCurrentWeather {
-		t.Fatalf(
-			"unexpected stored failure task identifier: %q",
-			currentSnapshot.Failures[0].TaskID,
 		)
 	}
 

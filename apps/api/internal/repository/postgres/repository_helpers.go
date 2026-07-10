@@ -2,28 +2,40 @@ package postgres
 
 import "strings"
 
-func nullableUUID(value string) any {
-	trimmed := strings.TrimSpace(value)
+func nullableUUID(
+	value string,
+) *string {
+	trimmed := strings.TrimSpace(
+		value,
+	)
 
 	if trimmed == "" {
 		return nil
 	}
 
-	return trimmed
+	return &trimmed
 }
 
-func nullableText(value string) any {
-	trimmed := strings.TrimSpace(value)
+func nullableText(
+	value string,
+) *string {
+	trimmed := strings.TrimSpace(
+		value,
+	)
 
 	if trimmed == "" {
 		return nil
 	}
 
-	return trimmed
+	return &trimmed
 }
 
-func sourceNameOrUnknown(value string) string {
-	trimmed := strings.TrimSpace(value)
+func sourceNameOrUnknown(
+	value string,
+) string {
+	trimmed := strings.TrimSpace(
+		value,
+	)
 
 	if trimmed == "" {
 		return "unknown"

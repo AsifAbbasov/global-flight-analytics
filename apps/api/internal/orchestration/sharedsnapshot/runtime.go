@@ -9,7 +9,7 @@ import (
 )
 
 type RuntimeConfig struct {
-	Executor providerfanout.Executor
+	Executor providerfanout.Executor[Payload]
 	Now      func() time.Time
 }
 
@@ -21,14 +21,15 @@ type Runtime struct {
 func NewRuntime(
 	config RuntimeConfig,
 ) (*Runtime, error) {
-	runner, err := providerfanout.New(
+	runner, err := providerfanout.New[Payload](
 		config.Executor,
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"create shared snapshot fan-out runner: %w",
-			err,
-		)
+		return nil,
+			fmt.Errorf(
+				"create shared snapshot fan-out runner: %w",
+				err,
+			)
 	}
 
 	store := NewStore()
@@ -40,10 +41,11 @@ func NewRuntime(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"create shared snapshot publisher: %w",
-			err,
-		)
+		return nil,
+			fmt.Errorf(
+				"create shared snapshot publisher: %w",
+				err,
+			)
 	}
 
 	cycle, err := NewCycle(
@@ -54,10 +56,11 @@ func NewRuntime(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"create shared snapshot cycle: %w",
-			err,
-		)
+		return nil,
+			fmt.Errorf(
+				"create shared snapshot cycle: %w",
+				err,
+			)
 	}
 
 	return &Runtime{
@@ -66,9 +69,11 @@ func NewRuntime(
 	}, nil
 }
 
-func (runtime *Runtime) Run(
+func (
+	runtime *Runtime,
+) Run(
 	ctx context.Context,
-	tasks []providerfanout.Task,
+	tasks []providerfanout.Task[Payload],
 ) (Snapshot, error) {
 	return runtime.cycle.Run(
 		ctx,
@@ -76,7 +81,9 @@ func (runtime *Runtime) Run(
 	)
 }
 
-func (runtime *Runtime) Current() (
+func (
+	runtime *Runtime,
+) Current() (
 	Snapshot,
 	bool,
 ) {

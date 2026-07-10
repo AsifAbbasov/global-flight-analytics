@@ -13,17 +13,26 @@ func mapAircraft(
 	item AircraftItem,
 	responseTime float64,
 ) flightstate.FlightState {
+	barometricAltitude := barometricAltitudeReading(
+		item.AltBaro,
+	)
+	geometricAltitude := geometricAltitudeReading(
+		item.AltGeom,
+	)
+
 	return flightstate.FlightState{
-		ICAO24:              strings.ToUpper(item.Hex),
-		Callsign:            strings.TrimSpace(item.Flight),
-		Latitude:            item.Latitude,
-		Longitude:           item.Longitude,
-		BarometricAltitudeM: barometricAltitudeMeters(item.AltBaro),
-		GeometricAltitudeM:  geometricAltitudeMeters(item.AltGeom),
-		VelocityMPS:         knotsToMetersPerSecond(item.GroundSpeed),
-		HeadingDegrees:      item.Track,
-		VerticalRateMPS:     feetPerMinuteToMetersPerSecond(item.BaroRate),
-		OnGround:            item.AltBaro == "ground",
+		ICAO24:                   strings.ToUpper(item.Hex),
+		Callsign:                 strings.TrimSpace(item.Flight),
+		Latitude:                 item.Latitude,
+		Longitude:                item.Longitude,
+		BarometricAltitudeM:      barometricAltitude.Meters,
+		BarometricAltitudeStatus: barometricAltitude.Status,
+		GeometricAltitudeM:       geometricAltitude.Meters,
+		GeometricAltitudeStatus:  geometricAltitude.Status,
+		VelocityMPS:              knotsToMetersPerSecond(item.GroundSpeed),
+		HeadingDegrees:           item.Track,
+		VerticalRateMPS:          feetPerMinuteToMetersPerSecond(item.BaroRate),
+		OnGround:                 barometricAltitude.Status == flightstate.AltitudeStatusGround,
 		ObservedAt: time.UnixMilli(
 			int64(responseTime),
 		).Add(
@@ -31,14 +40,6 @@ func mapAircraft(
 		).UTC(),
 		SourceName: sourceName,
 	}
-}
-
-func geometricAltitudeMeters(altitudeFeet *float64) float64 {
-	if altitudeFeet == nil {
-		return 0
-	}
-
-	return feetToMeters(*altitudeFeet)
 }
 
 func MapStateResponse(response *StateResponse) []flightstate.FlightState {

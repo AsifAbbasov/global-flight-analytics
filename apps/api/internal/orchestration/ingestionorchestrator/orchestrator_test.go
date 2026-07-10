@@ -11,6 +11,10 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/requestcoalescing"
 )
 
+type orchestrationTestValue string
+
+func (orchestrationTestValue) RequestCoalescingValue() {}
+
 type budgetManagerStub struct {
 	acquireCallCount            int
 	acquirePublicationCallCount int
@@ -25,7 +29,9 @@ type budgetManagerStub struct {
 	) (providerbudget.Decision, error)
 }
 
-func (stub *budgetManagerStub) Acquire(
+func (
+	stub *budgetManagerStub,
+) Acquire(
 	provider providerpolicy.Provider,
 ) (providerbudget.Decision, error) {
 	stub.acquireCallCount++
@@ -43,7 +49,9 @@ func (stub *budgetManagerStub) Acquire(
 	}, nil
 }
 
-func (stub *budgetManagerStub) AcquirePublication(
+func (
+	stub *budgetManagerStub,
+) AcquirePublication(
 	provider providerpolicy.Provider,
 	publicationID string,
 ) (providerbudget.Decision, error) {
@@ -69,20 +77,25 @@ type coalescerStub struct {
 	shared    bool
 }
 
-func (stub *coalescerStub) Do(
+func (
+	stub *coalescerStub,
+) Do(
 	ctx context.Context,
 	key string,
-	function requestcoalescing.Function[any],
-) (requestcoalescing.Result[any], error) {
+	function requestcoalescing.Function[orchestrationTestValue],
+) (requestcoalescing.Result[orchestrationTestValue], error) {
 	stub.callCount++
 	stub.lastKey = key
 
-	value, err := function(ctx)
+	value, err := function(
+		ctx,
+	)
 	if err != nil {
-		return requestcoalescing.Result[any]{}, err
+		return requestcoalescing.Result[orchestrationTestValue]{},
+			err
 	}
 
-	return requestcoalescing.Result[any]{
+	return requestcoalescing.Result[orchestrationTestValue]{
 		Value:  value,
 		Shared: stub.shared,
 	}, nil
@@ -98,7 +111,7 @@ func TestExecuteCombinesCoalescingBudgetAndProviderExecution(
 	}
 
 	orchestrator, err := New(
-		Config{
+		Config[orchestrationTestValue]{
 			BudgetManager: budgetManager,
 			Coalescer:     coalescer,
 		},
@@ -118,10 +131,12 @@ func TestExecuteCombinesCoalescingBudgetAndProviderExecution(
 		"traffic:regional-snapshot",
 		func(
 			_ context.Context,
-		) (any, error) {
+		) (orchestrationTestValue, error) {
 			providerExecutionCount++
 
-			return "snapshot", nil
+			return orchestrationTestValue(
+				"snapshot",
+			), nil
 		},
 	)
 	if err != nil {
@@ -152,16 +167,17 @@ func TestExecuteCombinesCoalescingBudgetAndProviderExecution(
 		)
 	}
 
-	if coalescer.lastKey != "airplanes.live:traffic:regional-snapshot" {
+	if coalescer.lastKey !=
+		"airplanes.live:traffic:regional-snapshot" {
 		t.Fatalf(
 			"unexpected coalescing key: %s",
 			coalescer.lastKey,
 		)
 	}
 
-	if result.Value != "snapshot" {
+	if result.Value != orchestrationTestValue("snapshot") {
 		t.Fatalf(
-			"unexpected result value: %v",
+			"unexpected result value: %s",
 			result.Value,
 		)
 	}
@@ -201,7 +217,7 @@ func TestExecuteStopsBeforeProviderCallWhenBudgetDenies(
 	}
 
 	orchestrator, err := New(
-		Config{
+		Config[orchestrationTestValue]{
 			BudgetManager: budgetManager,
 			Coalescer:     &coalescerStub{},
 		},
@@ -221,10 +237,12 @@ func TestExecuteStopsBeforeProviderCallWhenBudgetDenies(
 		"traffic:regional-snapshot",
 		func(
 			_ context.Context,
-		) (any, error) {
+		) (orchestrationTestValue, error) {
 			providerExecutionCount++
 
-			return "snapshot", nil
+			return orchestrationTestValue(
+				"snapshot",
+			), nil
 		},
 	)
 
@@ -270,7 +288,7 @@ func TestExecutePublicationUsesPublicationBudget(
 	budgetManager := &budgetManagerStub{}
 
 	orchestrator, err := New(
-		Config{
+		Config[orchestrationTestValue]{
 			BudgetManager: budgetManager,
 			Coalescer:     &coalescerStub{},
 		},
@@ -289,8 +307,10 @@ func TestExecutePublicationUsesPublicationBudget(
 		"publication-a",
 		func(
 			_ context.Context,
-		) (any, error) {
-			return "import-result", nil
+		) (orchestrationTestValue, error) {
+			return orchestrationTestValue(
+				"import-result",
+			), nil
 		},
 	)
 	if err != nil {
@@ -307,9 +327,9 @@ func TestExecutePublicationUsesPublicationBudget(
 		)
 	}
 
-	if result.Value != "import-result" {
+	if result.Value != orchestrationTestValue("import-result") {
 		t.Fatalf(
-			"unexpected publication result: %v",
+			"unexpected publication result: %s",
 			result.Value,
 		)
 	}
@@ -319,7 +339,7 @@ func TestNewRejectsMissingDependencies(
 	t *testing.T,
 ) {
 	_, err := New(
-		Config{},
+		Config[orchestrationTestValue]{},
 	)
 
 	if !errors.Is(
@@ -333,7 +353,7 @@ func TestNewRejectsMissingDependencies(
 	}
 
 	_, err = New(
-		Config{
+		Config[orchestrationTestValue]{
 			BudgetManager: &budgetManagerStub{},
 		},
 	)

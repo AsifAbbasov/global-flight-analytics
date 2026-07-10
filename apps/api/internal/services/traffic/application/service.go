@@ -48,9 +48,11 @@ type Service struct {
 }
 
 type ProcessAndStoreResult struct {
-	ProcessingResult       processor.ProcessingResult
-	StoredFlightStateCount int
-	StoredAt               time.Time
+	ProcessingResult         processor.ProcessingResult
+	StoredFlightStateCount   int
+	StoredQualityReportCount int
+	StoredTrajectoryCount    int
+	StoredAt                 time.Time
 }
 
 func New(
@@ -80,6 +82,11 @@ func New(
 	}, nil
 }
 
+// ProcessAndStore intentionally persists independent durability units in order.
+//
+// Flight states are source observations. Once their repository commits them,
+// failures in derived quality reports or trajectories do not roll them back.
+// Each repository owns atomicity for its own batch or aggregate.
 func (service *Service) ProcessAndStore(
 	ctx context.Context,
 	states []flightstate.FlightState,
@@ -107,19 +114,27 @@ func (service *Service) ProcessAndStore(
 	}
 
 	if service.dataQualityRepository != nil {
-		if err := service.saveDataQualityReports(
+		storedQualityReportCount, err := service.saveDataQualityReports(
 			ctx,
 			processingResult,
-		); err != nil {
+		)
+
+		result.StoredQualityReportCount = storedQualityReportCount
+
+		if err != nil {
 			return result, err
 		}
 	}
 
 	if service.trajectoryRepository != nil {
-		if err := service.saveTrajectories(
+		storedTrajectoryCount, err := service.saveTrajectories(
 			ctx,
 			processingResult.Trajectories,
-		); err != nil {
+		)
+
+		result.StoredTrajectoryCount = storedTrajectoryCount
+
+		if err != nil {
 			return result, err
 		}
 	}
@@ -159,19 +174,23 @@ func (service *Service) saveUsableFlightStates(
 func (service *Service) saveDataQualityReports(
 	ctx context.Context,
 	result processor.ProcessingResult,
-) error {
+) (int, error) {
+	storedCount := 0
+
 	for _, item := range result.UsableStates {
 		if err := service.dataQualityRepository.SaveFlightStateQuality(
 			ctx,
 			item.State,
 			item.Quality,
 		); err != nil {
-			return fmt.Errorf(
+			return storedCount, fmt.Errorf(
 				"save usable flight state quality report for icao24 %s: %w",
 				item.State.ICAO24,
 				err,
 			)
 		}
+
+		storedCount++
 	}
 
 	for _, item := range result.InvalidStates {
@@ -180,33 +199,39 @@ func (service *Service) saveDataQualityReports(
 			item.State,
 			item.Quality,
 		); err != nil {
-			return fmt.Errorf(
+			return storedCount, fmt.Errorf(
 				"save invalid flight state quality report for icao24 %s: %w",
 				item.State.ICAO24,
 				err,
 			)
 		}
+
+		storedCount++
 	}
 
-	return nil
+	return storedCount, nil
 }
 
 func (service *Service) saveTrajectories(
 	ctx context.Context,
 	trajectories map[string]trajectory.FlightTrajectory,
-) error {
+) (int, error) {
+	storedCount := 0
+
 	for icao24, item := range trajectories {
 		if err := service.trajectoryRepository.SaveTrajectory(
 			ctx,
 			item,
 		); err != nil {
-			return fmt.Errorf(
+			return storedCount, fmt.Errorf(
 				"save trajectory for icao24 %s: %w",
 				icao24,
 				err,
 			)
 		}
+
+		storedCount++
 	}
 
-	return nil
+	return storedCount, nil
 }

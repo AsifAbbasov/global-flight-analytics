@@ -5,6 +5,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -12,13 +13,17 @@ type TrafficRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewTrafficRepository(db *pgxpool.Pool) *TrafficRepository {
+func NewTrafficRepository(
+	db *pgxpool.Pool,
+) *TrafficRepository {
 	return &TrafficRepository{
 		db: db,
 	}
 }
 
-func (r *TrafficRepository) GetCurrent(
+func (
+	r *TrafficRepository,
+) GetCurrent(
 	ctx context.Context,
 ) ([]traffic.CurrentTrafficItem, error) {
 	const query = `
@@ -63,14 +68,26 @@ func (r *TrafficRepository) GetCurrent(
 		ORDER BY fs.icao24, fs.observed_at DESC;
 	`
 
-	return r.queryCurrentTraffic(
+	rows, err := r.db.Query(
 		ctx,
 		query,
-		string(ingestionrun.StatusSuccess),
+		string(
+			ingestionrun.StatusSuccess,
+		),
+	)
+	if err != nil {
+		return nil,
+			err
+	}
+
+	return scanCurrentTrafficRows(
+		rows,
 	)
 }
 
-func (r *TrafficRepository) GetCurrentByBounds(
+func (
+	r *TrafficRepository,
+) GetCurrentByBounds(
 	ctx context.Context,
 	bounds traffic.Bounds,
 ) ([]traffic.CurrentTrafficItem, error) {
@@ -118,29 +135,36 @@ func (r *TrafficRepository) GetCurrentByBounds(
 		ORDER BY fs.icao24, fs.observed_at DESC;
 	`
 
-	return r.queryCurrentTraffic(
+	rows, err := r.db.Query(
 		ctx,
 		query,
-		string(ingestionrun.StatusSuccess),
+		string(
+			ingestionrun.StatusSuccess,
+		),
 		bounds.MinLatitude,
 		bounds.MaxLatitude,
 		bounds.MinLongitude,
 		bounds.MaxLongitude,
 	)
+	if err != nil {
+		return nil,
+			err
+	}
+
+	return scanCurrentTrafficRows(
+		rows,
+	)
 }
 
-func (r *TrafficRepository) queryCurrentTraffic(
-	ctx context.Context,
-	query string,
-	args ...any,
+func scanCurrentTrafficRows(
+	rows pgx.Rows,
 ) ([]traffic.CurrentTrafficItem, error) {
-	rows, err := r.db.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
 	defer rows.Close()
 
-	items := make([]traffic.CurrentTrafficItem, 0)
+	items := make(
+		[]traffic.CurrentTrafficItem,
+		0,
+	)
 
 	for rows.Next() {
 		var item traffic.CurrentTrafficItem
@@ -159,15 +183,21 @@ func (r *TrafficRepository) queryCurrentTraffic(
 			&item.Airline,
 			&item.OriginCountry,
 		); err != nil {
-			return nil, err
+			return nil,
+				err
 		}
 
-		items = append(items, item)
+		items = append(
+			items,
+			item,
+		)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil,
+			err
 	}
 
-	return items, nil
+	return items,
+		nil
 }

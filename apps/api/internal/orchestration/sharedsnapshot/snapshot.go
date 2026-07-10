@@ -32,18 +32,8 @@ type Success struct {
 }
 
 type Snapshot struct {
-	// CycleStartedAt is the time when the provider collection cycle
-	// represented by this snapshot started.
-	//
-	// Publication ordering must use this value rather than AssembledAt.
-	// An older slower cycle may finish after a newer faster cycle.
 	CycleStartedAt time.Time
-
-	// AssembledAt is the time when the shared snapshot was assembled.
-	//
-	// It is not provider observation time.
-	// It is not the ordering key for competing collection cycles.
-	AssembledAt time.Time
+	AssembledAt    time.Time
 
 	Status providerfanin.BatchStatus
 
@@ -57,10 +47,11 @@ type Snapshot struct {
 
 func FromEnvelope(
 	assembledAt time.Time,
-	envelope providerfanin.Envelope,
+	envelope providerfanin.Envelope[Payload],
 ) (Snapshot, error) {
 	if assembledAt.IsZero() {
-		return Snapshot{}, ErrAssembledAtRequired
+		return Snapshot{},
+			ErrAssembledAtRequired
 	}
 
 	return FromEnvelopeForCycle(
@@ -73,28 +64,34 @@ func FromEnvelope(
 func FromEnvelopeForCycle(
 	cycleStartedAt time.Time,
 	assembledAt time.Time,
-	envelope providerfanin.Envelope,
+	envelope providerfanin.Envelope[Payload],
 ) (Snapshot, error) {
 	if cycleStartedAt.IsZero() {
-		return Snapshot{}, ErrCycleStartedAtRequired
+		return Snapshot{},
+			ErrCycleStartedAtRequired
 	}
 
 	if assembledAt.IsZero() {
-		return Snapshot{}, ErrAssembledAtRequired
+		return Snapshot{},
+			ErrAssembledAtRequired
 	}
 
-	if assembledAt.Before(cycleStartedAt) {
-		return Snapshot{}, ErrAssembledBeforeCycleStart
+	if assembledAt.Before(
+		cycleStartedAt,
+	) {
+		return Snapshot{},
+			ErrAssembledBeforeCycleStart
 	}
 
 	successes, err := successesFromProvider(
 		envelope.Successes,
 	)
 	if err != nil {
-		return Snapshot{}, fmt.Errorf(
-			"convert shared snapshot successes: %w",
-			err,
-		)
+		return Snapshot{},
+			fmt.Errorf(
+				"convert shared snapshot successes: %w",
+				err,
+			)
 	}
 
 	return Snapshot{
@@ -114,7 +111,9 @@ func FromEnvelopeForCycle(
 	}, nil
 }
 
-func (snapshot Snapshot) Clone() Snapshot {
+func (
+	snapshot Snapshot,
+) Clone() Snapshot {
 	return Snapshot{
 		CycleStartedAt: snapshot.CycleStartedAt,
 		AssembledAt:    snapshot.AssembledAt,
@@ -145,7 +144,7 @@ func snapshotOrderTime(
 }
 
 func successesFromProvider(
-	successes []providerfanin.Success,
+	successes []providerfanin.Success[Payload],
 ) ([]Success, error) {
 	if successes == nil {
 		return nil, nil
@@ -201,10 +200,8 @@ func cloneSuccesses(
 			TaskID:     success.TaskID,
 			Provider:   success.Provider,
 			RequestKey: success.RequestKey,
-			Payload: clonePayload(
-				success.Payload,
-			),
-			Shared: success.Shared,
+			Payload:    success.Payload.Clone(),
+			Shared:     success.Shared,
 		}
 	}
 

@@ -3,9 +3,9 @@ package handlers
 import (
 	"errors"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	trafficquery "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/query"
 	"github.com/gofiber/fiber/v2"
 )
@@ -37,7 +37,7 @@ func (handler *TrajectoryHandler) GetLatestByICAO24(c *fiber.Ctx) error {
 			return response.Error(c, fiber.StatusServiceUnavailable, "TRAJECTORY_SERVICE_UNAVAILABLE", "Trajectory service is unavailable")
 		}
 
-		if errors.Is(err, postgres.ErrTrajectoryNotFound) {
+		if errors.Is(err, trajectory.ErrNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "TRAJECTORY_NOT_FOUND", "Trajectory not found")
 		}
 
@@ -64,7 +64,7 @@ func (handler *TrajectoryHandler) GetByID(c *fiber.Ctx) error {
 			return response.Error(c, fiber.StatusServiceUnavailable, "TRAJECTORY_SERVICE_UNAVAILABLE", "Trajectory service is unavailable")
 		}
 
-		if errors.Is(err, postgres.ErrTrajectoryNotFound) {
+		if errors.Is(err, trajectory.ErrNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "TRAJECTORY_NOT_FOUND", "Trajectory not found")
 		}
 

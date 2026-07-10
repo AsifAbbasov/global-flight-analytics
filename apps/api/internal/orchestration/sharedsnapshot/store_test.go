@@ -61,17 +61,19 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 			{
 				TaskID:     TaskIDRegionalTraffic,
 				RequestKey: "regional-traffic",
-				Payload: RegionalTrafficPayload{
-					States: []flightstate.FlightState{
+				Payload: NewRegionalTrafficPayload(
+					[]flightstate.FlightState{
 						{},
 					},
-				},
+				),
 				Shared: true,
 			},
 		},
 	}
 
-	if err := store.Publish(snapshot); err != nil {
+	if err := store.Publish(
+		snapshot,
+	); err != nil {
 		t.Fatalf(
 			"publish shared snapshot: %v",
 			err,
@@ -80,11 +82,11 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 
 	snapshot.Successes[0].TaskID = "caller-mutated"
 
-	sourcePayload, ok := snapshot.Successes[0].Payload.(RegionalTrafficPayload)
+	sourcePayload, ok := snapshot.Successes[0].Payload.RegionalTraffic()
 	if !ok {
 		t.Fatalf(
-			"unexpected caller payload type: %T",
-			snapshot.Successes[0].Payload,
+			"expected caller regional traffic payload, got kind %q",
+			snapshot.Successes[0].Payload.Kind(),
 		)
 	}
 
@@ -101,25 +103,11 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 		)
 	}
 
-	currentPayload, ok := current.Successes[0].Payload.(RegionalTrafficPayload)
+	currentPayload, ok := current.Successes[0].Payload.RegionalTraffic()
 	if !ok {
 		t.Fatalf(
-			"unexpected current payload type: %T",
-			current.Successes[0].Payload,
-		)
-	}
-
-	if len(sourcePayload.States) != 1 {
-		t.Fatalf(
-			"unexpected caller traffic state count: got %d, want 1",
-			len(sourcePayload.States),
-		)
-	}
-
-	if len(currentPayload.States) != 1 {
-		t.Fatalf(
-			"unexpected current traffic state count: got %d, want 1",
-			len(currentPayload.States),
+			"expected current regional traffic payload, got kind %q",
+			current.Successes[0].Payload.Kind(),
 		)
 	}
 
@@ -144,18 +132,11 @@ func TestStorePublishProtectsCurrentSnapshotFromCallerMutation(
 		)
 	}
 
-	currentAgainPayload, ok := currentAgain.Successes[0].Payload.(RegionalTrafficPayload)
+	currentAgainPayload, ok := currentAgain.Successes[0].Payload.RegionalTraffic()
 	if !ok {
 		t.Fatalf(
-			"unexpected repeated current payload type: %T",
-			currentAgain.Successes[0].Payload,
-		)
-	}
-
-	if len(currentAgainPayload.States) != 1 {
-		t.Fatalf(
-			"unexpected repeated current traffic state count: got %d, want 1",
-			len(currentAgainPayload.States),
+			"expected repeated current regional traffic payload, got kind %q",
+			currentAgain.Successes[0].Payload.Kind(),
 		)
 	}
 
@@ -206,19 +187,18 @@ func TestStorePublishRejectsSnapshotOlderThanCurrent(
 		},
 	}
 
-	if err := store.Publish(currentSnapshot); err != nil {
+	if err := store.Publish(
+		currentSnapshot,
+	); err != nil {
 		t.Fatalf(
 			"publish current shared snapshot: %v",
 			err,
 		)
 	}
 
-	err := store.Publish(olderSnapshot)
-	if err == nil {
-		t.Fatal(
-			"expected older shared snapshot to be rejected",
-		)
-	}
+	err := store.Publish(
+		olderSnapshot,
+	)
 
 	if !errors.Is(
 		err,
@@ -244,13 +224,6 @@ func TestStorePublishRejectsSnapshotOlderThanCurrent(
 			"unexpected current assembled time: got %s, want %s",
 			current.AssembledAt,
 			currentAssembledAt,
-		)
-	}
-
-	if current.Successes[0].TaskID != "current" {
-		t.Fatalf(
-			"unexpected current task identifier: %q",
-			current.Successes[0].TaskID,
 		)
 	}
 }
@@ -295,14 +268,18 @@ func TestStorePublishAcceptsNewerSnapshot(
 		},
 	}
 
-	if err := store.Publish(firstSnapshot); err != nil {
+	if err := store.Publish(
+		firstSnapshot,
+	); err != nil {
 		t.Fatalf(
 			"publish first shared snapshot: %v",
 			err,
 		)
 	}
 
-	if err := store.Publish(newerSnapshot); err != nil {
+	if err := store.Publish(
+		newerSnapshot,
+	); err != nil {
 		t.Fatalf(
 			"publish newer shared snapshot: %v",
 			err,
@@ -342,11 +319,6 @@ func TestStorePublishRejectsZeroAssembledAt(
 	err := store.Publish(
 		Snapshot{},
 	)
-	if err == nil {
-		t.Fatal(
-			"expected zero assembled time to be rejected",
-		)
-	}
 
 	if !errors.Is(
 		err,

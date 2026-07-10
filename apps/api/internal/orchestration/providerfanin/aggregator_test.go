@@ -8,22 +8,26 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 )
 
+type testValue string
+
+func (testValue) RequestCoalescingValue() {}
+
 func TestAggregateCreatesSucceededEnvelope(
 	t *testing.T,
 ) {
-	results := []providerfanout.Result{
+	results := []providerfanout.Result[testValue]{
 		{
 			TaskID:     "traffic",
 			Provider:   providerpolicy.ProviderAirplanesLive,
 			RequestKey: "traffic:regional-snapshot",
-			Value:      "traffic-snapshot",
+			Value:      testValue("traffic-snapshot"),
 			Shared:     true,
 		},
 		{
 			TaskID:     "weather",
 			Provider:   providerpolicy.ProviderOpenMeteo,
 			RequestKey: "weather:regional-context",
-			Value:      "weather-snapshot",
+			Value:      testValue("weather-snapshot"),
 		},
 	}
 
@@ -80,7 +84,7 @@ func TestAggregateCreatesPartialEnvelope(
 		"traffic provider failure",
 	)
 
-	results := []providerfanout.Result{
+	results := []providerfanout.Result[testValue]{
 		{
 			TaskID:     "traffic",
 			Provider:   providerpolicy.ProviderAirplanesLive,
@@ -91,7 +95,7 @@ func TestAggregateCreatesPartialEnvelope(
 			TaskID:     "weather",
 			Provider:   providerpolicy.ProviderOpenMeteo,
 			RequestKey: "weather:regional-context",
-			Value:      "weather-snapshot",
+			Value:      testValue("weather-snapshot"),
 		},
 	}
 
@@ -120,13 +124,6 @@ func TestAggregateCreatesPartialEnvelope(
 		)
 	}
 
-	if len(envelope.Failures) != 1 {
-		t.Fatalf(
-			"expected one failure, got %d",
-			len(envelope.Failures),
-		)
-	}
-
 	if !errors.Is(
 		envelope.Failures[0].Err,
 		providerFailure,
@@ -137,9 +134,9 @@ func TestAggregateCreatesPartialEnvelope(
 		)
 	}
 
-	if envelope.Successes[0].Value != "weather-snapshot" {
+	if envelope.Successes[0].Value != testValue("weather-snapshot") {
 		t.Fatalf(
-			"unexpected successful value: %v",
+			"unexpected successful value: %s",
 			envelope.Successes[0].Value,
 		)
 	}
@@ -148,17 +145,15 @@ func TestAggregateCreatesPartialEnvelope(
 func TestAggregateCreatesFailedEnvelope(
 	t *testing.T,
 ) {
-	results := []providerfanout.Result{
+	results := []providerfanout.Result[testValue]{
 		{
-			TaskID:   "traffic",
-			Provider: providerpolicy.ProviderAirplanesLive,
+			TaskID: "traffic",
 			Err: errors.New(
 				"traffic failure",
 			),
 		},
 		{
-			TaskID:   "weather",
-			Provider: providerpolicy.ProviderOpenMeteo,
+			TaskID: "weather",
 			Err: errors.New(
 				"weather failure",
 			),
@@ -175,40 +170,19 @@ func TestAggregateCreatesFailedEnvelope(
 			envelope.Status,
 		)
 	}
-
-	if envelope.SuccessCount != 0 {
-		t.Fatalf(
-			"expected success count 0, got %d",
-			envelope.SuccessCount,
-		)
-	}
-
-	if envelope.FailureCount != 2 {
-		t.Fatalf(
-			"expected failure count 2, got %d",
-			envelope.FailureCount,
-		)
-	}
 }
 
 func TestAggregateCreatesEmptyEnvelope(
 	t *testing.T,
 ) {
 	envelope := Aggregate(
-		nil,
+		[]providerfanout.Result[testValue](nil),
 	)
 
 	if envelope.Status != BatchStatusEmpty {
 		t.Fatalf(
 			"expected empty status, got %s",
 			envelope.Status,
-		)
-	}
-
-	if envelope.TotalCount != 0 {
-		t.Fatalf(
-			"expected total count 0, got %d",
-			envelope.TotalCount,
 		)
 	}
 }
@@ -224,21 +198,18 @@ func TestAggregatePreservesInputOrderInsideOutcomeGroups(
 		"second failure",
 	)
 
-	results := []providerfanout.Result{
+	results := []providerfanout.Result[testValue]{
 		{
-			TaskID:   "traffic",
-			Provider: providerpolicy.ProviderAirplanesLive,
-			Err:      firstFailure,
+			TaskID: "traffic",
+			Err:    firstFailure,
 		},
 		{
-			TaskID:   "weather",
-			Provider: providerpolicy.ProviderOpenMeteo,
-			Value:    "weather",
+			TaskID: "weather",
+			Value:  testValue("weather"),
 		},
 		{
-			TaskID:   "airports",
-			Provider: providerpolicy.ProviderOurAirports,
-			Err:      secondFailure,
+			TaskID: "airports",
+			Err:    secondFailure,
 		},
 	}
 

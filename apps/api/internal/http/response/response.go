@@ -1,10 +1,31 @@
 package response
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
+	"github.com/gofiber/fiber/v2"
+)
 
-type SuccessResponse struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data"`
+type SuccessPayload interface {
+	[]dto.FlightListItem |
+		dto.FlightProfile |
+		dto.HealthResponse |
+		dto.VersionResponse |
+		dto.CurrentWeatherResponse |
+		[]dto.RegionItem |
+		dto.RegionItem |
+		[]dto.AircraftListItem |
+		dto.AircraftProfile |
+		[]dto.FlightStateItem |
+		dto.FlightStateItem |
+		[]dto.CurrentTrafficItem |
+		dto.Trajectory |
+		[]dto.AirportListItem |
+		dto.AirportProfile
+}
+
+type SuccessResponse[T SuccessPayload] struct {
+	Success bool `json:"success"`
+	Data    T    `json:"data"`
 }
 
 type ErrorResponse struct {
@@ -17,19 +38,33 @@ type ErrorBody struct {
 	Message string `json:"message"`
 }
 
-func OK(c *fiber.Ctx, data interface{}) error {
-	return c.JSON(SuccessResponse{
-		Success: true,
-		Data:    data,
-	})
+func OK[T SuccessPayload](
+	c *fiber.Ctx,
+	data T,
+) error {
+	return c.JSON(
+		SuccessResponse[T]{
+			Success: true,
+			Data:    data,
+		},
+	)
 }
 
-func Error(c *fiber.Ctx, status int, code string, message string) error {
-	return c.Status(status).JSON(ErrorResponse{
-		Success: false,
-		Error: ErrorBody{
-			Code:    code,
-			Message: message,
+func Error(
+	c *fiber.Ctx,
+	status int,
+	code string,
+	message string,
+) error {
+	return c.Status(
+		status,
+	).JSON(
+		ErrorResponse{
+			Success: false,
+			Error: ErrorBody{
+				Code:    code,
+				Message: message,
+			},
 		},
-	})
+	)
 }

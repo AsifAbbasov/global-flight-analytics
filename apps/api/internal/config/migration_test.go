@@ -37,6 +37,14 @@ func TestLoadMigrationConfig(
 		)
 	}
 
+	if loadedConfig.MigrationsDir != "/srv/global-flight-analytics/database/migrations" {
+		t.Fatalf(
+			"expected migrations directory %q, got %q",
+			"/srv/global-flight-analytics/database/migrations",
+			loadedConfig.MigrationsDir,
+		)
+	}
+
 	if loadedConfig.MigrationTimeout != 30*time.Second {
 		t.Fatalf(
 			"expected migration timeout %s, got %s",
@@ -219,6 +227,44 @@ func TestLoadMigrationConfigRejectsNonPositiveDatabaseConnectTimeout(
 	}
 }
 
+func TestLoadMigrationConfigRejectsMissingMigrationsDir(
+	t *testing.T,
+) {
+	setValidMigrationEnvironment(
+		t,
+	)
+
+	t.Setenv(
+		migrationsDirEnvironmentVariable,
+		"",
+	)
+
+	loadedConfig, err := LoadMigrationConfig()
+
+	if err == nil {
+		t.Fatal(
+			"expected migration configuration error, got nil",
+		)
+	}
+
+	if loadedConfig != (MigrationConfig{}) {
+		t.Fatalf(
+			"expected zero migration configuration, got %+v",
+			loadedConfig,
+		)
+	}
+
+	if !strings.Contains(
+		err.Error(),
+		"load migrations directory: MIGRATIONS_DIR is required",
+	) {
+		t.Fatalf(
+			"expected contextual migrations directory error, got %q",
+			err.Error(),
+		)
+	}
+}
+
 func TestLoadMigrationConfigRejectsMissingMigrationTimeout(
 	t *testing.T,
 ) {
@@ -367,6 +413,11 @@ func setValidMigrationEnvironment(
 	t.Setenv(
 		databaseConnectTimeoutEnvironmentVariable,
 		"  3s  ",
+	)
+
+	t.Setenv(
+		migrationsDirEnvironmentVariable,
+		"  /srv/global-flight-analytics/database/migrations  ",
 	)
 
 	t.Setenv(

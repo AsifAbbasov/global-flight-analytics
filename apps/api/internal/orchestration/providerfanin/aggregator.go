@@ -3,6 +3,7 @@ package providerfanin
 import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerfanout"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/requestcoalescing"
 )
 
 type BatchStatus string
@@ -17,11 +18,11 @@ const (
 	BatchStatusFailed BatchStatus = "failed"
 )
 
-type Success struct {
+type Success[T requestcoalescing.Value] struct {
 	TaskID     string
 	Provider   providerpolicy.Provider
 	RequestKey string
-	Value      any
+	Value      T
 	Shared     bool
 }
 
@@ -32,24 +33,24 @@ type Failure struct {
 	Err        error
 }
 
-type Envelope struct {
+type Envelope[T requestcoalescing.Value] struct {
 	Status BatchStatus
 
 	TotalCount   int
 	SuccessCount int
 	FailureCount int
 
-	Successes []Success
+	Successes []Success[T]
 	Failures  []Failure
 }
 
-func Aggregate(
-	results []providerfanout.Result,
-) Envelope {
-	envelope := Envelope{
+func Aggregate[T requestcoalescing.Value](
+	results []providerfanout.Result[T],
+) Envelope[T] {
+	envelope := Envelope[T]{
 		TotalCount: len(results),
 		Successes: make(
-			[]Success,
+			[]Success[T],
 			0,
 			len(results),
 		),
@@ -77,7 +78,7 @@ func Aggregate(
 
 		envelope.Successes = append(
 			envelope.Successes,
-			Success{
+			Success[T]{
 				TaskID:     result.TaskID,
 				Provider:   result.Provider,
 				RequestKey: result.RequestKey,

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
@@ -93,10 +93,10 @@ func (client *Client) GetCurrentWeather(
 	ctx context.Context,
 	request CurrentWeatherRequest,
 ) (weather.CurrentSnapshot, error) {
-	if !isValidLatitude(
+	if !aviationconstraints.IsLatitude(
 		request.Latitude,
 	) ||
-		!isValidLongitude(
+		!aviationconstraints.IsLongitude(
 			request.Longitude,
 		) {
 		return weather.CurrentSnapshot{}, ErrInvalidCoordinates
@@ -254,34 +254,6 @@ func currentWeatherVariables() []string {
 		"wind_direction_10m",
 		"wind_gusts_10m",
 	}
-}
-
-func isValidLatitude(
-	value float64,
-) bool {
-	return !math.IsNaN(
-		value,
-	) &&
-		!math.IsInf(
-			value,
-			0,
-		) &&
-		value >= -90 &&
-		value <= 90
-}
-
-func isValidLongitude(
-	value float64,
-) bool {
-	return !math.IsNaN(
-		value,
-	) &&
-		!math.IsInf(
-			value,
-			0,
-		) &&
-		value >= -180 &&
-		value <= 180
 }
 
 func formatCoordinate(

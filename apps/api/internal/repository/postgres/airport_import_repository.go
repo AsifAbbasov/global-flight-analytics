@@ -13,16 +13,20 @@ var ErrAirportImportRepositoryPoolRequired = errors.New(
 	"airport import repository pool is required",
 )
 
-func (r *AirportRepository) UpsertImported(
+func (
+	r *AirportRepository,
+) UpsertImported(
 	ctx context.Context,
 	items []airport.ImportRecord,
 ) (int64, error) {
 	if r == nil || r.pool == nil {
-		return 0, ErrAirportImportRepositoryPoolRequired
+		return 0,
+			ErrAirportImportRepositoryPoolRequired
 	}
 
 	if len(items) == 0 {
-		return 0, nil
+		return 0,
+			nil
 	}
 
 	if ctx == nil {
@@ -34,17 +38,20 @@ func (r *AirportRepository) UpsertImported(
 		pgx.TxOptions{},
 	)
 	if err != nil {
-		return 0, fmt.Errorf(
-			"begin airport import transaction: %w",
-			err,
-		)
+		return 0,
+			fmt.Errorf(
+				"begin airport import transaction: %w",
+				err,
+			)
 	}
 
 	committed := false
 
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(ctx)
+			_ = tx.Rollback(
+				ctx,
+			)
 		}
 	}()
 
@@ -69,66 +76,20 @@ func (r *AirportRepository) UpsertImported(
 		ctx,
 		createStagingTableQuery,
 	); err != nil {
-		return 0, fmt.Errorf(
-			"create airport import staging table: %w",
-			err,
-		)
+		return 0,
+			fmt.Errorf(
+				"create airport import staging table: %w",
+				err,
+			)
 	}
 
-	copiedCount, err := tx.CopyFrom(
+	if err := stageAirportImportRecords(
 		ctx,
-		pgx.Identifier{
-			"airport_import_staging",
-		},
-		[]string{
-			"source_ident",
-			"icao_code",
-			"iata_code",
-			"name",
-			"city",
-			"source_country_code",
-			"latitude",
-			"longitude",
-			"elevation_ft",
-			"source_name",
-			"last_synced_at",
-		},
-		pgx.CopyFromSlice(
-			len(items),
-			func(index int) ([]any, error) {
-				item := items[index]
-
-				return []any{
-					item.SourceIdent,
-					item.ICAOCode,
-					item.IATACode,
-					item.Name,
-					item.City,
-					item.SourceCountryCode,
-					item.Latitude,
-					item.Longitude,
-					nullableAirportElevationFT(
-						item.ElevationFT,
-					),
-					item.SourceName,
-					item.LastSyncedAt,
-				}, nil
-			},
-		),
-	)
-	if err != nil {
-		return 0, fmt.Errorf(
-			"copy airports into staging table: %w",
-			err,
-		)
-	}
-
-	if copiedCount != int64(len(items)) {
-		return 0, fmt.Errorf(
-			"copy airports into staging table: expected %d rows, copied %d",
-			len(items),
-			copiedCount,
-		)
+		tx,
+		items,
+	); err != nil {
+		return 0,
+			err
 	}
 
 	const updateByICAOQuery = `
@@ -185,10 +146,11 @@ func (r *AirportRepository) UpsertImported(
 		ctx,
 		updateByICAOQuery,
 	); err != nil {
-		return 0, fmt.Errorf(
-			"update airports by ICAO code: %w",
-			err,
-		)
+		return 0,
+			fmt.Errorf(
+				"update airports by ICAO code: %w",
+				err,
+			)
 	}
 
 	const updateBySourceIdentityQuery = `
@@ -234,10 +196,11 @@ func (r *AirportRepository) UpsertImported(
 		ctx,
 		updateBySourceIdentityQuery,
 	); err != nil {
-		return 0, fmt.Errorf(
-			"update airports by source identity: %w",
-			err,
-		)
+		return 0,
+			fmt.Errorf(
+				"update airports by source identity: %w",
+				err,
+			)
 	}
 
 	const insertRemainingQuery = `
@@ -312,30 +275,117 @@ func (r *AirportRepository) UpsertImported(
 		ctx,
 		insertRemainingQuery,
 	); err != nil {
-		return 0, fmt.Errorf(
-			"insert remaining airports: %w",
-			err,
-		)
+		return 0,
+			fmt.Errorf(
+				"insert remaining airports: %w",
+				err,
+			)
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		return 0, fmt.Errorf(
-			"commit airport import transaction: %w",
-			err,
-		)
+	if err := tx.Commit(
+		ctx,
+	); err != nil {
+		return 0,
+			fmt.Errorf(
+				"commit airport import transaction: %w",
+				err,
+			)
 	}
 
 	committed = true
 
-	return int64(len(items)), nil
+	return int64(
+		len(items),
+	), nil
 }
 
-func nullableAirportElevationFT(
-	value *int,
-) any {
-	if value == nil {
-		return nil
+func stageAirportImportRecords(
+	ctx context.Context,
+	tx pgx.Tx,
+	items []airport.ImportRecord,
+) error {
+	const insertStagingRecordQuery = `
+		INSERT INTO airport_import_staging (
+			source_ident,
+			icao_code,
+			iata_code,
+			name,
+			city,
+			source_country_code,
+			latitude,
+			longitude,
+			elevation_ft,
+			source_name,
+			last_synced_at
+		)
+		VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			$7,
+			$8,
+			$9,
+			$10,
+			$11
+		);
+	`
+
+	batch := &pgx.Batch{}
+
+	for _, item := range items {
+		batch.Queue(
+			insertStagingRecordQuery,
+			item.SourceIdent,
+			item.ICAOCode,
+			item.IATACode,
+			item.Name,
+			item.City,
+			item.SourceCountryCode,
+			item.Latitude,
+			item.Longitude,
+			item.ElevationFT,
+			item.SourceName,
+			item.LastSyncedAt,
+		)
 	}
 
-	return *value
+	results := tx.SendBatch(
+		ctx,
+		batch,
+	)
+
+	for index := range items {
+		commandTag, err := results.Exec()
+		if err != nil {
+			_ = results.Close()
+
+			return fmt.Errorf(
+				"insert airport import staging record at index %d: %w",
+				index,
+				err,
+			)
+		}
+
+		if commandTag.RowsAffected() != 1 {
+			_ = results.Close()
+
+			return fmt.Errorf(
+				"insert airport import staging record at index %d: expected 1 affected row, got %d",
+				index,
+				commandTag.RowsAffected(),
+			)
+		}
+	}
+
+	if err := results.Close(); err != nil {
+		return fmt.Errorf(
+			"close airport import staging batch: %w",
+			err,
+		)
+	}
+
+	return nil
 }

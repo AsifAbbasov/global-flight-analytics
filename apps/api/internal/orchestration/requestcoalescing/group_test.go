@@ -9,10 +9,14 @@ import (
 	"time"
 )
 
+type testValue string
+
+func (testValue) RequestCoalescingValue() {}
+
 func TestSameKeySharesOneInFlightExecution(
 	t *testing.T,
 ) {
-	group := New[string]()
+	group := New[testValue]()
 
 	operationStarted := make(
 		chan struct{},
@@ -26,18 +30,22 @@ func TestSameKeySharesOneInFlightExecution(
 
 	function := func(
 		_ context.Context,
-	) (string, error) {
+	) (testValue, error) {
 		executionCount.Add(1)
 
-		close(operationStarted)
+		close(
+			operationStarted,
+		)
 
 		<-releaseOperation
 
-		return "shared-snapshot", nil
+		return testValue(
+			"shared-snapshot",
+		), nil
 	}
 
 	firstResultChannel := make(
-		chan Result[string],
+		chan Result[testValue],
 		1,
 	)
 
@@ -60,7 +68,7 @@ func TestSameKeySharesOneInFlightExecution(
 	<-operationStarted
 
 	secondResultChannel := make(
-		chan Result[string],
+		chan Result[testValue],
 		1,
 	)
 
@@ -87,7 +95,9 @@ func TestSameKeySharesOneInFlightExecution(
 		2,
 	)
 
-	close(releaseOperation)
+	close(
+		releaseOperation,
+	)
 
 	firstResult := <-firstResultChannel
 	firstErr := <-firstErrorChannel
@@ -116,14 +126,14 @@ func TestSameKeySharesOneInFlightExecution(
 		)
 	}
 
-	if firstResult.Value != "shared-snapshot" {
+	if firstResult.Value != testValue("shared-snapshot") {
 		t.Fatalf(
 			"unexpected first value: %s",
 			firstResult.Value,
 		)
 	}
 
-	if secondResult.Value != "shared-snapshot" {
+	if secondResult.Value != testValue("shared-snapshot") {
 		t.Fatalf(
 			"unexpected second value: %s",
 			secondResult.Value,
@@ -146,16 +156,18 @@ func TestSameKeySharesOneInFlightExecution(
 func TestDifferentKeysExecuteIndependently(
 	t *testing.T,
 ) {
-	group := New[string]()
+	group := New[testValue]()
 
 	var executionCount atomic.Int32
 
 	function := func(
 		_ context.Context,
-	) (string, error) {
+	) (testValue, error) {
 		executionCount.Add(1)
 
-		return "snapshot", nil
+		return testValue(
+			"snapshot",
+		), nil
 	}
 
 	_, err := group.Do(
@@ -193,7 +205,7 @@ func TestDifferentKeysExecuteIndependently(
 func TestLastCanceledWaiterCancelsSharedOperation(
 	t *testing.T,
 ) {
-	group := New[string]()
+	group := New[testValue]()
 
 	requestContext, cancelRequest := context.WithCancel(
 		context.Background(),
@@ -218,14 +230,19 @@ func TestLastCanceledWaiterCancelsSharedOperation(
 			"weather:point",
 			func(
 				ctx context.Context,
-			) (string, error) {
-				close(operationStarted)
+			) (testValue, error) {
+				close(
+					operationStarted,
+				)
 
 				<-ctx.Done()
 
-				close(operationCanceled)
+				close(
+					operationCanceled,
+				)
 
-				return "", ctx.Err()
+				return "",
+					ctx.Err()
 			},
 		)
 
@@ -260,15 +277,17 @@ func TestLastCanceledWaiterCancelsSharedOperation(
 func TestDoRejectsEmptyKey(
 	t *testing.T,
 ) {
-	group := New[string]()
+	group := New[testValue]()
 
 	_, err := group.Do(
 		context.Background(),
 		"   ",
 		func(
 			_ context.Context,
-		) (string, error) {
-			return "snapshot", nil
+		) (testValue, error) {
+			return testValue(
+				"snapshot",
+			), nil
 		},
 	)
 
@@ -283,7 +302,7 @@ func TestDoRejectsEmptyKey(
 	}
 }
 
-func waitForWaiterCount[T any](
+func waitForWaiterCount[T Value](
 	t *testing.T,
 	group *Group[T],
 	key string,
