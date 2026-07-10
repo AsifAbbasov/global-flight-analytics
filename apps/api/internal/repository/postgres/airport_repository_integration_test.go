@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -297,10 +298,10 @@ func TestAirportRepositoryGetByICAOReturnsAirportNotFound(
 
 	if !errors.Is(
 		err,
-		ErrAirportNotFound,
+		airport.ErrNotFound,
 	) {
 		t.Fatalf(
-			"expected ErrAirportNotFound, got %v",
+			"expected airport.ErrNotFound, got %v",
 			err,
 		)
 	}
