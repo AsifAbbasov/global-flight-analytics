@@ -9,8 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrAircraftNotFound = errors.New("aircraft not found")
-
 type AircraftRepository struct {
 	db *pgxpool.Pool
 }
@@ -106,7 +104,7 @@ func (r *AircraftRepository) GetByICAO24(
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return aircraft.Aircraft{}, ErrAircraftNotFound
+			return aircraft.Aircraft{}, aircraft.ErrNotFound
 		}
 
 		return aircraft.Aircraft{}, err

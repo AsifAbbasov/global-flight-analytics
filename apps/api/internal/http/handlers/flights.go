@@ -6,7 +6,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flight"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -34,7 +33,7 @@ func (h *FlightHandler) GetByID(c *fiber.Ctx) error {
 
 	item, err := h.service.GetByID(c.Context(), id)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFlightNotFound) {
+		if errors.Is(err, flight.ErrNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "FLIGHT_NOT_FOUND", "Flight not found")
 		}
 
