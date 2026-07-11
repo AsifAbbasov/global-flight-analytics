@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/reconciliation"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -72,8 +71,8 @@ func (repository *ReconciliationRepository) MarkPendingDerivation(
 		nullableUUID(normalized.IngestionRunID),
 		normalized.ICAO24,
 		string(normalized.DerivationType),
-		nullableReconciliationTime(normalized.ObservedFrom),
-		nullableReconciliationTime(normalized.ObservedTo),
+		normalized.ObservedFrom,
+		normalized.ObservedTo,
 		normalized.LastError,
 	)
 	if err != nil {
@@ -84,16 +83,4 @@ func (repository *ReconciliationRepository) MarkPendingDerivation(
 	}
 
 	return nil
-}
-
-func nullableReconciliationTime(
-	value time.Time,
-) *time.Time {
-	if value.IsZero() {
-		return nil
-	}
-
-	normalized := value.UTC()
-
-	return &normalized
 }

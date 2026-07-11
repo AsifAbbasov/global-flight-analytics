@@ -42,8 +42,12 @@ func TestPendingDerivationBuildsStableDeduplicationKey(
 func TestPendingDerivationValidationRejectsBlankICAO24(
 	t *testing.T,
 ) {
+	observedAt := time.Now().UTC()
+
 	task := PendingDerivation{
 		DerivationType: DerivationTypeTrajectory,
+		ObservedFrom:   observedAt,
+		ObservedTo:     observedAt,
 	}
 
 	err := task.Validate()
@@ -58,15 +62,57 @@ func TestPendingDerivationValidationRejectsBlankICAO24(
 func TestPendingDerivationValidationRejectsUnknownDerivationType(
 	t *testing.T,
 ) {
+	observedAt := time.Now().UTC()
+
 	task := PendingDerivation{
 		ICAO24:         "abc123",
 		DerivationType: DerivationType("unknown"),
+		ObservedFrom:   observedAt,
+		ObservedTo:     observedAt,
 	}
 
 	err := task.Validate()
 	if !errors.Is(err, ErrDerivationTypeInvalid) {
 		t.Fatalf(
 			"expected ErrDerivationTypeInvalid, got %v",
+			err,
+		)
+	}
+}
+
+func TestPendingDerivationValidationRequiresObservedRange(
+	t *testing.T,
+) {
+	task := PendingDerivation{
+		ICAO24:         "abc123",
+		DerivationType: DerivationTypeTrajectory,
+	}
+
+	err := task.Validate()
+	if !errors.Is(err, ErrObservedRangeRequired) {
+		t.Fatalf(
+			"expected ErrObservedRangeRequired, got %v",
+			err,
+		)
+	}
+}
+
+func TestPendingDerivationValidationRejectsReversedObservedRange(
+	t *testing.T,
+) {
+	observedAt := time.Now().UTC()
+
+	task := PendingDerivation{
+		ICAO24:         "abc123",
+		DerivationType: DerivationTypeTrajectory,
+		ObservedFrom:   observedAt,
+		ObservedTo:     observedAt.Add(-time.Minute),
+	}
+
+	err := task.Validate()
+	if !errors.Is(err, ErrObservedRangeInvalid) {
+		t.Fatalf(
+			"expected ErrObservedRangeInvalid, got %v",
 			err,
 		)
 	}

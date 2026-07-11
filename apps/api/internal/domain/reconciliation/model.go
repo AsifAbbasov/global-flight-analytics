@@ -13,7 +13,6 @@ type DerivationType string
 const (
 	DerivationTypeFlightStateQuality DerivationType = "flight_state_quality"
 	DerivationTypeTrajectory         DerivationType = "trajectory"
-	DerivationTypeCoverageGap        DerivationType = "coverage_gap"
 )
 
 type TaskStatus string
@@ -28,6 +27,8 @@ const (
 var (
 	ErrICAO24Required        = errors.New("reconciliation task icao24 is required")
 	ErrDerivationTypeInvalid = errors.New("reconciliation task derivation type is invalid")
+	ErrObservedRangeRequired = errors.New("reconciliation task observed range is required")
+	ErrObservedRangeInvalid  = errors.New("reconciliation task observed range is invalid")
 )
 
 type PendingDerivation struct {
@@ -45,10 +46,14 @@ func (task PendingDerivation) Normalize() PendingDerivation {
 		ICAO24: strings.ToLower(
 			strings.TrimSpace(task.ICAO24),
 		),
-		DerivationType: task.DerivationType,
-		ObservedFrom:   normalizeTime(task.ObservedFrom),
-		ObservedTo:     normalizeTime(task.ObservedTo),
-		LastError:      strings.TrimSpace(task.LastError),
+		DerivationType: DerivationType(
+			strings.TrimSpace(
+				string(task.DerivationType),
+			),
+		),
+		ObservedFrom: normalizeTime(task.ObservedFrom),
+		ObservedTo:   normalizeTime(task.ObservedTo),
+		LastError:    strings.TrimSpace(task.LastError),
 	}
 
 	if len(normalized.LastError) > maximumLastErrorLength {
@@ -67,6 +72,14 @@ func (task PendingDerivation) Validate() error {
 
 	if !IsKnownDerivationType(normalized.DerivationType) {
 		return ErrDerivationTypeInvalid
+	}
+
+	if normalized.ObservedFrom.IsZero() || normalized.ObservedTo.IsZero() {
+		return ErrObservedRangeRequired
+	}
+
+	if normalized.ObservedFrom.After(normalized.ObservedTo) {
+		return ErrObservedRangeInvalid
 	}
 
 	return nil
@@ -92,8 +105,7 @@ func IsKnownDerivationType(
 ) bool {
 	switch value {
 	case DerivationTypeFlightStateQuality,
-		DerivationTypeTrajectory,
-		DerivationTypeCoverageGap:
+		DerivationTypeTrajectory:
 		return true
 	default:
 		return false

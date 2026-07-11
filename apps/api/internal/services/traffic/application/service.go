@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -97,9 +98,10 @@ func New(
 //
 // Flight states are source observations. Once their repository commits them,
 // failures in derived quality reports or trajectories do not roll them back.
-// Failed derived writes are recorded as reconciliation tasks when a
-// ReconciliationRepository is configured, so derived data can be recomputed from
-// the already durable flight_states layer instead of being silently lost.
+// Recoverable derived write failures are recorded as reconciliation tasks.
+// Each derived persistence stage processes all items in that stage, but a
+// failed stage stops later stages from starting. StoredAt is assigned only
+// after every configured persistence stage completes successfully.
 // Each repository owns atomicity for its own batch or aggregate.
 func (service *Service) ProcessAndStore(
 	ctx context.Context,
@@ -190,56 +192,69 @@ func (service *Service) saveDataQualityReports(
 	result processor.ProcessingResult,
 ) (int, error) {
 	storedCount := 0
+	saveErrors := make(
+		[]error,
+		0,
+	)
 
 	for _, item := range result.UsableStates {
-		if err := service.dataQualityRepository.SaveFlightStateQuality(
+		err := service.dataQualityRepository.SaveFlightStateQuality(
 			ctx,
 			item.State,
 			item.Quality,
-		); err != nil {
-			if markErr := service.markPendingFlightStateQuality(
-				ctx,
-				item.State,
-				err,
-			); markErr != nil {
-				return storedCount, markErr
-			}
+		)
+		if err == nil {
+			storedCount++
+			continue
+		}
 
-			return storedCount, fmt.Errorf(
+		saveErrors = append(
+			saveErrors,
+			fmt.Errorf(
 				"save usable flight state quality report for icao24 %s: %w",
 				item.State.ICAO24,
 				err,
+			),
+		)
+
+		if markErr := service.markPendingFlightStateQuality(
+			ctx,
+			item.State,
+			err,
+		); markErr != nil {
+			saveErrors = append(
+				saveErrors,
+				markErr,
 			)
 		}
-
-		storedCount++
 	}
 
+	// Invalid states are not persisted in flight_states, so they cannot be
+	// reconstructed by a worker that uses flight_states as its durable source.
+	// Their persistence failures stay visible in the aggregate error instead of
+	// creating pending tasks that can never be completed.
 	for _, item := range result.InvalidStates {
-		if err := service.dataQualityRepository.SaveFlightStateQuality(
+		err := service.dataQualityRepository.SaveFlightStateQuality(
 			ctx,
 			item.State,
 			item.Quality,
-		); err != nil {
-			if markErr := service.markPendingFlightStateQuality(
-				ctx,
-				item.State,
-				err,
-			); markErr != nil {
-				return storedCount, markErr
-			}
+		)
+		if err == nil {
+			storedCount++
+			continue
+		}
 
-			return storedCount, fmt.Errorf(
+		saveErrors = append(
+			saveErrors,
+			fmt.Errorf(
 				"save invalid flight state quality report for icao24 %s: %w",
 				item.State.ICAO24,
 				err,
-			)
-		}
-
-		storedCount++
+			),
+		)
 	}
 
-	return storedCount, nil
+	return storedCount, errors.Join(saveErrors...)
 }
 
 func (service *Service) saveTrajectories(
@@ -247,36 +262,48 @@ func (service *Service) saveTrajectories(
 	result processor.ProcessingResult,
 ) (int, error) {
 	storedCount := 0
+	saveErrors := make(
+		[]error,
+		0,
+	)
 	latestStates := latestUsableStatesByICAO24(
 		result.UsableStates,
 	)
 
 	for icao24, item := range result.Trajectories {
-		if err := service.trajectoryRepository.SaveTrajectory(
+		err := service.trajectoryRepository.SaveTrajectory(
 			ctx,
 			item,
-		); err != nil {
-			if markErr := service.markPendingTrajectory(
-				ctx,
-				icao24,
-				item,
-				latestStates[icao24],
-				err,
-			); markErr != nil {
-				return storedCount, markErr
-			}
+		)
+		if err == nil {
+			storedCount++
+			continue
+		}
 
-			return storedCount, fmt.Errorf(
+		saveErrors = append(
+			saveErrors,
+			fmt.Errorf(
 				"save trajectory for icao24 %s: %w",
 				icao24,
 				err,
+			),
+		)
+
+		if markErr := service.markPendingTrajectory(
+			ctx,
+			icao24,
+			item,
+			latestStates[icao24],
+			err,
+		); markErr != nil {
+			saveErrors = append(
+				saveErrors,
+				markErr,
 			)
 		}
-
-		storedCount++
 	}
 
-	return storedCount, nil
+	return storedCount, errors.Join(saveErrors...)
 }
 
 func (service *Service) markPendingFlightStateQuality(
