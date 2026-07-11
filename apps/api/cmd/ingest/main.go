@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
@@ -15,43 +17,56 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerresponse"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/sharedsnapshot"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/ingestdaemon"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/gapdetector"
-	trafficingestion "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/ingestion"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trackbuilder"
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf(
+			"traffic ingest daemon failed: %v",
+			err,
+		)
+	}
+}
+
+func run() error {
 	_ = godotenv.Load()
 
 	cfg, err := config.LoadIngestConfig()
 	if err != nil {
-		log.Fatalf(
-			"load ingest configuration: %v",
+		return fmt.Errorf(
+			"load ingest configuration: %w",
 			err,
 		)
 	}
 
-	latitude := cfg.TrafficIngestionLatitude
-	longitude := cfg.TrafficIngestionLongitude
-	radius := cfg.TrafficIngestionRadius
+	daemonConfig, err := config.LoadIngestDaemonConfig()
+	if err != nil {
+		return fmt.Errorf(
+			"load ingest daemon configuration: %w",
+			err,
+		)
+	}
 
-	airplanesLiveTimeout := cfg.AirplanesLiveTimeout
-
-	trajectoryMaxTimeGap := cfg.TrajectoryMaxTimeGap
-	trajectoryMaxGroundSpeedMPS := cfg.TrajectoryMaxGroundSpeedMPS
-
-	operationContext := context.Background()
+	operationContext, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+	defer stop()
 
 	dbPool, err := database.NewPostgresPool(
 		cfg.Database.URL,
 		cfg.Database.ConnectTimeout,
 	)
 	if err != nil {
-		log.Fatalf(
-			"connect postgres: %v",
+		return fmt.Errorf(
+			"connect postgres: %w",
 			err,
 		)
 	}
@@ -61,8 +76,8 @@ func main() {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf(
-			"create provider budget manager: %v",
+		return fmt.Errorf(
+			"create provider budget manager: %w",
 			err,
 		)
 	}
@@ -73,8 +88,8 @@ func main() {
 		},
 	)
 	if err != nil {
-		log.Fatalf(
-			"create provider response controller: %v",
+		return fmt.Errorf(
+			"create provider response controller: %w",
 			err,
 		)
 	}
@@ -83,8 +98,8 @@ func main() {
 		responseController,
 	)
 	if err != nil {
-		log.Fatalf(
-			"create provider response observer: %v",
+		return fmt.Errorf(
+			"create provider response observer: %w",
 			err,
 		)
 	}
@@ -93,8 +108,8 @@ func main() {
 		responseController,
 	)
 	if err != nil {
-		log.Fatalf(
-			"create ingestion orchestrator: %v",
+		return fmt.Errorf(
+			"create ingestion orchestrator: %w",
 			err,
 		)
 	}
@@ -102,14 +117,14 @@ func main() {
 	airplanesLiveClient, err := airplaneslive.NewClientWithResponseObserver(
 		integrationcommon.HTTPClientConfig{
 			BaseURL:   airplaneslive.BaseURL,
-			Timeout:   airplanesLiveTimeout,
+			Timeout:   cfg.AirplanesLiveTimeout,
 			UserAgent: "global-flight-analytics-ingest",
 		},
 		responseObserver,
 	)
 	if err != nil {
-		log.Fatalf(
-			"create airplanes.live client: %v",
+		return fmt.Errorf(
+			"create airplanes.live client: %w",
 			err,
 		)
 	}
@@ -118,50 +133,18 @@ func main() {
 		airplanesLiveClient,
 	)
 
-	snapshot, err := runSharedSnapshot(
-		operationContext,
-		sharedSnapshotRunConfig{
-			Executor:      orchestrator,
-			TrafficSource: rawTrafficProvider,
-			Latitude:      latitude,
-			Longitude:     longitude,
-			Radius:        radius,
-		},
-	)
-	if err != nil {
-		log.Fatalf(
-			"shared snapshot collection failed: %v",
-			err,
-		)
-	}
-
-	snapshotTrafficProvider, err := newSnapshotTrafficProvider(
-		snapshot,
-		rawTrafficProvider.SourceName(),
-	)
-	if err != nil {
-		log.Fatalf(
-			"create snapshot-backed traffic provider: %v",
-			err,
-		)
-	}
-
 	flightStateRepository := postgres.NewFlightStateRepository(
 		dbPool,
 	)
-
 	dataQualityRepository := postgres.NewDataQualityRepository(
 		dbPool,
 	)
-
 	trajectoryRepository := postgres.NewTrajectoryRepository(
 		dbPool,
 	)
-
 	reconciliationRepository := postgres.NewReconciliationRepository(
 		dbPool,
 	)
-
 	ingestionRunRepository := postgres.NewIngestionRunRepository(
 		dbPool,
 	)
@@ -170,15 +153,15 @@ func main() {
 		processor.Config{
 			TrackBuilderConfig: trackbuilder.Config{
 				GapDetectorConfig: gapdetector.Config{
-					MaxTimeGap:        trajectoryMaxTimeGap,
-					MaxGroundSpeedMPS: trajectoryMaxGroundSpeedMPS,
+					MaxTimeGap:        cfg.TrajectoryMaxTimeGap,
+					MaxGroundSpeedMPS: cfg.TrajectoryMaxGroundSpeedMPS,
 				},
 			},
 		},
 	)
 	if err != nil {
-		log.Fatalf(
-			"create traffic processor: %v",
+		return fmt.Errorf(
+			"create traffic processor: %w",
 			err,
 		)
 	}
@@ -193,48 +176,92 @@ func main() {
 		},
 	)
 	if err != nil {
-		log.Fatalf(
-			"create traffic application service: %v",
+		return fmt.Errorf(
+			"create traffic application service: %w",
 			err,
 		)
 	}
 
-	ingestionService := trafficingestion.New(
-		trafficingestion.Config{
-			Provider:               snapshotTrafficProvider,
+	cycle, err := newIngestionCycle(
+		ingestionCycleConfig{
+			Executor:               orchestrator,
+			TrafficSource:          rawTrafficProvider,
+			TrafficSourceName:      rawTrafficProvider.SourceName(),
 			ProcessingService:      processingService,
 			IngestionRunRepository: ingestionRunRepository,
+			Latitude:               cfg.TrafficIngestionLatitude,
+			Longitude:              cfg.TrafficIngestionLongitude,
+			Radius:                 cfg.TrafficIngestionRadius,
 		},
 	)
+	if err != nil {
+		return fmt.Errorf(
+			"create traffic ingestion cycle: %w",
+			err,
+		)
+	}
 
-	result, err := ingestionService.LoadAndProcessByPoint(
-		operationContext,
-		latitude,
-		longitude,
-		radius,
+	daemon, err := ingestdaemon.New(
+		ingestdaemon.Config{
+			RunCycle: cycle.Run,
+			Interval: daemonConfig.Interval,
+			Observe: func(
+				result ingestdaemon.CycleResult,
+			) {
+				status := "success"
+				lastError := ""
+
+				if result.Err != nil {
+					status = "failed"
+					lastError = result.Err.Error()
+				}
+
+				fmt.Printf(
+					"ingest_cycle=%d status=%s started_at=%s finished_at=%s duration=%s next_interval=%s error=%q\n",
+					result.Number,
+					status,
+					result.StartedAt.Format(
+						time.RFC3339Nano,
+					),
+					result.FinishedAt.Format(
+						time.RFC3339Nano,
+					),
+					result.FinishedAt.Sub(
+						result.StartedAt,
+					),
+					daemonConfig.Interval,
+					lastError,
+				)
+			},
+		},
 	)
 	if err != nil {
-		log.Fatalf(
-			"snapshot-backed regional traffic ingestion failed: %v",
+		return fmt.Errorf(
+			"create traffic ingest daemon: %w",
 			err,
 		)
 	}
 
 	fmt.Printf(
-		"snapshot_status=%s snapshot_total=%d snapshot_successes=%d snapshot_failures=%d snapshot_cycle_started_at=%s snapshot_assembled_at=%s ingestion_run_id=%s loaded=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
-		snapshot.Status,
-		snapshot.TotalCount,
-		snapshot.SuccessCount,
-		snapshot.FailureCount,
-		snapshot.CycleStartedAt.Format(time.RFC3339Nano),
-		snapshot.AssembledAt.Format(time.RFC3339Nano),
-		result.IngestionRunID,
-		result.LoadedStateCount,
-		result.ProcessingResult.ProcessingResult.Stats.ReceivedCount,
-		result.ProcessingResult.ProcessingResult.Stats.UsableCount,
-		result.ProcessingResult.ProcessingResult.Stats.InvalidCount,
-		result.ProcessingResult.StoredFlightStateCount,
-		result.ProcessingResult.ProcessingResult.Stats.TrajectoryCount,
-		result.ProcessingResult.StoredAt.Format(time.RFC3339),
+		"traffic_ingest_daemon_started interval=%s latitude=%f longitude=%f radius=%d\n",
+		daemonConfig.Interval,
+		cfg.TrafficIngestionLatitude,
+		cfg.TrafficIngestionLongitude,
+		cfg.TrafficIngestionRadius,
 	)
+
+	if err := daemon.Run(
+		operationContext,
+	); err != nil {
+		return fmt.Errorf(
+			"run traffic ingest daemon: %w",
+			err,
+		)
+	}
+
+	fmt.Println(
+		"traffic_ingest_daemon_stopped",
+	)
+
+	return nil
 }
