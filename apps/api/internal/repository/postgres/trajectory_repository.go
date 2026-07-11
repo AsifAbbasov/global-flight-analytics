@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/reconciliation"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,18 +15,65 @@ type TrajectoryRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewTrajectoryRepository(db *pgxpool.Pool) *TrajectoryRepository {
+func NewTrajectoryRepository(
+	db *pgxpool.Pool,
+) *TrajectoryRepository {
 	return &TrajectoryRepository{
 		db: db,
 	}
 }
 
-func (repository *TrajectoryRepository) SaveTrajectory(ctx context.Context, item trajectory.FlightTrajectory) error {
+func (repository *TrajectoryRepository) SaveTrajectory(
+	ctx context.Context,
+	item trajectory.FlightTrajectory,
+) error {
+	return repository.saveTrajectory(
+		ctx,
+		"",
+		0,
+		item,
+	)
+}
+
+func (repository *TrajectoryRepository) SaveReconciledTrajectory(
+	ctx context.Context,
+	taskID string,
+	attemptCount int,
+	item trajectory.FlightTrajectory,
+) error {
+	normalizedTaskID := reconciliation.NormalizeTaskID(
+		taskID,
+	)
+	if normalizedTaskID == "" {
+		return reconciliation.ErrTaskIDRequired
+	}
+
+	if attemptCount <= 0 {
+		return reconciliation.ErrAttemptCountInvalid
+	}
+
+	return repository.saveTrajectory(
+		ctx,
+		normalizedTaskID,
+		attemptCount,
+		item,
+	)
+}
+
+func (repository *TrajectoryRepository) saveTrajectory(
+	ctx context.Context,
+	reconciliationTaskID string,
+	attemptCount int,
+	item trajectory.FlightTrajectory,
+) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	tx, err := repository.db.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := repository.db.BeginTx(
+		ctx,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return err
 	}
@@ -33,29 +82,152 @@ func (repository *TrajectoryRepository) SaveTrajectory(ctx context.Context, item
 
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(ctx)
+			_ = tx.Rollback(
+				ctx,
+			)
 		}
 	}()
 
-	trajectoryID, err := repository.insertFlightTrajectory(ctx, tx, item)
+	if reconciliationTaskID != "" {
+		if err := assertReconciliationAttemptOwned(
+			ctx,
+			tx,
+			reconciliationTaskID,
+			attemptCount,
+		); err != nil {
+			return err
+		}
+	}
+
+	if reconciliationTaskID != "" {
+		if err := deleteExistingReconciledTrajectory(
+			ctx,
+			tx,
+			reconciliationTaskID,
+		); err != nil {
+			return err
+		}
+	}
+
+	var trajectoryID string
+
+	if reconciliationTaskID == "" {
+		trajectoryID, err = repository.insertFlightTrajectory(
+			ctx,
+			tx,
+			item,
+		)
+	} else {
+		trajectoryID, err = repository.insertReconciledFlightTrajectory(
+			ctx,
+			tx,
+			reconciliationTaskID,
+			item,
+		)
+	}
 	if err != nil {
-		return fmt.Errorf("insert flight trajectory: %w", err)
+		return fmt.Errorf(
+			"insert flight trajectory: %w",
+			err,
+		)
 	}
 
-	segmentIDs, err := repository.insertTrajectorySegments(ctx, tx, trajectoryID, item.Segments)
+	segmentIDs, err := repository.insertTrajectorySegments(
+		ctx,
+		tx,
+		trajectoryID,
+		item.Segments,
+	)
 	if err != nil {
-		return fmt.Errorf("insert trajectory segments: %w", err)
+		return fmt.Errorf(
+			"insert trajectory segments: %w",
+			err,
+		)
 	}
 
-	if err := repository.insertCoverageGaps(ctx, tx, trajectoryID, segmentIDs, item.CoverageGaps); err != nil {
-		return fmt.Errorf("insert coverage gaps: %w", err)
+	if err := repository.insertCoverageGaps(
+		ctx,
+		tx,
+		trajectoryID,
+		segmentIDs,
+		item.CoverageGaps,
+	); err != nil {
+		return fmt.Errorf(
+			"insert coverage gaps: %w",
+			err,
+		)
 	}
 
-	if err := tx.Commit(ctx); err != nil {
+	if err := tx.Commit(
+		ctx,
+	); err != nil {
 		return err
 	}
 
 	committed = true
+
+	return nil
+}
+
+func assertReconciliationAttemptOwned(
+	ctx context.Context,
+	tx pgx.Tx,
+	taskID string,
+	attemptCount int,
+) error {
+	const query = `
+		SELECT id::text
+		FROM derived_reconciliation_tasks
+		WHERE id = $1
+			AND status = 'processing'
+			AND attempt_count = $2
+		FOR UPDATE;
+	`
+
+	var ownedTaskID string
+
+	err := tx.QueryRow(
+		ctx,
+		query,
+		taskID,
+		attemptCount,
+	).Scan(
+		&ownedTaskID,
+	)
+	if errors.Is(
+		err,
+		pgx.ErrNoRows,
+	) {
+		return reconciliation.ErrTaskTransitionRejected
+	}
+	if err != nil {
+		return fmt.Errorf(
+			"verify reconciliation trajectory attempt ownership: %w",
+			err,
+		)
+	}
+
+	return nil
+}
+
+func deleteExistingReconciledTrajectory(
+	ctx context.Context,
+	tx pgx.Tx,
+	taskID string,
+) error {
+	if _, err := tx.Exec(
+		ctx,
+		`
+			DELETE FROM flight_trajectories
+			WHERE reconciliation_task_id = $1;
+		`,
+		taskID,
+	); err != nil {
+		return fmt.Errorf(
+			"delete existing reconciled trajectory: %w",
+			err,
+		)
+	}
 
 	return nil
 }
@@ -104,7 +276,67 @@ func (repository *TrajectoryRepository) insertFlightTrajectory(
 		item.CoverageGapCount,
 		item.QualityScore,
 		sourceNameOrUnknown(item.SourceName),
-	).Scan(&trajectoryID)
+	).Scan(
+		&trajectoryID,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return trajectoryID, nil
+}
+
+func (repository *TrajectoryRepository) insertReconciledFlightTrajectory(
+	ctx context.Context,
+	tx pgx.Tx,
+	reconciliationTaskID string,
+	item trajectory.FlightTrajectory,
+) (string, error) {
+	const query = `
+		INSERT INTO flight_trajectories (
+			flight_id,
+			aircraft_id,
+			icao24,
+			callsign,
+			start_time,
+			end_time,
+			duration_seconds,
+			segment_count,
+			point_count,
+			coverage_gap_count,
+			quality_score,
+			source_name,
+			reconciliation_task_id
+		)
+		VALUES (
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9, $10, $11, $12,
+			$13
+		)
+		RETURNING id::text;
+	`
+
+	var trajectoryID string
+
+	err := tx.QueryRow(
+		ctx,
+		query,
+		nullableUUID(item.FlightID),
+		nullableUUID(item.AircraftID),
+		item.ICAO24,
+		nullableText(item.Callsign),
+		item.StartTime,
+		item.EndTime,
+		item.DurationSeconds,
+		item.SegmentCount,
+		item.PointCount,
+		item.CoverageGapCount,
+		item.QualityScore,
+		sourceNameOrUnknown(item.SourceName),
+		nullableUUID(reconciliationTaskID),
+	).Scan(
+		&trajectoryID,
+	)
 	if err != nil {
 		return "", err
 	}
@@ -146,7 +378,11 @@ func (repository *TrajectoryRepository) insertTrajectorySegments(
 		RETURNING id::text;
 	`
 
-	segmentIDs := make([]string, 0, len(segments))
+	segmentIDs := make(
+		[]string,
+		0,
+		len(segments),
+	)
 
 	for _, segment := range segments {
 		var segmentID string
@@ -171,12 +407,17 @@ func (repository *TrajectoryRepository) insertTrajectorySegments(
 			segment.EndLongitude,
 			segment.PointCount,
 			sourceNameOrUnknown(segment.SourceName),
-		).Scan(&segmentID)
+		).Scan(
+			&segmentID,
+		)
 		if err != nil {
 			return nil, err
 		}
 
-		segmentIDs = append(segmentIDs, segmentID)
+		segmentIDs = append(
+			segmentIDs,
+			segmentID,
+		)
 	}
 
 	return segmentIDs, nil
@@ -209,8 +450,16 @@ func (repository *TrajectoryRepository) insertCoverageGaps(
 	`
 
 	for index, coverageGap := range coverageGaps {
-		previousSegmentID := inferredPreviousSegmentID(index, segmentIDs, coverageGap.PreviousSegmentID)
-		nextSegmentID := inferredNextSegmentID(index, segmentIDs, coverageGap.NextSegmentID)
+		previousSegmentID := inferredPreviousSegmentID(
+			index,
+			segmentIDs,
+			coverageGap.PreviousSegmentID,
+		)
+		nextSegmentID := inferredNextSegmentID(
+			index,
+			segmentIDs,
+			coverageGap.NextSegmentID,
+		)
 
 		if _, err := tx.Exec(
 			ctx,
@@ -233,7 +482,11 @@ func (repository *TrajectoryRepository) insertCoverageGaps(
 	return nil
 }
 
-func inferredPreviousSegmentID(index int, segmentIDs []string, explicitValue string) string {
+func inferredPreviousSegmentID(
+	index int,
+	segmentIDs []string,
+	explicitValue string,
+) string {
 	if explicitValue != "" {
 		return explicitValue
 	}
@@ -245,7 +498,11 @@ func inferredPreviousSegmentID(index int, segmentIDs []string, explicitValue str
 	return ""
 }
 
-func inferredNextSegmentID(index int, segmentIDs []string, explicitValue string) string {
+func inferredNextSegmentID(
+	index int,
+	segmentIDs []string,
+	explicitValue string,
+) string {
 	if explicitValue != "" {
 		return explicitValue
 	}
