@@ -94,7 +94,12 @@ jobs:
             ./internal/integrations/common \
             ./internal/integrations/airplaneslive \
             ./internal/integrations/openmeteo \
-            ./internal/orchestration/sharedsnapshot \
+            ./internal/middleware \
+            ./internal/orchestration/requestcoalescing \
+            ./internal/orchestration/ingestionorchestrator \
+            ./internal/orchestration/regionalprovider \
+            ./internal/services/ingestdaemon \
+            ./internal/services/reconciliationworker \
             ./internal/services/traffic/processor \
             ./internal/services/traffic/trackbuilder \
             ./internal/services/traffic/trajectoryquality \

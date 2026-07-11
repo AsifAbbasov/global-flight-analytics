@@ -14,8 +14,9 @@ import (
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerresponse"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/sharedsnapshot"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/regionalprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/ingestdaemon"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
@@ -104,7 +105,7 @@ func run() error {
 		)
 	}
 
-	orchestrator, err := ingestionorchestrator.NewDefault[sharedsnapshot.Payload](
+	orchestrator, err := ingestionorchestrator.NewDefault[regionalprovider.ExecutionValue](
 		responseController,
 	)
 	if err != nil {
@@ -132,6 +133,20 @@ func run() error {
 	rawTrafficProvider := airplaneslive.NewProvider(
 		airplanesLiveClient,
 	)
+
+	trafficProvider, err := regionalprovider.New(
+		regionalprovider.Config{
+			Provider:   rawTrafficProvider,
+			ProviderID: providerpolicy.ProviderAirplanesLive,
+			Executor:   orchestrator,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create orchestrated regional traffic provider: %w",
+			err,
+		)
+	}
 
 	flightStateRepository := postgres.NewFlightStateRepository(
 		dbPool,
@@ -184,9 +199,7 @@ func run() error {
 
 	cycle, err := newIngestionCycle(
 		ingestionCycleConfig{
-			Executor:               orchestrator,
-			TrafficSource:          rawTrafficProvider,
-			TrafficSourceName:      rawTrafficProvider.SourceName(),
+			TrafficProvider:        trafficProvider,
 			ProcessingService:      processingService,
 			IngestionRunRepository: ingestionRunRepository,
 			Latitude:               cfg.TrafficIngestionLatitude,
