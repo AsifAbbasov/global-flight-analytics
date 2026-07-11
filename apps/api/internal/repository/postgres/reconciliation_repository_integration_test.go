@@ -162,16 +162,21 @@ func TestReconciliationRepositoryUpsertsExistingPendingDerivation(
 
 	var count int
 	var lastError string
+	var signalVersion int64
 
 	err := fixture.pool.QueryRow(
 		context.Background(),
 		`
-			SELECT COUNT(*), MAX(last_error)
+			SELECT
+				COUNT(*),
+				MAX(last_error),
+				MAX(signal_version)
 			FROM derived_reconciliation_tasks;
 		`,
 	).Scan(
 		&count,
 		&lastError,
+		&signalVersion,
 	)
 	if err != nil {
 		t.Fatalf(
@@ -191,6 +196,13 @@ func TestReconciliationRepositoryUpsertsExistingPendingDerivation(
 		t.Fatalf(
 			"expected updated last error, got %s",
 			lastError,
+		)
+	}
+
+	if signalVersion != 2 {
+		t.Fatalf(
+			"expected signal version 2, got %d",
+			signalVersion,
 		)
 	}
 }
@@ -268,7 +280,7 @@ func newReconciliationFixture(
 		)
 	}
 
-	applyReconciliationMigration(
+	applyReconciliationMigrations(
 		t,
 		pool,
 	)
@@ -304,7 +316,7 @@ func (fixture *reconciliationFixture) close(
 	}
 }
 
-func applyReconciliationMigration(
+func applyReconciliationMigrations(
 	t *testing.T,
 	pool *pgxpool.Pool,
 ) {
@@ -317,32 +329,41 @@ func applyReconciliationMigration(
 		)
 	}
 
-	migrationPath := filepath.Clean(
-		filepath.Join(
-			filepath.Dir(currentFile),
-			"../../../../../database/migrations/008_create_derived_reconciliation_tasks.sql",
-		),
-	)
-
-	migrationSQL, err := os.ReadFile(
-		migrationPath,
-	)
-	if err != nil {
-		t.Fatalf(
-			"read reconciliation migration %s: %v",
-			migrationPath,
-			err,
-		)
+	migrationNames := []string{
+		"008_create_derived_reconciliation_tasks.sql",
+		"009_add_reconciliation_task_lifecycle.sql",
 	}
 
-	_, err = pool.Exec(
-		context.Background(),
-		string(migrationSQL),
-	)
-	if err != nil {
-		t.Fatalf(
-			"execute reconciliation migration: %v",
-			err,
+	for _, migrationName := range migrationNames {
+		migrationPath := filepath.Clean(
+			filepath.Join(
+				filepath.Dir(currentFile),
+				"../../../../../database/migrations",
+				migrationName,
+			),
 		)
+
+		migrationSQL, err := os.ReadFile(
+			migrationPath,
+		)
+		if err != nil {
+			t.Fatalf(
+				"read reconciliation migration %s: %v",
+				migrationPath,
+				err,
+			)
+		}
+
+		_, err = pool.Exec(
+			context.Background(),
+			string(migrationSQL),
+		)
+		if err != nil {
+			t.Fatalf(
+				"execute reconciliation migration %s: %v",
+				migrationName,
+				err,
+			)
+		}
 	}
 }
