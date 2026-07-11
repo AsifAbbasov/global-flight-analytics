@@ -21,13 +21,22 @@ func LoadServerConfig() (
 		)
 	}
 
+	apiProtection, err := loadAPIProtectionConfig()
+	if err != nil {
+		return ServerConfig{}, fmt.Errorf(
+			"load api protection configuration: %w",
+			err,
+		)
+	}
+
 	databaseURL := optionalTrimmedStringEnvironmentVariable(
 		databaseURLEnvironmentVariable,
 	)
 
 	if databaseURL == "" {
 		return ServerConfig{
-			Port: port,
+			Port:          port,
+			APIProtection: apiProtection,
 		}, nil
 	}
 
@@ -58,5 +67,6 @@ func LoadServerConfig() (
 			ConnectTimeout: databaseConnectTimeout,
 		},
 		OpenMeteoTimeout: openMeteoTimeout,
+		APIProtection:    apiProtection,
 	}, nil
 }

@@ -1,8 +1,10 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
+	internalmiddleware "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -11,12 +13,25 @@ import (
 func New(
 	cfg Config,
 ) (*fiber.App, error) {
-	app := fiber.New()
-
-	registerMiddleware(
-		app,
+	normalizedConfig, err := normalizeConfig(
 		cfg,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	app := fiber.New(
+		newFiberConfig(
+			normalizedConfig,
+		),
+	)
+
+	if err := registerMiddleware(
+		app,
+		normalizedConfig,
+	); err != nil {
+		return nil, err
+	}
 
 	v1 := app.Group(
 		"/api",
@@ -28,11 +43,11 @@ func New(
 		v1,
 	)
 
-	if cfg.DatabasePool != nil {
+	if normalizedConfig.DatabasePool != nil {
 		if err := registerDatabaseRoutes(
 			v1,
-			cfg.DatabasePool,
-			cfg.OpenMeteoTimeout,
+			normalizedConfig.DatabasePool,
+			normalizedConfig.OpenMeteoTimeout,
 		); err != nil {
 			return nil, err
 		}
@@ -44,30 +59,56 @@ func New(
 func registerMiddleware(
 	app *fiber.App,
 	cfg Config,
-) {
+) error {
 	app.Use(
 		recover.New(),
 	)
 
 	app.Use(
-		middleware.RequestID(),
+		internalmiddleware.RequestID(),
 	)
 
 	app.Use(
-		middleware.RequestLogger(
+		internalmiddleware.RequestLogger(
 			cfg.Logger,
 		),
 	)
 
 	app.Use(
+		internalmiddleware.SecurityHeaders(),
+	)
+
+	app.Use(
 		cors.New(
 			cors.Config{
-				AllowOrigins: "http://localhost:3000,http://localhost:3001",
-				AllowMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-				AllowHeaders: "Origin,Content-Type,Accept,Authorization",
+				AllowOrigins:  cfg.Protection.AllowedOrigins,
+				AllowMethods:  "GET,HEAD,OPTIONS",
+				AllowHeaders:  "Accept,Content-Type,X-Request-ID",
+				ExposeHeaders: "X-Request-ID,X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset",
 			},
 		),
 	)
+
+	rateLimiter, err := internalmiddleware.NewRateLimiter(
+		internalmiddleware.RateLimiterConfig{
+			MaxRequests:  cfg.Protection.RateLimitMax,
+			Window:       cfg.Protection.RateLimitWindow,
+			Next:         shouldSkipRateLimit,
+			LimitReached: rateLimitReached,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create api rate limiter: %w",
+			err,
+		)
+	}
+
+	app.Use(
+		rateLimiter,
+	)
+
+	return nil
 }
 
 func registerSystemRoutes(

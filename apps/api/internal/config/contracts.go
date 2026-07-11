@@ -7,10 +7,24 @@ type PostgresConfig struct {
 	ConnectTimeout time.Duration
 }
 
+type APIProtectionConfig struct {
+	AllowedOrigins string
+
+	BodyLimitBytes int
+
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+
+	RateLimitMax    int
+	RateLimitWindow time.Duration
+}
+
 type ServerConfig struct {
 	Port             string
 	Database         *PostgresConfig
 	OpenMeteoTimeout time.Duration
+	APIProtection    APIProtectionConfig
 }
 
 type IngestConfig struct {
