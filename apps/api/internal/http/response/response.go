@@ -20,7 +20,8 @@ type SuccessPayload interface {
 		[]dto.CurrentTrafficItem |
 		dto.Trajectory |
 		[]dto.AirportListItem |
-		dto.AirportProfile
+		dto.AirportProfile |
+		dto.ActiveAircraftMetricResponse
 }
 
 type SuccessResponse[T SuccessPayload] struct {

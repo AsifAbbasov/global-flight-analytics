@@ -8,6 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flight"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/metrics"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/region"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
@@ -22,6 +23,7 @@ type databaseRouteHandlers struct {
 	aircraft    *handlers.AircraftHandler
 	flight      *handlers.FlightHandler
 	flightState *handlers.FlightStateHandler
+	metrics     *handlers.MetricsHandler
 	region      *handlers.RegionHandler
 	traffic     *handlers.TrafficHandler
 	trajectory  *handlers.TrajectoryHandler
@@ -49,6 +51,7 @@ func registerDatabaseRoutes(
 
 	v1.Get("/regions", routeHandlers.region.List)
 	v1.Get("/regions/:code", routeHandlers.region.GetByCode)
+	v1.Get("/metrics/active-aircraft", routeHandlers.metrics.GetActiveAircraft)
 	v1.Get("/traffic/current", routeHandlers.traffic.GetCurrent)
 	v1.Get("/aircraft/:icao24/trajectory", routeHandlers.trajectory.GetLatestByICAO24)
 	v1.Get("/trajectories/:id", routeHandlers.trajectory.GetByID)
@@ -86,6 +89,15 @@ func buildDatabaseRouteHandlers(
 	regionService := region.NewService()
 	regionHandler := handlers.NewRegionHandler(regionService)
 
+	metricsRepository := postgres.NewMetricsRepository(dbPool)
+	metricsService := metrics.NewService(
+		metricsRepository,
+		regionService,
+	)
+	metricsHandler := handlers.NewMetricsHandler(
+		metricsService,
+	)
+
 	trafficRepository := postgres.NewTrafficRepository(dbPool)
 	trafficService := traffic.NewService(
 		trafficRepository,
@@ -108,6 +120,7 @@ func buildDatabaseRouteHandlers(
 		aircraft:    aircraftHandler,
 		flight:      flightHandler,
 		flightState: flightStateHandler,
+		metrics:     metricsHandler,
 		region:      regionHandler,
 		traffic:     trafficHandler,
 		trajectory:  trajectoryHandler,
