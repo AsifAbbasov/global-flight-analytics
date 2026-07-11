@@ -150,7 +150,15 @@ func main() {
 		dbPool,
 	)
 
+	dataQualityRepository := postgres.NewDataQualityRepository(
+		dbPool,
+	)
+
 	trajectoryRepository := postgres.NewTrajectoryRepository(
+		dbPool,
+	)
+
+	reconciliationRepository := postgres.NewReconciliationRepository(
 		dbPool,
 	)
 
@@ -177,9 +185,11 @@ func main() {
 
 	processingService, err := trafficapplication.New(
 		trafficapplication.Config{
-			Processor:             trafficProcessor,
-			FlightStateRepository: flightStateRepository,
-			TrajectoryRepository:  trajectoryRepository,
+			Processor:                trafficProcessor,
+			FlightStateRepository:    flightStateRepository,
+			DataQualityRepository:    dataQualityRepository,
+			TrajectoryRepository:     trajectoryRepository,
+			ReconciliationRepository: reconciliationRepository,
 		},
 	)
 	if err != nil {

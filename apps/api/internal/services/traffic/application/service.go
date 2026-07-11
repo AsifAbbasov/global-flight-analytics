@@ -2,11 +2,13 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dataquality"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/reconciliation"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
 )
@@ -33,18 +35,27 @@ type DataQualityRepository interface {
 	) error
 }
 
+type ReconciliationRepository interface {
+	MarkPendingDerivation(
+		ctx context.Context,
+		task reconciliation.PendingDerivation,
+	) error
+}
+
 type Config struct {
-	Processor             *processor.Processor
-	FlightStateRepository FlightStateRepository
-	TrajectoryRepository  TrajectoryRepository
-	DataQualityRepository DataQualityRepository
+	Processor                *processor.Processor
+	FlightStateRepository    FlightStateRepository
+	TrajectoryRepository     TrajectoryRepository
+	DataQualityRepository    DataQualityRepository
+	ReconciliationRepository ReconciliationRepository
 }
 
 type Service struct {
-	processor             *processor.Processor
-	flightStateRepository FlightStateRepository
-	trajectoryRepository  TrajectoryRepository
-	dataQualityRepository DataQualityRepository
+	processor                *processor.Processor
+	flightStateRepository    FlightStateRepository
+	trajectoryRepository     TrajectoryRepository
+	dataQualityRepository    DataQualityRepository
+	reconciliationRepository ReconciliationRepository
 }
 
 type ProcessAndStoreResult struct {
@@ -75,10 +86,11 @@ func New(
 	}
 
 	return &Service{
-		processor:             trafficProcessor,
-		flightStateRepository: config.FlightStateRepository,
-		trajectoryRepository:  config.TrajectoryRepository,
-		dataQualityRepository: config.DataQualityRepository,
+		processor:                trafficProcessor,
+		flightStateRepository:    config.FlightStateRepository,
+		trajectoryRepository:     config.TrajectoryRepository,
+		dataQualityRepository:    config.DataQualityRepository,
+		reconciliationRepository: config.ReconciliationRepository,
 	}, nil
 }
 
@@ -86,6 +98,10 @@ func New(
 //
 // Flight states are source observations. Once their repository commits them,
 // failures in derived quality reports or trajectories do not roll them back.
+// Recoverable derived write failures are recorded as reconciliation tasks.
+// Each derived persistence stage processes all items in that stage, but a
+// failed stage stops later stages from starting. StoredAt is assigned only
+// after every configured persistence stage completes successfully.
 // Each repository owns atomicity for its own batch or aggregate.
 func (service *Service) ProcessAndStore(
 	ctx context.Context,
@@ -129,7 +145,7 @@ func (service *Service) ProcessAndStore(
 	if service.trajectoryRepository != nil {
 		storedTrajectoryCount, err := service.saveTrajectories(
 			ctx,
-			processingResult.Trajectories,
+			processingResult,
 		)
 
 		result.StoredTrajectoryCount = storedTrajectoryCount
@@ -176,62 +192,209 @@ func (service *Service) saveDataQualityReports(
 	result processor.ProcessingResult,
 ) (int, error) {
 	storedCount := 0
+	saveErrors := make(
+		[]error,
+		0,
+	)
 
 	for _, item := range result.UsableStates {
-		if err := service.dataQualityRepository.SaveFlightStateQuality(
+		err := service.dataQualityRepository.SaveFlightStateQuality(
 			ctx,
 			item.State,
 			item.Quality,
-		); err != nil {
-			return storedCount, fmt.Errorf(
+		)
+		if err == nil {
+			storedCount++
+			continue
+		}
+
+		saveErrors = append(
+			saveErrors,
+			fmt.Errorf(
 				"save usable flight state quality report for icao24 %s: %w",
 				item.State.ICAO24,
 				err,
+			),
+		)
+
+		if markErr := service.markPendingFlightStateQuality(
+			ctx,
+			item.State,
+			err,
+		); markErr != nil {
+			saveErrors = append(
+				saveErrors,
+				markErr,
 			)
 		}
-
-		storedCount++
 	}
 
+	// Invalid states are not persisted in flight_states, so they cannot be
+	// reconstructed by a worker that uses flight_states as its durable source.
+	// Their persistence failures stay visible in the aggregate error instead of
+	// creating pending tasks that can never be completed.
 	for _, item := range result.InvalidStates {
-		if err := service.dataQualityRepository.SaveFlightStateQuality(
+		err := service.dataQualityRepository.SaveFlightStateQuality(
 			ctx,
 			item.State,
 			item.Quality,
-		); err != nil {
-			return storedCount, fmt.Errorf(
+		)
+		if err == nil {
+			storedCount++
+			continue
+		}
+
+		saveErrors = append(
+			saveErrors,
+			fmt.Errorf(
 				"save invalid flight state quality report for icao24 %s: %w",
 				item.State.ICAO24,
 				err,
-			)
-		}
-
-		storedCount++
+			),
+		)
 	}
 
-	return storedCount, nil
+	return storedCount, errors.Join(saveErrors...)
 }
 
 func (service *Service) saveTrajectories(
 	ctx context.Context,
-	trajectories map[string]trajectory.FlightTrajectory,
+	result processor.ProcessingResult,
 ) (int, error) {
 	storedCount := 0
+	saveErrors := make(
+		[]error,
+		0,
+	)
+	latestStates := latestUsableStatesByICAO24(
+		result.UsableStates,
+	)
 
-	for icao24, item := range trajectories {
-		if err := service.trajectoryRepository.SaveTrajectory(
+	for icao24, item := range result.Trajectories {
+		err := service.trajectoryRepository.SaveTrajectory(
 			ctx,
 			item,
-		); err != nil {
-			return storedCount, fmt.Errorf(
+		)
+		if err == nil {
+			storedCount++
+			continue
+		}
+
+		saveErrors = append(
+			saveErrors,
+			fmt.Errorf(
 				"save trajectory for icao24 %s: %w",
 				icao24,
 				err,
+			),
+		)
+
+		if markErr := service.markPendingTrajectory(
+			ctx,
+			icao24,
+			item,
+			latestStates[icao24],
+			err,
+		); markErr != nil {
+			saveErrors = append(
+				saveErrors,
+				markErr,
 			)
 		}
-
-		storedCount++
 	}
 
-	return storedCount, nil
+	return storedCount, errors.Join(saveErrors...)
+}
+
+func (service *Service) markPendingFlightStateQuality(
+	ctx context.Context,
+	state flightstate.FlightState,
+	cause error,
+) error {
+	if service.reconciliationRepository == nil {
+		return nil
+	}
+
+	err := service.reconciliationRepository.MarkPendingDerivation(
+		ctx,
+		reconciliation.PendingDerivation{
+			IngestionRunID: state.IngestionRunID,
+			ICAO24:         state.ICAO24,
+			DerivationType: reconciliation.DerivationTypeFlightStateQuality,
+			ObservedFrom:   state.ObservedAt,
+			ObservedTo:     state.ObservedAt,
+			LastError:      cause.Error(),
+		},
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"mark pending flight state quality derivation for icao24 %s after save failure: %w",
+			state.ICAO24,
+			err,
+		)
+	}
+
+	return nil
+}
+
+func (service *Service) markPendingTrajectory(
+	ctx context.Context,
+	icao24 string,
+	item trajectory.FlightTrajectory,
+	latestState flightstate.FlightState,
+	cause error,
+) error {
+	if service.reconciliationRepository == nil {
+		return nil
+	}
+
+	observedFrom := item.StartTime
+	observedTo := item.EndTime
+	if observedFrom.IsZero() {
+		observedFrom = latestState.ObservedAt
+	}
+	if observedTo.IsZero() {
+		observedTo = latestState.ObservedAt
+	}
+
+	ingestionRunID := latestState.IngestionRunID
+
+	err := service.reconciliationRepository.MarkPendingDerivation(
+		ctx,
+		reconciliation.PendingDerivation{
+			IngestionRunID: ingestionRunID,
+			ICAO24:         icao24,
+			DerivationType: reconciliation.DerivationTypeTrajectory,
+			ObservedFrom:   observedFrom,
+			ObservedTo:     observedTo,
+			LastError:      cause.Error(),
+		},
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"mark pending trajectory derivation for icao24 %s after save failure: %w",
+			icao24,
+			err,
+		)
+	}
+
+	return nil
+}
+
+func latestUsableStatesByICAO24(
+	states []processor.ProcessedFlightState,
+) map[string]flightstate.FlightState {
+	result := make(
+		map[string]flightstate.FlightState,
+		len(states),
+	)
+
+	for _, item := range states {
+		current, exists := result[item.State.ICAO24]
+		if !exists || item.State.ObservedAt.After(current.ObservedAt) {
+			result[item.State.ICAO24] = item.State
+		}
+	}
+
+	return result
 }
