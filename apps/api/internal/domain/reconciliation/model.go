@@ -25,10 +25,16 @@ const (
 )
 
 var (
-	ErrICAO24Required        = errors.New("reconciliation task icao24 is required")
-	ErrDerivationTypeInvalid = errors.New("reconciliation task derivation type is invalid")
-	ErrObservedRangeRequired = errors.New("reconciliation task observed range is required")
-	ErrObservedRangeInvalid  = errors.New("reconciliation task observed range is invalid")
+	ErrICAO24Required         = errors.New("reconciliation task icao24 is required")
+	ErrDerivationTypeInvalid  = errors.New("reconciliation task derivation type is invalid")
+	ErrObservedRangeRequired  = errors.New("reconciliation task observed range is required")
+	ErrObservedRangeInvalid   = errors.New("reconciliation task observed range is invalid")
+	ErrTaskIDRequired         = errors.New("reconciliation task id is required")
+	ErrAttemptCountInvalid    = errors.New("reconciliation attempt count must be greater than zero")
+	ErrNextAttemptAtRequired  = errors.New("reconciliation next attempt time is required")
+	ErrStaleBeforeRequired    = errors.New("reconciliation stale-before time is required")
+	ErrNoTaskAvailable        = errors.New("no reconciliation task is available")
+	ErrTaskTransitionRejected = errors.New("reconciliation task transition was rejected")
 )
 
 type PendingDerivation struct {
@@ -40,9 +46,31 @@ type PendingDerivation struct {
 	LastError      string
 }
 
+type Task struct {
+	ID                   string
+	DeduplicationKey     string
+	IngestionRunID       string
+	ICAO24               string
+	DerivationType       DerivationType
+	Status               TaskStatus
+	ObservedFrom         time.Time
+	ObservedTo           time.Time
+	AttemptCount         int
+	SignalVersion        int64
+	ClaimedSignalVersion int64
+	LastError            string
+	NextAttemptAt        time.Time
+	ProcessingStartedAt  *time.Time
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	CompletedAt          *time.Time
+}
+
 func (task PendingDerivation) Normalize() PendingDerivation {
-	normalized := PendingDerivation{
-		IngestionRunID: strings.TrimSpace(task.IngestionRunID),
+	return PendingDerivation{
+		IngestionRunID: NormalizeTaskID(
+			task.IngestionRunID,
+		),
 		ICAO24: strings.ToLower(
 			strings.TrimSpace(task.ICAO24),
 		),
@@ -53,14 +81,8 @@ func (task PendingDerivation) Normalize() PendingDerivation {
 		),
 		ObservedFrom: normalizeTime(task.ObservedFrom),
 		ObservedTo:   normalizeTime(task.ObservedTo),
-		LastError:    strings.TrimSpace(task.LastError),
+		LastError:    NormalizeLastError(task.LastError),
 	}
-
-	if len(normalized.LastError) > maximumLastErrorLength {
-		normalized.LastError = normalized.LastError[:maximumLastErrorLength]
-	}
-
-	return normalized
 }
 
 func (task PendingDerivation) Validate() error {
@@ -110,6 +132,24 @@ func IsKnownDerivationType(
 	default:
 		return false
 	}
+}
+
+func NormalizeTaskID(
+	value string,
+) string {
+	return strings.TrimSpace(value)
+}
+
+func NormalizeLastError(
+	value string,
+) string {
+	normalized := strings.TrimSpace(value)
+
+	if len(normalized) > maximumLastErrorLength {
+		return normalized[:maximumLastErrorLength]
+	}
+
+	return normalized
 }
 
 func normalizeTime(

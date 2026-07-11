@@ -140,3 +140,44 @@ func TestPendingDerivationTruncatesLongLastError(
 		)
 	}
 }
+
+func TestNormalizeTaskIDTrimsWhitespace(
+	t *testing.T,
+) {
+	normalized := NormalizeTaskID(
+		"  550e8400-e29b-41d4-a716-446655440000  ",
+	)
+
+	if normalized != "550e8400-e29b-41d4-a716-446655440000" {
+		t.Fatalf(
+			"unexpected normalized task id: %q",
+			normalized,
+		)
+	}
+}
+
+func TestNormalizeLastErrorTrimsAndTruncates(
+	t *testing.T,
+) {
+	normalized := NormalizeLastError(
+		"  " + strings.Repeat(
+			"x",
+			maximumLastErrorLength+10,
+		) + "  ",
+	)
+
+	if len(normalized) != maximumLastErrorLength {
+		t.Fatalf(
+			"expected normalized error length %d, got %d",
+			maximumLastErrorLength,
+			len(normalized),
+		)
+	}
+
+	if strings.HasPrefix(normalized, " ") || strings.HasSuffix(normalized, " ") {
+		t.Fatalf(
+			"expected normalized error without surrounding whitespace, got %q",
+			normalized,
+		)
+	}
+}
