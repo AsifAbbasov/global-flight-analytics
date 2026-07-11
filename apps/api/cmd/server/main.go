@@ -58,6 +58,15 @@ func main() {
 			DatabasePool:     dbPool,
 			Logger:           log,
 			OpenMeteoTimeout: cfg.OpenMeteoTimeout,
+			Protection: server.ProtectionConfig{
+				AllowedOrigins:  cfg.APIProtection.AllowedOrigins,
+				BodyLimitBytes:  cfg.APIProtection.BodyLimitBytes,
+				ReadTimeout:     cfg.APIProtection.ReadTimeout,
+				WriteTimeout:    cfg.APIProtection.WriteTimeout,
+				IdleTimeout:     cfg.APIProtection.IdleTimeout,
+				RateLimitMax:    cfg.APIProtection.RateLimitMax,
+				RateLimitWindow: cfg.APIProtection.RateLimitWindow,
+			},
 		},
 	)
 	if err != nil {
