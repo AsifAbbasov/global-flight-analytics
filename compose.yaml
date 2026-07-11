@@ -1,0 +1,95 @@
+name: global-flight-analytics
+
+x-backend-image: &backend-image
+  image: global-flight-analytics-api:local
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+
+x-database-environment: &database-environment
+  DATABASE_URL: postgres://global_flight_analytics:local_password@postgres:5432/global_flight_analytics?sslmode=disable
+  DATABASE_CONNECT_TIMEOUT: 5s
+
+x-backend-security: &backend-security
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=16m
+
+services:
+  postgres:
+    image: postgres:16.14-alpine3.24
+    environment:
+      POSTGRES_USER: global_flight_analytics
+      POSTGRES_PASSWORD: local_password
+      POSTGRES_DB: global_flight_analytics
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U global_flight_analytics -d global_flight_analytics
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    shm_size: 128mb
+    restart: unless-stopped
+    networks:
+      - backend
+
+  migrate:
+    <<:
+      - *backend-image
+      - *backend-security
+    command:
+      - /app/migrate
+    environment:
+      <<: *database-environment
+      MIGRATIONS_DIR: /app/migrations
+      MIGRATION_TIMEOUT: 2m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - backend
+
+  api:
+    <<:
+      - *backend-image
+      - *backend-security
+    environment:
+      <<: *database-environment
+      API_PORT: 8080
+      OPEN_METEO_TIMEOUT: 10s
+      API_ALLOWED_ORIGINS: ${API_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      API_BODY_LIMIT_BYTES: 1048576
+      API_READ_TIMEOUT: 10s
+      API_WRITE_TIMEOUT: 15s
+      API_IDLE_TIMEOUT: 60s
+      API_RATE_LIMIT_MAX: 120
+      API_RATE_LIMIT_WINDOW: 1m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-8080}:8080"
+    restart: unless-stopped
+    stop_grace_period: 15s
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge

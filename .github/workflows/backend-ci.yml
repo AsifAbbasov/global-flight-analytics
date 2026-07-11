@@ -5,6 +5,8 @@ on:
     paths:
       - 'apps/api/**'
       - 'database/**'
+      - '.dockerignore'
+      - 'compose.yaml'
       - '.github/workflows/backend-ci.yml'
 
   push:
@@ -13,6 +15,8 @@ on:
     paths:
       - 'apps/api/**'
       - 'database/**'
+      - '.dockerignore'
+      - 'compose.yaml'
       - '.github/workflows/backend-ci.yml'
 
 permissions:
@@ -63,6 +67,99 @@ jobs:
       - name: Run Go vet
         run: go vet ./...
 
+  backend-container:
+    name: Backend Container
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - backend-quality
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config > /dev/null
+
+      - name: Build backend container image
+        run: |
+          docker build \
+            --pull \
+            --file apps/api/Dockerfile \
+            --tag global-flight-analytics-api:ci \
+            .
+
+      - name: Verify non-root runtime user
+        shell: bash
+        run: |
+          runtime_user="$(
+            docker image inspect \
+              global-flight-analytics-api:ci \
+              --format '{{.Config.User}}'
+          )"
+
+          if [ "$runtime_user" != "10001:10001" ]; then
+            printf '%s\n' "Unexpected runtime user: $runtime_user"
+            exit 1
+          fi
+
+      - name: Run container health smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          container_id="$(
+            docker run \
+              --detach \
+              --publish 127.0.0.1:18080:8080 \
+              --env API_PORT=8080 \
+              global-flight-analytics-api:ci
+          )"
+
+          cleanup() {
+            docker logs "$container_id" || true
+            docker rm --force "$container_id" > /dev/null 2>&1 || true
+          }
+
+          trap cleanup EXIT
+
+          for attempt in $(seq 1 30); do
+            health_status="$(
+              docker inspect \
+                --format '{{.State.Health.Status}}' \
+                "$container_id"
+            )"
+
+            if [ "$health_status" = "healthy" ]; then
+              break
+            fi
+
+            if [ "$health_status" = "unhealthy" ]; then
+              printf '%s\n' "Container became unhealthy"
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          final_health_status="$(
+            docker inspect \
+              --format '{{.State.Health.Status}}' \
+              "$container_id"
+          )"
+
+          if [ "$final_health_status" != "healthy" ]; then
+            printf '%s\n' "Container did not become healthy"
+            exit 1
+          fi
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            http://127.0.0.1:18080/api/v1/health \
+            > /dev/null
+
   backend-race:
     name: Backend Race Safety
     runs-on: ubuntu-latest
@@ -112,7 +209,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16.14-alpine3.24
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
