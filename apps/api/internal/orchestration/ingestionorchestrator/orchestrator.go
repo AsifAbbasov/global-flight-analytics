@@ -38,6 +38,15 @@ type Function[T requestcoalescing.Value] func(
 	ctx context.Context,
 ) (T, error)
 
+type DecisionRecorder interface {
+	RecordBudgetDecision(
+		provider providerpolicy.Provider,
+		requestKey string,
+		publicationID string,
+		decision providerbudget.Decision,
+	)
+}
+
 type BudgetManager interface {
 	Acquire(
 		provider providerpolicy.Provider,
@@ -58,13 +67,15 @@ type Coalescer[T requestcoalescing.Value] interface {
 }
 
 type Config[T requestcoalescing.Value] struct {
-	BudgetManager BudgetManager
-	Coalescer     Coalescer[T]
+	BudgetManager    BudgetManager
+	Coalescer        Coalescer[T]
+	DecisionRecorder DecisionRecorder
 }
 
 type Orchestrator[T requestcoalescing.Value] struct {
-	budgetManager BudgetManager
-	coalescer     Coalescer[T]
+	budgetManager    BudgetManager
+	coalescer        Coalescer[T]
+	decisionRecorder DecisionRecorder
 }
 
 type ExecuteResult[T requestcoalescing.Value] struct {
@@ -115,18 +126,32 @@ func New[T requestcoalescing.Value](
 	}
 
 	return &Orchestrator[T]{
-		budgetManager: config.BudgetManager,
-		coalescer:     config.Coalescer,
+		budgetManager:    config.BudgetManager,
+		coalescer:        config.Coalescer,
+		decisionRecorder: config.DecisionRecorder,
 	}, nil
 }
 
 func NewDefault[T requestcoalescing.Value](
 	budgetManager BudgetManager,
 ) (*Orchestrator[T], error) {
+	return NewDefaultWithDecisionRecorder[T](
+		budgetManager,
+		nil,
+	)
+}
+
+func NewDefaultWithDecisionRecorder[
+	T requestcoalescing.Value,
+](
+	budgetManager BudgetManager,
+	decisionRecorder DecisionRecorder,
+) (*Orchestrator[T], error) {
 	return New(
 		Config[T]{
-			BudgetManager: budgetManager,
-			Coalescer:     requestcoalescing.New[T](),
+			BudgetManager:    budgetManager,
+			Coalescer:        requestcoalescing.New[T](),
+			DecisionRecorder: decisionRecorder,
 		},
 	)
 }
@@ -177,6 +202,13 @@ func (
 					err,
 				)
 			}
+
+			orchestrator.recordBudgetDecision(
+				provider,
+				normalizedRequestKey,
+				"",
+				decision,
+			)
 
 			if !decision.Allowed {
 				var zero T
@@ -265,6 +297,13 @@ func (
 				)
 			}
 
+			orchestrator.recordBudgetDecision(
+				provider,
+				normalizedRequestKey,
+				normalizedPublicationID,
+				decision,
+			)
+
 			if !decision.Allowed {
 				var zero T
 
@@ -291,6 +330,26 @@ func (
 		Value:      result.Value,
 		Shared:     result.Shared,
 	}, nil
+}
+
+func (
+	orchestrator *Orchestrator[T],
+) recordBudgetDecision(
+	provider providerpolicy.Provider,
+	requestKey string,
+	publicationID string,
+	decision providerbudget.Decision,
+) {
+	if orchestrator.decisionRecorder == nil {
+		return
+	}
+
+	orchestrator.decisionRecorder.RecordBudgetDecision(
+		provider,
+		requestKey,
+		publicationID,
+		decision,
+	)
 }
 
 func coalescingKey(

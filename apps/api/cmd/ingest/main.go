@@ -14,6 +14,7 @@ import (
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerdecision"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerresponse"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/regionalprovider"
@@ -97,6 +98,7 @@ func run() error {
 	}
 
 	providerHealthCollector := providerhealthservice.New(nil)
+	providerDecisionCollector := providerdecision.New(nil)
 
 	responseObserver, err := providerresponse.NewIntegrationObserverWithRecorder(
 		responseController,
@@ -109,8 +111,9 @@ func run() error {
 		)
 	}
 
-	orchestrator, err := ingestionorchestrator.NewDefault[regionalprovider.ExecutionValue](
+	orchestrator, err := ingestionorchestrator.NewDefaultWithDecisionRecorder[regionalprovider.ExecutionValue](
 		responseController,
+		providerDecisionCollector,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -275,6 +278,35 @@ func run() error {
 					snapshot.Budget.State,
 					snapshot.Reasons,
 					snapshot.Limitations,
+				)
+
+				decisionSnapshot, decisionSnapshotErr :=
+					providerDecisionCollector.Snapshot(
+						providerpolicy.ProviderAirplanesLive,
+					)
+				if decisionSnapshotErr != nil {
+					fmt.Printf(
+						"provider_decision provider=%s error=%q\n",
+						providerpolicy.ProviderAirplanesLive,
+						decisionSnapshotErr.Error(),
+					)
+					return
+				}
+
+				fmt.Printf(
+					"provider_decision provider=%s decisions_total=%d allowed_total=%d denied_total=%d latest_allowed=%t latest_reason=%s latest_request_key=%q retry_at=%s reason_counts=%v limitations=%v\n",
+					decisionSnapshot.Provider,
+					decisionSnapshot.DecisionsTotal,
+					decisionSnapshot.AllowedTotal,
+					decisionSnapshot.DeniedTotal,
+					decisionSnapshot.Latest.Allowed,
+					decisionSnapshot.Latest.Reason,
+					decisionSnapshot.Latest.RequestKey,
+					decisionSnapshot.Latest.RetryAt.Format(
+						time.RFC3339Nano,
+					),
+					decisionSnapshot.ReasonCounts,
+					decisionSnapshot.Limitations,
 				)
 			},
 		},
