@@ -1,20 +1,18 @@
+import {
+  APIRequestError,
+  requestAPIData,
+  type APIRequestOptions,
+} from '@/lib/api/client'
 import type { Region } from '@/types/region'
 
-interface RegionsResponse {
-  success: boolean
-  data: Region[]
-}
+export async function getRegions(
+  options: APIRequestOptions = {}
+): Promise<Region[]> {
+  const data = await requestAPIData<unknown>('/api/v1/regions', options)
 
-export async function getRegions(): Promise<Region[]> {
-  const response = await fetch('http://localhost:8080/api/v1/regions', {
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to load regions')
+  if (!Array.isArray(data)) {
+    throw new APIRequestError('The regions response is not an array.')
   }
 
-  const result: RegionsResponse = await response.json()
-
-  return result.data
+  return data as Region[]
 }
