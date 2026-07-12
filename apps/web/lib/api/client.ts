@@ -125,6 +125,13 @@ function buildAPIURL(path: string, searchParams?: URLSearchParams): URL {
 
 function resolveAPIBaseURL(): string {
   const configuredBaseURL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim()
+
+  if (!configuredBaseURL && process.env.NODE_ENV === 'production') {
+    throw new APIRequestError(
+      'NEXT_PUBLIC_API_BASE_URL is required in production.'
+    )
+  }
+
   const candidate = configuredBaseURL || defaultAPIBaseURL
   const parsedURL = new URL(candidate)
 

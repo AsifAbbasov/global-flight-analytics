@@ -16,12 +16,14 @@ interface TrafficDashboardProps {
   regions: Region[]
   initialTraffic: TrafficAircraft[]
   initialError: string | null
+  regionsWarning: string | null
 }
 
 export function TrafficDashboard({
   regions,
   initialTraffic,
   initialError,
+  regionsWarning,
 }: TrafficDashboardProps) {
   const [selectedRegion, setSelectedRegion] = useState('world')
   const [traffic, setTraffic] = useState(initialTraffic)
@@ -115,6 +117,10 @@ export function TrafficDashboard({
           <span className='text-slate-300'>
             Aircraft: {traffic.length}
           </span>
+
+          {regionsWarning ? (
+            <span className='text-amber-300'>{regionsWarning}</span>
+          ) : null}
 
           {isLoading ? (
             <span className='text-sky-300'>Loading current traffic…</span>

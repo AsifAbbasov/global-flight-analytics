@@ -21,19 +21,25 @@ export default async function Home() {
     getCurrentTraffic(worldRegion.code),
   ])
 
-  const regions =
-    regionsResult.status === 'fulfilled' && regionsResult.value.length > 0
-      ? ensureWorldRegion(regionsResult.value)
-      : [worldRegion]
+  const hasRegions =
+    regionsResult.status === 'fulfilled' &&
+    regionsResult.value.length > 0
+
+  const regions = hasRegions
+    ? ensureWorldRegion(regionsResult.value)
+    : [worldRegion]
 
   const initialTraffic =
     trafficResult.status === 'fulfilled' ? trafficResult.value : []
 
   const initialError =
-    regionsResult.status === 'rejected' ||
     trafficResult.status === 'rejected'
       ? 'Initial traffic data is temporarily unavailable. Use Retry to request it again.'
       : null
+
+  const regionsWarning = hasRegions
+    ? null
+    : 'The region list is temporarily unavailable. World view remains available; reload the page to retry.'
 
   return (
     <main className='min-h-screen bg-slate-950 p-4 text-white sm:p-8'>
@@ -47,6 +53,7 @@ export default async function Home() {
         regions={regions}
         initialTraffic={initialTraffic}
         initialError={initialError}
+        regionsWarning={regionsWarning}
       />
     </main>
   )
