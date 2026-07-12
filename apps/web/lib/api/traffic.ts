@@ -1,28 +1,31 @@
+import {
+  APIRequestError,
+  requestAPIData,
+  type APIRequestOptions,
+} from '@/lib/api/client'
 import type { TrafficAircraft } from '@/types/traffic'
 
-interface TrafficResponse {
-  success: boolean
-  data: TrafficAircraft[]
-}
-
 export async function getCurrentTraffic(
-  regionCode?: string
+  regionCode?: string,
+  options: APIRequestOptions = {}
 ): Promise<TrafficAircraft[]> {
-  const url = new URL('http://localhost:8080/api/v1/traffic/current')
+  const searchParams = new URLSearchParams()
 
-  if (regionCode) {
-    url.searchParams.set('region', regionCode)
+  if (regionCode?.trim()) {
+    searchParams.set('region', regionCode.trim())
   }
 
-  const response = await fetch(url.toString(), {
-    cache: 'no-store',
-  })
+  const data = await requestAPIData<unknown>(
+    '/api/v1/traffic/current',
+    {
+      ...options,
+      searchParams,
+    }
+  )
 
-  if (!response.ok) {
-    throw new Error('Failed to load traffic')
+  if (!Array.isArray(data)) {
+    throw new APIRequestError('The traffic response is not an array.')
   }
 
-  const result: TrafficResponse = await response.json()
-
-  return result.data
+  return data as TrafficAircraft[]
 }

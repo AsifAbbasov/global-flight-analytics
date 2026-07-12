@@ -11,118 +11,90 @@ interface TrafficMapProps {
   aircraft: TrafficAircraft[]
 }
 
-function createAircraftMarker(item: TrafficAircraft): HTMLElement {
-  const marker = document.createElement('div')
-
-  marker.className =
-    'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
-
-  marker.innerHTML = `
-    <span
-      style="
-        display: inline-block;
-        transform: rotate(${item.heading_degrees}deg);
-        color: #38bdf8;
-        font-size: 18px;
-        line-height: 1;
-      "
-    >
-      ✈
-    </span>
-    <span>${item.callsign || item.icao24}</span>
-  `
-
-  return marker
-}
-
-function createPopupContent(item: TrafficAircraft): string {
-  return `
-    <div
-      style="
-        width: 260px;
-        max-width: 260px;
-        padding: 14px;
-        border: 1px solid rgba(56, 189, 248, 0.45);
-        border-radius: 14px;
-        background: rgba(15, 23, 42, 0.98);
-        color: #e5e7eb;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 13px;
-        line-height: 1.55;
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
-      "
-    >
-      <div style="font-size: 16px; font-weight: 700; color: #38bdf8;">
-        ${item.callsign || 'Unknown callsign'}
-      </div>
-
-      <div style="margin-top: 10px; display: grid; gap: 4px;">
-        <div><span style="color: #94a3b8;">ICAO24:</span> ${item.icao24}</div>
-        <div><span style="color: #94a3b8;">Airline:</span> ${
-          item.airline || 'Unknown'
-        }</div>
-        <div><span style="color: #94a3b8;">Aircraft:</span> ${
-          item.aircraft_model || 'Unknown'
-        }</div>
-        <div><span style="color: #94a3b8;">Altitude:</span> ${
-          item.altitude_m
-        } m</div>
-        <div><span style="color: #94a3b8;">Speed:</span> ${
-          item.velocity_mps
-        } m/s</div>
-        <div><span style="color: #94a3b8;">Heading:</span> ${
-          item.heading_degrees
-        }°</div>
-        <div><span style="color: #94a3b8;">Status:</span> ${
-          item.on_ground ? 'On ground' : 'In air'
-        }</div>
-        <div><span style="color: #94a3b8;">Country:</span> ${
-          item.origin_country || 'Unknown'
-        }</div>
-      </div>
-
-      <div style="margin-top: 10px; border-top: 1px solid rgba(148, 163, 184, 0.25); padding-top: 8px; color: #94a3b8;">
-        Observed: ${new Date(item.observed_at).toLocaleString()}
-      </div>
-    </div>
-  `
+interface AircraftMarkerRecord {
+  marker: maplibregl.Marker
+  popup: maplibregl.Popup
+  root: HTMLButtonElement
+  icon: HTMLSpanElement
+  label: HTMLSpanElement
 }
 
 export function TrafficMap({ aircraft }: TrafficMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const markersRef = useRef<Map<string, AircraftMarkerRecord>>(
+    new Map()
+  )
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) {
       return
     }
 
-    mapRef.current = new maplibregl.Map({
+    const markers = markersRef.current
+
+    const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://demotiles.maplibre.org/style.json',
       center: [50.0467, 40.4675],
       zoom: 6,
     })
 
-    aircraft.forEach(item => {
-      new maplibregl.Marker({
-        element: createAircraftMarker(item),
-      })
-        .setLngLat([item.longitude, item.latitude])
-        .setPopup(
-          new maplibregl.Popup({
-            closeButton: true,
-            closeOnClick: true,
-            maxWidth: '280px',
-            offset: 28,
-          }).setHTML(createPopupContent(item))
-        )
-        .addTo(mapRef.current!)
-    })
+    map.addControl(new maplibregl.NavigationControl(), 'top-right')
+    mapRef.current = map
 
     return () => {
-      mapRef.current?.remove()
+      for (const record of markers.values()) {
+        record.marker.remove()
+      }
+
+      markers.clear()
+      map.remove()
       mapRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+
+    if (!map) {
+      return
+    }
+
+    const nextAircraftKeys = new Set<string>()
+
+    for (const item of aircraft) {
+      if (!hasValidCoordinates(item)) {
+        continue
+      }
+
+      const key = item.icao24.trim()
+
+      if (!key) {
+        continue
+      }
+
+      nextAircraftKeys.add(key)
+
+      const existingRecord = markersRef.current.get(key)
+
+      if (existingRecord) {
+        updateMarkerRecord(existingRecord, item)
+        continue
+      }
+
+      const nextRecord = createMarkerRecord(item)
+      nextRecord.marker.addTo(map)
+      markersRef.current.set(key, nextRecord)
+    }
+
+    for (const [key, record] of markersRef.current.entries()) {
+      if (nextAircraftKeys.has(key)) {
+        continue
+      }
+
+      record.marker.remove()
+      markersRef.current.delete(key)
     }
   }, [aircraft])
 
@@ -132,4 +104,183 @@ export function TrafficMap({ aircraft }: TrafficMapProps) {
       ref={mapContainerRef}
     />
   )
+}
+
+function createMarkerRecord(
+  item: TrafficAircraft
+): AircraftMarkerRecord {
+  const root = document.createElement('button')
+  root.type = 'button'
+  root.className =
+    'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
+  root.setAttribute(
+    'aria-label',
+    `Open aircraft details for ${displayAircraftName(item)}`
+  )
+
+  const icon = document.createElement('span')
+  icon.textContent = '✈'
+  icon.style.display = 'inline-block'
+  icon.style.color = '#38bdf8'
+  icon.style.fontSize = '18px'
+  icon.style.lineHeight = '1'
+
+  const label = document.createElement('span')
+
+  root.append(icon, label)
+
+  const popup = new maplibregl.Popup({
+    closeButton: true,
+    closeOnClick: true,
+    maxWidth: '280px',
+    offset: 28,
+  })
+
+  const marker = new maplibregl.Marker({
+    element: root,
+  })
+    .setLngLat([item.longitude, item.latitude])
+    .setPopup(popup)
+
+  const record: AircraftMarkerRecord = {
+    marker,
+    popup,
+    root,
+    icon,
+    label,
+  }
+
+  updateMarkerRecord(record, item)
+
+  return record
+}
+
+function updateMarkerRecord(
+  record: AircraftMarkerRecord,
+  item: TrafficAircraft
+) {
+  const name = displayAircraftName(item)
+
+  record.root.setAttribute(
+    'aria-label',
+    `Open aircraft details for ${name}`
+  )
+  record.icon.style.transform =
+    `rotate(${normalizeHeading(item.heading_degrees)}deg)`
+  record.label.textContent = name
+  record.marker.setLngLat([item.longitude, item.latitude])
+  record.popup.setDOMContent(createPopupContent(item))
+}
+
+function createPopupContent(item: TrafficAircraft): HTMLElement {
+  const container = document.createElement('div')
+  container.style.width = '260px'
+  container.style.maxWidth = '260px'
+  container.style.padding = '14px'
+  container.style.border = '1px solid rgba(56, 189, 248, 0.45)'
+  container.style.borderRadius = '14px'
+  container.style.background = 'rgba(15, 23, 42, 0.98)'
+  container.style.color = '#e5e7eb'
+  container.style.fontFamily = 'Arial, Helvetica, sans-serif'
+  container.style.fontSize = '13px'
+  container.style.lineHeight = '1.55'
+  container.style.boxShadow = '0 18px 45px rgba(0, 0, 0, 0.55)'
+
+  const title = document.createElement('div')
+  title.textContent = item.callsign.trim() || 'Unknown callsign'
+  title.style.fontSize = '16px'
+  title.style.fontWeight = '700'
+  title.style.color = '#38bdf8'
+
+  const details = document.createElement('div')
+  details.style.marginTop = '10px'
+  details.style.display = 'grid'
+  details.style.gap = '4px'
+
+  appendDetail(details, 'ICAO24', item.icao24)
+  appendDetail(details, 'Airline', item.airline || 'Unknown')
+  appendDetail(
+    details,
+    'Aircraft',
+    item.aircraft_model || 'Unknown'
+  )
+  appendDetail(details, 'Altitude', `${item.altitude_m} m`)
+  appendDetail(details, 'Speed', `${item.velocity_mps} m/s`)
+  appendDetail(
+    details,
+    'Heading',
+    `${normalizeHeading(item.heading_degrees)}°`
+  )
+  appendDetail(
+    details,
+    'Status',
+    item.on_ground ? 'On ground' : 'In air'
+  )
+  appendDetail(
+    details,
+    'Country',
+    item.origin_country || 'Unknown'
+  )
+
+  const observedAt = document.createElement('div')
+  observedAt.textContent = `Observed: ${formatObservedAt(
+    item.observed_at
+  )}`
+  observedAt.style.marginTop = '10px'
+  observedAt.style.borderTop =
+    '1px solid rgba(148, 163, 184, 0.25)'
+  observedAt.style.paddingTop = '8px'
+  observedAt.style.color = '#94a3b8'
+
+  container.append(title, details, observedAt)
+
+  return container
+}
+
+function appendDetail(
+  container: HTMLElement,
+  label: string,
+  value: string
+) {
+  const row = document.createElement('div')
+  const labelElement = document.createElement('span')
+
+  labelElement.textContent = `${label}: `
+  labelElement.style.color = '#94a3b8'
+
+  row.append(labelElement, document.createTextNode(value))
+  container.appendChild(row)
+}
+
+function displayAircraftName(item: TrafficAircraft): string {
+  return item.callsign.trim() || item.icao24
+}
+
+function hasValidCoordinates(item: TrafficAircraft): boolean {
+  return (
+    Number.isFinite(item.latitude) &&
+    item.latitude >= -90 &&
+    item.latitude <= 90 &&
+    Number.isFinite(item.longitude) &&
+    item.longitude >= -180 &&
+    item.longitude <= 180
+  )
+}
+
+function normalizeHeading(headingDegrees: number): number {
+  if (!Number.isFinite(headingDegrees)) {
+    return 0
+  }
+
+  return ((headingDegrees % 360) + 360) % 360
+}
+
+function formatObservedAt(observedAt: string): string {
+  const date = new Date(observedAt)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown'
+  }
+
+  return date.toLocaleString()
 }
