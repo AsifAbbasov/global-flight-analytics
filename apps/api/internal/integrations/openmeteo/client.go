@@ -166,33 +166,48 @@ func (client *Client) GetCurrentWeather(
 		)
 	}
 
+	requestStartedAt := time.Now()
+
 	response, err := client.httpClient.Do(
 		httpRequest,
 	)
+	latency := time.Since(requestStartedAt)
+
 	if err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf(
+		requestErr := fmt.Errorf(
 			"open-meteo request failed: %w",
 			err,
 		)
+
+		if observeErr := client.observeProviderTransportFailure(
+			err,
+			latency,
+		); observeErr != nil {
+			return weather.CurrentSnapshot{}, errors.Join(
+				requestErr,
+				fmt.Errorf(
+					"observe open-meteo transport failure: %w",
+					observeErr,
+				),
+			)
+		}
+
+		return weather.CurrentSnapshot{}, requestErr
 	}
 	defer response.Body.Close()
 
-	if client.responseObserver != nil {
-		err := client.responseObserver.ObserveProviderResponse(
-			weather.ProviderOpenMeteo,
-			response.StatusCode,
-			response.Header.Clone(),
-		)
-		if err != nil {
+	if response.StatusCode < http.StatusOK ||
+		response.StatusCode >= http.StatusMultipleChoices {
+		if err := client.observeProviderResponse(
+			response,
+			latency,
+		); err != nil {
 			return weather.CurrentSnapshot{}, fmt.Errorf(
 				"observe open-meteo response: %w",
 				err,
 			)
 		}
-	}
 
-	if response.StatusCode < http.StatusOK ||
-		response.StatusCode >= http.StatusMultipleChoices {
 		return weather.CurrentSnapshot{}, fmt.Errorf(
 			"open-meteo unexpected status: %d",
 			response.StatusCode,
@@ -206,23 +221,53 @@ func (client *Client) GetCurrentWeather(
 	).Decode(
 		&payload,
 	); err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf(
+		decodeErr := fmt.Errorf(
 			"decode open-meteo response: %w",
 			err,
 		)
+
+		if observeErr := client.observeProviderResponseFailure(
+			err,
+			latency,
+		); observeErr != nil {
+			return weather.CurrentSnapshot{}, errors.Join(
+				decodeErr,
+				fmt.Errorf(
+					"observe open-meteo response failure: %w",
+					observeErr,
+				),
+			)
+		}
+
+		return weather.CurrentSnapshot{}, decodeErr
 	}
 
 	observedAt, err := parseOpenMeteoTime(
 		payload.Current.Time,
 	)
 	if err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf(
+		parseErr := fmt.Errorf(
 			"parse open-meteo current time: %w",
 			err,
 		)
+
+		if observeErr := client.observeProviderResponseFailure(
+			err,
+			latency,
+		); observeErr != nil {
+			return weather.CurrentSnapshot{}, errors.Join(
+				parseErr,
+				fmt.Errorf(
+					"observe open-meteo response failure: %w",
+					observeErr,
+				),
+			)
+		}
+
+		return weather.CurrentSnapshot{}, parseErr
 	}
 
-	return weather.CurrentSnapshot{
+	snapshot := weather.CurrentSnapshot{
 		Provider:                 weather.ProviderOpenMeteo,
 		Latitude:                 payload.Latitude,
 		Longitude:                payload.Longitude,
@@ -238,7 +283,77 @@ func (client *Client) GetCurrentWeather(
 		WindDirectionDegrees:     payload.Current.WindDirection10M,
 		WindGustsMetersPerSecond: payload.Current.WindGusts10M,
 		RetrievedAt:              time.Now().UTC(),
-	}, nil
+	}
+
+	if err := client.observeProviderResponse(
+		response,
+		latency,
+	); err != nil {
+		return weather.CurrentSnapshot{}, fmt.Errorf(
+			"observe open-meteo response: %w",
+			err,
+		)
+	}
+
+	return snapshot, nil
+}
+
+func (client *Client) observeProviderResponse(
+	response *http.Response,
+	latency time.Duration,
+) error {
+	if client.responseObserver == nil {
+		return nil
+	}
+
+	return client.responseObserver.ObserveProviderResponse(
+		weather.ProviderOpenMeteo,
+		response.StatusCode,
+		response.Header.Clone(),
+		latency,
+	)
+}
+
+func (client *Client) observeProviderTransportFailure(
+	requestErr error,
+	latency time.Duration,
+) error {
+	if client.responseObserver == nil {
+		return nil
+	}
+
+	observer, supported :=
+		client.responseObserver.(integrationcommon.ProviderTransportFailureObserver)
+	if !supported {
+		return nil
+	}
+
+	return observer.ObserveProviderTransportFailure(
+		weather.ProviderOpenMeteo,
+		requestErr,
+		latency,
+	)
+}
+
+func (client *Client) observeProviderResponseFailure(
+	responseErr error,
+	latency time.Duration,
+) error {
+	if client.responseObserver == nil {
+		return nil
+	}
+
+	observer, supported :=
+		client.responseObserver.(integrationcommon.ProviderResponseFailureObserver)
+	if !supported {
+		return nil
+	}
+
+	return observer.ObserveProviderResponseFailure(
+		weather.ProviderOpenMeteo,
+		responseErr,
+		latency,
+	)
 }
 
 func currentWeatherVariables() []string {

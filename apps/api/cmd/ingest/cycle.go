@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 	trafficingestion "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/ingestion"
 )
 
@@ -19,12 +21,25 @@ var (
 	errIngestionCycleRunRepositoryRequired = errors.New(
 		"ingestion cycle run repository is required",
 	)
+	errIngestionCycleProviderIdentityInvalid = errors.New(
+		"ingestion cycle traffic provider identity is invalid",
+	)
 )
+
+type providerObservationRecorder interface {
+	RecordObservationEvidence(
+		provider providerpolicy.Provider,
+		received int64,
+		accepted int64,
+		rejected int64,
+	) error
+}
 
 type ingestionCycleConfig struct {
 	TrafficProvider        trafficingestion.RegionalProvider
 	ProcessingService      trafficingestion.ProcessingService
 	IngestionRunRepository trafficingestion.IngestionRunRepository
+	ObservationRecorder    providerObservationRecorder
 
 	Latitude  float64
 	Longitude float64
@@ -32,7 +47,9 @@ type ingestionCycleConfig struct {
 }
 
 type ingestionCycle struct {
-	service *trafficingestion.Service
+	service             *trafficingestion.Service
+	providerID          providerpolicy.Provider
+	observationRecorder providerObservationRecorder
 
 	latitude  float64
 	longitude float64
@@ -54,6 +71,22 @@ func newIngestionCycle(
 		return nil, errIngestionCycleRunRepositoryRequired
 	}
 
+	providerID := providerpolicy.Provider("")
+	if config.ObservationRecorder != nil {
+		providerID = providerpolicy.Provider(
+			strings.TrimSpace(
+				config.TrafficProvider.SourceName(),
+			),
+		)
+
+		if _, err := providerpolicy.Get(providerID); err != nil {
+			return nil, errors.Join(
+				errIngestionCycleProviderIdentityInvalid,
+				err,
+			)
+		}
+	}
+
 	return &ingestionCycle{
 		service: trafficingestion.New(
 			trafficingestion.Config{
@@ -62,9 +95,11 @@ func newIngestionCycle(
 				IngestionRunRepository: config.IngestionRunRepository,
 			},
 		),
-		latitude:  config.Latitude,
-		longitude: config.Longitude,
-		radius:    config.Radius,
+		providerID:          providerID,
+		observationRecorder: config.ObservationRecorder,
+		latitude:            config.Latitude,
+		longitude:           config.Longitude,
+		radius:              config.Radius,
 	}, nil
 }
 
@@ -79,6 +114,9 @@ func (
 		cycle.longitude,
 		cycle.radius,
 	)
+
+	cycle.observeProviderEvidence(result)
+
 	if err != nil {
 		return fmt.Errorf(
 			"regional traffic ingestion failed: %w",
@@ -101,4 +139,32 @@ func (
 	)
 
 	return nil
+}
+
+func (cycle *ingestionCycle) observeProviderEvidence(
+	result trafficingestion.LoadAndProcessResult,
+) {
+	if cycle.observationRecorder == nil {
+		return
+	}
+
+	processingResult := result.ProcessingResult.ProcessingResult
+	if processingResult.ProcessedAt.IsZero() {
+		return
+	}
+
+	stats := processingResult.Stats
+	err := cycle.observationRecorder.RecordObservationEvidence(
+		cycle.providerID,
+		int64(stats.ReceivedCount),
+		int64(stats.UsableCount),
+		int64(stats.InvalidCount+stats.DuplicateCount),
+	)
+	if err != nil {
+		fmt.Printf(
+			"provider_health_observation_evidence provider=%s error=%q\n",
+			cycle.providerID,
+			err.Error(),
+		)
+	}
 }
