@@ -19,6 +19,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/regionalprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/ingestdaemon"
+	providerhealthservice "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/providerhealth"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/gapdetector"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
@@ -95,8 +96,11 @@ func run() error {
 		)
 	}
 
-	responseObserver, err := providerresponse.NewIntegrationObserver(
+	providerHealthCollector := providerhealthservice.New(nil)
+
+	responseObserver, err := providerresponse.NewIntegrationObserverWithRecorder(
 		responseController,
+		providerHealthCollector,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -202,6 +206,7 @@ func run() error {
 			TrafficProvider:        trafficProvider,
 			ProcessingService:      processingService,
 			IngestionRunRepository: ingestionRunRepository,
+			ObservationRecorder:    providerHealthCollector,
 			Latitude:               cfg.TrafficIngestionLatitude,
 			Longitude:              cfg.TrafficIngestionLongitude,
 			Radius:                 cfg.TrafficIngestionRadius,
@@ -244,6 +249,32 @@ func run() error {
 					),
 					daemonConfig.Interval,
 					lastError,
+				)
+
+				snapshot, snapshotErr := providerHealthCollector.Snapshot(
+					providerpolicy.ProviderAirplanesLive,
+				)
+				if snapshotErr != nil {
+					fmt.Printf(
+						"provider_health provider=%s error=%q\n",
+						providerpolicy.ProviderAirplanesLive,
+						snapshotErr.Error(),
+					)
+					return
+				}
+
+				fmt.Printf(
+					"provider_health provider=%s status=%s requests_total=%d requests_successful=%d success_ratio=%.4f consecutive_failures=%d latest_outcome=%s budget_state=%s reasons=%v limitations=%v\n",
+					snapshot.ProviderName,
+					snapshot.Status,
+					snapshot.RequestsTotal,
+					snapshot.RequestsSuccessful,
+					snapshot.SuccessRatio,
+					snapshot.ConsecutiveFailures,
+					snapshot.LatestOutcome,
+					snapshot.Budget.State,
+					snapshot.Reasons,
+					snapshot.Limitations,
 				)
 			},
 		},
