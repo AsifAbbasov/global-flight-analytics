@@ -49,6 +49,16 @@ func registerDatabaseRoutes(
 		)
 	}
 
+	if err := registerAnalyticalMetricRoutes(
+		v1,
+		dbPool,
+	); err != nil {
+		return fmt.Errorf(
+			"register analytical metric routes: %w",
+			err,
+		)
+	}
+
 	v1.Get("/regions", routeHandlers.region.List)
 	v1.Get("/regions/:code", routeHandlers.region.GetByCode)
 	v1.Get("/metrics/active-aircraft", routeHandlers.metrics.GetActiveAircraft)

@@ -11,19 +11,16 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
-func (
-	service *Service,
-) ActiveAircraft(
+func (service *Service) ActiveAircraft(
 	ctx context.Context,
 	request ActiveAircraftRequest,
 ) (Execution[int], error) {
 	unique, removed :=
-		uniqueTrajectories(
+		uniqueAircraftTrajectories(
 			request.Trajectories,
 		)
 
-	metadata := request.
-		PublicationMetadata
+	metadata := request.PublicationMetadata
 	if removed > 0 {
 		metadata.Warnings = mergeNotices(
 			metadata.Warnings,
@@ -31,7 +28,7 @@ func (
 				{
 					Code: NoticeCodeDuplicateTrajectoriesRemoved,
 					Message: fmt.Sprintf(
-						"%d duplicate trajectory contributors were removed before calculating active aircraft.",
+						"%d additional trajectories for already counted aircraft were removed before calculating active aircraft.",
 						removed,
 					),
 				},
@@ -43,8 +40,7 @@ func (
 		ctx,
 		service,
 		MetricIDActiveAircraft,
-		trajectoryeligibility.
-			CapabilityTrafficMetrics,
+		trajectoryeligibility.CapabilityTrafficMetrics,
 		unique,
 		metadata,
 		func(
@@ -53,18 +49,14 @@ func (
 			evaluatedAt time.Time,
 		) (metricCalculation[int], error) {
 			if err := ctx.Err(); err != nil {
-				return metricCalculation[int]{},
-					err
+				return metricCalculation[int]{}, err
 			}
 
-			value := (metrics.ActiveAircraft{}).
-				Calculate(
-					len(allowed),
-				)
+			value := (metrics.ActiveAircraft{}).Calculate(
+				len(allowed),
+			)
 
-			return metricCalculation[int]{
-				Value: value,
-			}, nil
+			return metricCalculation[int]{Value: value}, nil
 		},
 	)
 }

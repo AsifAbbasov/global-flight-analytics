@@ -21,7 +21,8 @@ type SuccessPayload interface {
 		dto.Trajectory |
 		[]dto.AirportListItem |
 		dto.AirportProfile |
-		dto.ActiveAircraftMetricResponse
+		dto.ActiveAircraftMetricResponse |
+		dto.AnalyticalMetricResponse
 }
 
 type SuccessResponse[T SuccessPayload] struct {
@@ -57,9 +58,7 @@ func Error(
 	code string,
 	message string,
 ) error {
-	return c.Status(
-		status,
-	).JSON(
+	return c.Status(status).JSON(
 		ErrorResponse{
 			Success: false,
 			Error: ErrorBody{
