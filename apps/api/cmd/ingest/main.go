@@ -190,11 +190,13 @@ func run() error {
 
 	processingService, err := trafficapplication.New(
 		trafficapplication.Config{
-			Processor:                trafficProcessor,
-			FlightStateRepository:    flightStateRepository,
-			DataQualityRepository:    dataQualityRepository,
-			TrajectoryRepository:     trajectoryRepository,
-			ReconciliationRepository: reconciliationRepository,
+			Processor:                        trafficProcessor,
+			FlightStateRepository:            flightStateRepository,
+			DataQualityRepository:            dataQualityRepository,
+			TrajectoryRepository:             trajectoryRepository,
+			TrajectoryContinuationRepository: trajectoryRepository,
+			IdentityContinuationMaxGap:       cfg.TrajectoryMaxTimeGap,
+			ReconciliationRepository:         reconciliationRepository,
 		},
 	)
 	if err != nil {

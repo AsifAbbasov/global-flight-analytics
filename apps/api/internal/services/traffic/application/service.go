@@ -10,6 +10,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/reconciliation"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/flightcontinuation"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
 )
 
@@ -25,6 +26,13 @@ type TrajectoryRepository interface {
 		ctx context.Context,
 		item trajectory.FlightTrajectory,
 	) error
+}
+
+type TrajectoryContinuationRepository interface {
+	GetLatestTrajectoryByICAO24(
+		ctx context.Context,
+		icao24 string,
+	) (trajectory.FlightTrajectory, error)
 }
 
 type DataQualityRepository interface {
@@ -43,23 +51,28 @@ type ReconciliationRepository interface {
 }
 
 type Config struct {
-	Processor                *processor.Processor
-	FlightStateRepository    FlightStateRepository
-	TrajectoryRepository     TrajectoryRepository
-	DataQualityRepository    DataQualityRepository
-	ReconciliationRepository ReconciliationRepository
+	Processor                        *processor.Processor
+	FlightStateRepository            FlightStateRepository
+	TrajectoryRepository             TrajectoryRepository
+	TrajectoryContinuationRepository TrajectoryContinuationRepository
+	IdentityContinuationMaxGap       time.Duration
+	DataQualityRepository            DataQualityRepository
+	ReconciliationRepository         ReconciliationRepository
 }
 
 type Service struct {
-	processor                *processor.Processor
-	flightStateRepository    FlightStateRepository
-	trajectoryRepository     TrajectoryRepository
-	dataQualityRepository    DataQualityRepository
-	reconciliationRepository ReconciliationRepository
+	processor                        *processor.Processor
+	flightStateRepository            FlightStateRepository
+	trajectoryRepository             TrajectoryRepository
+	trajectoryContinuationRepository TrajectoryContinuationRepository
+	identityContinuationConfig       flightcontinuation.Config
+	dataQualityRepository            DataQualityRepository
+	reconciliationRepository         ReconciliationRepository
 }
 
 type ProcessAndStoreResult struct {
 	ProcessingResult         processor.ProcessingResult
+	ContinuedTrajectoryCount int
 	StoredFlightStateCount   int
 	StoredQualityReportCount int
 	StoredTrajectoryCount    int
@@ -85,12 +98,24 @@ func New(
 		}
 	}
 
+	identityContinuationConfig := flightcontinuation.Config{
+		MaxGap: config.IdentityContinuationMaxGap,
+	}
+	if err := identityContinuationConfig.Validate(); err != nil {
+		return nil, fmt.Errorf(
+			"validate flight identity continuation config: %w",
+			err,
+		)
+	}
+
 	return &Service{
-		processor:                trafficProcessor,
-		flightStateRepository:    config.FlightStateRepository,
-		trajectoryRepository:     config.TrajectoryRepository,
-		dataQualityRepository:    config.DataQualityRepository,
-		reconciliationRepository: config.ReconciliationRepository,
+		processor:                        trafficProcessor,
+		flightStateRepository:            config.FlightStateRepository,
+		trajectoryRepository:             config.TrajectoryRepository,
+		trajectoryContinuationRepository: config.TrajectoryContinuationRepository,
+		identityContinuationConfig:       identityContinuationConfig,
+		dataQualityRepository:            config.DataQualityRepository,
+		reconciliationRepository:         config.ReconciliationRepository,
 	}, nil
 }
 
@@ -113,8 +138,18 @@ func (service *Service) ProcessAndStore(
 
 	processingResult := service.processor.Process(states)
 
+	continuedTrajectoryCount, continuationErr :=
+		service.applyFlightIdentityContinuations(
+			ctx,
+			&processingResult,
+		)
+
 	result := ProcessAndStoreResult{
-		ProcessingResult: processingResult,
+		ProcessingResult:         processingResult,
+		ContinuedTrajectoryCount: continuedTrajectoryCount,
+	}
+	if continuationErr != nil {
+		return result, continuationErr
 	}
 
 	if service.flightStateRepository != nil {

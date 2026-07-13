@@ -95,7 +95,8 @@ func isKnownFlightSplitReason(
 	case trajectory.FlightSplitReasonInitialObservation,
 		trajectory.FlightSplitReasonSourceFlightIDChanged,
 		trajectory.FlightSplitReasonCallsignChanged,
-		trajectory.FlightSplitReasonGroundCycle:
+		trajectory.FlightSplitReasonGroundCycle,
+		trajectory.FlightSplitReasonContinuedFromPreviousBatch:
 		return true
 
 	default:

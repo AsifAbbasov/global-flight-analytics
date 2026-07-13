@@ -34,10 +34,11 @@ const (
 type FlightSplitReason string
 
 const (
-	FlightSplitReasonInitialObservation    FlightSplitReason = "initial_observation"
-	FlightSplitReasonSourceFlightIDChanged FlightSplitReason = "source_flight_id_changed"
-	FlightSplitReasonCallsignChanged       FlightSplitReason = "callsign_changed"
-	FlightSplitReasonGroundCycle           FlightSplitReason = "ground_cycle"
+	FlightSplitReasonInitialObservation         FlightSplitReason = "initial_observation"
+	FlightSplitReasonSourceFlightIDChanged      FlightSplitReason = "source_flight_id_changed"
+	FlightSplitReasonCallsignChanged            FlightSplitReason = "callsign_changed"
+	FlightSplitReasonGroundCycle                FlightSplitReason = "ground_cycle"
+	FlightSplitReasonContinuedFromPreviousBatch FlightSplitReason = "continued_from_previous_batch"
 )
 
 type TrackPoint4D struct {
