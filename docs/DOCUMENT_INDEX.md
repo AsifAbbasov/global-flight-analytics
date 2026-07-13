@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.3
+Status: Documentation Index v1.4
 Project: Global Flight Analytics
 
 ---
@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–29: research audit, analytical architecture, roadmap, engineering rules, decision method, and container operations
+Documents 22–30: research audit, analytical architecture, roadmap, engineering rules, decision method, and container operations
 ```
 
 ---
@@ -177,6 +177,24 @@ Purpose:
 Defines the pinned container build, scratch runtime,
 non-root execution, healthcheck, local PostgreSQL Compose environment,
 migration startup order, and continuous integration verification contract.
+```
+
+---
+
+### Document 30 — Airport Intelligence Implementation Alignment
+
+Path:
+
+```text
+docs/30_AIRPORT_INTELLIGENCE_IMPLEMENTATION_ALIGNMENT.md
+```
+
+Purpose:
+
+```text
+Records the implemented Airport Intelligence domain contracts,
+the corrected Activity Score and Data Confidence separation,
+historical and trends baselines, limitations, and next integration steps.
 ```
 
 ---
