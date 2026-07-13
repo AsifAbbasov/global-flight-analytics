@@ -1,3 +1,4 @@
+import { AnalyticsOverview } from '@/components/analytics/analytics-overview'
 import { TrafficDashboard } from '@/components/traffic-dashboard'
 import { getRegions } from '@/lib/api/regions'
 import { getCurrentTraffic } from '@/lib/api/traffic'
@@ -48,6 +49,8 @@ export default async function Home() {
       <p className='mt-2 text-slate-400'>
         Current air traffic from the Go API and PostgreSQL.
       </p>
+
+      <AnalyticsOverview />
 
       <TrafficDashboard
         regions={regions}
