@@ -270,7 +270,12 @@ func (service *Service) saveTrajectories(
 		result.UsableStates,
 	)
 
-	for icao24, item := range result.Trajectories {
+	for collectionKey, item := range result.Trajectories {
+		icao24 := item.ICAO24
+		if icao24 == "" {
+			icao24 = collectionKey
+		}
+
 		err := service.trajectoryRepository.SaveTrajectory(
 			ctx,
 			item,

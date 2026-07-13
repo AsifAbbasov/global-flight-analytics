@@ -23,6 +23,23 @@ const (
 	CoverageGapReasonUnknown      CoverageGapReason = "unknown"
 )
 
+type FlightIdentityBasis string
+
+const (
+	FlightIdentityBasisSourceFlightID       FlightIdentityBasis = "source_flight_id"
+	FlightIdentityBasisCallsignAndStartTime FlightIdentityBasis = "callsign_and_start_time"
+	FlightIdentityBasisAircraftAndStartTime FlightIdentityBasis = "aircraft_and_start_time"
+)
+
+type FlightSplitReason string
+
+const (
+	FlightSplitReasonInitialObservation    FlightSplitReason = "initial_observation"
+	FlightSplitReasonSourceFlightIDChanged FlightSplitReason = "source_flight_id_changed"
+	FlightSplitReasonCallsignChanged       FlightSplitReason = "callsign_changed"
+	FlightSplitReasonGroundCycle           FlightSplitReason = "ground_cycle"
+)
+
 type TrackPoint4D struct {
 	ID                       string
 	FlightStateID            string
@@ -84,6 +101,9 @@ type TrajectorySegment struct {
 
 type FlightTrajectory struct {
 	ID               string
+	IdentityKey      string
+	IdentityBasis    FlightIdentityBasis
+	SplitReason      FlightSplitReason
 	FlightID         string
 	AircraftID       string
 	ICAO24           string

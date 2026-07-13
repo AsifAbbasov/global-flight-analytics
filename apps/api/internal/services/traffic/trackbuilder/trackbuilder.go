@@ -7,6 +7,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/flightsplitter"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/gapdetector"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trajectoryquality"
 )
@@ -37,27 +38,38 @@ func NewBuilder(
 func (builder *Builder) BuildMany(
 	inputs []InputState,
 ) map[string]trajectory.FlightTrajectory {
-	groupedInputs := groupInputsByAircraft(
+	groups := flightsplitter.Split(
 		inputs,
 	)
+	groupsPerAircraft := make(map[string]int)
+	for _, group := range groups {
+		groupsPerAircraft[group.ICAO24]++
+	}
 
 	result := make(
 		map[string]trajectory.FlightTrajectory,
-		len(groupedInputs),
+		len(groups),
 	)
 
-	for icao24, group := range groupedInputs {
-		result[icao24] = builder.build(
-			group,
-		)
+	for _, group := range groups {
+		item := builder.build(group)
+		collectionKey := group.IdentityKey
+		if groupsPerAircraft[group.ICAO24] == 1 {
+			// Preserve the existing unambiguous lookup contract while the
+			// processing result still uses a map. Multiple flights of the same
+			// aircraft are always keyed by their distinct logical identities.
+			collectionKey = group.ICAO24
+		}
+		result[collectionKey] = item
 	}
 
 	return result
 }
 
 func (builder *Builder) build(
-	inputs []InputState,
+	group flightsplitter.Group,
 ) trajectory.FlightTrajectory {
+	inputs := group.Observations
 	if len(inputs) == 0 {
 		return trajectory.FlightTrajectory{}
 	}
@@ -143,9 +155,12 @@ func (builder *Builder) build(
 	lastState := sortedInputs[len(sortedInputs)-1].State
 
 	return trajectory.FlightTrajectory{
-		FlightID:   firstState.FlightID,
-		AircraftID: firstState.AircraftID,
-		ICAO24:     firstState.ICAO24,
+		IdentityKey:   group.IdentityKey,
+		IdentityBasis: group.IdentityBasis,
+		SplitReason:   group.SplitReason,
+		FlightID:      firstNonEmptyFlightID(sortedInputs),
+		AircraftID:    firstState.AircraftID,
+		ICAO24:        firstState.ICAO24,
 		Callsign: firstNonEmptyCallsign(
 			sortedInputs,
 		),
@@ -181,7 +196,7 @@ func (builder *Builder) buildSegment(
 	lastState := inputs[len(inputs)-1].State
 
 	return trajectory.TrajectorySegment{
-		FlightID:       firstState.FlightID,
+		FlightID:       firstNonEmptyFlightID(inputs),
 		AircraftID:     firstState.AircraftID,
 		ICAO24:         firstState.ICAO24,
 		Callsign:       firstNonEmptyCallsign(inputs),
@@ -307,6 +322,18 @@ func toTrackPoint4D(
 		ObservedAt:      state.ObservedAt,
 		SourceName:      state.SourceName,
 	}
+}
+
+func firstNonEmptyFlightID(
+	inputs []InputState,
+) string {
+	for _, input := range inputs {
+		if input.State.FlightID != "" {
+			return input.State.FlightID
+		}
+	}
+
+	return ""
 }
 
 func firstNonEmptyCallsign(
