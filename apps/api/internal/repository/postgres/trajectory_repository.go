@@ -70,6 +70,13 @@ func (repository *TrajectoryRepository) saveTrajectory(
 		ctx = context.Background()
 	}
 
+	if err := validatePersistedFlightIdentity(item); err != nil {
+		return fmt.Errorf(
+			"validate flight identity metadata: %w",
+			err,
+		)
+	}
+
 	tx, err := repository.db.BeginTx(
 		ctx,
 		pgx.TxOptions{},
@@ -239,6 +246,9 @@ func (repository *TrajectoryRepository) insertFlightTrajectory(
 ) (string, error) {
 	const query = `
 		INSERT INTO flight_trajectories (
+			identity_key,
+			identity_basis,
+			split_reason,
 			flight_id,
 			aircraft_id,
 			icao24,
@@ -254,7 +264,8 @@ func (repository *TrajectoryRepository) insertFlightTrajectory(
 		)
 		VALUES (
 			$1, $2, $3, $4, $5, $6,
-			$7, $8, $9, $10, $11, $12
+			$7, $8, $9, $10, $11, $12,
+			$13, $14, $15
 		)
 		RETURNING id::text;
 	`
@@ -264,6 +275,9 @@ func (repository *TrajectoryRepository) insertFlightTrajectory(
 	err := tx.QueryRow(
 		ctx,
 		query,
+		item.IdentityKey,
+		string(item.IdentityBasis),
+		string(item.SplitReason),
 		nullableUUID(item.FlightID),
 		nullableUUID(item.AircraftID),
 		item.ICAO24,
@@ -294,6 +308,9 @@ func (repository *TrajectoryRepository) insertReconciledFlightTrajectory(
 ) (string, error) {
 	const query = `
 		INSERT INTO flight_trajectories (
+			identity_key,
+			identity_basis,
+			split_reason,
 			flight_id,
 			aircraft_id,
 			icao24,
@@ -311,7 +328,7 @@ func (repository *TrajectoryRepository) insertReconciledFlightTrajectory(
 		VALUES (
 			$1, $2, $3, $4, $5, $6,
 			$7, $8, $9, $10, $11, $12,
-			$13
+			$13, $14, $15, $16
 		)
 		RETURNING id::text;
 	`
@@ -321,6 +338,9 @@ func (repository *TrajectoryRepository) insertReconciledFlightTrajectory(
 	err := tx.QueryRow(
 		ctx,
 		query,
+		item.IdentityKey,
+		string(item.IdentityBasis),
+		string(item.SplitReason),
 		nullableUUID(item.FlightID),
 		nullableUUID(item.AircraftID),
 		item.ICAO24,

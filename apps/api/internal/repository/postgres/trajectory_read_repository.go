@@ -30,6 +30,9 @@ func (
 	const query = `
 		SELECT
 			id::text,
+			COALESCE(identity_key, ''),
+			COALESCE(identity_basis, ''),
+			COALESCE(split_reason, ''),
 			COALESCE(flight_id::text, ''),
 			COALESCE(aircraft_id::text, ''),
 			icao24,
@@ -93,6 +96,9 @@ func (
 	const query = `
 		SELECT
 			id::text,
+			COALESCE(identity_key, ''),
+			COALESCE(identity_basis, ''),
+			COALESCE(split_reason, ''),
 			COALESCE(flight_id::text, ''),
 			COALESCE(aircraft_id::text, ''),
 			icao24,
@@ -149,6 +155,9 @@ func (
 		argument,
 	).Scan(
 		&item.ID,
+		&item.IdentityKey,
+		(*string)(&item.IdentityBasis),
+		(*string)(&item.SplitReason),
 		&item.FlightID,
 		&item.AircraftID,
 		&item.ICAO24,

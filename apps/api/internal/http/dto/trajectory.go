@@ -8,6 +8,9 @@ import (
 
 type Trajectory struct {
 	ID               string              `json:"id"`
+	IdentityKey      string              `json:"identity_key"`
+	IdentityBasis    string              `json:"identity_basis"`
+	SplitReason      string              `json:"split_reason"`
 	FlightID         string              `json:"flight_id"`
 	AircraftID       string              `json:"aircraft_id"`
 	ICAO24           string              `json:"icao24"`
@@ -66,6 +69,9 @@ type CoverageGap struct {
 func ToTrajectory(item domaintrajectory.FlightTrajectory) Trajectory {
 	return Trajectory{
 		ID:               item.ID,
+		IdentityKey:      item.IdentityKey,
+		IdentityBasis:    string(item.IdentityBasis),
+		SplitReason:      string(item.SplitReason),
 		FlightID:         item.FlightID,
 		AircraftID:       item.AircraftID,
 		ICAO24:           item.ICAO24,
