@@ -17,6 +17,11 @@ func TestBuildTrajectoryReportProducesVersionedEvidence(
 		integrationTrajectory("trajectory-b", "ABC002", evaluatedAt),
 		integrationTrajectory("trajectory-a", "ABC001", evaluatedAt),
 	}
+	for itemIndex := range items {
+		for pointIndex := range items[itemIndex].Points {
+			items[itemIndex].Points[pointIndex].OnGround = true
+		}
+	}
 
 	report, err := BuildTrajectoryReport(
 		TrajectoryReportRequest{
@@ -45,8 +50,19 @@ func TestBuildTrajectoryReportProducesVersionedEvidence(
 	if report.Provenance.InputFingerprint == "" {
 		t.Fatal("expected deterministic input fingerprint")
 	}
-	if report.Permissions.PhaseDetection.Allowed {
-		t.Fatal("expected phase detection to remain denied")
+	if !report.Permissions.PhaseDetection.Allowed {
+		t.Fatalf(
+			"expected implemented phase detection to be allowed, got %#v",
+			report.Permissions.PhaseDetection.Reasons,
+		)
+	}
+	if containsContractNotice(
+		report.Limitations,
+		"phase_detection_not_implemented",
+	) {
+		t.Fatal(
+			"phase-detection pending limitation must be removed after integration",
+		)
 	}
 	if report.Permissions.HistoricalSimilarity.Allowed {
 		t.Fatal("expected historical similarity to remain denied")

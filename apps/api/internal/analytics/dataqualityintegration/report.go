@@ -27,7 +27,6 @@ const (
 
 	LimitationCodeIngestionRunUnavailable = "ingestion_run_provenance_unavailable"
 	LimitationCodeReceivedAtDerived       = "received_at_derived"
-	LimitationCodePhaseDetectionPending   = "phase_detection_not_implemented"
 	LimitationCodeSimilarityPending       = "historical_similarity_not_implemented"
 )
 
@@ -112,13 +111,27 @@ func BuildTrajectoryReport(
 		)
 	}
 
+	phaseDetection, phaseLimitations, err :=
+		evaluatePhaseDetection(
+			request.Trajectories,
+		)
+	if err != nil {
+		return nil, err
+	}
+
 	permissions, err := buildAnalyticsPermissions(
 		request.Trajectories,
 		evaluatedAt,
+		phaseDetection,
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	evidence.limitations = append(
+		evidence.limitations,
+		phaseLimitations...,
+	)
 
 	report, err := dataqualitycontract.NewReport(
 		dataqualitycontract.Provenance{
@@ -232,10 +245,6 @@ func collectTrajectoryEvidence(
 			Message: "The trajectory read model does not expose a single authoritative ingestion run identifier.",
 		},
 		{
-			Code:    LimitationCodePhaseDetectionPending,
-			Message: "Phase-detection permission remains denied until the dedicated flight-phase detector is implemented.",
-		},
-		{
 			Code:    LimitationCodeSimilarityPending,
 			Message: "Historical-similarity permission remains denied until the similarity policy is implemented.",
 		},
@@ -310,6 +319,7 @@ func collectTrajectoryEvidence(
 func buildAnalyticsPermissions(
 	items []trajectory.FlightTrajectory,
 	evaluatedAt time.Time,
+	phaseDetection dataqualitycontract.Permission,
 ) (dataqualitycontract.AnalyticsPermissions, error) {
 	evaluator := trajectoryeligibility.NewDefault()
 
@@ -341,12 +351,6 @@ func buildAnalyticsPermissions(
 		return dataqualitycontract.AnalyticsPermissions{}, err
 	}
 
-	phaseDetection, err := dataqualitycontract.DeniedPermission(
-		LimitationCodePhaseDetectionPending,
-	)
-	if err != nil {
-		return dataqualitycontract.AnalyticsPermissions{}, err
-	}
 	historicalSimilarity, err := dataqualitycontract.DeniedPermission(
 		LimitationCodeSimilarityPending,
 	)
