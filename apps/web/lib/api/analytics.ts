@@ -49,14 +49,22 @@ export async function getAnalyticalTrafficDensity(
   options: APIRequestOptions = {}
 ): Promise<AnalyticalMetric<number>> {
   const searchParameters = buildRecentTrajectorySearchParameters(parameters)
+  const regionCode = parameters.regionCode?.trim()
+  const areaSquareKilometers = parameters.areaSquareKilometers
 
-  searchParameters.set(
-    'area_square_kilometers',
-    formatPositiveFiniteNumber(
-      parameters.areaSquareKilometers,
-      'areaSquareKilometers'
+  if (areaSquareKilometers !== undefined) {
+    searchParameters.set(
+      'area_square_kilometers',
+      formatPositiveFiniteNumber(
+        areaSquareKilometers,
+        'areaSquareKilometers'
+      )
     )
-  )
+  } else if (!regionCode) {
+    throw new APIRequestError(
+      'Traffic density requires regionCode or areaSquareKilometers.'
+    )
+  }
 
   return requestAnalyticalMetric(
     `${analyticalMetricPath}/traffic-density`,
@@ -198,6 +206,11 @@ function buildRecentTrajectorySearchParameters(
     }
 
     searchParameters.set('limit', String(parameters.limit))
+  }
+
+  const regionCode = parameters.regionCode?.trim()
+  if (regionCode) {
+    searchParameters.set('region', regionCode)
   }
 
   return searchParameters

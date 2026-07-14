@@ -95,9 +95,17 @@ func (handler *AnalyticalMetricsHandler) GetActiveAircraft(
 		return analyticalBadRequest(ctx, err)
 	}
 
-	items, err := handler.query.Recent(
+	selectedRegion, err := resolveAnalyticalRegion(
+		ctx.Query("region"),
+	)
+	if err != nil {
+		return analyticalRegionError(ctx, err)
+	}
+
+	items, err := handler.recentTrajectoriesForRegion(
 		ctx.Context(),
 		recentRequest,
+		selectedRegion,
 	)
 	if err != nil {
 		return analyticalQueryError(ctx, err)
@@ -109,9 +117,10 @@ func (handler *AnalyticalMetricsHandler) GetActiveAircraft(
 		ctx.Context(),
 		metricexecution.ActiveAircraftRequest{
 			Trajectories: items,
-			PublicationMetadata: trajectoryPublicationMetadata(
+			PublicationMetadata: trajectoryPublicationMetadataForRegion(
 				items,
 				normalizedWindow.Limit,
+				selectedRegion,
 			),
 		},
 	)
@@ -133,21 +142,30 @@ func (handler *AnalyticalMetricsHandler) GetTrafficDensity(
 		return analyticalBadRequest(ctx, err)
 	}
 
-	area, err := parseRequiredPositiveFloat(
+	selectedRegion, err := resolveAnalyticalRegion(
+		ctx.Query("region"),
+	)
+	if err != nil {
+		return analyticalRegionError(ctx, err)
+	}
+
+	area, err := trafficDensityAreaSquareKilometers(
 		ctx.Query("area_square_kilometers"),
+		selectedRegion,
 	)
 	if err != nil {
 		return response.Error(
 			ctx,
 			fiber.StatusBadRequest,
 			"INVALID_AREA_SQUARE_KILOMETERS",
-			"area_square_kilometers must be a positive number",
+			"region or a positive area_square_kilometers value is required",
 		)
 	}
 
-	items, err := handler.query.Recent(
+	items, err := handler.recentTrajectoriesForRegion(
 		ctx.Context(),
 		recentRequest,
+		selectedRegion,
 	)
 	if err != nil {
 		return analyticalQueryError(ctx, err)
@@ -160,9 +178,10 @@ func (handler *AnalyticalMetricsHandler) GetTrafficDensity(
 		metricexecution.TrafficDensityRequest{
 			Trajectories:         items,
 			AreaSquareKilometers: area,
-			PublicationMetadata: trajectoryPublicationMetadata(
+			PublicationMetadata: trajectoryPublicationMetadataForRegion(
 				items,
 				normalizedWindow.Limit,
+				selectedRegion,
 			),
 		},
 	)

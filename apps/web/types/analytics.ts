@@ -91,11 +91,12 @@ export interface AnalyticalMetric<TValue extends number = number> {
 export interface RecentTrajectoryMetricParameters {
   windowMinutes?: number
   limit?: number
+  regionCode?: string
 }
 
 export interface TrafficDensityMetricParameters
   extends RecentTrajectoryMetricParameters {
-  areaSquareKilometers: number
+  areaSquareKilometers?: number
 }
 
 export interface AirportActivityMetricParameters {

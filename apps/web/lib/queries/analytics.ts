@@ -30,6 +30,7 @@ const analyticalMetricQueryKeys = {
       'active-aircraft',
       parameters.windowMinutes ?? null,
       parameters.limit ?? null,
+      normalizeRegionCode(parameters.regionCode),
     ] as const,
   trafficDensity: (parameters: TrafficDensityMetricParameters) =>
     [
@@ -37,7 +38,8 @@ const analyticalMetricQueryKeys = {
       'traffic-density',
       parameters.windowMinutes ?? null,
       parameters.limit ?? null,
-      parameters.areaSquareKilometers,
+      normalizeRegionCode(parameters.regionCode),
+      parameters.areaSquareKilometers ?? null,
     ] as const,
   airportActivity: (parameters: AirportActivityMetricParameters) =>
     [
@@ -171,4 +173,8 @@ function normalizeQueryIdentifiers(
   return [...new Set(values.map(value => value.trim()).filter(Boolean))]
     .sort()
     .join(',')
+}
+
+function normalizeRegionCode(value: string | undefined): string {
+  return value?.trim().toLowerCase() ?? ''
 }

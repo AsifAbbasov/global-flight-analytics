@@ -23,6 +23,17 @@ func NewService() *Service {
 				},
 			},
 			{
+				Code:        "azerbaijan",
+				Name:        "Azerbaijan",
+				Description: "Azerbaijan regional traffic area including the Nakhchivan Autonomous Republic.",
+				Bounds: Bounds{
+					MinLatitude:  38,
+					MaxLatitude:  42,
+					MinLongitude: 44.5,
+					MaxLongitude: 51,
+				},
+			},
+			{
 				Code:        "caucasus",
 				Name:        "Caucasus",
 				Description: "Caucasus region including Azerbaijan, Georgia and Armenia.",

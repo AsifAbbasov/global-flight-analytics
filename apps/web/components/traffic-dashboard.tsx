@@ -14,6 +14,8 @@ import type { TrafficAircraft } from '@/types/traffic'
 
 interface TrafficDashboardProps {
   regions: Region[]
+  selectedRegionCode: string
+  onSelectedRegionCodeChange: (regionCode: string) => void
   initialTraffic: TrafficAircraft[]
   initialError: string | null
   regionsWarning: string | null
@@ -21,11 +23,12 @@ interface TrafficDashboardProps {
 
 export function TrafficDashboard({
   regions,
+  selectedRegionCode,
+  onSelectedRegionCodeChange,
   initialTraffic,
   initialError,
   regionsWarning,
 }: TrafficDashboardProps) {
-  const [selectedRegion, setSelectedRegion] = useState('world')
   const [traffic, setTraffic] = useState(initialTraffic)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(
@@ -50,7 +53,7 @@ export function TrafficDashboard({
       setErrorMessage(null)
 
       try {
-        const nextTraffic = await getCurrentTraffic(selectedRegion, {
+        const nextTraffic = await getCurrentTraffic(selectedRegionCode, {
           signal: requestController.signal,
         })
 
@@ -83,7 +86,7 @@ export function TrafficDashboard({
     return () => {
       requestController.abort()
     }
-  }, [retryVersion, selectedRegion])
+  }, [retryVersion, selectedRegionCode])
 
   return (
     <>
@@ -97,9 +100,9 @@ export function TrafficDashboard({
 
         <select
           id='traffic-region'
-          value={selectedRegion}
+          value={selectedRegionCode}
           onChange={event => {
-            setSelectedRegion(event.target.value)
+            onSelectedRegionCodeChange(event.target.value)
           }}
           className='mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white'
         >

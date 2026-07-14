@@ -1,5 +1,4 @@
-import { AnalyticsOverview } from '@/components/analytics/analytics-overview'
-import { TrafficDashboard } from '@/components/traffic-dashboard'
+import { RegionalTrafficExperience } from '@/components/regional-traffic-experience'
 import { getRegions } from '@/lib/api/regions'
 import { getCurrentTraffic } from '@/lib/api/traffic'
 import type { Region } from '@/types/region'
@@ -50,9 +49,7 @@ export default async function Home() {
         Current air traffic from the Go API and PostgreSQL.
       </p>
 
-      <AnalyticsOverview />
-
-      <TrafficDashboard
+      <RegionalTrafficExperience
         regions={regions}
         initialTraffic={initialTraffic}
         initialError={initialError}

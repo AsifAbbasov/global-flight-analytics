@@ -1,27 +1,41 @@
 'use client'
 
 import { AnalyticalMetricCard } from '@/components/analytics/metric-card'
+import { calculateRegionAreaSquareKilometers } from '@/lib/geo/region-area'
 import {
   useAnalyticalActiveAircraft,
   useAnalyticalCoverageScore,
   useAnalyticalDataFreshness,
+  useAnalyticalTrafficDensity,
 } from '@/lib/queries/analytics'
 import type {
   AnalyticalMetric,
   CoverageScoreMetricParameters,
   DataFreshnessMetricParameters,
 } from '@/types/analytics'
+import type { Region } from '@/types/region'
 
-const activeAircraftParameters = {
-  windowMinutes: 15,
-  limit: 1000,
-} as const
-
+const analyticalWindowMinutes = 15
+const analyticalResultLimit = 1000
 const dataFreshnessMaximumAgeSeconds = 300
 
-export function AnalyticsOverview() {
-  const activeAircraftQuery = useAnalyticalActiveAircraft(
-    activeAircraftParameters
+interface AnalyticsOverviewProps {
+  selectedRegion: Region
+}
+
+export function AnalyticsOverview({
+  selectedRegion,
+}: AnalyticsOverviewProps) {
+  const recentParameters = {
+    windowMinutes: analyticalWindowMinutes,
+    limit: analyticalResultLimit,
+    regionCode: selectedRegion.code,
+  }
+
+  const activeAircraftQuery =
+    useAnalyticalActiveAircraft(recentParameters)
+  const trafficDensityQuery = useAnalyticalTrafficDensity(
+    recentParameters
   )
 
   const coverageParameters = buildCoverageParameters(
@@ -34,6 +48,16 @@ export function AnalyticsOverview() {
   const coverageQuery = useAnalyticalCoverageScore(coverageParameters)
   const freshnessQuery = useAnalyticalDataFreshness(freshnessParameters)
 
+  const regionArea = calculateRegionAreaSquareKilometers(
+    selectedRegion.bounds
+  )
+
+  const analyticsAreFetching =
+    activeAircraftQuery.isFetching ||
+    trafficDensityQuery.isFetching ||
+    coverageQuery.isFetching ||
+    freshnessQuery.isFetching
+
   return (
     <section className='mt-8' aria-labelledby='analytics-overview-title'>
       <div className='flex flex-wrap items-end justify-between gap-4'>
@@ -42,12 +66,18 @@ export function AnalyticsOverview() {
             id='analytics-overview-title'
             className='text-xl font-semibold text-white'
           >
-            Live Analytics
+            Live Analytics — {selectedRegion.name}
           </h2>
           <p className='mt-2 max-w-3xl text-sm leading-6 text-slate-400'>
-            Protected metrics expose calculation status, confidence,
-            eligibility and limitations instead of presenting every number as
-            equally reliable.
+            Protected metrics, traffic map and globe now share one regional
+            scope. Confidence, eligibility and limitations remain visible for
+            every published value.
+          </p>
+          <p className='mt-1 text-xs text-slate-500'>
+            Configured rectangular area:{' '}
+            {regionArea === null
+              ? 'unavailable'
+              : formatArea(regionArea)}
           </p>
         </div>
 
@@ -56,31 +86,24 @@ export function AnalyticsOverview() {
           onClick={() => {
             void Promise.all([
               activeAircraftQuery.refetch(),
+              trafficDensityQuery.refetch(),
               coverageParameters ? coverageQuery.refetch() : Promise.resolve(),
               freshnessParameters
                 ? freshnessQuery.refetch()
                 : Promise.resolve(),
             ])
           }}
-          disabled={
-            activeAircraftQuery.isFetching ||
-            coverageQuery.isFetching ||
-            freshnessQuery.isFetching
-          }
+          disabled={analyticsAreFetching}
           className='rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60'
         >
-          {activeAircraftQuery.isFetching ||
-          coverageQuery.isFetching ||
-          freshnessQuery.isFetching
-            ? 'Refreshing…'
-            : 'Refresh analytics'}
+          {analyticsAreFetching ? 'Refreshing…' : 'Refresh analytics'}
         </button>
       </div>
 
-      <div className='mt-4 grid gap-4 lg:grid-cols-3'>
+      <div className='mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
         <AnalyticalMetricCard
           title='Active Aircraft'
-          description='Unique ICAO24 aircraft observed within the last fifteen minutes.'
+          description={`Unique ICAO24 aircraft observed in ${selectedRegion.name} during the last fifteen minutes.`}
           metric={activeAircraftQuery.data}
           isPending={activeAircraftQuery.isPending}
           error={activeAircraftQuery.error}
@@ -91,8 +114,20 @@ export function AnalyticsOverview() {
         />
 
         <AnalyticalMetricCard
+          title='Traffic Density'
+          description={`Eligible aircraft per square kilometre across the configured ${selectedRegion.name} bounds.`}
+          metric={trafficDensityQuery.data}
+          isPending={trafficDensityQuery.isPending}
+          error={trafficDensityQuery.error}
+          onRetry={() => {
+            void trafficDensityQuery.refetch()
+          }}
+          formatValue={formatDensity}
+        />
+
+        <AnalyticalMetricCard
           title='Eligibility Coverage'
-          description='Share of unique trajectory contributors accepted by the traffic-metric policy.'
+          description='Share of regional trajectory contributors accepted by the traffic-metric policy.'
           metric={coverageQuery.data}
           isPending={
             activeAircraftQuery.isPending ||
@@ -113,7 +148,7 @@ export function AnalyticsOverview() {
 
         <AnalyticalMetricCard
           title='Observation Freshness'
-          description='Freshness of the newest source observation against a five-minute maximum age.'
+          description='Freshness of the newest regional source observation against a five-minute maximum age.'
           metric={freshnessQuery.data}
           isPending={
             activeAircraftQuery.isPending ||
@@ -129,7 +164,7 @@ export function AnalyticsOverview() {
             void freshnessQuery.refetch()
           }}
           formatValue={formatRatio}
-          emptyMessage='Freshness requires a source observation timestamp.'
+          emptyMessage='Freshness requires a regional source observation timestamp.'
         />
       </div>
     </section>
@@ -193,4 +228,20 @@ function formatRatio(value: number): string {
     style: 'percent',
     maximumFractionDigits: 1,
   }).format(value)
+}
+
+function formatDensity(value: number): string {
+  if (value === 0) {
+    return '0 / km²'
+  }
+
+  return `${new Intl.NumberFormat(undefined, {
+    maximumSignificantDigits: 4,
+  }).format(value)} / km²`
+}
+
+function formatArea(value: number): string {
+  return `${new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 0,
+  }).format(value)} km²`
 }
