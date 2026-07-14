@@ -1,10 +1,13 @@
 const defaultAPIBaseURL = 'http://localhost:8080'
 const defaultRequestTimeoutMilliseconds = 10_000
 
+export type APIRequestMethod = 'GET' | 'POST'
+
 export interface APIRequestOptions {
   signal?: AbortSignal
   searchParams?: URLSearchParams
   timeoutMilliseconds?: number
+  method?: APIRequestMethod
 }
 
 interface APIEnvelope<T> {
@@ -27,14 +30,8 @@ export function isAbortError(error: unknown): boolean {
 }
 
 export function getRequestErrorMessage(error: unknown): string {
-  if (error instanceof APIRequestError) {
-    return error.message
-  }
-
-  if (error instanceof Error && error.message.trim() !== '') {
-    return error.message
-  }
-
+  if (error instanceof APIRequestError) return error.message
+  if (error instanceof Error && error.message.trim() !== '') return error.message
   return 'The request failed. Please try again.'
 }
 
@@ -52,10 +49,7 @@ export async function requestAPIData<T>(
 
   const requestController = new AbortController()
   let timedOut = false
-
-  const handleCallerAbort = () => {
-    requestController.abort()
-  }
+  const handleCallerAbort = () => requestController.abort()
 
   if (options.signal?.aborted) {
     requestController.abort()
@@ -65,17 +59,16 @@ export async function requestAPIData<T>(
     })
   }
 
-  const timeoutID = windowOrGlobalSetTimeout(() => {
+  const timeoutID = setTimeout(() => {
     timedOut = true
     requestController.abort()
   }, timeoutMilliseconds)
 
   try {
     const response = await fetch(requestURL, {
+      method: options.method ?? 'GET',
       cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
       signal: requestController.signal,
     })
 
@@ -87,23 +80,18 @@ export async function requestAPIData<T>(
     }
 
     const contentType = response.headers.get('content-type') ?? ''
-
     if (!contentType.toLowerCase().includes('application/json')) {
       throw new APIRequestError('The API returned a non-JSON response.')
     }
 
     const payload: unknown = await response.json()
-
     if (!isAPIEnvelope<T>(payload) || payload.success !== true) {
       throw new APIRequestError('The API response shape is invalid.')
     }
 
     return payload.data
   } catch (error) {
-    if (timedOut) {
-      throw new APIRequestError('The API request timed out.')
-    }
-
+    if (timedOut) throw new APIRequestError('The API request timed out.')
     throw error
   } finally {
     clearTimeout(timeoutID)
@@ -115,32 +103,23 @@ function buildAPIURL(path: string, searchParams?: URLSearchParams): URL {
   const baseURL = resolveAPIBaseURL()
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
   const requestURL = new URL(normalizedPath, `${baseURL}/`)
-
-  if (searchParams) {
-    requestURL.search = searchParams.toString()
-  }
-
+  if (searchParams) requestURL.search = searchParams.toString()
   return requestURL
 }
 
 function resolveAPIBaseURL(): string {
   const configuredBaseURL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim()
-
   if (!configuredBaseURL && process.env.NODE_ENV === 'production') {
     throw new APIRequestError(
       'NEXT_PUBLIC_API_BASE_URL is required in production.'
     )
   }
-
-  const candidate = configuredBaseURL || defaultAPIBaseURL
-  const parsedURL = new URL(candidate)
-
+  const parsedURL = new URL(configuredBaseURL || defaultAPIBaseURL)
   if (parsedURL.protocol !== 'http:' && parsedURL.protocol !== 'https:') {
     throw new APIRequestError(
       'NEXT_PUBLIC_API_BASE_URL must use HTTP or HTTPS.'
     )
   }
-
   return parsedURL.toString().replace(/\/+$/, '')
 }
 
@@ -152,11 +131,4 @@ function isAPIEnvelope<T>(value: unknown): value is APIEnvelope<T> {
     typeof value.success === 'boolean' &&
     'data' in value
   )
-}
-
-function windowOrGlobalSetTimeout(
-  callback: () => void,
-  timeoutMilliseconds: number
-): ReturnType<typeof setTimeout> {
-  return setTimeout(callback, timeoutMilliseconds)
 }
