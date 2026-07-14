@@ -116,6 +116,10 @@ func (runner *Runner) ListMigrations() ([]Migration, error) {
 		return migrations[i].Version < migrations[j].Version
 	})
 
+	if err := validateUniqueMigrationVersions(migrations); err != nil {
+		return nil, err
+	}
+
 	return migrations, nil
 }
 
