@@ -12,6 +12,8 @@ import type { TrafficAircraft } from '@/types/traffic'
 interface TrafficMapProps {
   aircraft: TrafficAircraft[]
   region: Region
+  selectedAircraftICAO24: string | null
+  onSelectAircraft: (icao24: string) => void
 }
 
 interface AircraftMarkerRecord {
@@ -25,12 +27,19 @@ interface AircraftMarkerRecord {
 export function TrafficMap({
   aircraft,
   region,
+  selectedAircraftICAO24,
+  onSelectAircraft,
 }: TrafficMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markersRef = useRef<Map<string, AircraftMarkerRecord>>(
     new Map()
   )
+  const onSelectAircraftRef = useRef(onSelectAircraft)
+
+  useEffect(() => {
+    onSelectAircraftRef.current = onSelectAircraft
+  }, [onSelectAircraft])
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) {
@@ -120,6 +129,8 @@ export function TrafficMap({
       return
     }
 
+    const normalizedSelectedICAO24 =
+      selectedAircraftICAO24?.trim().toLowerCase() ?? null
     const nextAircraftKeys = new Set<string>()
 
     for (const item of aircraft) {
@@ -127,7 +138,7 @@ export function TrafficMap({
         continue
       }
 
-      const key = item.icao24.trim()
+      const key = item.icao24.trim().toLowerCase()
 
       if (!key) {
         continue
@@ -136,13 +147,20 @@ export function TrafficMap({
       nextAircraftKeys.add(key)
 
       const existingRecord = markersRef.current.get(key)
+      const isSelected = key === normalizedSelectedICAO24
 
       if (existingRecord) {
-        updateMarkerRecord(existingRecord, item)
+        updateMarkerRecord(existingRecord, item, isSelected)
         continue
       }
 
-      const nextRecord = createMarkerRecord(item)
+      const nextRecord = createMarkerRecord(
+        item,
+        isSelected,
+        icao24 => {
+          onSelectAircraftRef.current(icao24)
+        }
+      )
       nextRecord.marker.addTo(map)
       markersRef.current.set(key, nextRecord)
     }
@@ -155,7 +173,7 @@ export function TrafficMap({
       record.marker.remove()
       markersRef.current.delete(key)
     }
-  }, [aircraft])
+  }, [aircraft, selectedAircraftICAO24])
 
   return (
     <div
@@ -168,12 +186,15 @@ export function TrafficMap({
 }
 
 function createMarkerRecord(
-  item: TrafficAircraft
+  item: TrafficAircraft,
+  isSelected: boolean,
+  onSelectAircraft: (icao24: string) => void
 ): AircraftMarkerRecord {
   const root = document.createElement('button')
   root.type = 'button'
-  root.className =
-    'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
+  root.addEventListener('click', () => {
+    onSelectAircraft(item.icao24)
+  })
   root.setAttribute(
     'aria-label',
     `Open aircraft details for ${displayAircraftName(item)}`
@@ -182,7 +203,6 @@ function createMarkerRecord(
   const icon = document.createElement('span')
   icon.textContent = '✈'
   icon.style.display = 'inline-block'
-  icon.style.color = '#38bdf8'
   icon.style.fontSize = '18px'
   icon.style.lineHeight = '1'
 
@@ -211,14 +231,15 @@ function createMarkerRecord(
     label,
   }
 
-  updateMarkerRecord(record, item)
+  updateMarkerRecord(record, item, isSelected)
 
   return record
 }
 
 function updateMarkerRecord(
   record: AircraftMarkerRecord,
-  item: TrafficAircraft
+  item: TrafficAircraft,
+  isSelected: boolean
 ) {
   const name = displayAircraftName(item)
 
@@ -226,6 +247,14 @@ function updateMarkerRecord(
     'aria-label',
     `Open aircraft details for ${name}`
   )
+  record.root.setAttribute(
+    'aria-pressed',
+    isSelected ? 'true' : 'false'
+  )
+  record.root.className = isSelected
+    ? 'flex items-center gap-2 rounded-full border border-amber-300 bg-amber-300 px-3 py-1 text-xs font-semibold text-slate-950 shadow-2xl ring-4 ring-amber-300/25'
+    : 'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
+  record.icon.style.color = isSelected ? '#0f172a' : '#38bdf8'
   record.icon.style.transform =
     `rotate(${normalizeHeading(item.heading_degrees)}deg)`
   record.label.textContent = name
