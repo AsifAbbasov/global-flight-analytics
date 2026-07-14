@@ -19,6 +19,7 @@ type SuccessPayload interface {
 		dto.FlightStateItem |
 		[]dto.CurrentTrafficItem |
 		dto.Trajectory |
+		dto.AircraftRouteContext |
 		[]dto.AirportListItem |
 		dto.AirportProfile |
 		dto.ActiveAircraftMetricResponse |

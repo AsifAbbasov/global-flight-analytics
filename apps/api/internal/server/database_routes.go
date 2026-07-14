@@ -14,19 +14,21 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	trafficquery "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/query"
+	trafficroutecontext "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/routecontext"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type databaseRouteHandlers struct {
-	airport     *handlers.AirportHandler
-	aircraft    *handlers.AircraftHandler
-	flight      *handlers.FlightHandler
-	flightState *handlers.FlightStateHandler
-	metrics     *handlers.MetricsHandler
-	region      *handlers.RegionHandler
-	traffic     *handlers.TrafficHandler
-	trajectory  *handlers.TrajectoryHandler
+	airport      *handlers.AirportHandler
+	aircraft     *handlers.AircraftHandler
+	flight       *handlers.FlightHandler
+	flightState  *handlers.FlightStateHandler
+	metrics      *handlers.MetricsHandler
+	region       *handlers.RegionHandler
+	routeContext *handlers.RouteContextHandler
+	traffic      *handlers.TrafficHandler
+	trajectory   *handlers.TrajectoryHandler
 }
 
 func registerDatabaseRoutes(
@@ -64,6 +66,7 @@ func registerDatabaseRoutes(
 	v1.Get("/metrics/active-aircraft", routeHandlers.metrics.GetActiveAircraft)
 	v1.Get("/traffic/current", routeHandlers.traffic.GetCurrent)
 	v1.Get("/aircraft/:icao24/trajectory", routeHandlers.trajectory.GetLatestByICAO24)
+	v1.Get("/aircraft/:icao24/route-context", routeHandlers.routeContext.GetByICAO24)
 	v1.Get("/trajectories/:id", routeHandlers.trajectory.GetByID)
 	v1.Get("/flights/:flightID/states", routeHandlers.flightState.ListByFlightID)
 	v1.Get("/aircraft/:icao24/latest-state", routeHandlers.flightState.GetLatestByICAO24)
@@ -125,14 +128,25 @@ func buildDatabaseRouteHandlers(
 		trajectoryQueryService,
 	)
 
+	routeContextService := trafficroutecontext.New(
+		trafficroutecontext.Config{
+			TrajectoryReader: trajectoryQueryService,
+			AirportLister:    airportService,
+		},
+	)
+	routeContextHandler := handlers.NewRouteContextHandler(
+		routeContextService,
+	)
+
 	return databaseRouteHandlers{
-		airport:     airportHandler,
-		aircraft:    aircraftHandler,
-		flight:      flightHandler,
-		flightState: flightStateHandler,
-		metrics:     metricsHandler,
-		region:      regionHandler,
-		traffic:     trafficHandler,
-		trajectory:  trajectoryHandler,
+		airport:      airportHandler,
+		aircraft:     aircraftHandler,
+		flight:       flightHandler,
+		flightState:  flightStateHandler,
+		metrics:      metricsHandler,
+		region:       regionHandler,
+		routeContext: routeContextHandler,
+		traffic:      trafficHandler,
+		trajectory:   trajectoryHandler,
 	}
 }

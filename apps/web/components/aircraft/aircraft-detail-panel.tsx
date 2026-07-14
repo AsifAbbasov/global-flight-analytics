@@ -5,6 +5,10 @@ import {
   getRequestErrorMessage,
 } from '@/lib/api/client'
 import { useAircraftProfile } from '@/lib/queries/aircraft'
+import type {
+  AircraftRouteContext,
+  RouteContextAirportCandidate,
+} from '@/types/route-context'
 import type { TrafficAircraft } from '@/types/traffic'
 import type {
   AircraftTrajectory,
@@ -15,6 +19,11 @@ import type {
 interface AircraftDetailPanelProps {
   selectedICAO24: string | null
   aircraft: TrafficAircraft | undefined
+  routeContext: AircraftRouteContext | undefined
+  routeContextIsPending: boolean
+  routeContextIsFetching: boolean
+  routeContextError: Error | null
+  onRetryRouteContext: () => void
   trajectory: AircraftTrajectory | undefined
   trajectoryIsPending: boolean
   trajectoryIsFetching: boolean
@@ -26,6 +35,11 @@ interface AircraftDetailPanelProps {
 export function AircraftDetailPanel({
   selectedICAO24,
   aircraft,
+  routeContext,
+  routeContextIsPending,
+  routeContextIsFetching,
+  routeContextError,
+  onRetryRouteContext,
   trajectory,
   trajectoryIsPending,
   trajectoryIsFetching,
@@ -44,7 +58,8 @@ export function AircraftDetailPanel({
           </p>
           <p className='mt-2 text-sm leading-6 text-slate-400'>
             Select an aircraft marker on the map to inspect its live
-            observation, registered profile and latest trajectory.
+            observation, probable route and airport context, registered
+            profile and latest trajectory.
           </p>
         </div>
       </aside>
@@ -136,11 +151,19 @@ export function AircraftDetailPanel({
         ) : (
           <p className='mt-3 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm leading-6 text-amber-100'>
             This aircraft is no longer present in the latest regional
-            traffic response. Cached profile and trajectory information
-            remain available below.
+            traffic response. Cached profile, route context and
+            trajectory information remain available below.
           </p>
         )}
       </section>
+
+      <RouteContextSection
+        routeContext={routeContext}
+        isPending={routeContextIsPending}
+        isFetching={routeContextIsFetching}
+        error={routeContextError}
+        onRetry={onRetryRouteContext}
+      />
 
       <TrajectorySection
         trajectory={trajectory}
@@ -218,6 +241,255 @@ export function AircraftDetailPanel({
         ) : null}
       </section>
     </aside>
+  )
+}
+
+
+interface RouteContextSectionProps {
+  routeContext: AircraftRouteContext | undefined
+  isPending: boolean
+  isFetching: boolean
+  error: Error | null
+  onRetry: () => void
+}
+
+function RouteContextSection({
+  routeContext,
+  isPending,
+  isFetching,
+  error,
+  onRetry,
+}: RouteContextSectionProps) {
+  const isNotFound =
+    error instanceof APIRequestError && error.status === 404
+
+  return (
+    <section
+      className='mt-6 border-t border-slate-800 pt-5'
+      aria-labelledby='route-context-title'
+    >
+      <div className='flex items-center justify-between gap-3'>
+        <h4
+          id='route-context-title'
+          className='text-sm font-semibold text-slate-200'
+        >
+          Probable route and airport context
+        </h4>
+
+        {isFetching ? (
+          <span className='text-xs text-sky-300'>Updating…</span>
+        ) : null}
+      </div>
+
+      {routeContext ? (
+        <>
+          <div className='mt-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3'>
+            <div className='flex items-center justify-between gap-3'>
+              <span className='text-xs uppercase tracking-wide text-slate-500'>
+                Route confidence
+              </span>
+              <ConfidenceBadge
+                level={routeContext.confidence.level}
+                score={routeContext.confidence.score}
+              />
+            </div>
+
+            <div
+              className='mt-2 h-2 overflow-hidden rounded-full bg-slate-800'
+              role='progressbar'
+              aria-label='Probable route confidence score'
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(
+                routeContext.confidence.score * 100
+              )}
+            >
+              <div
+                className='h-full rounded-full bg-emerald-400'
+                style={{
+                  width: `${routeContext.confidence.score * 100}%`,
+                }}
+              />
+            </div>
+
+            <p className='mt-3 text-xs leading-5 text-slate-400'>
+              Generated {formatTimestamp(routeContext.generated_at)} from
+              persisted trajectory {routeContext.trajectory_id}.
+            </p>
+          </div>
+
+          <div className='mt-3 grid gap-3'>
+            <AirportCandidateCard
+              label='Probable origin'
+              candidate={routeContext.origin}
+            />
+            <AirportCandidateCard
+              label='Probable destination'
+              candidate={routeContext.destination}
+            />
+          </div>
+
+          <div className='mt-4 rounded-lg border border-amber-400/25 bg-amber-400/5 p-3'>
+            <h5 className='text-xs font-semibold uppercase tracking-wide text-amber-200'>
+              Route limitations
+            </h5>
+
+            {routeContext.limitations.length > 0 ? (
+              <ul className='mt-2 space-y-2 text-sm leading-5 text-amber-100'>
+                {routeContext.limitations.map(limitation => (
+                  <li key={limitation.code}>
+                    {limitation.message}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className='mt-2 text-sm leading-5 text-slate-300'>
+                No route-context limitations were reported.
+              </p>
+            )}
+          </div>
+        </>
+      ) : null}
+
+      {isPending && !error ? (
+        <p className='mt-3 text-sm text-slate-400'>
+          Inferring probable airport candidates from the persisted
+          trajectory endpoints…
+        </p>
+      ) : null}
+
+      {isNotFound ? (
+        <p className='mt-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300'>
+          Route context is unavailable because no persisted trajectory
+          exists for this aircraft yet.
+        </p>
+      ) : null}
+
+      {error && !isNotFound ? (
+        <div className='mt-3 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3'>
+          <p className='text-sm leading-6 text-amber-100'>
+            {getRequestErrorMessage(error)}
+          </p>
+          <button
+            type='button'
+            onClick={onRetry}
+            disabled={isFetching}
+            className='mt-3 rounded-md border border-amber-300/40 px-3 py-1.5 text-sm font-medium text-amber-100 transition hover:bg-amber-300/10 disabled:cursor-not-allowed disabled:opacity-60'
+          >
+            Retry route context
+          </button>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function AirportCandidateCard({
+  label,
+  candidate,
+}: {
+  label: string
+  candidate: RouteContextAirportCandidate | undefined
+}) {
+  if (!candidate) {
+    return (
+      <div className='rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-3'>
+        <p className='text-xs uppercase tracking-wide text-slate-500'>
+          {label}
+        </p>
+        <p className='mt-2 text-sm leading-5 text-slate-400'>
+          No airport candidate is close enough to the corresponding
+          trajectory endpoint.
+        </p>
+      </div>
+    )
+  }
+
+  const airportCode = [
+    candidate.airport.icao_code,
+    candidate.airport.iata_code,
+  ]
+    .filter(Boolean)
+    .join(' / ')
+
+  return (
+    <div className='rounded-lg border border-slate-800 bg-slate-900/60 p-3'>
+      <div className='flex items-start justify-between gap-3'>
+        <div>
+          <p className='text-xs uppercase tracking-wide text-slate-500'>
+            {label}
+          </p>
+          <p className='mt-1 text-sm font-semibold text-white'>
+            {candidate.airport.name}
+          </p>
+          <p className='mt-1 font-mono text-xs text-sky-300'>
+            {airportCode}
+          </p>
+        </div>
+
+        <ConfidenceBadge
+          level={candidate.confidence.level}
+          score={candidate.confidence.score}
+        />
+      </div>
+
+      <dl className='mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm'>
+        <Detail
+          label='Location'
+          value={[
+            candidate.airport.city,
+            candidate.airport.country,
+          ]
+            .filter(Boolean)
+            .join(', ')}
+        />
+        <Detail
+          label='Endpoint distance'
+          value={formatDistance(candidate.distance_km)}
+        />
+        <Detail
+          label='Elevation'
+          value={formatAltitude(candidate.airport.elevation_m)}
+        />
+        <Detail
+          label='Timezone'
+          value={candidate.airport.timezone}
+        />
+      </dl>
+
+      {candidate.confidence.reasons.length > 0 ? (
+        <ul className='mt-3 space-y-1 text-xs leading-5 text-slate-400'>
+          {candidate.confidence.reasons.map(reason => (
+            <li key={reason.code}>{reason.message}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
+function ConfidenceBadge({
+  level,
+  score,
+}: {
+  level: AircraftRouteContext['confidence']['level']
+  score: number
+}) {
+  const className =
+    level === 'high'
+      ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
+      : level === 'medium'
+        ? 'border-sky-400/40 bg-sky-400/10 text-sky-200'
+        : level === 'low'
+          ? 'border-amber-400/40 bg-amber-400/10 text-amber-200'
+          : 'border-slate-600 bg-slate-800 text-slate-300'
+
+  return (
+    <span
+      className={`rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${className}`}
+    >
+      {level} · {formatRatio(score)}
+    </span>
   )
 }
 
@@ -599,6 +871,17 @@ function formatCoordinate(value: number): string {
   }
 
   return value.toFixed(5)
+}
+
+function formatRatio(value: number): string {
+  if (!Number.isFinite(value)) {
+    return 'Unknown'
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    style: 'percent',
+    maximumFractionDigits: 1,
+  }).format(value)
 }
 
 function formatDistance(value: number): string {

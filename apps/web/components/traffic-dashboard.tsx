@@ -6,6 +6,7 @@ import { AircraftDetailPanel } from '@/components/aircraft/aircraft-detail-panel
 import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
 import { getRequestErrorMessage } from '@/lib/api/client'
+import { useAircraftRouteContext } from '@/lib/queries/route-context'
 import { useCurrentTraffic } from '@/lib/queries/traffic'
 import { useLatestAircraftTrajectory } from '@/lib/queries/trajectory'
 import type { Region } from '@/types/region'
@@ -39,6 +40,9 @@ export function TrafficDashboard({
   const trafficQuery = useCurrentTraffic(selectedRegion.code, {
     initialData,
   })
+  const routeContextQuery = useAircraftRouteContext(
+    selectedAircraftICAO24
+  )
   const trajectoryQuery = useLatestAircraftTrajectory(
     selectedAircraftICAO24
   )
@@ -175,11 +179,11 @@ export function TrafficDashboard({
 
         <p className='mt-2 text-sm text-slate-400'>
           Select an aircraft marker to inspect its live state,
-          registered profile, persisted trajectory and quality
-          limitations.
+          probable route and airport context, registered profile,
+          persisted trajectory and quality limitations.
         </p>
 
-        <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_440px]'>
+        <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_480px]'>
           <div aria-busy={trafficQuery.isFetching}>
             <TrafficMap
               aircraft={traffic}
@@ -195,6 +199,13 @@ export function TrafficDashboard({
           <AircraftDetailPanel
             selectedICAO24={selectedAircraftICAO24}
             aircraft={selectedAircraft}
+            routeContext={routeContextQuery.data}
+            routeContextIsPending={routeContextQuery.isPending}
+            routeContextIsFetching={routeContextQuery.isFetching}
+            routeContextError={routeContextQuery.error}
+            onRetryRouteContext={() => {
+              void routeContextQuery.refetch()
+            }}
             trajectory={trajectoryQuery.data}
             trajectoryIsPending={trajectoryQuery.isPending}
             trajectoryIsFetching={trajectoryQuery.isFetching}
