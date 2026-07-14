@@ -45,7 +45,7 @@ export function RegionalTrafficExperience({
 
       <TrafficDashboard
         regions={regions}
-        selectedRegionCode={selectedRegion.code}
+        selectedRegion={selectedRegion}
         onSelectedRegionCodeChange={nextRegionCode => {
           if (regions.some(region => region.code === nextRegionCode)) {
             setSelectedRegionCode(nextRegionCode)

@@ -5,10 +5,13 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 
+import { buildRegionView } from '@/lib/geo/region-view'
+import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
 
 interface TrafficMapProps {
   aircraft: TrafficAircraft[]
+  region: Region
 }
 
 interface AircraftMarkerRecord {
@@ -19,7 +22,10 @@ interface AircraftMarkerRecord {
   label: HTMLSpanElement
 }
 
-export function TrafficMap({ aircraft }: TrafficMapProps) {
+export function TrafficMap({
+  aircraft,
+  region,
+}: TrafficMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markersRef = useRef<Map<string, AircraftMarkerRecord>>(
@@ -36,11 +42,14 @@ export function TrafficMap({ aircraft }: TrafficMapProps) {
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://demotiles.maplibre.org/style.json',
-      center: [50.0467, 40.4675],
-      zoom: 6,
+      center: [0, 20],
+      zoom: 0.8,
     })
 
-    map.addControl(new maplibregl.NavigationControl(), 'top-right')
+    map.addControl(
+      new maplibregl.NavigationControl(),
+      'top-right'
+    )
     mapRef.current = map
 
     return () => {
@@ -53,6 +62,56 @@ export function TrafficMap({ aircraft }: TrafficMapProps) {
       mapRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+    const view = buildRegionView(region)
+
+    if (!map || !view) {
+      return
+    }
+
+    const focusSelectedRegion = () => {
+      if (view.isWorld) {
+        map.easeTo({
+          center: [0, 20],
+          zoom: 0.8,
+          bearing: 0,
+          pitch: 0,
+          duration: 900,
+        })
+        return
+      }
+
+      map.fitBounds(
+        [
+          [view.bounds.west, view.bounds.south],
+          [view.bounds.east, view.bounds.north],
+        ],
+        {
+          padding: {
+            top: 56,
+            right: 56,
+            bottom: 56,
+            left: 56,
+          },
+          duration: 900,
+          maxZoom: 7,
+        }
+      )
+    }
+
+    if (map.loaded()) {
+      focusSelectedRegion()
+      return
+    }
+
+    map.once('load', focusSelectedRegion)
+
+    return () => {
+      map.off('load', focusSelectedRegion)
+    }
+  }, [region])
 
   useEffect(() => {
     const map = mapRef.current
@@ -102,6 +161,8 @@ export function TrafficMap({ aircraft }: TrafficMapProps) {
     <div
       className='h-[600px] w-full overflow-hidden rounded-xl'
       ref={mapContainerRef}
+      aria-label={`Current traffic map focused on ${region.name}`}
+      data-region-code={region.code}
     />
   )
 }
@@ -177,17 +238,20 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
   container.style.width = '260px'
   container.style.maxWidth = '260px'
   container.style.padding = '14px'
-  container.style.border = '1px solid rgba(56, 189, 248, 0.45)'
+  container.style.border =
+    '1px solid rgba(56, 189, 248, 0.45)'
   container.style.borderRadius = '14px'
   container.style.background = 'rgba(15, 23, 42, 0.98)'
   container.style.color = '#e5e7eb'
   container.style.fontFamily = 'Arial, Helvetica, sans-serif'
   container.style.fontSize = '13px'
   container.style.lineHeight = '1.55'
-  container.style.boxShadow = '0 18px 45px rgba(0, 0, 0, 0.55)'
+  container.style.boxShadow =
+    '0 18px 45px rgba(0, 0, 0, 0.55)'
 
   const title = document.createElement('div')
-  title.textContent = item.callsign.trim() || 'Unknown callsign'
+  title.textContent =
+    item.callsign.trim() || 'Unknown callsign'
   title.style.fontSize = '16px'
   title.style.fontWeight = '700'
   title.style.color = '#38bdf8'

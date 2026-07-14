@@ -9,7 +9,7 @@ import type { TrafficAircraft } from '@/types/traffic'
 
 interface TrafficDashboardProps {
   regions: Region[]
-  selectedRegionCode: string
+  selectedRegion: Region
   onSelectedRegionCodeChange: (regionCode: string) => void
   initialTraffic: TrafficAircraft[]
   initialError: string | null
@@ -18,18 +18,18 @@ interface TrafficDashboardProps {
 
 export function TrafficDashboard({
   regions,
-  selectedRegionCode,
+  selectedRegion,
   onSelectedRegionCodeChange,
   initialTraffic,
   initialError,
   regionsWarning,
 }: TrafficDashboardProps) {
   const initialData =
-    selectedRegionCode === 'world' && initialError === null
+    selectedRegion.code === 'world' && initialError === null
       ? initialTraffic
       : undefined
 
-  const trafficQuery = useCurrentTraffic(selectedRegionCode, {
+  const trafficQuery = useCurrentTraffic(selectedRegion.code, {
     initialData,
   })
 
@@ -57,7 +57,7 @@ export function TrafficDashboard({
 
             <select
               id='traffic-region'
-              value={selectedRegionCode}
+              value={selectedRegion.code}
               onChange={event => {
                 onSelectedRegionCodeChange(event.target.value)
               }}
@@ -91,6 +91,10 @@ export function TrafficDashboard({
         >
           <span className='text-slate-300'>
             Aircraft: {traffic.length}
+          </span>
+
+          <span className='text-slate-500'>
+            View: {selectedRegion.name}
           </span>
 
           {trafficQuery.dataUpdatedAt > 0 ? (
@@ -134,17 +138,25 @@ export function TrafficDashboard({
       </section>
 
       <div className='mt-4' aria-busy={trafficQuery.isFetching}>
-        <TrafficGlobe aircraft={traffic} />
+        <TrafficGlobe
+          aircraft={traffic}
+          region={selectedRegion}
+        />
       </div>
 
       <section className='mt-8 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-6'>
-        <h2 className='text-xl font-semibold'>Current Traffic</h2>
+        <h2 className='text-xl font-semibold'>
+          Current Traffic — {selectedRegion.name}
+        </h2>
 
         <div
           className='mt-4'
           aria-busy={trafficQuery.isFetching}
         >
-          <TrafficMap aircraft={traffic} />
+          <TrafficMap
+            aircraft={traffic}
+            region={selectedRegion}
+          />
         </div>
 
         {!trafficQuery.isFetching &&
