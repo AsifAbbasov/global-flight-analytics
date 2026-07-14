@@ -1,14 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-
 import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
-import {
-  getRequestErrorMessage,
-  isAbortError,
-} from '@/lib/api/client'
-import { getCurrentTraffic } from '@/lib/api/traffic'
+import { getRequestErrorMessage } from '@/lib/api/client'
+import { useCurrentTraffic } from '@/lib/queries/traffic'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
 
@@ -29,89 +24,66 @@ export function TrafficDashboard({
   initialError,
   regionsWarning,
 }: TrafficDashboardProps) {
-  const [traffic, setTraffic] = useState(initialTraffic)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(
-    initialError
-  )
-  const [retryVersion, setRetryVersion] = useState(0)
+  const initialData =
+    selectedRegionCode === 'world' && initialError === null
+      ? initialTraffic
+      : undefined
 
-  const skipInitialRequestRef = useRef(initialError === null)
-  const requestSequenceRef = useRef(0)
+  const trafficQuery = useCurrentTraffic(selectedRegionCode, {
+    initialData,
+  })
 
-  useEffect(() => {
-    if (skipInitialRequestRef.current) {
-      skipInitialRequestRef.current = false
-      return
-    }
-
-    const requestController = new AbortController()
-    const requestSequence = ++requestSequenceRef.current
-
-    async function loadTraffic() {
-      setIsLoading(true)
-      setErrorMessage(null)
-
-      try {
-        const nextTraffic = await getCurrentTraffic(selectedRegionCode, {
-          signal: requestController.signal,
-        })
-
-        if (requestSequence === requestSequenceRef.current) {
-          setTraffic(nextTraffic)
-        }
-      } catch (error) {
-        if (
-          requestController.signal.aborted ||
-          isAbortError(error)
-        ) {
-          return
-        }
-
-        if (requestSequence === requestSequenceRef.current) {
-          setErrorMessage(getRequestErrorMessage(error))
-        }
-      } finally {
-        if (
-          !requestController.signal.aborted &&
-          requestSequence === requestSequenceRef.current
-        ) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    void loadTraffic()
-
-    return () => {
-      requestController.abort()
-    }
-  }, [retryVersion, selectedRegionCode])
+  const traffic = trafficQuery.data ?? []
+  const isInitialLoading = trafficQuery.isPending
+  const isRefreshing =
+    trafficQuery.isFetching && !trafficQuery.isPending
+  const errorMessage = trafficQuery.error
+    ? getRequestErrorMessage(trafficQuery.error)
+    : trafficQuery.isPending
+      ? initialError
+      : null
 
   return (
     <>
       <section className='mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4'>
-        <label
-          className='block text-sm font-medium text-slate-300'
-          htmlFor='traffic-region'
-        >
-          Region
-        </label>
+        <div className='flex flex-wrap items-end justify-between gap-4'>
+          <div className='min-w-64 flex-1'>
+            <label
+              className='block text-sm font-medium text-slate-300'
+              htmlFor='traffic-region'
+            >
+              Region
+            </label>
 
-        <select
-          id='traffic-region'
-          value={selectedRegionCode}
-          onChange={event => {
-            onSelectedRegionCodeChange(event.target.value)
-          }}
-          className='mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white'
-        >
-          {regions.map(region => (
-            <option key={region.code} value={region.code}>
-              {region.name}
-            </option>
-          ))}
-        </select>
+            <select
+              id='traffic-region'
+              value={selectedRegionCode}
+              onChange={event => {
+                onSelectedRegionCodeChange(event.target.value)
+              }}
+              className='mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white'
+            >
+              {regions.map(region => (
+                <option key={region.code} value={region.code}>
+                  {region.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type='button'
+            onClick={() => {
+              void trafficQuery.refetch()
+            }}
+            disabled={trafficQuery.isFetching}
+            className='rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60'
+          >
+            {trafficQuery.isFetching
+              ? 'Refreshing traffic…'
+              : 'Refresh traffic'}
+          </button>
+        </div>
 
         <div
           aria-live='polite'
@@ -121,12 +93,26 @@ export function TrafficDashboard({
             Aircraft: {traffic.length}
           </span>
 
+          {trafficQuery.dataUpdatedAt > 0 ? (
+            <span className='text-slate-500'>
+              Updated {formatTimestamp(trafficQuery.dataUpdatedAt)}
+            </span>
+          ) : null}
+
           {regionsWarning ? (
             <span className='text-amber-300'>{regionsWarning}</span>
           ) : null}
 
-          {isLoading ? (
-            <span className='text-sky-300'>Loading current traffic…</span>
+          {isInitialLoading ? (
+            <span className='text-sky-300'>
+              Loading current traffic…
+            </span>
+          ) : null}
+
+          {isRefreshing ? (
+            <span className='text-sky-300'>
+              Updating current traffic…
+            </span>
           ) : null}
 
           {errorMessage ? (
@@ -135,9 +121,10 @@ export function TrafficDashboard({
               <button
                 type='button'
                 onClick={() => {
-                  setRetryVersion(version => version + 1)
+                  void trafficQuery.refetch()
                 }}
-                className='rounded-md border border-amber-400/50 px-3 py-1 font-medium text-amber-200 transition hover:bg-amber-400/10'
+                disabled={trafficQuery.isFetching}
+                className='rounded-md border border-amber-400/50 px-3 py-1 font-medium text-amber-200 transition hover:bg-amber-400/10 disabled:cursor-not-allowed disabled:opacity-60'
               >
                 Retry
               </button>
@@ -146,18 +133,23 @@ export function TrafficDashboard({
         </div>
       </section>
 
-      <div className='mt-4' aria-busy={isLoading}>
+      <div className='mt-4' aria-busy={trafficQuery.isFetching}>
         <TrafficGlobe aircraft={traffic} />
       </div>
 
       <section className='mt-8 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-6'>
         <h2 className='text-xl font-semibold'>Current Traffic</h2>
 
-        <div className='mt-4' aria-busy={isLoading}>
+        <div
+          className='mt-4'
+          aria-busy={trafficQuery.isFetching}
+        >
           <TrafficMap aircraft={traffic} />
         </div>
 
-        {!isLoading && !errorMessage && traffic.length === 0 ? (
+        {!trafficQuery.isFetching &&
+        !errorMessage &&
+        traffic.length === 0 ? (
           <p className='mt-4 text-sm text-slate-400'>
             No aircraft were returned for the selected region.
           </p>
@@ -165,4 +157,12 @@ export function TrafficDashboard({
       </section>
     </>
   )
+}
+
+function formatTimestamp(value: number): string {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(value))
 }
