@@ -5,6 +5,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/analyticalresult"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/confidencereport"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualitycontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/executor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
@@ -65,6 +66,7 @@ func (
 }
 
 type PublicationMetadata struct {
+	DataQuality   *dataqualitycontract.Report
 	Sources       []analyticalresult.Source
 	Warnings      []analyticalresult.Notice
 	Limitations   []analyticalresult.Notice

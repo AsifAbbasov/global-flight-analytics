@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
@@ -16,6 +17,9 @@ var (
 	)
 	ErrCalculatedAtMissing = errors.New(
 		"analytical result calculation time is required",
+	)
+	ErrDataQualityEvaluationAfterCalculation = errors.New(
+		"data quality evaluation time must not be after analytical result calculation time",
 	)
 	ErrValueRequired = errors.New(
 		"analytical result value is required",
@@ -106,6 +110,29 @@ func (result Result[T]) Validate() error {
 			"validate analytical confidence: %w",
 			err,
 		)
+	}
+
+	if result.DataQuality != nil {
+		if err := result.DataQuality.Validate(); err != nil {
+			return fmt.Errorf(
+				"validate analytical data quality: %w",
+				err,
+			)
+		}
+		if result.DataQuality.EvaluatedAt.After(
+			result.CalculatedAt,
+		) {
+			return fmt.Errorf(
+				"%w: data_quality=%s calculated_at=%s",
+				ErrDataQualityEvaluationAfterCalculation,
+				result.DataQuality.EvaluatedAt.Format(
+					time.RFC3339Nano,
+				),
+				result.CalculatedAt.Format(
+					time.RFC3339Nano,
+				),
+			)
+		}
 	}
 
 	if result.Eligibility != nil {

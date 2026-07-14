@@ -1,10 +1,14 @@
 package analyticalresult
 
-import "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
+import (
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualitycontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
+)
 
 func (result Result[T]) Clone() Result[T] {
 	clone := result
 	clone.Confidence = cloneConfidence(result.Confidence)
+	clone.DataQuality = cloneDataQuality(result.DataQuality)
 	clone.Eligibility = cloneEligibility(result.Eligibility)
 	clone.Sources = cloneSources(result.Sources)
 	clone.Warnings = cloneNotices(result.Warnings)
@@ -26,6 +30,17 @@ func cloneConfidence(
 		confidence.Reasons,
 	)
 	return result
+}
+
+func cloneDataQuality(
+	report *dataqualitycontract.Report,
+) *dataqualitycontract.Report {
+	if report == nil {
+		return nil
+	}
+
+	result := report.Clone()
+	return &result
 }
 
 func cloneEligibility(

@@ -1,6 +1,10 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualitycontract"
+)
 
 type AnalyticalMetricResponse struct {
 	Metric           string                              `json:"metric"`
@@ -8,6 +12,7 @@ type AnalyticalMetricResponse struct {
 	Value            any                                 `json:"value,omitempty"`
 	HasValue         bool                                `json:"has_value"`
 	Confidence       AnalyticalConfidenceResponse        `json:"confidence"`
+	DataQuality      *dataqualitycontract.Report         `json:"data_quality,omitempty"`
 	Eligibility      *AnalyticalEligibilityResponse      `json:"eligibility,omitempty"`
 	Scope            AnalyticalScopeResponse             `json:"scope"`
 	Sources          []AnalyticalSourceResponse          `json:"sources"`

@@ -8,6 +8,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/analyticalresult"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/confidencereport"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualitycontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/executor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
@@ -95,6 +96,14 @@ func executeTrajectoryMetric[T any](
 				)
 		}
 
+		result, resultErr = attachDataQuality(
+			result,
+			metadata.DataQuality,
+		)
+		if resultErr != nil {
+			return Execution[T]{}, resultErr
+		}
+
 		return Execution[T]{
 			MetricID: metricID,
 			Result:   result,
@@ -178,6 +187,7 @@ func executeTrajectoryMetric[T any](
 			scope,
 		),
 		metadata.Sources,
+		metadata.DataQuality,
 		calculation,
 	)
 }
@@ -264,6 +274,7 @@ func executeSnapshotMetric[T any](
 		scope,
 		nil,
 		metadata.Sources,
+		metadata.DataQuality,
 		calculation,
 	)
 }
@@ -274,6 +285,7 @@ func publishExecution[T any](
 	scope ScopeSummary,
 	eligibility *analyticalresult.Eligibility,
 	sources []analyticalresult.Source,
+	dataQuality *dataqualitycontract.Report,
 	calculation metricCalculation[T],
 ) (Execution[T], error) {
 	report, err :=
@@ -324,6 +336,14 @@ func publishExecution[T any](
 					"build confidence-unavailable metric result: %w",
 					resultErr,
 				)
+		}
+
+		result, resultErr = attachDataQuality(
+			result,
+			dataQuality,
+		)
+		if resultErr != nil {
+			return Execution[T]{}, resultErr
 		}
 
 		return Execution[T]{
@@ -401,6 +421,14 @@ func publishExecution[T any](
 				)
 		}
 
+		result, resultErr = attachDataQuality(
+			result,
+			dataQuality,
+		)
+		if resultErr != nil {
+			return Execution[T]{}, resultErr
+		}
+
 		return Execution[T]{
 			MetricID:         metricID,
 			Result:           result,
@@ -423,6 +451,14 @@ func publishExecution[T any](
 				"build complete metric result: %w",
 				resultErr,
 			)
+	}
+
+	result, resultErr = attachDataQuality(
+		result,
+		dataQuality,
+	)
+	if resultErr != nil {
+		return Execution[T]{}, resultErr
 	}
 
 	return Execution[T]{
@@ -465,6 +501,14 @@ func buildFailedExecution[T any](
 				"build failed metric result: %w",
 				err,
 			)
+	}
+
+	result, err = attachDataQuality(
+		result,
+		metadata.DataQuality,
+	)
+	if err != nil {
+		return Execution[T]{}, err
 	}
 
 	return Execution[T]{

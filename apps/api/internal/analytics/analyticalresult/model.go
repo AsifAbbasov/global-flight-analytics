@@ -3,6 +3,7 @@ package analyticalresult
 import (
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualitycontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
 )
 
@@ -114,6 +115,7 @@ type Result[T any] struct {
 	Value        T
 	HasValue     bool
 	Confidence   Confidence
+	DataQuality  *dataqualitycontract.Report
 	Eligibility  *Eligibility
 	Sources      []Source
 	Warnings     []Notice

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/analyticalresult"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualityintegration"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricexecution"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricquery"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
@@ -512,10 +513,30 @@ func trajectoryPublicationMetadata(
 		)
 	}
 
-	return metricexecution.PublicationMetadata{
+	metadata := metricexecution.PublicationMetadata{
 		Sources:     analyticalSourcesFromTrajectories(items),
 		Limitations: limitations,
 	}
+
+	report, reportErr := dataqualityintegration.BuildTrajectoryReport(
+		dataqualityintegration.TrajectoryReportRequest{
+			Trajectories: items,
+			EvaluatedAt:  time.Now().UTC(),
+		},
+	)
+	if reportErr != nil {
+		metadata.Limitations = append(
+			metadata.Limitations,
+			analyticalresult.Notice{
+				Code:    "data_quality_report_unavailable",
+				Message: "The trajectory data-quality report could not be constructed from the retained analytical inputs.",
+			},
+		)
+		return metadata
+	}
+
+	metadata.DataQuality = report
+	return metadata
 }
 
 func requestParameterMetadata() metricexecution.PublicationMetadata {

@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/analyticalresult"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/confidencereport"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualitycontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricexecution"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
 )
@@ -17,6 +18,7 @@ func toAnalyticalMetricResponse[T any](
 		Status:       string(result.Status),
 		HasValue:     result.HasValue,
 		Confidence:   toAnalyticalConfidenceResponse(result.Confidence),
+		DataQuality:  toDataQualityReportResponse(result.DataQuality),
 		Eligibility:  toAnalyticalEligibilityResponse(result.Eligibility),
 		Scope:        toAnalyticalScopeResponse(execution.Scope),
 		Sources:      toAnalyticalSourceResponses(result.Sources),
@@ -34,6 +36,17 @@ func toAnalyticalMetricResponse[T any](
 	}
 
 	return response
+}
+
+func toDataQualityReportResponse(
+	report *dataqualitycontract.Report,
+) *dataqualitycontract.Report {
+	if report == nil {
+		return nil
+	}
+
+	result := report.Clone()
+	return &result
 }
 
 func toAnalyticalConfidenceResponse(
