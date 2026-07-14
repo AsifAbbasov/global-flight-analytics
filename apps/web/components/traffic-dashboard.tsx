@@ -7,6 +7,7 @@ import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
 import { getRequestErrorMessage } from '@/lib/api/client'
 import { useCurrentTraffic } from '@/lib/queries/traffic'
+import { useLatestAircraftTrajectory } from '@/lib/queries/trajectory'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
 
@@ -38,6 +39,9 @@ export function TrafficDashboard({
   const trafficQuery = useCurrentTraffic(selectedRegion.code, {
     initialData,
   })
+  const trajectoryQuery = useLatestAircraftTrajectory(
+    selectedAircraftICAO24
+  )
 
   const traffic = trafficQuery.data ?? []
   const selectedAircraft =
@@ -170,16 +174,18 @@ export function TrafficDashboard({
         </h2>
 
         <p className='mt-2 text-sm text-slate-400'>
-          Select an aircraft marker to open its live and registered
-          details.
+          Select an aircraft marker to inspect its live state,
+          registered profile, persisted trajectory and quality
+          limitations.
         </p>
 
-        <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]'>
+        <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_440px]'>
           <div aria-busy={trafficQuery.isFetching}>
             <TrafficMap
               aircraft={traffic}
               region={selectedRegion}
               selectedAircraftICAO24={selectedAircraftICAO24}
+              trajectory={trajectoryQuery.data}
               onSelectAircraft={icao24 => {
                 setSelectedAircraftICAO24(normalizeICAO24(icao24))
               }}
@@ -189,6 +195,13 @@ export function TrafficDashboard({
           <AircraftDetailPanel
             selectedICAO24={selectedAircraftICAO24}
             aircraft={selectedAircraft}
+            trajectory={trajectoryQuery.data}
+            trajectoryIsPending={trajectoryQuery.isPending}
+            trajectoryIsFetching={trajectoryQuery.isFetching}
+            trajectoryError={trajectoryQuery.error}
+            onRetryTrajectory={() => {
+              void trajectoryQuery.refetch()
+            }}
             onClose={() => {
               setSelectedAircraftICAO24(null)
             }}

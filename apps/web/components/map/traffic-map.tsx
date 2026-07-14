@@ -8,11 +8,24 @@ import maplibregl from 'maplibre-gl'
 import { buildRegionView } from '@/lib/geo/region-view'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
+import type {
+  AircraftTrajectory,
+  TrajectorySegmentStatus,
+} from '@/types/trajectory'
+
+const trajectorySourceID = 'selected-aircraft-trajectory'
+const trajectoryLayerIDs = {
+  observed: 'selected-aircraft-trajectory-observed',
+  interpolated: 'selected-aircraft-trajectory-interpolated',
+  estimated: 'selected-aircraft-trajectory-estimated',
+  invalid: 'selected-aircraft-trajectory-invalid',
+} as const
 
 interface TrafficMapProps {
   aircraft: TrafficAircraft[]
   region: Region
   selectedAircraftICAO24: string | null
+  trajectory: AircraftTrajectory | undefined
   onSelectAircraft: (icao24: string) => void
 }
 
@@ -24,10 +37,29 @@ interface AircraftMarkerRecord {
   label: HTMLSpanElement
 }
 
+interface TrajectoryLineFeature {
+  type: 'Feature'
+  properties: {
+    status: TrajectorySegmentStatus
+    sequence_number: number
+    quality_score: number
+  }
+  geometry: {
+    type: 'LineString'
+    coordinates: [[number, number], [number, number]]
+  }
+}
+
+interface TrajectoryFeatureCollection {
+  type: 'FeatureCollection'
+  features: TrajectoryLineFeature[]
+}
+
 export function TrafficMap({
   aircraft,
   region,
   selectedAircraftICAO24,
+  trajectory,
   onSelectAircraft,
 }: TrafficMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
@@ -129,6 +161,41 @@ export function TrafficMap({
       return
     }
 
+    const updateTrajectory = () => {
+      ensureTrajectoryLayers(map)
+
+      const featureCollection =
+        buildTrajectoryFeatureCollection(trajectory)
+      const source = map.getSource(
+        trajectorySourceID
+      ) as maplibregl.GeoJSONSource | undefined
+
+      source?.setData(featureCollection)
+
+      if (featureCollection.features.length > 0) {
+        focusTrajectory(map, featureCollection)
+      }
+    }
+
+    if (map.loaded()) {
+      updateTrajectory()
+      return
+    }
+
+    map.once('load', updateTrajectory)
+
+    return () => {
+      map.off('load', updateTrajectory)
+    }
+  }, [trajectory])
+
+  useEffect(() => {
+    const map = mapRef.current
+
+    if (!map) {
+      return
+    }
+
     const normalizedSelectedICAO24 =
       selectedAircraftICAO24?.trim().toLowerCase() ?? null
     const nextAircraftKeys = new Set<string>()
@@ -183,6 +250,169 @@ export function TrafficMap({
       data-region-code={region.code}
     />
   )
+}
+
+function ensureTrajectoryLayers(map: maplibregl.Map) {
+  if (!map.getSource(trajectorySourceID)) {
+    map.addSource(trajectorySourceID, {
+      type: 'geojson',
+      data: emptyTrajectoryFeatureCollection(),
+    })
+  }
+
+  addTrajectoryLayer(
+    map,
+    trajectoryLayerIDs.observed,
+    'observed',
+    '#38bdf8',
+    undefined,
+    4,
+    0.95
+  )
+  addTrajectoryLayer(
+    map,
+    trajectoryLayerIDs.interpolated,
+    'interpolated',
+    '#f59e0b',
+    [2, 2],
+    4,
+    0.9
+  )
+  addTrajectoryLayer(
+    map,
+    trajectoryLayerIDs.estimated,
+    'estimated',
+    '#a78bfa',
+    [1, 2],
+    4,
+    0.85
+  )
+  addTrajectoryLayer(
+    map,
+    trajectoryLayerIDs.invalid,
+    'invalid',
+    '#fb7185',
+    [1, 1],
+    5,
+    0.8
+  )
+}
+
+function addTrajectoryLayer(
+  map: maplibregl.Map,
+  layerID: string,
+  status: TrajectorySegmentStatus,
+  color: string,
+  dashArray: number[] | undefined,
+  width: number,
+  opacity: number
+) {
+  if (map.getLayer(layerID)) {
+    return
+  }
+
+  map.addLayer({
+    id: layerID,
+    type: 'line',
+    source: trajectorySourceID,
+    filter: ['==', ['get', 'status'], status],
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': color,
+      'line-width': width,
+      'line-opacity': opacity,
+      ...(dashArray
+        ? {
+            'line-dasharray': dashArray,
+          }
+        : {}),
+    },
+  })
+}
+
+function buildTrajectoryFeatureCollection(
+  trajectory: AircraftTrajectory | undefined
+): TrajectoryFeatureCollection {
+  if (!trajectory) {
+    return emptyTrajectoryFeatureCollection()
+  }
+
+  const features = [...trajectory.segments]
+    .sort(
+      (left, right) =>
+        left.sequence_number - right.sequence_number
+    )
+    .filter(segment =>
+      hasValidSegmentCoordinates(
+        segment.start_latitude,
+        segment.start_longitude,
+        segment.end_latitude,
+        segment.end_longitude
+      )
+    )
+    .map<TrajectoryLineFeature>(segment => ({
+      type: 'Feature',
+      properties: {
+        status: segment.status,
+        sequence_number: segment.sequence_number,
+        quality_score: segment.quality_score,
+      },
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [
+            segment.start_longitude,
+            segment.start_latitude,
+          ],
+          [segment.end_longitude, segment.end_latitude],
+        ],
+      },
+    }))
+
+  return {
+    type: 'FeatureCollection',
+    features,
+  }
+}
+
+function emptyTrajectoryFeatureCollection(): TrajectoryFeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: [],
+  }
+}
+
+function focusTrajectory(
+  map: maplibregl.Map,
+  featureCollection: TrajectoryFeatureCollection
+) {
+  const bounds = new maplibregl.LngLatBounds()
+  let coordinateCount = 0
+
+  for (const feature of featureCollection.features) {
+    for (const coordinate of feature.geometry.coordinates) {
+      bounds.extend(coordinate)
+      coordinateCount++
+    }
+  }
+
+  if (coordinateCount === 0) {
+    return
+  }
+
+  map.fitBounds(bounds, {
+    padding: {
+      top: 72,
+      right: 72,
+      bottom: 72,
+      left: 72,
+    },
+    duration: 700,
+    maxZoom: 9,
+  })
 }
 
 function createMarkerRecord(
@@ -357,6 +587,28 @@ function hasValidCoordinates(item: TrafficAircraft): boolean {
     Number.isFinite(item.longitude) &&
     item.longitude >= -180 &&
     item.longitude <= 180
+  )
+}
+
+function hasValidSegmentCoordinates(
+  startLatitude: number,
+  startLongitude: number,
+  endLatitude: number,
+  endLongitude: number
+): boolean {
+  return (
+    Number.isFinite(startLatitude) &&
+    startLatitude >= -90 &&
+    startLatitude <= 90 &&
+    Number.isFinite(startLongitude) &&
+    startLongitude >= -180 &&
+    startLongitude <= 180 &&
+    Number.isFinite(endLatitude) &&
+    endLatitude >= -90 &&
+    endLatitude <= 90 &&
+    Number.isFinite(endLongitude) &&
+    endLongitude >= -180 &&
+    endLongitude <= 180
   )
 }
 

@@ -1,18 +1,36 @@
 'use client'
 
-import { getRequestErrorMessage } from '@/lib/api/client'
+import {
+  APIRequestError,
+  getRequestErrorMessage,
+} from '@/lib/api/client'
 import { useAircraftProfile } from '@/lib/queries/aircraft'
 import type { TrafficAircraft } from '@/types/traffic'
+import type {
+  AircraftTrajectory,
+  CoverageGap,
+  TrajectorySegmentStatus,
+} from '@/types/trajectory'
 
 interface AircraftDetailPanelProps {
   selectedICAO24: string | null
   aircraft: TrafficAircraft | undefined
+  trajectory: AircraftTrajectory | undefined
+  trajectoryIsPending: boolean
+  trajectoryIsFetching: boolean
+  trajectoryError: Error | null
+  onRetryTrajectory: () => void
   onClose: () => void
 }
 
 export function AircraftDetailPanel({
   selectedICAO24,
   aircraft,
+  trajectory,
+  trajectoryIsPending,
+  trajectoryIsFetching,
+  trajectoryError,
+  onRetryTrajectory,
   onClose,
 }: AircraftDetailPanelProps) {
   const profileQuery = useAircraftProfile(selectedICAO24)
@@ -26,7 +44,7 @@ export function AircraftDetailPanel({
           </p>
           <p className='mt-2 text-sm leading-6 text-slate-400'>
             Select an aircraft marker on the map to inspect its live
-            observation and registered profile.
+            observation, registered profile and latest trajectory.
           </p>
         </div>
       </aside>
@@ -118,11 +136,19 @@ export function AircraftDetailPanel({
         ) : (
           <p className='mt-3 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3 text-sm leading-6 text-amber-100'>
             This aircraft is no longer present in the latest regional
-            traffic response. Its registered profile remains available
-            below.
+            traffic response. Cached profile and trajectory information
+            remain available below.
           </p>
         )}
       </section>
+
+      <TrajectorySection
+        trajectory={trajectory}
+        isPending={trajectoryIsPending}
+        isFetching={trajectoryIsFetching}
+        error={trajectoryError}
+        onRetry={onRetryTrajectory}
+      />
 
       <section
         className='mt-6 border-t border-slate-800 pt-5'
@@ -195,6 +221,273 @@ export function AircraftDetailPanel({
   )
 }
 
+interface TrajectorySectionProps {
+  trajectory: AircraftTrajectory | undefined
+  isPending: boolean
+  isFetching: boolean
+  error: Error | null
+  onRetry: () => void
+}
+
+function TrajectorySection({
+  trajectory,
+  isPending,
+  isFetching,
+  error,
+  onRetry,
+}: TrajectorySectionProps) {
+  const isNotFound =
+    error instanceof APIRequestError && error.status === 404
+
+  return (
+    <section
+      className='mt-6 border-t border-slate-800 pt-5'
+      aria-labelledby='trajectory-quality-title'
+    >
+      <div className='flex items-center justify-between gap-3'>
+        <h4
+          id='trajectory-quality-title'
+          className='text-sm font-semibold text-slate-200'
+        >
+          Latest trajectory
+        </h4>
+
+        {isFetching ? (
+          <span className='text-xs text-sky-300'>Updating…</span>
+        ) : null}
+      </div>
+
+      {trajectory ? (
+        <>
+          <div className='mt-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3'>
+            <div className='flex items-center justify-between gap-3'>
+              <span className='text-xs uppercase tracking-wide text-slate-500'>
+                Track quality
+              </span>
+              <span className='text-sm font-semibold text-white'>
+                {formatQualityScore(trajectory.quality_score)}
+              </span>
+            </div>
+
+            {normalizeQualityScore(trajectory.quality_score) !== null ? (
+              <div
+                className='mt-2 h-2 overflow-hidden rounded-full bg-slate-800'
+                role='progressbar'
+                aria-label='Track quality score'
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(
+                  normalizeQualityScore(trajectory.quality_score)! * 100
+                )}
+              >
+                <div
+                  className='h-full rounded-full bg-sky-400'
+                  style={{
+                    width: `${
+                      normalizeQualityScore(
+                        trajectory.quality_score
+                      )! * 100
+                    }%`,
+                  }}
+                />
+              </div>
+            ) : null}
+
+            <dl className='mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm'>
+              <Detail
+                label='Segments'
+                value={String(trajectory.segment_count)}
+              />
+              <Detail
+                label='Points'
+                value={String(trajectory.point_count)}
+              />
+              <Detail
+                label='Coverage gaps'
+                value={String(trajectory.coverage_gap_count)}
+              />
+              <Detail
+                label='Duration'
+                value={formatDuration(
+                  trajectory.duration_seconds
+                )}
+              />
+              <Detail
+                label='Started'
+                value={formatTimestamp(trajectory.start_time)}
+              />
+              <Detail
+                label='Updated'
+                value={formatTimestamp(trajectory.updated_at)}
+              />
+              <div className='col-span-2'>
+                <Detail
+                  label='Source'
+                  value={trajectory.source_name}
+                />
+              </div>
+            </dl>
+          </div>
+
+          <SegmentStatusSummary trajectory={trajectory} />
+          <TrajectoryLimitations trajectory={trajectory} />
+        </>
+      ) : null}
+
+      {isPending && !error ? (
+        <p className='mt-3 text-sm text-slate-400'>
+          Loading the latest trajectory and quality evidence…
+        </p>
+      ) : null}
+
+      {isNotFound ? (
+        <p className='mt-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300'>
+          No trajectory has been built for this aircraft yet. The map
+          will show a route line when recent points form a persisted
+          trajectory.
+        </p>
+      ) : null}
+
+      {error && !isNotFound ? (
+        <div className='mt-3 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3'>
+          <p className='text-sm leading-6 text-amber-100'>
+            {getRequestErrorMessage(error)}
+          </p>
+          <button
+            type='button'
+            onClick={onRetry}
+            disabled={isFetching}
+            className='mt-3 rounded-md border border-amber-300/40 px-3 py-1.5 text-sm font-medium text-amber-100 transition hover:bg-amber-300/10 disabled:cursor-not-allowed disabled:opacity-60'
+          >
+            Retry trajectory
+          </button>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function SegmentStatusSummary({
+  trajectory,
+}: {
+  trajectory: AircraftTrajectory
+}) {
+  const counts = countSegmentStatuses(trajectory)
+
+  return (
+    <div className='mt-3 grid grid-cols-2 gap-2 text-xs'>
+      {(
+        [
+          ['observed', 'Observed'],
+          ['interpolated', 'Interpolated'],
+          ['estimated', 'Estimated'],
+          ['invalid', 'Invalid'],
+        ] as const
+      ).map(([status, label]) => (
+        <div
+          key={status}
+          className='flex items-center justify-between rounded-md border border-slate-800 bg-slate-900/50 px-2.5 py-2'
+        >
+          <span className='text-slate-400'>{label}</span>
+          <span className='font-semibold text-slate-200'>
+            {counts[status]}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TrajectoryLimitations({
+  trajectory,
+}: {
+  trajectory: AircraftTrajectory
+}) {
+  const counts = countSegmentStatuses(trajectory)
+  const notices: string[] = []
+
+  if (trajectory.segments.length === 0) {
+    notices.push(
+      'The trajectory contains no drawable segment geometry.'
+    )
+  }
+  if (counts.interpolated > 0) {
+    notices.push(
+      `${counts.interpolated} segment${counts.interpolated === 1 ? '' : 's'} use interpolation rather than direct observation.`
+    )
+  }
+  if (counts.estimated > 0) {
+    notices.push(
+      `${counts.estimated} segment${counts.estimated === 1 ? '' : 's'} are estimated and should not be treated as measured positions.`
+    )
+  }
+  if (counts.invalid > 0) {
+    notices.push(
+      `${counts.invalid} segment${counts.invalid === 1 ? '' : 's'} are marked invalid by the trajectory pipeline.`
+    )
+  }
+  if (trajectory.coverage_gap_count > 0) {
+    notices.push(
+      `${trajectory.coverage_gap_count} coverage gap${trajectory.coverage_gap_count === 1 ? '' : 's'} interrupt the observed track. Gaps are explained below and are not drawn as continuous geometry.`
+    )
+  }
+
+  return (
+    <div className='mt-4 rounded-lg border border-amber-400/25 bg-amber-400/5 p-3'>
+      <h5 className='text-xs font-semibold uppercase tracking-wide text-amber-200'>
+        Data limitations
+      </h5>
+
+      {notices.length > 0 ? (
+        <ul className='mt-2 space-y-2 text-sm leading-5 text-amber-100'>
+          {notices.map(notice => (
+            <li key={notice}>{notice}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className='mt-2 text-sm leading-5 text-slate-300'>
+          No coverage gaps or non-observed segment statuses are
+          reported for the latest trajectory.
+        </p>
+      )}
+
+      {trajectory.coverage_gaps.length > 0 ? (
+        <div className='mt-3 space-y-2'>
+          {trajectory.coverage_gaps.slice(0, 5).map(gap => (
+            <CoverageGapItem key={gap.id} gap={gap} />
+          ))}
+
+          {trajectory.coverage_gaps.length > 5 ? (
+            <p className='text-xs text-amber-200/80'>
+              {trajectory.coverage_gaps.length - 5} additional gaps
+              are omitted from this compact panel.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function CoverageGapItem({ gap }: { gap: CoverageGap }) {
+  return (
+    <div className='rounded-md border border-amber-300/20 bg-slate-950/50 p-2.5'>
+      <div className='flex items-center justify-between gap-3'>
+        <span className='text-xs font-semibold text-amber-100'>
+          {formatGapReason(gap.reason)}
+        </span>
+        <span className='text-xs text-slate-400'>
+          {formatDuration(gap.duration_seconds)}
+        </span>
+      </div>
+      <p className='mt-1 text-xs leading-5 text-slate-400'>
+        Distance: {formatDistance(gap.distance_km)}. Filled by:{' '}
+        {gap.filled_by.trim() || 'nothing'}.
+      </p>
+    </div>
+  )
+}
+
 interface DetailProps {
   label: string
   value: string
@@ -211,6 +504,64 @@ function Detail({ label, value }: DetailProps) {
       </dd>
     </div>
   )
+}
+
+function countSegmentStatuses(
+  trajectory: AircraftTrajectory
+): Record<TrajectorySegmentStatus, number> {
+  const counts: Record<TrajectorySegmentStatus, number> = {
+    observed: 0,
+    interpolated: 0,
+    estimated: 0,
+    invalid: 0,
+  }
+
+  for (const segment of trajectory.segments) {
+    counts[segment.status]++
+  }
+
+  return counts
+}
+
+function normalizeQualityScore(value: number): number | null {
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    return null
+  }
+
+  return value
+}
+
+function formatQualityScore(value: number): string {
+  const normalized = normalizeQualityScore(value)
+
+  if (normalized !== null) {
+    return new Intl.NumberFormat(undefined, {
+      style: 'percent',
+      maximumFractionDigits: 1,
+    }).format(normalized)
+  }
+
+  if (!Number.isFinite(value)) {
+    return 'Unknown'
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 3,
+  }).format(value)
+}
+
+function formatGapReason(
+  reason: CoverageGap['reason']
+): string {
+  if (reason === 'time_gap') {
+    return 'Time gap'
+  }
+
+  if (reason === 'movement_jump') {
+    return 'Movement jump'
+  }
+
+  return 'Unknown gap'
 }
 
 function formatAltitude(value: number): string {
@@ -248,6 +599,37 @@ function formatCoordinate(value: number): string {
   }
 
   return value.toFixed(5)
+}
+
+function formatDistance(value: number): string {
+  if (!Number.isFinite(value)) {
+    return 'Unknown distance'
+  }
+
+  return `${new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 1,
+  }).format(value)} km`
+}
+
+function formatDuration(value: number): string {
+  if (!Number.isFinite(value) || value < 0) {
+    return 'Unknown'
+  }
+
+  const totalSeconds = Math.round(value)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`
+  }
+
+  return `${seconds}s`
 }
 
 function formatTimestamp(value: string): string {
