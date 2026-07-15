@@ -99,8 +99,23 @@ func NewPostgres(config PostgresConfig) (*PostgresRepository, error) {
 		return nil, ErrPostgresPoolRequired
 	}
 
+	return NewPostgresWithExecutor(
+		config.Pool,
+	)
+}
+
+func NewPostgresWithExecutor(
+	executor Executor,
+) (*PostgresRepository, error) {
+	if executor == nil {
+		return nil,
+			ErrPostgresExecutorRequired
+	}
+
 	return &PostgresRepository{
-		client: pgxPoolClient{pool: config.Pool},
+		client: executorClient{
+			executor: executor,
+		},
 	}, nil
 }
 

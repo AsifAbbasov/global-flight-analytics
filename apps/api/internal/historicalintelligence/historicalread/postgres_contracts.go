@@ -3,11 +3,23 @@ package historicalread
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresConfig struct {
 	Pool *pgxpool.Pool
+}
+
+// Executor is the shared query contract implemented by pgx pools and
+// transactions. It allows a historical read to observe deterministic,
+// uncommitted verification evidence inside one rollback-only transaction.
+type Executor interface {
+	Query(
+		context.Context,
+		string,
+		...any,
+	) (pgx.Rows, error)
 }
 
 type rowIterator interface {
@@ -18,7 +30,32 @@ type rowIterator interface {
 }
 
 type postgresClient interface {
-	Query(context.Context, string, ...any) (rowIterator, error)
+	Query(
+		context.Context,
+		string,
+		...any,
+	) (rowIterator, error)
+}
+
+type executorClient struct {
+	executor Executor
+}
+
+func (client executorClient) Query(
+	ctx context.Context,
+	query string,
+	args ...any,
+) (rowIterator, error) {
+	rows, err := client.executor.Query(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
 }
 
 type pgxPoolClient struct {
@@ -30,7 +67,11 @@ func (client pgxPoolClient) Query(
 	query string,
 	args ...any,
 ) (rowIterator, error) {
-	rows, err := client.pool.Query(ctx, query, args...)
+	rows, err := client.pool.Query(
+		ctx,
+		query,
+		args...,
+	)
 	if err != nil {
 		return nil, err
 	}
