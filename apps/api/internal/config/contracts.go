@@ -54,6 +54,12 @@ type MigrationConfig struct {
 	MigrationTimeout time.Duration
 }
 
+type HistoricalMaterializationConfig struct {
+	Database PostgresConfig
+
+	OperationTimeout time.Duration
+}
+
 type VerifyAirportsConfig struct {
 	DatabaseURL string
 }
