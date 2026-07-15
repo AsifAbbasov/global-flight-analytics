@@ -45,6 +45,9 @@ func registerDatabaseRoutes(v1 fiber.Router, dbPool *pgxpool.Pool, openMeteoTime
 	if err := registerAnalyticalMetricRoutes(v1, dbPool); err != nil {
 		return fmt.Errorf("register analytical metric routes: %w", err)
 	}
+	if err := registerHistoricalIntelligenceRoutes(v1, dbPool); err != nil {
+		return fmt.Errorf("register Historical Intelligence routes: %w", err)
+	}
 	v1.Get("/regions", h.region.List)
 	v1.Get("/regions/:code", h.region.GetByCode)
 	v1.Get("/metrics/active-aircraft", h.metrics.GetActiveAircraft)

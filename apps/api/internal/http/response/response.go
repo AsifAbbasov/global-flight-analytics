@@ -22,6 +22,8 @@ type SuccessPayload interface {
 		dto.AircraftRouteContext |
 		dto.RouteIntelligenceRecord |
 		dto.RouteIntelligenceHistory |
+		dto.HistoricalIntelligenceAggregateRecord |
+		dto.HistoricalIntelligenceAggregateHistory |
 		[]dto.AirportListItem |
 		dto.AirportProfile |
 		dto.ActiveAircraftMetricResponse |
