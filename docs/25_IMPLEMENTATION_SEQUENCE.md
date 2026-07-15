@@ -1,7 +1,7 @@
 # Document 25 — Implementation Sequence
 
-Status: Architecture Baseline v1.1  
-Project: Global Flight Analytics  
+Status: Implementation Baseline v1.2
+Project: Global Flight Analytics
 Scope: Ordered implementation stages and first coding slice
 
 ---
@@ -210,18 +210,43 @@ Tasks:
 
 ## 10. Stage 8 — Historical Intelligence
 
-Tasks:
+Status: COMPLETED on 2026-07-15.
+
+Completed production scope:
 
 ```text
-1. Historical Shape Index
-2. Historical Route Pattern Library
-3. Similar Historical Trajectory Selector
-4. Local Neighbor-Based Continuation Baseline
-5. Pattern Confidence Engine
-6. Pattern Freshness Guard
-7. Low-Frequency Route Failure Guard
-8. Historical pattern API endpoint
+1. Historical contract and validation
+2. Historical time-window planner
+3. Bounded Historical Read Repository
+4. Traffic Historical Intelligence
+5. Airport Historical Intelligence
+6. Route Historical Intelligence
+7. Current versus previous period comparison
+8. Historical trajectory similarity baseline
+9. Deterministic PostgreSQL aggregate store
+10. Historical materialization
+11. Bounded historical replay
+12. Read-only aggregate HTTP API
+13. Production materialization and replay command
+14. PostgreSQL, HTTP, idempotency, and production read-back evidence
 ```
+
+Completion evidence:
+
+```text
+docs/31_STAGE_8_HISTORICAL_INTELLIGENCE_COMPLETION.md
+```
+
+Scope alignment:
+
+```text
+Historical fact computation remains in Stage 8.
+Future trajectory continuation, prediction freshness,
+low-frequency prediction guards, and estimated time of arrival
+belong to Stage 9.
+```
+
+A persistent trajectory shape index and predictive continuation are not claimed as completed Stage 8 capabilities.
 
 ---
 
@@ -230,15 +255,19 @@ Tasks:
 Tasks:
 
 ```text
-1. Short-Horizon Projection Baseline
-2. Projection Horizon Policy
-3. Estimated Time of Arrival Feature Set
-4. Estimated Time of Arrival Confidence Score
-5. Projection result model
-6. Replay Engine
-7. Projection evaluation metrics
-8. Projection explanation output
+1. Prediction-specific contract and result model
+2. Local Neighbor-Based Continuation Baseline
+3. Short-Horizon Projection Baseline
+4. Projection Horizon Policy
+5. Estimated Time of Arrival Feature Set
+6. Estimated Time of Arrival Confidence Score
+7. Pattern Freshness Guard for prediction
+8. Low-Frequency Route Failure Guard for prediction
+9. Projection replay and evaluation metrics
+10. Projection explanation and API output
 ```
+
+Stage 9 must consume the completed Stage 8 historical foundation without changing historical facts into forecast claims.
 
 ---
 

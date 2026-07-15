@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.4
+Status: Documentation Index v1.5
 Project: Global Flight Analytics
 
 ---
@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–30: research audit, analytical architecture, roadmap, engineering rules, decision method, and container operations
+Documents 22–31: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, and implementation completion evidence
 ```
 
 ---
@@ -195,6 +195,23 @@ Purpose:
 Records the implemented Airport Intelligence domain contracts,
 the corrected Activity Score and Data Confidence separation,
 historical and trends baselines, limitations, and next integration steps.
+```
+
+### Document 31 — Stage 8 Historical Intelligence Completion
+
+Path:
+
+```text
+docs/31_STAGE_8_HISTORICAL_INTELLIGENCE_COMPLETION.md
+```
+
+Purpose:
+
+```text
+Records the completed production Historical Intelligence foundation,
+scope alignment, acceptance matrix, PostgreSQL and HTTP runtime evidence,
+production materialization and replay idempotency, known limitations,
+deferred prediction work, and the formal Stage 8 completion statement.
 ```
 
 ---
