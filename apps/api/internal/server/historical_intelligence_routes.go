@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	historicalIntelligenceLatestPath  = "/historical-intelligence/aggregates/latest"
-	historicalIntelligenceHistoryPath = "/historical-intelligence/aggregates/history"
+	HistoricalIntelligenceLatestPath  = "/historical-intelligence/aggregates/latest"
+	HistoricalIntelligenceHistoryPath = "/historical-intelligence/aggregates/history"
 )
 
 func registerHistoricalIntelligenceRoutes(
@@ -30,17 +30,37 @@ func registerHistoricalIntelligenceRoutes(
 		)
 	}
 
+	return RegisterHistoricalIntelligenceReadRoutes(
+		v1,
+		store,
+	)
+}
+
+// RegisterHistoricalIntelligenceReadRoutes composes the read-only Historical
+// Intelligence endpoints with an already constructed aggregate store. The
+// production server supplies a PostgreSQL pool-backed store, while runtime
+// verification may safely supply a rollback-only transaction-backed store.
+func RegisterHistoricalIntelligenceReadRoutes(
+	v1 fiber.Router,
+	store historicalaggregate.Store,
+) error {
+	if store == nil {
+		return fmt.Errorf(
+			"Historical Intelligence aggregate store is required",
+		)
+	}
+
 	handler :=
 		handlers.NewHistoricalIntelligenceHandler(
 			store,
 		)
 
 	v1.Get(
-		historicalIntelligenceLatestPath,
+		HistoricalIntelligenceLatestPath,
 		handler.GetLatest,
 	)
 	v1.Get(
-		historicalIntelligenceHistoryPath,
+		HistoricalIntelligenceHistoryPath,
 		handler.ListHistory,
 	)
 

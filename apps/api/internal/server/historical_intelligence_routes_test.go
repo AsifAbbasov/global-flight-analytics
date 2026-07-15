@@ -1,13 +1,45 @@
 package server
 
 import (
+	"context"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type historicalRouteStoreStub struct{}
+
+func (historicalRouteStoreStub) Put(
+	context.Context,
+	historicalcontract.Result,
+) (historicalaggregate.Record, error) {
+	return historicalaggregate.Record{}, nil
+}
+
+func (historicalRouteStoreStub) Get(
+	context.Context,
+	historicalaggregate.ResultKey,
+) (historicalaggregate.Record, error) {
+	return historicalaggregate.Record{}, nil
+}
+
+func (historicalRouteStoreStub) GetLatest(
+	context.Context,
+	historicalaggregate.ListQuery,
+) (historicalaggregate.Record, error) {
+	return historicalaggregate.Record{}, nil
+}
+
+func (historicalRouteStoreStub) List(
+	context.Context,
+	historicalaggregate.ListQuery,
+) (historicalaggregate.Page, error) {
+	return historicalaggregate.Page{}, nil
+}
 
 func TestRegisterHistoricalIntelligenceRoutes(
 	t *testing.T,
@@ -26,75 +58,36 @@ func TestRegisterHistoricalIntelligenceRoutes(
 		)
 	}
 
-	expected := map[string]bool{
-		"/api/v1" +
-			historicalIntelligenceLatestPath: false,
-		"/api/v1" +
-			historicalIntelligenceHistoryPath: false,
-	}
-
-	for _, route := range app.GetRoutes() {
-		if route.Method != fiber.MethodGet {
-			continue
-		}
-		if _, exists := expected[route.Path]; exists {
-			expected[route.Path] = true
-		}
-	}
-
-	for path, found := range expected {
-		if !found {
-			t.Fatalf(
-				"Historical Intelligence route %s was not registered",
-				path,
-			)
-		}
-	}
+	assertHistoricalIntelligenceRoutes(
+		t,
+		app,
+	)
 }
 
-func TestNewRegistersHistoricalIntelligenceRoutes(
+func TestRegisterHistoricalIntelligenceReadRoutes(
 	t *testing.T,
 ) {
-	app, err := New(
-		Config{
-			DatabasePool: &pgxpool.Pool{},
-			Logger:       newDiscardLogger(),
-			OpenMeteoTimeout: 5 *
-				time.Second,
-		},
+	app := fiber.New()
+	v1 := app.Group("/api/v1")
+
+	err := RegisterHistoricalIntelligenceReadRoutes(
+		v1,
+		historicalRouteStoreStub{},
 	)
 	if err != nil {
 		t.Fatalf(
-			"initialize server: %v",
+			"register store-backed Historical Intelligence routes: %v",
 			err,
 		)
 	}
 
-	expected := map[string]bool{
-		"/api/v1" +
-			historicalIntelligenceLatestPath: false,
-		"/api/v1" +
-			historicalIntelligenceHistoryPath: false,
-	}
-	for _, route := range app.GetRoutes() {
-		if route.Method != fiber.MethodGet {
-			continue
-		}
-		if _, exists := expected[route.Path]; exists {
-			expected[route.Path] = true
-		}
-	}
-	for path, found := range expected {
-		if !found {
-			t.Fatalf(
-				"server route %s was not registered",
-				path,
-			)
-		}
-	}
+	assertHistoricalIntelligenceRoutes(
+		t,
+		app,
+	)
 }
 
-func TestRegisterHistoricalIntelligenceRoutesRejectsNilPool(
+func TestRegisterHistoricalIntelligenceRoutesRejectsNilDependencies(
 	t *testing.T,
 ) {
 	app := fiber.New()
@@ -114,8 +107,59 @@ func TestRegisterHistoricalIntelligenceRoutesRejectsNilPool(
 		"Historical Intelligence aggregate store",
 	) {
 		t.Fatalf(
-			"unexpected registration error: %v",
+			"unexpected pool registration error: %v",
 			err,
 		)
+	}
+
+	err = RegisterHistoricalIntelligenceReadRoutes(
+		v1,
+		nil,
+	)
+	if err == nil {
+		t.Fatal(
+			"expected nil aggregate store to be rejected",
+		)
+	}
+	if !strings.Contains(
+		err.Error(),
+		"aggregate store is required",
+	) {
+		t.Fatalf(
+			"unexpected store registration error: %v",
+			err,
+		)
+	}
+}
+
+func assertHistoricalIntelligenceRoutes(
+	t *testing.T,
+	app *fiber.App,
+) {
+	t.Helper()
+
+	expected := map[string]bool{
+		"/api/v1" +
+			HistoricalIntelligenceLatestPath: false,
+		"/api/v1" +
+			HistoricalIntelligenceHistoryPath: false,
+	}
+
+	for _, route := range app.GetRoutes() {
+		if route.Method != fiber.MethodGet {
+			continue
+		}
+		if _, exists := expected[route.Path]; exists {
+			expected[route.Path] = true
+		}
+	}
+
+	for path, found := range expected {
+		if !found {
+			t.Fatalf(
+				"Historical Intelligence route %s was not registered",
+				path,
+			)
+		}
 	}
 }
