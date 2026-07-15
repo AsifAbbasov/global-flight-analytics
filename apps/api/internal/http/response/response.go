@@ -24,6 +24,7 @@ type SuccessPayload interface {
 		dto.RouteIntelligenceHistory |
 		dto.HistoricalIntelligenceAggregateRecord |
 		dto.HistoricalIntelligenceAggregateHistory |
+		dto.ProjectionIntelligenceResponse |
 		[]dto.AirportListItem |
 		dto.AirportProfile |
 		dto.ActiveAircraftMetricResponse |
@@ -34,18 +35,42 @@ type SuccessResponse[T SuccessPayload] struct {
 	Success bool `json:"success"`
 	Data    T    `json:"data"`
 }
+
 type ErrorResponse struct {
 	Success bool      `json:"success"`
 	Error   ErrorBody `json:"error"`
 }
+
 type ErrorBody struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-func OK[T SuccessPayload](c *fiber.Ctx, data T) error {
-	return c.JSON(SuccessResponse[T]{Success: true, Data: data})
+func OK[T SuccessPayload](
+	ctx *fiber.Ctx,
+	data T,
+) error {
+	return ctx.JSON(
+		SuccessResponse[T]{
+			Success: true,
+			Data:    data,
+		},
+	)
 }
-func Error(c *fiber.Ctx, status int, code, message string) error {
-	return c.Status(status).JSON(ErrorResponse{Success: false, Error: ErrorBody{Code: code, Message: message}})
+
+func Error(
+	ctx *fiber.Ctx,
+	status int,
+	code string,
+	message string,
+) error {
+	return ctx.Status(status).JSON(
+		ErrorResponse{
+			Success: false,
+			Error: ErrorBody{
+				Code:    code,
+				Message: message,
+			},
+		},
+	)
 }
