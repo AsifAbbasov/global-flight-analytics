@@ -64,8 +64,19 @@ func TestBuildTrajectoryReportProducesVersionedEvidence(
 			"phase-detection pending limitation must be removed after integration",
 		)
 	}
-	if report.Permissions.HistoricalSimilarity.Allowed {
-		t.Fatal("expected historical similarity to remain denied")
+	if !report.Permissions.HistoricalSimilarity.Allowed {
+		t.Fatalf(
+			"expected implemented historical similarity to be allowed, got %#v",
+			report.Permissions.HistoricalSimilarity.Reasons,
+		)
+	}
+	if containsContractNotice(
+		report.Limitations,
+		"historical_similarity_not_implemented",
+	) {
+		t.Fatal(
+			"historical similarity pending limitation must be removed after integration",
+		)
 	}
 	if err := report.Validate(); err != nil {
 		t.Fatalf("validate report: %v", err)

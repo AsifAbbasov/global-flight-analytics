@@ -27,7 +27,6 @@ const (
 
 	LimitationCodeIngestionRunUnavailable = "ingestion_run_provenance_unavailable"
 	LimitationCodeReceivedAtDerived       = "received_at_derived"
-	LimitationCodeSimilarityPending       = "historical_similarity_not_implemented"
 )
 
 type TrajectoryReportRequest struct {
@@ -119,10 +118,19 @@ func BuildTrajectoryReport(
 		return nil, err
 	}
 
+	historicalSimilarity, similarityLimitations, err :=
+		evaluateHistoricalSimilarity(
+			request.Trajectories,
+		)
+	if err != nil {
+		return nil, err
+	}
+
 	permissions, err := buildAnalyticsPermissions(
 		request.Trajectories,
 		evaluatedAt,
 		phaseDetection,
+		historicalSimilarity,
 	)
 	if err != nil {
 		return nil, err
@@ -131,6 +139,10 @@ func BuildTrajectoryReport(
 	evidence.limitations = append(
 		evidence.limitations,
 		phaseLimitations...,
+	)
+	evidence.limitations = append(
+		evidence.limitations,
+		similarityLimitations...,
 	)
 
 	report, err := dataqualitycontract.NewReport(
@@ -244,10 +256,6 @@ func collectTrajectoryEvidence(
 			Code:    LimitationCodeIngestionRunUnavailable,
 			Message: "The trajectory read model does not expose a single authoritative ingestion run identifier.",
 		},
-		{
-			Code:    LimitationCodeSimilarityPending,
-			Message: "Historical-similarity permission remains denied until the similarity policy is implemented.",
-		},
 	}
 
 	if receivedAt.IsZero() ||
@@ -320,6 +328,7 @@ func buildAnalyticsPermissions(
 	items []trajectory.FlightTrajectory,
 	evaluatedAt time.Time,
 	phaseDetection dataqualitycontract.Permission,
+	historicalSimilarity dataqualitycontract.Permission,
 ) (dataqualitycontract.AnalyticsPermissions, error) {
 	evaluator := trajectoryeligibility.NewDefault()
 
@@ -346,13 +355,6 @@ func buildAnalyticsPermissions(
 		items,
 		evaluatedAt,
 		trajectoryeligibility.CapabilityProjection,
-	)
-	if err != nil {
-		return dataqualitycontract.AnalyticsPermissions{}, err
-	}
-
-	historicalSimilarity, err := dataqualitycontract.DeniedPermission(
-		LimitationCodeSimilarityPending,
 	)
 	if err != nil {
 		return dataqualitycontract.AnalyticsPermissions{}, err
