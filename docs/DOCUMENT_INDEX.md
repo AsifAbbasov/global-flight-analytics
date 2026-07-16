@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.6
+Status: Documentation Index v1.7
 Project: Global Flight Analytics
 
 ---
@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–32: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
+Documents 22–33: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
 ```
 
 ---
@@ -230,6 +230,25 @@ contract and horizon policy, kinematic and historical continuation strategies,
 Estimated Arrival, prediction guards, replay evaluation, PostgreSQL and HTTP
 runtime evidence, deterministic fallback behavior, known limitations,
 deferred weather and airspace work, and the formal Stage 9 completion statement.
+```
+
+### Document 33 — Stage 10 Weather Context Completion
+
+Path:
+
+```text
+docs/33_STAGE_10_WEATHER_CONTEXT_COMPLETION.md
+```
+
+Purpose:
+
+```text
+Records the completed research-only Production Weather Context foundation,
+canonical weather contract, Open-Meteo adapter, Weather Trust Gate,
+four-dimensional alignment, Weather Encounter Profile, policy-controlled
+uncertainty preservation or widening, PostgreSQL and HTTP runtime evidence,
+future-evidence protection, known limitations, and the formal Stage 10
+completion statement.
 ```
 
 ---
