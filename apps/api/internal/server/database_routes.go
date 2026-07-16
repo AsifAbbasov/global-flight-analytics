@@ -69,6 +69,18 @@ func registerDatabaseRoutes(
 		)
 	}
 
+	weatherContextReader, err :=
+		newWeatherContextPostgresReader(
+			dbPool,
+			projectionReader,
+		)
+	if err != nil {
+		return fmt.Errorf(
+			"compose production Weather Context reader: %w",
+			err,
+		)
+	}
+
 	if err := registerWeatherRoute(
 		v1,
 		dbPool,
@@ -103,6 +115,15 @@ func registerDatabaseRoutes(
 	); err != nil {
 		return fmt.Errorf(
 			"register Projection Intelligence route: %w",
+			err,
+		)
+	}
+	if err := RegisterWeatherContextReadRoute(
+		v1,
+		weatherContextReader,
+	); err != nil {
+		return fmt.Errorf(
+			"register Weather Context route: %w",
 			err,
 		)
 	}
