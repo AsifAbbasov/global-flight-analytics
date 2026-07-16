@@ -18,20 +18,19 @@ const (
 	verificationDuration   = 3 * time.Minute
 	currentPointCount      = 6
 	candidatePointCount    = 9
+	routeRecordIDPrefix    = "route-record-"
 )
 
 var verificationFlights = []verificationFlight{
 	{
-		TrajectoryID:  "a1111111-1111-4111-8111-111111111111",
-		RouteResultID: "e1111111-1111-4111-8111-111111111111",
-		ICAO24:        "B1C001",
-		Callsign:      "GFAH00",
-		AgeDays:       0,
-		PointCount:    currentPointCount,
+		TrajectoryID: "a1111111-1111-4111-8111-111111111111",
+		ICAO24:       "B1C001",
+		Callsign:     "GFAH00",
+		AgeDays:      0,
+		PointCount:   currentPointCount,
 	},
 	{
 		TrajectoryID:   "b1111111-1111-4111-8111-111111111111",
-		RouteResultID:  "e2222222-2222-4222-8222-222222222222",
 		ICAO24:         "B1C101",
 		Callsign:       "GFAH01",
 		AgeDays:        1,
@@ -41,7 +40,6 @@ var verificationFlights = []verificationFlight{
 	},
 	{
 		TrajectoryID:   "b2222222-2222-4222-8222-222222222222",
-		RouteResultID:  "e3333333-3333-4333-8333-333333333333",
 		ICAO24:         "B1C102",
 		Callsign:       "GFAH02",
 		AgeDays:        2,
@@ -51,7 +49,6 @@ var verificationFlights = []verificationFlight{
 	},
 	{
 		TrajectoryID:   "b3333333-3333-4333-8333-333333333333",
-		RouteResultID:  "e4444444-4444-4444-8444-444444444444",
 		ICAO24:         "B1C103",
 		Callsign:       "GFAH03",
 		AgeDays:        3,
@@ -61,7 +58,6 @@ var verificationFlights = []verificationFlight{
 	},
 	{
 		TrajectoryID:   "b4444444-4444-4444-8444-444444444444",
-		RouteResultID:  "e5555555-5555-4555-8555-555555555555",
 		ICAO24:         "B1C104",
 		Callsign:       "GFAH04",
 		AgeDays:        4,
@@ -73,7 +69,6 @@ var verificationFlights = []verificationFlight{
 
 type verificationFlight struct {
 	TrajectoryID   string
-	RouteResultID  string
 	ICAO24         string
 	Callsign       string
 	AgeDays        int
@@ -392,7 +387,7 @@ func insertRouteResult(
 				stored_at_unix_nano
 			)
 			VALUES (
-				$1::uuid,
+				$1,
 				$2::uuid,
 				$3,
 				$4,
@@ -406,7 +401,7 @@ func insertRouteResult(
 				$11
 			);
 		`,
-		flight.RouteResultID,
+		routeRecordID(route),
 		flight.TrajectoryID,
 		string(route.SchemaVersion),
 		route.Window.AsOfTime.UTC(),
@@ -727,6 +722,84 @@ func expectedFixtureCounts() fixtureCounts {
 		FlightStates: totalStates,
 		RouteResults: len(verificationFlights),
 	}
+}
+
+func validateFixtureRouteRecordIDs(
+	schedule verificationSchedule,
+) error {
+	seen := make(
+		map[string]struct{},
+		len(verificationFlights),
+	)
+
+	for _, flight := range verificationFlights {
+		endTime := schedule.AsOfTime.Add(
+			-time.Duration(flight.AgeDays) *
+				24 * time.Hour,
+		)
+		startTime := endTime.Add(
+			-time.Duration(flight.PointCount-1) *
+				time.Minute,
+		)
+		route := buildCompleteRoute(
+			flight,
+			startTime,
+			endTime,
+			schedule.GeneratedAt,
+		)
+		recordID := routeRecordID(route)
+
+		if !strings.HasPrefix(
+			recordID,
+			routeRecordIDPrefix,
+		) ||
+			len(recordID) !=
+				len(routeRecordIDPrefix)+
+					sha256.Size*2 {
+			return fmt.Errorf(
+				"route record identifier %q does not satisfy the production identifier contract",
+				recordID,
+			)
+		}
+		if _, exists := seen[recordID]; exists {
+			return fmt.Errorf(
+				"duplicate route record identifier %q",
+				recordID,
+			)
+		}
+		seen[recordID] = struct{}{}
+	}
+
+	return nil
+}
+
+func routeRecordID(
+	route routecontract.Result,
+) string {
+	compositeKey := fmt.Sprintf(
+		"%s\x00%s\x00%s",
+		strings.TrimSpace(
+			route.TrajectoryID,
+		),
+		route.SchemaVersion,
+		route.Window.AsOfTime.UTC().
+			Format(time.RFC3339Nano),
+	)
+	digest := sha256.Sum256(
+		[]byte(
+			compositeKey +
+				"\x00" +
+				strings.TrimSpace(
+					route.Provenance.
+						InputFingerprint,
+				),
+		),
+	)
+
+	return routeRecordIDPrefix +
+		hex.EncodeToString(
+			digest[:],
+		)
 }
 
 func identityKey(

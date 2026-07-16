@@ -294,6 +294,13 @@ func validateHistoricalPayload(
 			data.Evidence.NeighborSelection,
 		)
 	}
+	if err := validateSelectedHistoricalNeighborIDs(
+		data.Evidence.NeighborSelection.
+			Neighbors,
+	); err != nil {
+		return err
+	}
+
 	if data.Evidence.PatternConfidence == nil ||
 		!data.Evidence.PatternConfidence.Usable ||
 		data.Evidence.PatternConfidence.Score <= 0 {
@@ -381,6 +388,49 @@ func validateHistoricalPayload(
 		return fmt.Errorf(
 			"deterministic fingerprints are missing",
 		)
+	}
+
+	return nil
+}
+
+func validateSelectedHistoricalNeighborIDs(
+	neighbors []dto.ProjectionIntelligenceNeighbor,
+) error {
+	expected := make(
+		map[string]struct{},
+		len(verificationFlights)-1,
+	)
+	for _, flight := range verificationFlights[1:] {
+		expected[flight.TrajectoryID] = struct{}{}
+	}
+
+	seen := make(
+		map[string]struct{},
+		len(neighbors),
+	)
+	for _, neighbor := range neighbors {
+		trajectoryID := strings.TrimSpace(
+			neighbor.TrajectoryID,
+		)
+		if trajectoryID ==
+			verificationFlights[0].TrajectoryID {
+			return fmt.Errorf(
+				"current trajectory was selected as its own historical neighbor",
+			)
+		}
+		if _, exists := expected[trajectoryID]; !exists {
+			return fmt.Errorf(
+				"unexpected historical neighbor trajectory %q",
+				trajectoryID,
+			)
+		}
+		if _, exists := seen[trajectoryID]; exists {
+			return fmt.Errorf(
+				"duplicate historical neighbor trajectory %q",
+				trajectoryID,
+			)
+		}
+		seen[trajectoryID] = struct{}{}
 	}
 
 	return nil

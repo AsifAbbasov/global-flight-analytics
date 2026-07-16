@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -120,6 +123,162 @@ func TestVerificationRoutesAreValid(
 				report.Issues,
 			)
 		}
+	}
+}
+
+func TestRouteRecordIDsMatchProductionContract(
+	t *testing.T,
+) {
+	schedule, err :=
+		buildVerificationSchedule(
+			time.Date(
+				2026,
+				time.July,
+				16,
+				12,
+				0,
+				0,
+				0,
+				time.UTC,
+			),
+		)
+	if err != nil {
+		t.Fatalf(
+			"build schedule: %v",
+			err,
+		)
+	}
+
+	seen := make(map[string]struct{})
+	for _, flight := range verificationFlights {
+		endTime := schedule.AsOfTime.Add(
+			-time.Duration(flight.AgeDays) *
+				24 * time.Hour,
+		)
+		startTime := endTime.Add(
+			-time.Duration(flight.PointCount-1) *
+				time.Minute,
+		)
+		route := buildCompleteRoute(
+			flight,
+			startTime,
+			endTime,
+			schedule.GeneratedAt,
+		)
+
+		compositeKey := fmt.Sprintf(
+			"%s\x00%s\x00%s",
+			route.TrajectoryID,
+			route.SchemaVersion,
+			route.Window.AsOfTime.UTC().
+				Format(time.RFC3339Nano),
+		)
+		digest := sha256.Sum256(
+			[]byte(
+				compositeKey +
+					"\x00" +
+					route.Provenance.
+						InputFingerprint,
+			),
+		)
+		expected := routeRecordIDPrefix +
+			hex.EncodeToString(
+				digest[:],
+			)
+		actual := routeRecordID(route)
+
+		if actual != expected {
+			t.Fatalf(
+				"routeRecordID() = %q, want %q",
+				actual,
+				expected,
+			)
+		}
+		if _, exists := seen[actual]; exists {
+			t.Fatalf(
+				"duplicate route record ID %q",
+				actual,
+			)
+		}
+		seen[actual] = struct{}{}
+	}
+
+	if err := validateFixtureRouteRecordIDs(
+		schedule,
+	); err != nil {
+		t.Fatalf(
+			"validateFixtureRouteRecordIDs() error = %v",
+			err,
+		)
+	}
+}
+
+func TestValidateSelectedHistoricalNeighborIDs(
+	t *testing.T,
+) {
+	valid := []dto.ProjectionIntelligenceNeighbor{
+		{
+			TrajectoryID: verificationFlights[1].TrajectoryID,
+		},
+		{
+			TrajectoryID: verificationFlights[2].TrajectoryID,
+		},
+	}
+	if err := validateSelectedHistoricalNeighborIDs(
+		valid,
+	); err != nil {
+		t.Fatalf(
+			"valid neighbors rejected: %v",
+			err,
+		)
+	}
+
+	tests := []struct {
+		name  string
+		items []dto.ProjectionIntelligenceNeighbor
+	}{
+		{
+			name: "current trajectory",
+			items: []dto.ProjectionIntelligenceNeighbor{
+				{
+					TrajectoryID: verificationFlights[0].TrajectoryID,
+				},
+			},
+		},
+		{
+			name: "duplicate",
+			items: []dto.ProjectionIntelligenceNeighbor{
+				{
+					TrajectoryID: verificationFlights[1].TrajectoryID,
+				},
+				{
+					TrajectoryID: verificationFlights[1].TrajectoryID,
+				},
+			},
+		},
+		{
+			name: "unknown",
+			items: []dto.ProjectionIntelligenceNeighbor{
+				{
+					TrajectoryID: "c1111111-1111-4111-8111-111111111111",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(
+			test.name,
+			func(t *testing.T) {
+				if err := validateSelectedHistoricalNeighborIDs(
+					test.items,
+				); err == nil {
+					t.Fatal(
+						"expected invalid neighbor set to be rejected",
+					)
+				}
+			},
+		)
 	}
 }
 

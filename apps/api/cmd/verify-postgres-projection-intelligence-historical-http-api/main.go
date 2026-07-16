@@ -85,6 +85,17 @@ func run(
 		return 1
 	}
 
+	if err := validateFixtureRouteRecordIDs(
+		schedule,
+	); err != nil {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: validate route record identifiers: %v\n",
+			err,
+		)
+		return 1
+	}
+
 	if err := cleanupFixture(
 		ctx,
 		pool,
@@ -281,6 +292,10 @@ func run(
 	fmt.Fprintln(
 		stdout,
 		"Deterministic multi-flight fixture: PASS",
+	)
+	fmt.Fprintln(
+		stdout,
+		"Route record identifier contract: PASS",
 	)
 	fmt.Fprintln(
 		stdout,
