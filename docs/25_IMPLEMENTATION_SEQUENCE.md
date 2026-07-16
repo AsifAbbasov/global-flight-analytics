@@ -1,6 +1,6 @@
 # Document 25 — Implementation Sequence
 
-Status: Implementation Baseline v1.2
+Status: Implementation Baseline v1.3
 Project: Global Flight Analytics
 Scope: Ordered implementation stages and first coding slice
 
@@ -252,22 +252,48 @@ A persistent trajectory shape index and predictive continuation are not claimed 
 
 ## 11. Stage 9 — Projection and Estimated Time of Arrival
 
-Tasks:
+Status: COMPLETED on 2026-07-16.
+
+Completed production scope:
 
 ```text
-1. Prediction-specific contract and result model
-2. Local Neighbor-Based Continuation Baseline
-3. Short-Horizon Projection Baseline
-4. Projection Horizon Policy
-5. Estimated Time of Arrival Feature Set
-6. Estimated Time of Arrival Confidence Score
-7. Pattern Freshness Guard for prediction
-8. Low-Frequency Route Failure Guard for prediction
-9. Projection replay and evaluation metrics
-10. Projection explanation and API output
+1. Prediction-specific contract and validation
+2. Projection horizon policy
+3. Conservative short-horizon kinematic baseline
+4. Historical neighbor selection
+5. Pattern Confidence evaluation
+6. Pattern Freshness Guard
+7. Low-Frequency Route Guard
+8. Local Historical Neighbor Continuation
+9. Estimated Arrival baseline
+10. Projection replay evaluation
+11. Production composition and fallback policy
+12. PostgreSQL-backed production read service
+13. Read-only Projection Intelligence HTTP API
+14. Production server wiring
+15. Kinematic fallback PostgreSQL and HTTP runtime evidence
+16. Historical continuation PostgreSQL and HTTP runtime evidence
+17. Deterministic fingerprints, confidence, limitations, and scope guards
 ```
 
-Stage 9 must consume the completed Stage 8 historical foundation without changing historical facts into forecast claims.
+Completion evidence:
+
+```text
+docs/32_STAGE_9_PROJECTION_AND_ESTIMATED_TIME_OF_ARRIVAL_COMPLETION.md
+```
+
+Completion boundary:
+
+```text
+Stage 9 is complete as a bounded, explainable,
+research-only Production Projection Intelligence foundation.
+
+It does not claim operational flight prediction,
+weather-adjusted forecasting, machine-learning calibration,
+airspace conflict prediction, or frontend visualization.
+```
+
+Stage 9 consumes the completed Stage 8 historical foundation without changing historical facts into forecast claims.
 
 ---
 

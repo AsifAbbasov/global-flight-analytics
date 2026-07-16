@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.5
+Status: Documentation Index v1.6
 Project: Global Flight Analytics
 
 ---
@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–31: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, and implementation completion evidence
+Documents 22–32: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
 ```
 
 ---
@@ -110,7 +110,7 @@ Purpose:
 
 ```text
 Defines the exact implementation order from data foundation to advanced analytics,
-including the first coding slice.
+including the first coding slice and formal completion boundaries for implemented stages.
 ```
 
 ### Document 26 — Research Backlog and Scope Guards
@@ -214,6 +214,24 @@ production materialization and replay idempotency, known limitations,
 deferred prediction work, and the formal Stage 8 completion statement.
 ```
 
+### Document 32 — Stage 9 Projection and Estimated Time of Arrival Completion
+
+Path:
+
+```text
+docs/32_STAGE_9_PROJECTION_AND_ESTIMATED_TIME_OF_ARRIVAL_COMPLETION.md
+```
+
+Purpose:
+
+```text
+Records the completed research-only Production Projection Intelligence foundation,
+contract and horizon policy, kinematic and historical continuation strategies,
+Estimated Arrival, prediction guards, replay evaluation, PostgreSQL and HTTP
+runtime evidence, deterministic fallback behavior, known limitations,
+deferred weather and airspace work, and the formal Stage 9 completion statement.
+```
+
 ---
 
 ## Superseded Duplicate Notice
@@ -258,54 +276,4 @@ Analytical Core
 Confidence and Explainability Layer
 ↓
 API
-↓
-Frontend
-```
-
----
-
-## Current MVP Baseline
-
-```text
-OpenSky or compatible aircraft ingestion
-OurAirports import
-Canonical FlightState
-TrackPoint4D
-Data normalization
-Duplicate removal
-Gap and jump detection
-Motion plausibility check
-Track Builder
-TrajectorySegment
-FlightTrajectory
-CoverageGap
-Track Quality Score
-Basic Airport Context
-Basic Route Intelligence
-Basic Flight Phase Detection
-MapLibre frontend
-Aircraft Detail Panel
-Data Quality Explanation
-Source Limitation Guard
-```
-
----
-
-## First Implementation Slice
-
-```text
-1. OpenSky or compatible provider
-2. Canonical FlightState model
-3. aircraft_states table
-4. data normalization
-5. duplicate removal
-6. gap detection
-7. motion plausibility check
-8. trajectory_segments table
-9. Track Builder
-10. track_quality_score
-11. /api/aircraft/live
-12. /api/aircraft/{icao24}
-13. MapLibre frontend
-14. Aircraft detail panel
 ```
