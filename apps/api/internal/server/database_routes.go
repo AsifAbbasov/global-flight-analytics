@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airspaceintelligence/airspaceproduction"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flight"
@@ -81,6 +82,30 @@ func registerDatabaseRoutes(
 		)
 	}
 
+	airspaceObservationReader, err :=
+		airspaceproduction.NewPostgresObservationReader(
+			dbPool,
+		)
+	if err != nil {
+		return fmt.Errorf(
+			"compose production Airspace Intelligence PostgreSQL reader: %w",
+			err,
+		)
+	}
+	airspaceRegionAnalyticsService, err :=
+		airspaceproduction.New(
+			airspaceproduction.Config{
+				ObservationReader: airspaceObservationReader,
+				RegionResolver:    region.NewService(),
+			},
+		)
+	if err != nil {
+		return fmt.Errorf(
+			"compose production Airspace Region Analytics service: %w",
+			err,
+		)
+	}
+
 	if err := registerWeatherRoute(
 		v1,
 		dbPool,
@@ -124,6 +149,16 @@ func registerDatabaseRoutes(
 	); err != nil {
 		return fmt.Errorf(
 			"register Weather Context route: %w",
+			err,
+		)
+	}
+
+	if err := RegisterAirspaceRegionAnalyticsReadRoute(
+		v1,
+		airspaceRegionAnalyticsService,
+	); err != nil {
+		return fmt.Errorf(
+			"register Airspace Region Analytics route: %w",
 			err,
 		)
 	}

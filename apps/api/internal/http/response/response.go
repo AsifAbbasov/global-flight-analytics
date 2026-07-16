@@ -29,7 +29,8 @@ type SuccessPayload interface {
 		[]dto.AirportListItem |
 		dto.AirportProfile |
 		dto.ActiveAircraftMetricResponse |
-		dto.AnalyticalMetricResponse
+		dto.AnalyticalMetricResponse |
+		dto.AirspaceRegionAnalyticsResponse
 }
 
 type SuccessResponse[T SuccessPayload] struct {
