@@ -81,6 +81,7 @@ const (
 	IssueForecastTimeInvalid        = "forecast_time_invalid"
 	IssueFeatureVectorEmpty         = "feature_vector_empty"
 	IssueFeatureValueInvalid        = "feature_value_invalid"
+	IssueConditionCodeInvalid       = "condition_code_invalid"
 	IssueSampleOrderInvalid         = "sample_order_invalid"
 	IssueLimitationInvalid          = "limitation_invalid"
 	IssueExplanationInvalid         = "explanation_invalid"
@@ -589,6 +590,45 @@ func (
 		0,
 		250,
 	)
+	collector.validateConditionCode(
+		path,
+		features,
+	)
+}
+
+func (
+	collector *validationCollector,
+) validateConditionCode(
+	path string,
+	features FeatureVector,
+) {
+	scheme := strings.TrimSpace(
+		features.ConditionCodeScheme,
+	)
+
+	switch {
+	case features.ConditionCode == nil &&
+		scheme != "":
+		collector.addError(
+			IssueConditionCodeInvalid,
+			path+".condition_code",
+			"condition code scheme requires a condition code",
+		)
+	case features.ConditionCode != nil &&
+		scheme == "":
+		collector.addError(
+			IssueConditionCodeInvalid,
+			path+".condition_code_scheme",
+			"condition code requires a non-empty code scheme",
+		)
+	case features.ConditionCode != nil &&
+		*features.ConditionCode < 0:
+		collector.addError(
+			IssueConditionCodeInvalid,
+			path+".condition_code",
+			"condition code must not be negative",
+		)
+	}
 }
 
 func (

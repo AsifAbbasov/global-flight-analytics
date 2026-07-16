@@ -134,6 +134,9 @@ type FeatureVector struct {
 	WindSpeedMetersPerSecond *float64
 	WindDirectionDegrees     *float64
 	WindGustsMetersPerSecond *float64
+
+	ConditionCode       *int
+	ConditionCodeScheme string
 }
 
 func (features FeatureVector) PresentCount() int {
@@ -154,6 +157,9 @@ func (features FeatureVector) PresentCount() int {
 		if value != nil {
 			count++
 		}
+	}
+	if features.ConditionCode != nil {
+		count++
 	}
 
 	return count
@@ -297,6 +303,10 @@ func cloneFeatureVector(
 		WindGustsMetersPerSecond: cloneFloat64(
 			features.WindGustsMetersPerSecond,
 		),
+		ConditionCode: cloneInt(
+			features.ConditionCode,
+		),
+		ConditionCodeScheme: features.ConditionCodeScheme,
 	}
 }
 
@@ -313,6 +323,15 @@ func cloneConfidence(
 }
 
 func cloneFloat64(value *float64) *float64 {
+	if value == nil {
+		return nil
+	}
+
+	cloned := *value
+	return &cloned
+}
+
+func cloneInt(value *int) *int {
 	if value == nil {
 		return nil
 	}
