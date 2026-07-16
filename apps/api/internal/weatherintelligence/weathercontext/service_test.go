@@ -95,6 +95,13 @@ func TestServiceGetComposesBoundedWeatherContext(
 			result.Alignment.PointCount,
 		)
 	}
+	if trajectoryReader.request.TrajectoryID != trajectoryID ||
+		!trajectoryReader.request.AsOfTime.Equal(asOfTime) {
+		t.Fatalf(
+			"trajectory request = %#v",
+			trajectoryReader.request,
+		)
+	}
 	if weatherReader.request.Latitude != 40.20 ||
 		weatherReader.request.Longitude != 49.90 {
 		t.Fatalf(
@@ -175,16 +182,18 @@ func TestServiceGetPreservesNotFound(
 }
 
 type fakeTrajectoryReader struct {
-	result trajectory.FlightTrajectory
-	err    error
+	request TrajectoryRequest
+	result  trajectory.FlightTrajectory
+	err     error
 }
 
 func (
 	reader *fakeTrajectoryReader,
-) GetTrajectoryByID(
-	context.Context,
-	string,
+) GetTrajectory(
+	_ context.Context,
+	request TrajectoryRequest,
 ) (trajectory.FlightTrajectory, error) {
+	reader.request = request
 	return reader.result, reader.err
 }
 

@@ -4,18 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
-	trafficquery "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/query"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionread"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/weatherintelligence/weatheralignment"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/weatherintelligence/weathercontext"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/weatherintelligence/weatherencounter"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/weatherintelligence/weathertrust"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/weatherintelligence/weatheruncertainty"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -67,9 +66,10 @@ func (
 }
 
 type weatherContextTrajectoryApplicationReader interface {
-	GetTrajectoryByID(
+	LoadCurrentTrajectory(
 		context.Context,
 		string,
+		time.Time,
 	) (trajectory.FlightTrajectory, error)
 }
 
@@ -79,42 +79,44 @@ type weatherContextTrajectoryReaderAdapter struct {
 
 func (
 	adapter weatherContextTrajectoryReaderAdapter,
-) GetTrajectoryByID(
+) GetTrajectory(
 	ctx context.Context,
-	trajectoryID string,
+	request weathercontext.TrajectoryRequest,
 ) (trajectory.FlightTrajectory, error) {
 	if adapter.reader == nil {
 		return trajectory.FlightTrajectory{},
 			weathercontext.ErrServiceUnavailable
 	}
 
-	result, err := adapter.reader.GetTrajectoryByID(
+	result, err := adapter.reader.LoadCurrentTrajectory(
 		ctx,
-		trajectoryID,
+		request.TrajectoryID,
+		request.AsOfTime,
 	)
-	if errors.Is(err, pgx.ErrNoRows) {
+	switch {
+	case errors.Is(
+		err,
+		projectionread.ErrTrajectoryNotFound,
+	):
 		return trajectory.FlightTrajectory{},
 			weathercontext.ErrTrajectoryNotFound
-	}
-	if errors.Is(
+	case errors.Is(
 		err,
-		trafficquery.ErrTrajectoryRepositoryRequired,
-	) {
+		projectionread.ErrServiceUnavailable,
+	):
 		return trajectory.FlightTrajectory{},
 			weathercontext.ErrServiceUnavailable
-	}
-	if errors.Is(
+	case errors.Is(
 		err,
-		trafficquery.ErrInvalidTrajectoryID,
-	) {
+		projectionread.ErrInvalidRequest,
+	):
 		return trajectory.FlightTrajectory{},
 			weathercontext.ErrInvalidRequest
-	}
-	if err != nil {
+	case err != nil:
 		return trajectory.FlightTrajectory{}, err
+	default:
+		return result, nil
 	}
-
-	return result, nil
 }
 
 type weatherContextProjectionReaderAdapter struct {
@@ -166,18 +168,36 @@ func (
 	}
 }
 
+// NewWeatherContextPostgresReader exposes the production Weather Context
+// composition for bounded runtime verification and server integration checks.
+func NewWeatherContextPostgresReader(
+	pool *pgxpool.Pool,
+	projectionReader handlers.ProjectionIntelligenceReader,
+) (handlers.WeatherContextReader, error) {
+	return newWeatherContextPostgresReader(
+		pool,
+		projectionReader,
+	)
+}
+
 func newWeatherContextPostgresReader(
 	pool *pgxpool.Pool,
 	projectionReader handlers.ProjectionIntelligenceReader,
 ) (handlers.WeatherContextReader, error) {
-	trajectoryRepository := postgres.NewTrajectoryRepository(
-		pool,
-	)
-	trajectoryService := trafficquery.New(
-		trafficquery.Config{
-			TrajectoryRepository: trajectoryRepository,
-		},
-	)
+	trajectoryDataSource, err :=
+		projectionread.NewPostgresDataSource(
+			projectionread.PostgresDataSourceConfig{
+				Pool: pool,
+				Policy: projectionread.
+					DefaultPolicy().DataSource,
+			},
+		)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"compose PostgreSQL Weather Context trajectory reader: %w",
+			err,
+		)
+	}
 
 	weatherSnapshotReader, err :=
 		weathercontext.NewPostgresSnapshotReader(
@@ -194,7 +214,7 @@ func newWeatherContextPostgresReader(
 	service, err := weathercontext.NewService(
 		weathercontext.Config{
 			TrajectoryReader: weatherContextTrajectoryReaderAdapter{
-				reader: trajectoryService,
+				reader: trajectoryDataSource,
 			},
 			WeatherSnapshotReader: weatherSnapshotReader,
 			ProjectionReader: weatherContextProjectionReaderAdapter{

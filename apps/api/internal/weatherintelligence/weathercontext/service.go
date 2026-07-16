@@ -75,6 +75,11 @@ type Request struct {
 	RequestedDuration time.Duration
 }
 
+type TrajectoryRequest struct {
+	TrajectoryID string
+	AsOfTime     time.Time
+}
+
 type WeatherSnapshotRequest struct {
 	Latitude  float64
 	Longitude float64
@@ -88,9 +93,9 @@ type ProjectionRequest struct {
 }
 
 type TrajectoryReader interface {
-	GetTrajectoryByID(
+	GetTrajectory(
 		context.Context,
-		string,
+		TrajectoryRequest,
 	) (trajectory.FlightTrajectory, error)
 }
 
@@ -337,9 +342,12 @@ func (
 	}
 
 	loadedTrajectory, err := service.trajectoryReader.
-		GetTrajectoryByID(
+		GetTrajectory(
 			ctx,
-			normalizedRequest.TrajectoryID,
+			TrajectoryRequest{
+				TrajectoryID: normalizedRequest.TrajectoryID,
+				AsOfTime:     normalizedRequest.AsOfTime,
+			},
 		)
 	if err != nil {
 		return Result{}, classifyDependencyError(
