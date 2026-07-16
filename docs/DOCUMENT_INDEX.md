@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.7
+Status: Documentation Index v1.8
 Project: Global Flight Analytics
 
 ---
@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–33: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
+Documents 22–34: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
 ```
 
 ---
@@ -250,6 +250,25 @@ uncertainty preservation or widening, PostgreSQL and HTTP runtime evidence,
 future-evidence protection, known limitations, and the formal Stage 10
 completion statement.
 ```
+
+### Document 34 — Stage 11 Airspace Intelligence Completion
+
+Path:
+
+```text
+docs/34_STAGE_11_AIRSPACE_INTELLIGENCE_COMPLETION.md
+```
+
+Purpose:
+
+```text
+Records the completed research-only Production Airspace Intelligence foundation,
+interaction graph, radius policy, local traffic scenes, proximity scanning,
+separation-risk context, temporal occupancy, synthetic-sector complexity,
+regional analytics, PostgreSQL and HTTP runtime evidence, deterministic replay,
+scope guards, known limitations, and the formal Stage 11 completion statement.
+```
+
 
 ---
 
