@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionread"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,6 +20,11 @@ const (
 	currentPointCount      = 6
 	candidatePointCount    = 9
 	routeRecordIDPrefix    = "route-record-"
+
+	minimumVerificationCommandTimeout = 5 * time.Minute
+	historicalReadTimeout             = 60 * time.Second
+	historicalHTTPTestTimeout         = historicalReadTimeout + 5*time.Second
+	fixtureCleanupTimeout             = 60 * time.Second
 )
 
 var verificationFlights = []verificationFlight{
@@ -64,6 +70,15 @@ var verificationFlights = []verificationFlight{
 		PointCount:     candidatePointCount,
 		LatitudeShift:  -0.0010,
 		LongitudeShift: -0.0010,
+	},
+	{
+		TrajectoryID:   "b5555555-5555-4555-8555-555555555555",
+		ICAO24:         "B1C105",
+		Callsign:       "GFAH05",
+		AgeDays:        5,
+		PointCount:     candidatePointCount,
+		LatitudeShift:  0.0008,
+		LongitudeShift: -0.0008,
 	},
 }
 
@@ -583,19 +598,10 @@ func cleanupFixture(
 		ctx,
 		`
 			DELETE FROM flight_route_results
-			WHERE trajectory_id IN (
-				$1::uuid,
-				$2::uuid,
-				$3::uuid,
-				$4::uuid,
-				$5::uuid
-			);
+			WHERE trajectory_id::text =
+				ANY($1::text[]);
 		`,
-		verificationFlights[0].TrajectoryID,
-		verificationFlights[1].TrajectoryID,
-		verificationFlights[2].TrajectoryID,
-		verificationFlights[3].TrajectoryID,
-		verificationFlights[4].TrajectoryID,
+		verificationTrajectoryIDs(),
 	); err != nil {
 		return fmt.Errorf(
 			"delete verification route results: %w",
@@ -621,19 +627,10 @@ func cleanupFixture(
 		ctx,
 		`
 			DELETE FROM flight_trajectories
-			WHERE id IN (
-				$1::uuid,
-				$2::uuid,
-				$3::uuid,
-				$4::uuid,
-				$5::uuid
-			);
+			WHERE id::text =
+				ANY($1::text[]);
 		`,
-		verificationFlights[0].TrajectoryID,
-		verificationFlights[1].TrajectoryID,
-		verificationFlights[2].TrajectoryID,
-		verificationFlights[3].TrajectoryID,
-		verificationFlights[4].TrajectoryID,
+		verificationTrajectoryIDs(),
 	); err != nil {
 		return fmt.Errorf(
 			"delete verification trajectories: %w",
@@ -687,19 +684,10 @@ func loadFixtureCounts(
 		`
 			SELECT COUNT(*)::int
 			FROM flight_route_results
-			WHERE trajectory_id IN (
-				$1::uuid,
-				$2::uuid,
-				$3::uuid,
-				$4::uuid,
-				$5::uuid
-			);
+			WHERE trajectory_id::text =
+				ANY($1::text[]);
 		`,
-		verificationFlights[0].TrajectoryID,
-		verificationFlights[1].TrajectoryID,
-		verificationFlights[2].TrajectoryID,
-		verificationFlights[3].TrajectoryID,
-		verificationFlights[4].TrajectoryID,
+		verificationTrajectoryIDs(),
 	).Scan(&result.RouteResults); err != nil {
 		return fixtureCounts{},
 			fmt.Errorf(
@@ -709,6 +697,121 @@ func loadFixtureCounts(
 	}
 
 	return result, nil
+}
+
+func verificationTrajectoryIDs() []string {
+	result := make(
+		[]string,
+		0,
+		len(verificationFlights),
+	)
+	for _, flight := range verificationFlights {
+		result = append(
+			result,
+			flight.TrajectoryID,
+		)
+	}
+
+	return result
+}
+
+func validateFixturePolicyCoverage(
+	policy projectionread.Policy,
+) error {
+	if err := policy.Validate(); err != nil {
+		return fmt.Errorf(
+			"validate production policy: %w",
+			err,
+		)
+	}
+
+	candidateCount := len(verificationFlights) - 1
+	if candidateCount <
+		policy.Neighbors.SelectionLimit {
+		return fmt.Errorf(
+			"historical fixture candidate count %d is below the neighbor selection limit %d",
+			candidateCount,
+			policy.Neighbors.SelectionLimit,
+		)
+	}
+	if candidateCount <
+		policy.Pattern.TargetNeighborCount {
+		return fmt.Errorf(
+			"historical fixture candidate count %d is below the pattern target %d",
+			candidateCount,
+			policy.Pattern.TargetNeighborCount,
+		)
+	}
+	if candidateCount <
+		policy.Freshness.TargetRecentNeighborCount {
+		return fmt.Errorf(
+			"historical fixture candidate count %d is below the freshness support target %d",
+			candidateCount,
+			policy.Freshness.TargetRecentNeighborCount,
+		)
+	}
+	if len(verificationFlights) <
+		policy.RouteFrequency.MinimumObservationCount {
+		return fmt.Errorf(
+			"historical fixture route observations %d are below the route-frequency minimum %d",
+			len(verificationFlights),
+			policy.RouteFrequency.MinimumObservationCount,
+		)
+	}
+
+	seenDays := make(map[int]struct{})
+	for index, flight := range verificationFlights {
+		if index == 0 {
+			if flight.AgeDays != 0 {
+				return fmt.Errorf(
+					"current fixture trajectory must have zero age days",
+				)
+			}
+			seenDays[flight.AgeDays] = struct{}{}
+			continue
+		}
+		if flight.AgeDays <= 0 {
+			return fmt.Errorf(
+				"historical fixture trajectory %s must have positive age days",
+				flight.TrajectoryID,
+			)
+		}
+
+		age := time.Duration(flight.AgeDays) *
+			24 * time.Hour
+		if age >
+			policy.Freshness.RecentNeighborAgeLimit {
+			return fmt.Errorf(
+				"historical fixture trajectory %s exceeds the recent-neighbor age limit",
+				flight.TrajectoryID,
+			)
+		}
+		if age >
+			policy.Neighbors.MaximumCandidateAge {
+			return fmt.Errorf(
+				"historical fixture trajectory %s exceeds the candidate-age limit",
+				flight.TrajectoryID,
+			)
+		}
+		if _, exists := seenDays[flight.AgeDays]; exists {
+			return fmt.Errorf(
+				"historical fixture repeats age day %d",
+				flight.AgeDays,
+			)
+		}
+		seenDays[flight.AgeDays] = struct{}{}
+	}
+
+	if len(seenDays) <
+		policy.RouteFrequency.MinimumDistinctDayCount {
+		return fmt.Errorf(
+			"historical fixture distinct days %d are below the route-frequency minimum %d",
+			len(seenDays),
+			policy.RouteFrequency.MinimumDistinctDayCount,
+		)
+	}
+
+	return nil
 }
 
 func expectedFixtureCounts() fixtureCounts {

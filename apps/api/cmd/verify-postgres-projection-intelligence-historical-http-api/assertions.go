@@ -16,14 +16,26 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontinuation"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionfreshness"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionpatternconfidence"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionread"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionroutefrequency"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/server"
 	"github.com/gofiber/fiber/v2"
 )
 
+type productionProjectionReader interface {
+	Get(
+		context.Context,
+		projectionread.Request,
+	) (projectionproduction.Result, error)
+}
+
 type runtimeReader struct {
-	service *projectionread.Service
+	service productionProjectionReader
+	timeout time.Duration
 }
 
 func (
@@ -35,14 +47,21 @@ func (
 	projectionproduction.Result,
 	error,
 ) {
-	if reader.service == nil {
+	if reader.service == nil ||
+		reader.timeout <= 0 {
 		return projectionproduction.Result{},
 			handlers.
 				ErrProjectionIntelligenceServiceUnavailable
 	}
 
-	result, err := reader.service.Get(
+	operationContext, cancel := context.WithTimeout(
 		ctx,
+		reader.timeout,
+	)
+	defer cancel()
+
+	result, err := reader.service.Get(
+		operationContext,
 		projectionread.Request{
 			TrajectoryID:      request.TrajectoryID,
 			AsOfTime:          request.AsOfTime,
@@ -85,8 +104,23 @@ func (
 }
 
 func buildRuntimeApp(
-	service *projectionread.Service,
+	service productionProjectionReader,
 ) (*fiber.App, error) {
+	if service == nil {
+		return nil,
+			fmt.Errorf(
+				"Projection Intelligence service is required",
+			)
+	}
+	if historicalReadTimeout <= 0 ||
+		historicalHTTPTestTimeout <=
+			historicalReadTimeout {
+		return nil,
+			fmt.Errorf(
+				"historical runtime timeout policy is invalid",
+			)
+	}
+
 	app := fiber.New()
 	v1 := app.Group("/api/v1")
 
@@ -94,6 +128,7 @@ func buildRuntimeApp(
 		v1,
 		runtimeReader{
 			service: service,
+			timeout: historicalReadTimeout,
 		},
 	); err != nil {
 		return nil,
@@ -106,13 +141,72 @@ func buildRuntimeApp(
 	return app, nil
 }
 
+func verifyHistoricalService(
+	ctx context.Context,
+	service productionProjectionReader,
+	schedule verificationSchedule,
+) (projectionproduction.Result, error) {
+	if service == nil {
+		return projectionproduction.Result{},
+			fmt.Errorf(
+				"Projection Intelligence service is required",
+			)
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	operationContext, cancel := context.WithTimeout(
+		ctx,
+		historicalReadTimeout,
+	)
+	defer cancel()
+
+	result, err := service.Get(
+		operationContext,
+		projectionread.Request{
+			TrajectoryID: verificationFlights[0].
+				TrajectoryID,
+			AsOfTime:          schedule.AsOfTime,
+			RequestedDuration: verificationDuration,
+		},
+	)
+	if err != nil {
+		return projectionproduction.Result{},
+			fmt.Errorf(
+				"execute production Projection Intelligence service: %w",
+				err,
+			)
+	}
+	if err := validateHistoricalProductionResult(
+		result,
+		schedule,
+	); err != nil {
+		return projectionproduction.Result{},
+			err
+	}
+
+	return result.Clone(), nil
+}
+
 func verifyHistoricalEndpoint(
+	ctx context.Context,
 	app *fiber.App,
 	schedule verificationSchedule,
 ) (
 	response.SuccessResponse[dto.ProjectionIntelligenceResponse],
 	error,
 ) {
+	if app == nil {
+		return response.SuccessResponse[dto.ProjectionIntelligenceResponse]{},
+			fmt.Errorf(
+				"runtime HTTP application is required",
+			)
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	request := httptest.NewRequest(
 		http.MethodGet,
 		projectionRequestURL(
@@ -122,12 +216,21 @@ func verifyHistoricalEndpoint(
 			verificationDuration,
 		),
 		nil,
+	).WithContext(ctx)
+
+	timeoutMilliseconds := int(
+		historicalHTTPTestTimeout /
+			time.Millisecond,
 	)
-	httpResponse, err := app.Test(request)
+	httpResponse, err := app.Test(
+		request,
+		timeoutMilliseconds,
+	)
 	if err != nil {
 		return response.SuccessResponse[dto.ProjectionIntelligenceResponse]{},
 			fmt.Errorf(
-				"execute historical Projection Intelligence request: %w",
+				"execute historical Projection Intelligence request within %s: %w",
+				historicalHTTPTestTimeout,
 				err,
 			)
 	}
@@ -166,6 +269,123 @@ func verifyHistoricalEndpoint(
 	}
 
 	return payload, nil
+}
+
+func validateHistoricalProductionResult(
+	result projectionproduction.Result,
+	schedule verificationSchedule,
+) error {
+	if err := result.Validate(); err != nil {
+		return fmt.Errorf(
+			"production Projection Intelligence result is invalid: %w",
+			err,
+		)
+	}
+	if result.Strategy !=
+		projectionproduction.
+			StrategyHistoricalNeighbor ||
+		strings.TrimSpace(
+			result.FallbackReason,
+		) != "" ||
+		result.Projection.Method.Name !=
+			projectioncontinuation.MethodName {
+		return fmt.Errorf(
+			"production service did not authorize Historical Neighbor Continuation: strategy=%q fallback=%q method=%q",
+			result.Strategy,
+			result.FallbackReason,
+			result.Projection.Method.Name,
+		)
+	}
+	if !result.Projection.Horizon.AsOfTime.Equal(
+		schedule.AsOfTime,
+	) ||
+		result.Projection.Horizon.Duration() !=
+			verificationDuration ||
+		len(result.Projection.Points) != 6 {
+		return fmt.Errorf(
+			"production service returned an unexpected projection horizon or point count",
+		)
+	}
+	policy := projectionread.DefaultPolicy()
+	expectedNeighborCount :=
+		policy.Neighbors.SelectionLimit
+	if result.NeighborSelection == nil ||
+		result.NeighborSelection.Status !=
+			projectionneighbors.StatusComplete ||
+		len(result.NeighborSelection.Neighbors) !=
+			expectedNeighborCount {
+		return fmt.Errorf(
+			"production service selected an incomplete historical-neighbor set: status=%v count=%d want=%d",
+			result.NeighborSelection,
+			neighborCount(result.NeighborSelection),
+			expectedNeighborCount,
+		)
+	}
+
+	neighborIDs := make(
+		[]string,
+		0,
+		len(result.NeighborSelection.Neighbors),
+	)
+	for _, neighbor := range result.NeighborSelection.Neighbors {
+		neighborIDs = append(
+			neighborIDs,
+			neighbor.TrajectoryID,
+		)
+	}
+	if err := validateHistoricalNeighborIDValues(
+		neighborIDs,
+	); err != nil {
+		return err
+	}
+
+	if result.PatternConfidence == nil ||
+		result.PatternConfidence.Status !=
+			projectionpatternconfidence.StatusComplete ||
+		!result.PatternConfidence.Usable ||
+		result.PatternConfidence.NeighborCount !=
+			expectedNeighborCount ||
+		result.Freshness == nil ||
+		result.Freshness.Decision !=
+			projectionfreshness.DecisionAllowed ||
+		!result.Freshness.Usable ||
+		result.Freshness.NeighborCount !=
+			expectedNeighborCount ||
+		result.Freshness.RecentNeighborCount !=
+			expectedNeighborCount ||
+		result.RouteFrequency == nil ||
+		result.RouteFrequency.Decision !=
+			projectionroutefrequency.DecisionAllowed ||
+		!result.RouteFrequency.Usable ||
+		result.RouteFrequency.ObservationCount <
+			len(verificationFlights) ||
+		result.RouteFrequency.DistinctDayCount <
+			len(verificationFlights) {
+		return fmt.Errorf(
+			"production historical evidence is incomplete or unusable",
+		)
+	}
+	if result.ArrivalStatus !=
+		projectionproduction.ArrivalStatusAttached ||
+		result.Projection.Arrival == nil ||
+		result.Projection.Arrival.AirportICAOCode !=
+			"ZBBB" {
+		return fmt.Errorf(
+			"production service did not attach Estimated Arrival to ZBBB",
+		)
+	}
+
+	return nil
+}
+
+func neighborCount(
+	selection *projectionneighbors.Result,
+) int {
+	if selection == nil {
+		return 0
+	}
+
+	return len(selection.Neighbors)
 }
 
 func validateHistoricalPayload(
@@ -282,13 +502,25 @@ func validateHistoricalPayload(
 		)
 	}
 
+	expectedNeighborCount :=
+		projectionread.DefaultPolicy().
+			Neighbors.SelectionLimit
 	if data.Evidence.NeighborSelection == nil ||
 		data.Evidence.NeighborSelection.Status !=
 			"complete" ||
+		data.Evidence.NeighborSelection.
+			InputCandidateCount !=
+			expectedNeighborCount ||
+		data.Evidence.NeighborSelection.
+			CheckedCandidateCount !=
+			expectedNeighborCount ||
+		data.Evidence.NeighborSelection.
+			QualifiedCandidateCount !=
+			expectedNeighborCount ||
 		len(
 			data.Evidence.NeighborSelection.
 				Neighbors,
-		) < 2 {
+		) != expectedNeighborCount {
 		return fmt.Errorf(
 			"historical neighbor selection is not complete: %#v",
 			data.Evidence.NeighborSelection,
@@ -302,7 +534,11 @@ func validateHistoricalPayload(
 	}
 
 	if data.Evidence.PatternConfidence == nil ||
+		data.Evidence.PatternConfidence.Status !=
+			"complete" ||
 		!data.Evidence.PatternConfidence.Usable ||
+		data.Evidence.PatternConfidence.
+			NeighborCount != expectedNeighborCount ||
 		data.Evidence.PatternConfidence.Score <= 0 {
 		return fmt.Errorf(
 			"pattern confidence did not authorize historical continuation: %#v",
@@ -312,7 +548,12 @@ func validateHistoricalPayload(
 	if data.Evidence.Freshness == nil ||
 		!data.Evidence.Freshness.Usable ||
 		data.Evidence.Freshness.Decision !=
-			"allowed" {
+			"allowed" ||
+		data.Evidence.Freshness.NeighborCount !=
+			expectedNeighborCount ||
+		data.Evidence.Freshness.
+			RecentNeighborCount !=
+			expectedNeighborCount {
 		return fmt.Errorf(
 			"freshness guard did not allow historical continuation: %#v",
 			data.Evidence.Freshness,
@@ -323,9 +564,11 @@ func validateHistoricalPayload(
 		data.Evidence.RouteFrequency.Decision !=
 			"allowed" ||
 		data.Evidence.RouteFrequency.
-			ObservationCount < 5 ||
+			ObservationCount <
+			len(verificationFlights) ||
 		data.Evidence.RouteFrequency.
-			DistinctDayCount < 5 {
+			DistinctDayCount <
+			len(verificationFlights) {
 		return fmt.Errorf(
 			"route-frequency guard did not allow historical continuation: %#v",
 			data.Evidence.RouteFrequency,
@@ -396,6 +639,26 @@ func validateHistoricalPayload(
 func validateSelectedHistoricalNeighborIDs(
 	neighbors []dto.ProjectionIntelligenceNeighbor,
 ) error {
+	trajectoryIDs := make(
+		[]string,
+		0,
+		len(neighbors),
+	)
+	for _, neighbor := range neighbors {
+		trajectoryIDs = append(
+			trajectoryIDs,
+			neighbor.TrajectoryID,
+		)
+	}
+
+	return validateHistoricalNeighborIDValues(
+		trajectoryIDs,
+	)
+}
+
+func validateHistoricalNeighborIDValues(
+	trajectoryIDs []string,
+) error {
 	expected := make(
 		map[string]struct{},
 		len(verificationFlights)-1,
@@ -404,14 +667,20 @@ func validateSelectedHistoricalNeighborIDs(
 		expected[flight.TrajectoryID] = struct{}{}
 	}
 
+	if len(trajectoryIDs) != len(expected) {
+		return fmt.Errorf(
+			"historical neighbor count %d does not match expected count %d",
+			len(trajectoryIDs),
+			len(expected),
+		)
+	}
+
 	seen := make(
 		map[string]struct{},
-		len(neighbors),
+		len(trajectoryIDs),
 	)
-	for _, neighbor := range neighbors {
-		trajectoryID := strings.TrimSpace(
-			neighbor.TrajectoryID,
-		)
+	for _, value := range trajectoryIDs {
+		trajectoryID := strings.TrimSpace(value)
 		if trajectoryID ==
 			verificationFlights[0].TrajectoryID {
 			return fmt.Errorf(
@@ -431,6 +700,12 @@ func validateSelectedHistoricalNeighborIDs(
 			)
 		}
 		seen[trajectoryID] = struct{}{}
+	}
+
+	if len(seen) != len(expected) {
+		return fmt.Errorf(
+			"historical neighbor selection omitted one or more expected trajectories",
+		)
 	}
 
 	return nil

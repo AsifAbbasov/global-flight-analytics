@@ -1,17 +1,21 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontinuation"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionread"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
 )
 
@@ -68,6 +72,122 @@ func TestBuildVerificationSchedule(
 		t.Fatalf(
 			"AsOfTime = %s",
 			schedule.AsOfTime,
+		)
+	}
+}
+
+func TestResolvedVerificationCommandTimeout(
+	t *testing.T,
+) {
+	if actual := resolvedVerificationCommandTimeout(
+		time.Minute,
+	); actual != minimumVerificationCommandTimeout {
+		t.Fatalf(
+			"resolved timeout = %s, want minimum %s",
+			actual,
+			minimumVerificationCommandTimeout,
+		)
+	}
+
+	configured := 10 * time.Minute
+	if actual := resolvedVerificationCommandTimeout(
+		configured,
+	); actual != configured {
+		t.Fatalf(
+			"resolved timeout = %s, want configured %s",
+			actual,
+			configured,
+		)
+	}
+}
+
+func TestHistoricalTimeoutPolicyAllowsHTTPCompletion(
+	t *testing.T,
+) {
+	if historicalReadTimeout <= time.Second {
+		t.Fatalf(
+			"historical read timeout = %s, must exceed Fiber default timeout",
+			historicalReadTimeout,
+		)
+	}
+	if historicalHTTPTestTimeout <=
+		historicalReadTimeout {
+		t.Fatalf(
+			"HTTP test timeout = %s, must exceed read timeout %s",
+			historicalHTTPTestTimeout,
+			historicalReadTimeout,
+		)
+	}
+	if minimumVerificationCommandTimeout <=
+		historicalHTTPTestTimeout {
+		t.Fatalf(
+			"command timeout = %s, must exceed HTTP timeout %s",
+			minimumVerificationCommandTimeout,
+			historicalHTTPTestTimeout,
+		)
+	}
+}
+
+func TestRuntimeReaderEnforcesOperationDeadline(
+	t *testing.T,
+) {
+	reader := runtimeReader{
+		service: blockingProductionReader{},
+		timeout: 10 * time.Millisecond,
+	}
+
+	startedAt := time.Now()
+	_, err := reader.GetProjectionIntelligence(
+		context.Background(),
+		projectionReadRequestForTest(),
+	)
+	elapsed := time.Since(startedAt)
+
+	if !errors.Is(
+		err,
+		context.DeadlineExceeded,
+	) {
+		t.Fatalf(
+			"error = %v, want context deadline exceeded",
+			err,
+		)
+	}
+	if elapsed >= time.Second {
+		t.Fatalf(
+			"runtime reader deadline took too long: %s",
+			elapsed,
+		)
+	}
+}
+
+func TestValidateHistoricalProductionResultRejectsInvalidContract(
+	t *testing.T,
+) {
+	schedule, err := buildVerificationSchedule(
+		time.Date(
+			2026,
+			time.July,
+			16,
+			12,
+			0,
+			0,
+			0,
+			time.UTC,
+		),
+	)
+	if err != nil {
+		t.Fatalf(
+			"build schedule: %v",
+			err,
+		)
+	}
+
+	if err := validateHistoricalProductionResult(
+		projectionproduction.Result{},
+		schedule,
+	); err == nil {
+		t.Fatal(
+			"expected invalid production result to be rejected",
 		)
 	}
 }
@@ -216,13 +336,18 @@ func TestRouteRecordIDsMatchProductionContract(
 func TestValidateSelectedHistoricalNeighborIDs(
 	t *testing.T,
 ) {
-	valid := []dto.ProjectionIntelligenceNeighbor{
-		{
-			TrajectoryID: verificationFlights[1].TrajectoryID,
-		},
-		{
-			TrajectoryID: verificationFlights[2].TrajectoryID,
-		},
+	valid := make(
+		[]dto.ProjectionIntelligenceNeighbor,
+		0,
+		len(verificationFlights)-1,
+	)
+	for _, flight := range verificationFlights[1:] {
+		valid = append(
+			valid,
+			dto.ProjectionIntelligenceNeighbor{
+				TrajectoryID: flight.TrajectoryID,
+			},
+		)
 	}
 	if err := validateSelectedHistoricalNeighborIDs(
 		valid,
@@ -233,36 +358,51 @@ func TestValidateSelectedHistoricalNeighborIDs(
 		)
 	}
 
+	currentTrajectory := append(
+		[]dto.ProjectionIntelligenceNeighbor(nil),
+		valid...,
+	)
+	currentTrajectory[0].TrajectoryID =
+		verificationFlights[0].TrajectoryID
+
+	duplicate := append(
+		[]dto.ProjectionIntelligenceNeighbor(nil),
+		valid...,
+	)
+	duplicate[1].TrajectoryID =
+		duplicate[0].TrajectoryID
+
+	unknown := append(
+		[]dto.ProjectionIntelligenceNeighbor(nil),
+		valid...,
+	)
+	unknown[0].TrajectoryID =
+		"c1111111-1111-4111-8111-111111111111"
+
+	missing := append(
+		[]dto.ProjectionIntelligenceNeighbor(nil),
+		valid[:len(valid)-1]...,
+	)
+
 	tests := []struct {
 		name  string
 		items []dto.ProjectionIntelligenceNeighbor
 	}{
 		{
-			name: "current trajectory",
-			items: []dto.ProjectionIntelligenceNeighbor{
-				{
-					TrajectoryID: verificationFlights[0].TrajectoryID,
-				},
-			},
+			name:  "current trajectory",
+			items: currentTrajectory,
 		},
 		{
-			name: "duplicate",
-			items: []dto.ProjectionIntelligenceNeighbor{
-				{
-					TrajectoryID: verificationFlights[1].TrajectoryID,
-				},
-				{
-					TrajectoryID: verificationFlights[1].TrajectoryID,
-				},
-			},
+			name:  "duplicate",
+			items: duplicate,
 		},
 		{
-			name: "unknown",
-			items: []dto.ProjectionIntelligenceNeighbor{
-				{
-					TrajectoryID: "c1111111-1111-4111-8111-111111111111",
-				},
-			},
+			name:  "unknown",
+			items: unknown,
+		},
+		{
+			name:  "missing",
+			items: missing,
 		},
 	}
 
@@ -335,14 +475,61 @@ func TestHistoricalCandidateGeometryProvidesContinuation(
 	}
 }
 
+func TestFixtureCoversProductionPolicyTargets(
+	t *testing.T,
+) {
+	policy := projectionread.DefaultPolicy()
+	if err := validateFixturePolicyCoverage(
+		policy,
+	); err != nil {
+		t.Fatalf(
+			"validateFixturePolicyCoverage() error = %v",
+			err,
+		)
+	}
+
+	policy.Neighbors.SelectionLimit =
+		len(verificationFlights)
+	if err := validateFixturePolicyCoverage(
+		policy,
+	); err == nil {
+		t.Fatal(
+			"expected an under-supported neighbor target to be rejected",
+		)
+	}
+}
+
+func TestVerificationTrajectoryIDsCoverAllFlights(
+	t *testing.T,
+) {
+	identifiers := verificationTrajectoryIDs()
+	if len(identifiers) != len(verificationFlights) {
+		t.Fatalf(
+			"identifier count = %d, want %d",
+			len(identifiers),
+			len(verificationFlights),
+		)
+	}
+	for index, identifier := range identifiers {
+		if identifier != verificationFlights[index].TrajectoryID {
+			t.Fatalf(
+				"identifier[%d] = %q, want %q",
+				index,
+				identifier,
+				verificationFlights[index].TrajectoryID,
+			)
+		}
+	}
+}
+
 func TestExpectedFixtureCounts(
 	t *testing.T,
 ) {
 	counts := expectedFixtureCounts()
 
-	if counts.Trajectories != 5 ||
-		counts.RouteResults != 5 ||
-		counts.FlightStates != 42 {
+	if counts.Trajectories != 6 ||
+		counts.RouteResults != 6 ||
+		counts.FlightStates != 51 {
 		t.Fatalf(
 			"unexpected fixture counts: %#v",
 			counts,
@@ -514,9 +701,19 @@ func validHistoricalPayload(
 	neighbors := make(
 		[]dto.ProjectionIntelligenceNeighbor,
 		0,
-		4,
+		len(verificationFlights)-1,
 	)
-	for index := 1; index < 5; index++ {
+	selectedTrajectoryIDs := make(
+		[]string,
+		0,
+		len(verificationFlights)-1,
+	)
+	for index := 1; index <
+		len(verificationFlights); index++ {
+		selectedTrajectoryIDs = append(
+			selectedTrajectoryIDs,
+			verificationFlights[index].TrajectoryID,
+		)
 		neighbors = append(
 			neighbors,
 			dto.ProjectionIntelligenceNeighbor{
@@ -634,9 +831,9 @@ func validHistoricalPayload(
 						TrajectoryID,
 					AsOfTime:                    schedule.AsOfTime,
 					RequiredContinuationSeconds: 180,
-					InputCandidateCount:         4,
-					CheckedCandidateCount:       4,
-					QualifiedCandidateCount:     4,
+					InputCandidateCount:         len(neighbors),
+					CheckedCandidateCount:       len(neighbors),
+					QualifiedCandidateCount:     len(neighbors),
 					SelectionLimit:              5,
 					Neighbors:                   neighbors,
 					Limitations:                 []dto.ProjectionIntelligenceNotice{},
@@ -650,20 +847,18 @@ func validHistoricalPayload(
 					Version:                 "projection-pattern-confidence-v1",
 					Status:                  "complete",
 					Usable:                  true,
-					NeighborCount:           4,
+					NeighborCount:           len(neighbors),
 					TargetNeighborCount:     5,
 					MeanSimilarityScore:     0.99,
-					MeanCandidateAgeSeconds: 216000,
+					MeanCandidateAgeSeconds: 259200,
 					MeanAnchorDistanceKM:    0.1,
 					Score:                   0.9,
 					Level:                   "high",
 					Components:              []dto.ProjectionIntelligenceScoreComponent{},
-					SelectedTrajectoryIDs: []string{
-						verificationFlights[1].TrajectoryID,
-						verificationFlights[2].TrajectoryID,
-						verificationFlights[3].TrajectoryID,
-						verificationFlights[4].TrajectoryID,
-					},
+					SelectedTrajectoryIDs: append(
+						[]string(nil),
+						selectedTrajectoryIDs...,
+					),
 					Limitations: []dto.ProjectionIntelligenceNotice{},
 					InputFingerprint: "sha256:" +
 						strings.Repeat(
@@ -676,19 +871,17 @@ func validHistoricalPayload(
 					Decision:                 "allowed",
 					Usable:                   true,
 					AsOfTime:                 schedule.AsOfTime,
-					NeighborCount:            4,
-					RecentNeighborCount:      4,
+					NeighborCount:            len(neighbors),
+					RecentNeighborCount:      len(neighbors),
 					NewestNeighborAgeSeconds: 86400,
-					MeanNeighborAgeSeconds:   216000,
-					OldestNeighborAgeSeconds: 345600,
+					MeanNeighborAgeSeconds:   259200,
+					OldestNeighborAgeSeconds: 432000,
 					Score:                    0.9,
 					Components:               []dto.ProjectionIntelligenceScoreComponent{},
-					SelectedTrajectoryIDs: []string{
-						verificationFlights[1].TrajectoryID,
-						verificationFlights[2].TrajectoryID,
-						verificationFlights[3].TrajectoryID,
-						verificationFlights[4].TrajectoryID,
-					},
+					SelectedTrajectoryIDs: append(
+						[]string(nil),
+						selectedTrajectoryIDs...,
+					),
 					Limitations: []dto.ProjectionIntelligenceNotice{},
 					InputFingerprint: "sha256:" +
 						strings.Repeat(
@@ -702,10 +895,10 @@ func validHistoricalPayload(
 					Usable:                      true,
 					RouteKey:                    "ZAAA>ZBBB",
 					AsOfTime:                    schedule.AsOfTime,
-					ObservationCount:            5,
-					DistinctFlightCount:         5,
-					DistinctDayCount:            5,
-					RecentObservationCount:      5,
+					ObservationCount:            len(verificationFlights),
+					DistinctFlightCount:         len(verificationFlights),
+					DistinctDayCount:            len(verificationFlights),
+					RecentObservationCount:      len(verificationFlights),
 					LatestObservationAgeSeconds: 0,
 					RouteConfidenceScore:        0.95,
 					Score:                       0.8,
@@ -747,4 +940,35 @@ func absolute(
 	}
 
 	return value
+}
+
+type blockingProductionReader struct{}
+
+func (
+	blockingProductionReader,
+) Get(
+	ctx context.Context,
+	_ projectionread.Request,
+) (projectionproduction.Result, error) {
+	<-ctx.Done()
+
+	return projectionproduction.Result{},
+		ctx.Err()
+}
+
+func projectionReadRequestForTest() handlers.ProjectionIntelligenceReadRequest {
+	return handlers.ProjectionIntelligenceReadRequest{
+		TrajectoryID: verificationFlights[0].TrajectoryID,
+		AsOfTime: time.Date(
+			2026,
+			time.July,
+			16,
+			12,
+			0,
+			0,
+			0,
+			time.UTC,
+		),
+		RequestedDuration: verificationDuration,
+	}
 }

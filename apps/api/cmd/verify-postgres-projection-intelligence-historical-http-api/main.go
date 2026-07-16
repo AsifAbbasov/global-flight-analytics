@@ -23,6 +23,16 @@ func main() {
 	)
 }
 
+func resolvedVerificationCommandTimeout(
+	configured time.Duration,
+) time.Duration {
+	if configured < minimumVerificationCommandTimeout {
+		return minimumVerificationCommandTimeout
+	}
+
+	return configured
+}
+
 func run(
 	stdout io.Writer,
 	stderr io.Writer,
@@ -40,9 +50,12 @@ func run(
 		return 1
 	}
 
+	commandTimeout := resolvedVerificationCommandTimeout(
+		cfg.MigrationTimeout,
+	)
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
-		cfg.MigrationTimeout,
+		commandTimeout,
 	)
 	defer cancel()
 
@@ -85,6 +98,18 @@ func run(
 		return 1
 	}
 
+	policy := projectionread.DefaultPolicy()
+	if err := validateFixturePolicyCoverage(
+		policy,
+	); err != nil {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: validate historical fixture policy coverage: %v\n",
+			err,
+		)
+		return 1
+	}
+
 	if err := validateFixtureRouteRecordIDs(
 		schedule,
 	); err != nil {
@@ -117,7 +142,7 @@ func run(
 		cleanupContext, cleanupCancel :=
 			context.WithTimeout(
 				context.Background(),
-				30*time.Second,
+				fixtureCleanupTimeout,
 			)
 		defer cleanupCancel()
 
@@ -171,9 +196,8 @@ func run(
 	composition, err :=
 		projectionread.NewPostgres(
 			projectionread.PostgresConfig{
-				Pool: pool,
-				Policy: projectionread.
-					DefaultPolicy(),
+				Pool:   pool,
+				Policy: policy,
 				Now: func() time.Time {
 					return schedule.GeneratedAt
 				},
@@ -188,6 +212,24 @@ func run(
 		return 1
 	}
 
+	serviceStartedAt := time.Now()
+	directResult, err := verifyHistoricalService(
+		ctx,
+		composition.Service,
+		schedule,
+	)
+	if err != nil {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: verify production Historical Neighbor Continuation service: %v\n",
+			err,
+		)
+		return 1
+	}
+	directServiceDuration := time.Since(
+		serviceStartedAt,
+	)
+
 	app, err := buildRuntimeApp(
 		composition.Service,
 	)
@@ -200,11 +242,16 @@ func run(
 		return 1
 	}
 
+	httpStartedAt := time.Now()
 	payload, err :=
 		verifyHistoricalEndpoint(
+			ctx,
 			app,
 			schedule,
 		)
+	httpDuration := time.Since(
+		httpStartedAt,
+	)
 	if err != nil {
 		fmt.Fprintf(
 			stderr,
@@ -261,8 +308,37 @@ func run(
 	)
 	fmt.Fprintf(
 		stdout,
+		"Command timeout: %s\n",
+		commandTimeout,
+	)
+	fmt.Fprintf(
+		stdout,
+		"Direct service duration: %s\n",
+		directServiceDuration.Round(
+			time.Millisecond,
+		),
+	)
+	fmt.Fprintf(
+		stdout,
+		"HTTP verification duration: %s\n",
+		httpDuration.Round(
+			time.Millisecond,
+		),
+	)
+	fmt.Fprintf(
+		stdout,
 		"Projection method: %s\n",
 		payload.Data.Projection.Method.Name,
+	)
+	fmt.Fprintf(
+		stdout,
+		"Direct strategy: %s\n",
+		directResult.Strategy,
+	)
+	fmt.Fprintf(
+		stdout,
+		"Required historical neighbors: %d\n",
+		policy.Neighbors.SelectionLimit,
 	)
 	fmt.Fprintf(
 		stdout,
@@ -296,6 +372,14 @@ func run(
 	fmt.Fprintln(
 		stdout,
 		"Route record identifier contract: PASS",
+	)
+	fmt.Fprintln(
+		stdout,
+		"Production policy coverage: PASS",
+	)
+	fmt.Fprintln(
+		stdout,
+		"Direct production service contract: PASS",
 	)
 	fmt.Fprintln(
 		stdout,
