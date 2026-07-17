@@ -453,6 +453,10 @@ selected aircraft → persisted trajectory → Projection Intelligence HTTP API
 Stage 13.2 — Projection Map Visualization
 separate estimated GeoJSON source → projected path → forecast points
 → horizontal uncertainty footprints → explicit map legend
+
+Stage 13.3 — Weather Context Frontend Foundation
+persisted trajectory → Weather Context HTTP API → validated TypeScript contract
+→ TanStack Query → trust, alignment, encounter and uncertainty panel
 ```
 
 Observed trajectory geometry and estimated projection geometry remain separate MapLibre sources and layers. The interface must never render estimated coordinates as observed flight history.
