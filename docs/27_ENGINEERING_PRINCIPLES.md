@@ -394,3 +394,28 @@ as simple as possible,
 as strict as necessary,
 as explainable as the analytics require.
 ```
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
+## Evidence Before Capability
+
+A provider endpoint existing does not make a product claim valid.
+
+Every new capability must answer, in order:
+
+```text
+Which free source produced the evidence?
+Was it externally observed, project-derived, provider-estimated, or unknown?
+Does the capability require collection infrastructure the project does not own?
+Does it require satellite or commercial data the project cannot access?
+Which labels and limitations must be published?
+Which claims must be blocked entirely?
+```
+
+External community observations must never be described as first-party sensor observations. Estimated airport context must never be described as official airport operations data. Experimental tracks must never replace the canonical Track Builder. Coverage gaps must remain visible and must not be filled with invented certainty.
+
+<!-- OPENSKY-VALIDITY-ATTRIBUTION-V1 -->
+## Per-Field Time Before Snapshot Convenience
+
+A convenient response timestamp must never erase field-specific timestamps. Before accepting provider position evidence, calculate its age against the provider snapshot and enforce the documented validity window. A value that is missing or stale remains missing or stale; interpolation may create a derived value only when explicitly labelled and must never be published as an observed provider position.
+
+Provider licence, attribution, usage-scope, and deployment-availability obligations are part of the engineering contract, not optional footer text.

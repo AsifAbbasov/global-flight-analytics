@@ -537,3 +537,46 @@ Airspace Intelligence
 ↓
 Stability and Explainability
 ```
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
+## Architecture Amendment — Source Constraints and OpenSky Contract Foundation
+
+Status: IMPLEMENTED as a non-activating architecture and analytical-core foundation.
+
+Implemented scope:
+
+```text
+1. Immutable free-source-only project constraints
+2. Explicit absence of first-party receiver infrastructure
+3. Explicit absence of satellite and commercial aviation-data access
+4. Executable allowed, limited, and blocked capability decisions
+5. OpenSky OAuth2 Client Credentials foundation
+6. Anonymous reduced-capability fallback
+7. Regional bounding-box request contract and credit-cost estimate
+8. Complete eighteen-field OpenSky State Vector parser
+9. Position-source and aircraft-category semantics
+10. Rate-limit evidence contract
+11. Bounded historical-flight contract
+12. Estimated-airport disclosure contract
+13. Experimental-track disclosure and retention guard
+14. Verification command and unit coverage
+```
+
+This amendment does not activate OpenSky in the production ingestion path. Activation requires separate provider-policy, persistence, migration, runtime, and frontend-disclosure verification.
+
+<!-- OPENSKY-VALIDITY-ATTRIBUTION-V1 -->
+## OpenSky Activation Prerequisites Amendment
+
+Before OpenSky can become an active ingestion provider, implementation must verify:
+
+```text
+fifteen-second position-validity enforcement
+snapshot-time and field-time persistence
+stale and missing position rejection
+required public attribution
+non-commercial research-use disclosure
+large-cloud-IP connectivity behavior
+provider health, budget, and fallback execution
+```
+
+OpenSky activation remains a separate increment and must not be coupled to frontend visual work.

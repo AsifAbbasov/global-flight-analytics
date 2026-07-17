@@ -390,3 +390,41 @@ Version 1: features, historical patterns, replay, and confidence
 Version 2: airspace complexity, multi-aircraft context, stability, and advanced similarity
 Research Backlog: heavy models, satellites, FLARM, emissions, contrails, and regulated operational systems
 ```
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
+## Source Constraint Enforcement Amendment
+
+Every analytical capability must be evaluated against the fixed project boundary before publication:
+
+```text
+free data sources only
+no project-owned surveillance collection infrastructure
+no satellite-surveillance access
+no commercial aviation-data access
+research-only output
+```
+
+Executable decisions are produced by:
+
+```text
+apps/api/internal/analytics/sourceconstraints
+```
+
+The guard distinguishes observed external evidence, derived evidence, estimated evidence, unknown evidence, and blocked claims. It blocks first-party sensor claims, continuous global or oceanic tracking, satellite claims, official schedules and delay causes, pilot intent, air traffic control instructions, certified separation monitoring, operational weather claims, and commercial fleet-data claims.
+
+The complete boundary is defined in `docs/36_FREE_DATA_SOURCE_AND_EVIDENCE_BOUNDARIES.md`.
+
+<!-- OPENSKY-VALIDITY-ATTRIBUTION-V1 -->
+## Provider Temporal Validity and Publication Obligations
+
+External State Vectors are not simultaneous sensor packets. The analytical core must retain the provider snapshot time, field-specific observation times, last-contact time, and calculated age before treating a field as observed evidence.
+
+For OpenSky positions:
+
+```text
+age at or below fifteen seconds = provider-valid external position
+age above fifteen seconds = stale and blocked from observed-position analytics
+missing position = unavailable; never reconstructed as observed
+```
+
+Usable OpenSky-derived outputs also carry attribution, non-commercial research-use, incomplete-coverage, and cloud-availability limitations. These obligations propagate with provenance and cannot be removed by later analytical layers.

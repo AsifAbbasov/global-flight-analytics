@@ -333,3 +333,12 @@ Confidence and Explainability Layer
 ↓
 API
 ```
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
+## Free Data Source and Evidence Boundary
+
+```text
+docs/36_FREE_DATA_SOURCE_AND_EVIDENCE_BOUNDARIES.md
+```
+
+This document is authoritative for free-source-only operation, absence of first-party collection infrastructure, absence of satellite access, absence of commercial aviation data, OpenSky evidence semantics, and prohibited analytical claims.

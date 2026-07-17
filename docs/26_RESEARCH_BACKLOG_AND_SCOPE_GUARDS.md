@@ -305,3 +305,27 @@ add prediction only after evaluation exists
 add advanced research only after baselines are proven
 never claim regulated aviation authority
 ```
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
+## Permanent Data Access Exclusions
+
+The following items are not ordinary backlog features under the current project constraints:
+
+```text
+project-owned ADS-B receiver network
+project-owned ground-station network
+satellite surveillance
+licensed commercial flight operations data
+official airport schedules and delay causes
+air traffic control instruction reconstruction
+pilot-intent determination
+certified separation monitoring
+safety-critical decision support
+```
+
+They remain blocked unless the project constraints are explicitly replaced by a separately funded and governed programme. No analytical formula may be used to simulate the authority or completeness of unavailable evidence.
+
+<!-- OPENSKY-VALIDITY-ATTRIBUTION-V1 -->
+## OpenSky Usage and Availability Exclusions
+
+The free OpenSky feed does not authorize commercial real-time aviation-data service claims and does not supply official schedules, gates, delays, or delay causes. Provider access from large cloud-hosting IP ranges may be unavailable. These limitations are not solved by interpolation, caching, or analytical confidence formulas.

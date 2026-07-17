@@ -111,3 +111,20 @@ Existing foundation documents remain in `docs/01_*` through `docs/21_ENGINEERING
 13. MapLibre frontend
 14. Aircraft detail panel
 ```
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
+## Free Data and Evidence Boundaries
+
+The immutable project constraints and OpenSky integration boundary are documented in:
+
+```text
+docs/36_FREE_DATA_SOURCE_AND_EVIDENCE_BOUNDARIES.md
+```
+
+Executable enforcement lives in `apps/api/internal/analytics/sourceconstraints`.
+The bounded OpenSky REST contract foundation lives in `apps/api/internal/integrations/opensky`.
+
+<!-- OPENSKY-VALIDITY-ATTRIBUTION-V1 -->
+### OpenSky temporal validity and publication boundary
+
+OpenSky is an optional external research provider, not project-owned surveillance infrastructure. Public outputs using OpenSky data must preserve the required provider citation and non-commercial research scope. State Vector fields may have different source timestamps; a position is accepted as provider-valid only within the documented fifteen-second reuse window. Access from large cloud-hosting IP ranges is not guaranteed, so OpenSky must remain behind provider health, budget, and fallback controls.
