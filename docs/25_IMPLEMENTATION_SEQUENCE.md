@@ -443,15 +443,19 @@ Status: IN PROGRESS from 2026-07-17.
 
 Stage 13 is a proposed continuation after the completed official analytical sequence. It exposes existing backend intelligence without creating a new analytical engine.
 
-Current increment:
+Frontend integration slices:
 
 ```text
 Stage 13.1 — Projection Intelligence Frontend Foundation
 selected aircraft → persisted trajectory → Projection Intelligence HTTP API
 → validated TypeScript contract → TanStack Query → projection and arrival panel
+
+Stage 13.2 — Projection Map Visualization
+separate estimated GeoJSON source → projected path → forecast points
+→ horizontal uncertainty footprints → explicit map legend
 ```
 
-The map projection line and uncertainty corridor remain a separate increment so data-contract integration can be verified before map geometry is added.
+Observed trajectory geometry and estimated projection geometry remain separate MapLibre sources and layers. The interface must never render estimated coordinates as observed flight history.
 
 ---
 

@@ -6,7 +6,13 @@ import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 
 import { buildRegionView } from '@/lib/geo/region-view'
+import {
+  buildProjectionFeatureCollection,
+  emptyProjectionFeatureCollection,
+  type ProjectionFeatureCollection,
+} from '@/lib/geo/projection-geometry'
 import type { Region } from '@/types/region'
+import type { ProjectionResult } from '@/types/projection-intelligence'
 import type { TrafficAircraft } from '@/types/traffic'
 import type {
   AircraftTrajectory,
@@ -14,6 +20,12 @@ import type {
 } from '@/types/trajectory'
 
 const trajectorySourceID = 'selected-aircraft-trajectory'
+const projectionSourceID = 'selected-aircraft-projection'
+const projectionLayerIDs = {
+  uncertainty: 'selected-aircraft-projection-uncertainty',
+  line: 'selected-aircraft-projection-line',
+  points: 'selected-aircraft-projection-points',
+} as const
 const trajectoryLayerIDs = {
   observed: 'selected-aircraft-trajectory-observed',
   interpolated: 'selected-aircraft-trajectory-interpolated',
@@ -26,6 +38,7 @@ interface TrafficMapProps {
   region: Region
   selectedAircraftICAO24: string | null
   trajectory: AircraftTrajectory | undefined
+  projection: ProjectionResult | undefined
   onSelectAircraft: (icao24: string) => void
 }
 
@@ -60,6 +73,7 @@ export function TrafficMap({
   region,
   selectedAircraftICAO24,
   trajectory,
+  projection,
   onSelectAircraft,
 }: TrafficMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
@@ -191,6 +205,27 @@ export function TrafficMap({
 
   useEffect(() => {
     const map = mapRef.current
+    if (!map) return
+
+    const updateProjection = () => {
+      ensureProjectionLayers(map)
+      const featureCollection = buildProjectionFeatureCollection(projection?.points)
+      const source = map.getSource(projectionSourceID) as maplibregl.GeoJSONSource | undefined
+      source?.setData(featureCollection)
+      if (featureCollection.features.length > 0) focusProjection(map, featureCollection)
+    }
+
+    if (map.loaded()) {
+      updateProjection()
+      return
+    }
+
+    map.once('load', updateProjection)
+    return () => { map.off('load', updateProjection) }
+  }, [projection])
+
+  useEffect(() => {
+    const map = mapRef.current
 
     if (!map) {
       return
@@ -242,14 +277,27 @@ export function TrafficMap({
     }
   }, [aircraft, selectedAircraftICAO24])
 
-  return (
-    <div
-      className='h-[600px] w-full overflow-hidden rounded-xl'
-      ref={mapContainerRef}
-      aria-label={`Current traffic map focused on ${region.name}`}
-      data-region-code={region.code}
-    />
-  )
+  return <div className='relative'>
+    <div className='h-[600px] w-full overflow-hidden rounded-xl' ref={mapContainerRef} aria-label={`Current traffic map focused on ${region.name}`} data-region-code={region.code}/>
+    {projection?.points.length?<div className='pointer-events-none absolute bottom-3 left-3 rounded-lg border border-violet-300/30 bg-slate-950/90 px-3 py-2 text-xs text-slate-200 shadow-xl'><p><span className='mr-2 inline-block h-0.5 w-5 border-t-2 border-dashed border-violet-300 align-middle'/>Projected path</p><p className='mt-1'><span className='mr-2 inline-block h-3 w-5 rounded border border-violet-300/50 bg-violet-400/20 align-middle'/>Horizontal uncertainty</p></div>:null}
+  </div>
+}
+
+function ensureProjectionLayers(map:maplibregl.Map){
+  if(!map.getSource(projectionSourceID))map.addSource(projectionSourceID,{type:'geojson',data:emptyProjectionFeatureCollection()})
+  if(!map.getLayer(projectionLayerIDs.uncertainty))map.addLayer({id:projectionLayerIDs.uncertainty,type:'fill',source:projectionSourceID,filter:['==',['get','kind'],'uncertainty'],paint:{'fill-color':'#a78bfa','fill-opacity':['interpolate',['linear'],['get','confidence'],0,0.08,1,0.22],'fill-outline-color':'#c4b5fd'}})
+  if(!map.getLayer(projectionLayerIDs.line))map.addLayer({id:projectionLayerIDs.line,type:'line',source:projectionSourceID,filter:['==',['get','kind'],'projection-line'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#c4b5fd','line-width':4,'line-opacity':0.95,'line-dasharray':[1.5,1.5]}})
+  if(!map.getLayer(projectionLayerIDs.points))map.addLayer({id:projectionLayerIDs.points,type:'circle',source:projectionSourceID,filter:['==',['get','kind'],'projection-point'],paint:{'circle-radius':5,'circle-color':'#ddd6fe','circle-stroke-color':'#6d28d9','circle-stroke-width':2,'circle-opacity':0.95}})
+}
+
+function focusProjection(map:maplibregl.Map,featureCollection:ProjectionFeatureCollection){
+  const bounds=new maplibregl.LngLatBounds();let count=0
+  for(const feature of featureCollection.features){
+    if(feature.geometry.type==='Point'){bounds.extend(feature.geometry.coordinates);count++}
+    if(feature.geometry.type==='LineString')for(const coordinate of feature.geometry.coordinates){bounds.extend(coordinate);count++}
+  }
+  if(count===0)return
+  map.fitBounds(bounds,{padding:{top:72,right:72,bottom:72,left:72},duration:700,maxZoom:9})
 }
 
 function ensureTrajectoryLayers(map: maplibregl.Map) {
