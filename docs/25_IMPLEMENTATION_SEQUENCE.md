@@ -437,7 +437,25 @@ Stage 12 evaluates analytical stability and explanation honesty without converti
 
 ---
 
-## 15. First Implementation Slice
+## 15. Stage 13 — Frontend Analytics Integration
+
+Status: IN PROGRESS from 2026-07-17.
+
+Stage 13 is a proposed continuation after the completed official analytical sequence. It exposes existing backend intelligence without creating a new analytical engine.
+
+Current increment:
+
+```text
+Stage 13.1 — Projection Intelligence Frontend Foundation
+selected aircraft → persisted trajectory → Projection Intelligence HTTP API
+→ validated TypeScript contract → TanStack Query → projection and arrival panel
+```
+
+The map projection line and uncertainty corridor remain a separate increment so data-contract integration can be verified before map geometry is added.
+
+---
+
+## 16. First Implementation Slice
 
 The first coding slice must be small and complete.
 
@@ -460,7 +478,7 @@ The first coding slice must be small and complete.
 
 ---
 
-## 16. Completion Criteria for MVP Code
+## 17. Completion Criteria for MVP Code
 
 The MVP is complete when:
 
@@ -477,7 +495,7 @@ basic route candidate is shown when possible
 
 ---
 
-## 17. Final Implementation Statement
+## 18. Final Implementation Statement
 
 The implementation order is:
 

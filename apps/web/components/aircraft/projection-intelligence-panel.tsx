@@ -1,0 +1,36 @@
+'use client'
+
+import { APIRequestError, getRequestErrorMessage } from '@/lib/api/client'
+import type { ProjectionIntelligenceResponse } from '@/types/projection-intelligence'
+
+interface Props { selectedICAO24:string|null; trajectoryID:string|null; result:ProjectionIntelligenceResponse|undefined; isPending:boolean; isFetching:boolean; error:Error|null; onRetry:()=>void }
+
+export function ProjectionIntelligencePanel({selectedICAO24,trajectoryID,result,isPending,isFetching,error,onRetry}:Props){
+  if(selectedICAO24===null)return null
+  const unavailable=error instanceof APIRequestError&&(error.status===404||error.status===422)
+  return <aside className='rounded-xl border border-slate-700 bg-slate-950/95 p-5' aria-labelledby='projection-intelligence-title'>
+    <div className='flex items-start justify-between gap-4'><div><p className='text-xs font-semibold uppercase tracking-[0.18em] text-violet-300'>Research projection</p><h3 id='projection-intelligence-title' className='mt-2 text-lg font-semibold text-white'>Projection and Estimated Arrival</h3><p className='mt-1 text-xs leading-5 text-slate-400'>Bounded future estimate. It is not operational flight guidance.</p></div>{isFetching?<span className='text-xs text-sky-300'>Updating…</span>:null}</div>
+    {result?<Content result={result}/>:null}
+    {trajectoryID===null&&!error?<p className='mt-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-sm leading-6 text-slate-400'>Waiting for a persisted trajectory before requesting Projection Intelligence.</p>:null}
+    {trajectoryID!==null&&isPending&&!error?<p className='mt-4 text-sm leading-6 text-slate-400'>Calculating a bounded projection from the latest persisted trajectory evidence…</p>:null}
+    {unavailable?<p className='mt-4 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300'>Projection Intelligence is unavailable or denied for the current trajectory evidence.</p>:null}
+    {error&&!unavailable?<div className='mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3'><p className='text-sm leading-6 text-amber-100'>{getRequestErrorMessage(error)}</p><button type='button' onClick={onRetry} disabled={isFetching} className='mt-3 rounded-md border border-amber-300/40 px-3 py-1.5 text-sm font-medium text-amber-100 disabled:opacity-60'>Retry Projection Intelligence</button></div>:null}
+  </aside>
+}
+
+function Content({result}:{result:ProjectionIntelligenceResponse}){const projection=result.projection;return <>
+  <div className='mt-4 rounded-lg border border-slate-800 bg-slate-900/70 p-3'><div className='flex flex-wrap items-center justify-between gap-3'><Status value={projection.status}/><Confidence level={projection.confidence.level} score={projection.confidence.score}/></div><div className='mt-3 h-2 overflow-hidden rounded-full bg-slate-800' role='progressbar' aria-label='Projection confidence score' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(projection.confidence.score*100)}><div className='h-full rounded-full bg-violet-400' style={{width:`${projection.confidence.score*100}%`}}/></div><dl className='mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm'><Detail label='Method' value={projection.method.name}/><Detail label='Strategy' value={result.strategy}/><Detail label='Horizon' value={duration(projection.horizon.duration_seconds)}/><Detail label='Forecast points' value={String(projection.points.length)}/><Detail label='As of' value={date(projection.horizon.as_of_time)}/><Detail label='Horizon end' value={date(projection.horizon.end_time)}/></dl>{result.fallback_reason?<p className='mt-3 rounded-md border border-amber-400/20 bg-amber-400/5 p-2 text-xs leading-5 text-amber-100'>Fallback: {result.fallback_reason}</p>:null}<p className='mt-3 break-all font-mono text-[11px] leading-5 text-slate-500'>{projection.schema_version} · {projection.scope_guard}</p></div>
+  <Arrival result={result}/>
+  <Section title='Confidence reasons' items={projection.confidence.reasons.map(item=>item.message)} empty='No confidence reasons were reported.'/>
+  <Section title='Limitations' items={projection.limitations.map(item=>item.message)} empty='No projection limitations were reported.' warning/>
+  <Section title='Explanations' items={projection.explanations.map(item=>item.message)} empty='No projection explanations were reported.'/>
+  {result.notices.length?<Section title='Production notices' items={result.notices.map(item=>item.message)} empty='No production notices were reported.' warning/>:null}
+  <p className='mt-4 break-all font-mono text-[11px] leading-5 text-slate-500'>{result.input_fingerprint}</p>
+  </>}
+function Arrival({result}:{result:ProjectionIntelligenceResponse}){const arrival=result.projection.arrival;if(!arrival)return <div className='mt-3 rounded-lg border border-dashed border-slate-700 bg-slate-900/40 p-3'><p className='text-xs font-semibold uppercase tracking-wide text-slate-400'>Estimated Arrival</p><p className='mt-2 text-sm leading-5 text-slate-400'>Unavailable. Backend status: {result.arrival_status}.</p></div>;return <div className='mt-3 rounded-lg border border-violet-400/25 bg-violet-400/5 p-3'><div className='flex flex-wrap items-center justify-between gap-3'><div><p className='text-xs uppercase tracking-wide text-violet-200'>Estimated Arrival</p><p className='mt-1 text-lg font-semibold text-white'>{arrival.airport_icao_code}</p></div><Confidence level={arrival.confidence.level} score={arrival.confidence.score}/></div><dl className='mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm'><Detail label='Estimated' value={date(arrival.estimated_time)}/><Detail label='Interval' value={`${date(arrival.earliest_time)} — ${date(arrival.latest_time)}`}/></dl></div>}
+function Section({title,items,empty,warning=false}:{title:string;items:string[];empty:string;warning?:boolean}){return <div className={`mt-4 rounded-lg border p-3 ${warning?'border-amber-400/25 bg-amber-400/5':'border-slate-800 bg-slate-900/60'}`}><h4 className={`text-xs font-semibold uppercase tracking-wide ${warning?'text-amber-200':'text-slate-300'}`}>{title}</h4>{items.length?<ul className={`mt-2 space-y-2 text-sm leading-5 ${warning?'text-amber-100':'text-slate-400'}`}>{items.slice(0,6).map((item,index)=><li key={`${index}:${item}`}>{item}</li>)}</ul>:<p className='mt-2 text-sm text-slate-400'>{empty}</p>}</div>}
+function Status({value}:{value:string}){return <span className='rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-violet-200'>{value}</span>}
+function Confidence({level,score}:{level:string;score:number}){return <span className='rounded-full border border-violet-400/40 bg-violet-400/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-violet-200'>{level} · {Math.round(score*100)}%</span>}
+function Detail({label,value}:{label:string;value:string}){return <div><dt className='text-xs uppercase tracking-wide text-slate-500'>{label}</dt><dd className='mt-1 break-words text-slate-200'>{value.trim()||'Unknown'}</dd></div>}
+function date(value:string){const result=new Date(value);return Number.isNaN(result.getTime())?'Unknown':result.toLocaleString()}
+function duration(seconds:number){return seconds<60?`${seconds} seconds`:`${Math.round(seconds/60)} minutes`}
