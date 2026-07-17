@@ -457,6 +457,11 @@ separate estimated GeoJSON source → projected path → forecast points
 Stage 13.3 — Weather Context Frontend Foundation
 persisted trajectory → Weather Context HTTP API → validated TypeScript contract
 → TanStack Query → trust, alignment, encounter and uncertainty panel
+
+Stage 13.4 — Stability and Explainability Frontend Foundation
+persisted trajectory → bounded as-of forecast history → Stability Intelligence HTTP API
+→ validated TypeScript contract → TanStack Query → consistency, confidence,
+failure explanation, intervention guard and scope enforcement panel
 ```
 
 Observed trajectory geometry and estimated projection geometry remain separate MapLibre sources and layers. The interface must never render estimated coordinates as observed flight history.

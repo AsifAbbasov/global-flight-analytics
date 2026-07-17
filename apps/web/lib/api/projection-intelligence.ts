@@ -26,10 +26,10 @@ export async function getProjectionIntelligence(request: ProjectionIntelligenceR
     `/api/v1/trajectories/${encodeURIComponent(trajectoryID)}/projection-intelligence`,
     { signal: request.signal, searchParams, timeoutMilliseconds: 20_000 }
   )
-  return parseResponse(value)
+  return parseProjectionIntelligenceResponse(value)
 }
 
-function parseResponse(value: unknown): ProjectionIntelligenceResponse {
+export function parseProjectionIntelligenceResponse(value: unknown): ProjectionIntelligenceResponse {
   const root = record(value, 'response')
   const projection = record(root.projection, 'projection')
   const method = record(projection.method, 'projection.method')
