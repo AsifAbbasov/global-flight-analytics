@@ -81,7 +81,7 @@ func (provider *Provider) LoadByPoint(
 
 	result, err := provider.client.GetStates(
 		ctx,
-		StatesRequest{BoundingBox: &box},
+		StatesRequest{BoundingBox: &box, Extended: true},
 	)
 	if err != nil {
 		return nil, fmt.Errorf(

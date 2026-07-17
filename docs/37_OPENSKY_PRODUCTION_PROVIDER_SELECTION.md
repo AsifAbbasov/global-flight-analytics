@@ -75,3 +75,8 @@ OpenSky can remain a directly selected provider or serve as the secondary
 provider when `TRAFFIC_PROVIDER=auto`. Direct OpenSky selection and automatic
 fallback use the same OAuth2, polling, budget, validity, attribution, and
 regional bounding-box controls.
+
+<!-- OPENSKY-REST-COMPATIBILITY-V1 -->
+## Extended State Vector request
+
+The production OpenSky provider sends `extended=1` so the optional aircraft category can be returned. Compatibility parsing still accepts the base seventeen-field response.

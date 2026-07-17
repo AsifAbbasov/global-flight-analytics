@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrStateVectorFieldCount = errors.New("OpenSky state vector has fewer than 18 fields")
+	ErrStateVectorFieldCount = errors.New("OpenSky state vector has fewer than 17 fields")
 	ErrStateVectorICAO24     = errors.New("OpenSky state vector ICAO24 is missing")
 	ErrStateVectorType       = errors.New("OpenSky state vector field type is invalid")
 )
@@ -55,25 +55,26 @@ type StateResponse struct {
 }
 
 type StateVector struct {
-	SnapshotTime    time.Time
-	ICAO24          string
-	Callsign        *string
-	OriginCountry   string
-	TimePosition    *time.Time
-	LastContact     time.Time
-	Longitude       *float64
-	Latitude        *float64
-	BaroAltitudeM   *float64
-	OnGround        bool
-	VelocityMPS     *float64
-	TrueTrack       *float64
-	VerticalRateMPS *float64
-	SensorSerials   []int64
-	GeoAltitudeM    *float64
-	Squawk          *string
-	SPI             bool
-	PositionSource  PositionSource
-	Category        AircraftCategory
+	SnapshotTime      time.Time
+	ICAO24            string
+	Callsign          *string
+	OriginCountry     string
+	TimePosition      *time.Time
+	LastContact       time.Time
+	Longitude         *float64
+	Latitude          *float64
+	BaroAltitudeM     *float64
+	OnGround          bool
+	VelocityMPS       *float64
+	TrueTrack         *float64
+	VerticalRateMPS   *float64
+	SensorSerials     []int64
+	GeoAltitudeM      *float64
+	Squawk            *string
+	SPI               bool
+	PositionSource    PositionSource
+	Category          AircraftCategory
+	CategoryAvailable bool
 }
 
 func ParseStateVector(raw json.RawMessage) (StateVector, error) {
@@ -81,7 +82,7 @@ func ParseStateVector(raw json.RawMessage) (StateVector, error) {
 	if err := json.Unmarshal(raw, &values); err != nil {
 		return StateVector{}, fmt.Errorf("decode OpenSky state vector array: %w", err)
 	}
-	if len(values) < 18 {
+	if len(values) < 17 {
 		return StateVector{}, fmt.Errorf("%w: got %d", ErrStateVectorFieldCount, len(values))
 	}
 
@@ -158,9 +159,14 @@ func ParseStateVector(raw json.RawMessage) (StateVector, error) {
 	if err != nil {
 		return StateVector{}, err
 	}
-	category, err := requiredInt64(values[17], "category")
-	if err != nil {
-		return StateVector{}, err
+	category := int64(AircraftCategoryNoInformation)
+	categoryAvailable := false
+	if len(values) >= 18 {
+		category, err = requiredInt64(values[17], "category")
+		if err != nil {
+			return StateVector{}, err
+		}
+		categoryAvailable = true
 	}
 
 	var timePosition *time.Time
@@ -170,24 +176,25 @@ func ParseStateVector(raw json.RawMessage) (StateVector, error) {
 	}
 
 	return StateVector{
-		ICAO24:          icao24,
-		Callsign:        callsign,
-		OriginCountry:   strings.TrimSpace(originCountry),
-		TimePosition:    timePosition,
-		LastContact:     time.Unix(lastContactUnix, 0).UTC(),
-		Longitude:       longitude,
-		Latitude:        latitude,
-		BaroAltitudeM:   baroAltitude,
-		OnGround:        onGround,
-		VelocityMPS:     velocity,
-		TrueTrack:       trueTrack,
-		VerticalRateMPS: verticalRate,
-		SensorSerials:   sensors,
-		GeoAltitudeM:    geoAltitude,
-		Squawk:          squawk,
-		SPI:             spi,
-		PositionSource:  PositionSource(positionSource),
-		Category:        AircraftCategory(category),
+		ICAO24:            icao24,
+		Callsign:          callsign,
+		OriginCountry:     strings.TrimSpace(originCountry),
+		TimePosition:      timePosition,
+		LastContact:       time.Unix(lastContactUnix, 0).UTC(),
+		Longitude:         longitude,
+		Latitude:          latitude,
+		BaroAltitudeM:     baroAltitude,
+		OnGround:          onGround,
+		VelocityMPS:       velocity,
+		TrueTrack:         trueTrack,
+		VerticalRateMPS:   verticalRate,
+		SensorSerials:     sensors,
+		GeoAltitudeM:      geoAltitude,
+		Squawk:            squawk,
+		SPI:               spi,
+		PositionSource:    PositionSource(positionSource),
+		Category:          AircraftCategory(category),
+		CategoryAvailable: categoryAvailable,
 	}, nil
 }
 

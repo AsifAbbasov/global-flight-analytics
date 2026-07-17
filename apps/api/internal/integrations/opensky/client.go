@@ -31,6 +31,7 @@ type StatesRequest struct {
 	Time        time.Time
 	ICAO24      []string
 	BoundingBox *BoundingBox
+	Extended    bool
 }
 
 type StatesResult struct {
@@ -175,6 +176,9 @@ func (client *Client) statesURL(input StatesRequest) (string, error) {
 		return "", fmt.Errorf("parse OpenSky states URL: %w", err)
 	}
 	query := base.Query()
+	if input.Extended {
+		query.Set("extended", "1")
+	}
 	if !input.Time.IsZero() {
 		query.Set("time", strconv.FormatInt(input.Time.UTC().Unix(), 10))
 	}

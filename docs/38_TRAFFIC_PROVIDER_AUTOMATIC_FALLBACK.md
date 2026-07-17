@@ -157,3 +157,8 @@ git diff --check
 A live external-provider request is not required by the installer and is not
 claimed as verified until runtime credentials, network access, and PostgreSQL
 are configured.
+
+<!-- OPENSKY-REST-COMPATIBILITY-V1 -->
+## Fallback compatibility guarantee
+
+An OpenSky fallback response is not rejected merely because the optional category field is absent. Production requests still ask for the extended category representation.

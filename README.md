@@ -142,3 +142,8 @@ The ingestion daemon can use either `airplanes.live` or OpenSky through the same
 recoverable primary failure or access denial. Successful ingestion runs and
 canonical states preserve the provider that actually supplied the data.
 See `docs/38_TRAFFIC_PROVIDER_AUTOMATIC_FALLBACK.md`.
+
+<!-- OPENSKY-REST-COMPATIBILITY-V1 -->
+## OpenSky REST compatibility
+
+Production OpenSky State Vector requests include `extended=1`. The parser accepts both the seventeen-field base representation and the eighteen-field extended representation without inventing a provider category.

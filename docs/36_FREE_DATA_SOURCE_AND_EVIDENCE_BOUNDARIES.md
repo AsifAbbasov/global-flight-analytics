@@ -298,3 +298,8 @@ cycle. The secondary request is made only after a recoverable primary failure,
 and the actual selected source is retained. Authentication failures, malformed
 responses, invalid requests, and contract violations are returned directly and
 are not hidden by fallback.
+
+<!-- OPENSKY-REST-COMPATIBILITY-V1 -->
+## OpenSky category evidence boundary
+
+A missing eighteenth State Vector field means that category evidence was not returned. It is represented as no information and must not be confused with a provider-reported category value unless `CategoryAvailable` is true.

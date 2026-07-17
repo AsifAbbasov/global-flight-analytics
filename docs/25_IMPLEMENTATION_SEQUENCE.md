@@ -598,3 +598,8 @@ The ordered chain is `airplanes.live` followed by OpenSky. Fallback is limited
 to budget denial, rate limiting, provider cooldown, server failure, and network
 unavailability. Actual selected-provider provenance is preserved in ingestion
 runs, canonical states, health evidence, and fallback decision evidence.
+
+<!-- OPENSKY-REST-COMPATIBILITY-V1 -->
+## OpenSky REST compatibility hardening
+
+The production provider requests extended aircraft categories, while the State Vector parser remains compatible with base responses that omit the optional category field.

@@ -358,3 +358,8 @@ Document 37 records the controlled production selection boundary for the two fre
 - `38_TRAFFIC_PROVIDER_AUTOMATIC_FALLBACK.md` — ordered free-provider fallback,
   recoverable triggers, actual-source provenance, decision evidence, and
   non-recoverable failure boundaries.
+
+<!-- OPENSKY-REST-COMPATIBILITY-V1 -->
+## Document 39
+
+`39_OPENSKY_REST_COMPATIBILITY_HARDENING.md` records the extended category request and backward-compatible State Vector parsing contract.
