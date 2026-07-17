@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
@@ -20,6 +21,20 @@ type RegionalProvider interface {
 		longitude float64,
 		radius int,
 	) ([]flightstate.FlightState, error)
+}
+
+type LoadResult struct {
+	SourceName string
+	States     []flightstate.FlightState
+}
+
+type SourceAwareRegionalProvider interface {
+	LoadByPointWithSource(
+		ctx context.Context,
+		latitude float64,
+		longitude float64,
+		radius int,
+	) (LoadResult, error)
 }
 
 type ProcessingService interface {
@@ -75,6 +90,7 @@ type Service struct {
 
 type LoadAndProcessResult struct {
 	IngestionRunID   string
+	SourceName       string
 	LoadedStateCount int
 	ProcessingResult trafficapplication.ProcessAndStoreResult
 }
@@ -124,49 +140,54 @@ func (service *Service) LoadAndProcessByPoint(
 
 	startedAt := service.now().UTC()
 
-	run, err := service.ingestionRunRepository.CreateRunning(
-		ctx,
-		service.provider.SourceName(),
-		service.regionID,
-		startedAt,
-	)
-	if err != nil {
-		return LoadAndProcessResult{}, fmt.Errorf(
-			"create traffic ingestion run: %w",
-			err,
-		)
-	}
-
-	states, err := service.provider.LoadByPoint(
+	loadResult, loadErr := service.loadByPoint(
 		ctx,
 		latitude,
 		longitude,
 		radius,
 	)
-	if err != nil {
-		operationErr := fmt.Errorf(
-			"load regional flight states: %w",
-			err,
-		)
-
-		markErr := service.ingestionRunRepository.MarkFailed(
+	if loadErr != nil {
+		return service.recordProviderFailure(
 			ctx,
-			run.ID,
-			service.now().UTC(),
-			len(states),
-			0,
-			0,
-			operationErr.Error(),
+			startedAt,
+			loadResult,
+			loadErr,
 		)
-
-		return LoadAndProcessResult{
-			IngestionRunID:   run.ID,
-			LoadedStateCount: len(states),
-		}, errors.Join(operationErr, markErr)
 	}
 
+	sourceName, err := normalizedSourceName(
+		loadResult.SourceName,
+		service.provider.SourceName(),
+	)
+	if err != nil {
+		return LoadAndProcessResult{}, err
+	}
+
+	run, err := service.ingestionRunRepository.CreateRunning(
+		ctx,
+		sourceName,
+		service.regionID,
+		startedAt,
+	)
+	if err != nil {
+		return LoadAndProcessResult{
+				SourceName:       sourceName,
+				LoadedStateCount: len(loadResult.States),
+			}, fmt.Errorf(
+				"create traffic ingestion run: %w",
+				err,
+			)
+	}
+
+	states := append(
+		[]flightstate.FlightState(nil),
+		loadResult.States...,
+	)
 	for index := range states {
 		states[index].IngestionRunID = run.ID
+		if strings.TrimSpace(states[index].SourceName) == "" {
+			states[index].SourceName = sourceName
+		}
 	}
 
 	processingResult, err := service.processingService.ProcessAndStore(
@@ -191,6 +212,7 @@ func (service *Service) LoadAndProcessByPoint(
 
 		return LoadAndProcessResult{
 			IngestionRunID:   run.ID,
+			SourceName:       sourceName,
 			LoadedStateCount: len(states),
 			ProcessingResult: processingResult,
 		}, errors.Join(operationErr, markErr)
@@ -207,6 +229,7 @@ func (service *Service) LoadAndProcessByPoint(
 	if err != nil {
 		return LoadAndProcessResult{
 				IngestionRunID:   run.ID,
+				SourceName:       sourceName,
 				LoadedStateCount: len(states),
 				ProcessingResult: processingResult,
 			}, fmt.Errorf(
@@ -217,7 +240,110 @@ func (service *Service) LoadAndProcessByPoint(
 
 	return LoadAndProcessResult{
 		IngestionRunID:   run.ID,
+		SourceName:       sourceName,
 		LoadedStateCount: len(states),
 		ProcessingResult: processingResult,
 	}, nil
+}
+
+func (service *Service) loadByPoint(
+	ctx context.Context,
+	latitude float64,
+	longitude float64,
+	radius int,
+) (LoadResult, error) {
+	sourceAwareProvider, supported :=
+		service.provider.(SourceAwareRegionalProvider)
+	if supported {
+		return sourceAwareProvider.LoadByPointWithSource(
+			ctx,
+			latitude,
+			longitude,
+			radius,
+		)
+	}
+
+	states, err := service.provider.LoadByPoint(
+		ctx,
+		latitude,
+		longitude,
+		radius,
+	)
+	return LoadResult{
+		SourceName: service.provider.SourceName(),
+		States:     states,
+	}, err
+}
+
+func (service *Service) recordProviderFailure(
+	ctx context.Context,
+	startedAt time.Time,
+	loadResult LoadResult,
+	loadErr error,
+) (LoadAndProcessResult, error) {
+	operationErr := fmt.Errorf(
+		"load regional flight states: %w",
+		loadErr,
+	)
+
+	sourceName, sourceErr := normalizedSourceName(
+		loadResult.SourceName,
+		service.provider.SourceName(),
+	)
+	if sourceErr != nil {
+		return LoadAndProcessResult{
+			LoadedStateCount: len(loadResult.States),
+		}, errors.Join(operationErr, sourceErr)
+	}
+
+	run, createErr := service.ingestionRunRepository.CreateRunning(
+		ctx,
+		sourceName,
+		service.regionID,
+		startedAt,
+	)
+	if createErr != nil {
+		return LoadAndProcessResult{
+				SourceName:       sourceName,
+				LoadedStateCount: len(loadResult.States),
+			}, errors.Join(
+				operationErr,
+				fmt.Errorf(
+					"create failed traffic ingestion run: %w",
+					createErr,
+				),
+			)
+	}
+
+	markErr := service.ingestionRunRepository.MarkFailed(
+		ctx,
+		run.ID,
+		service.now().UTC(),
+		len(loadResult.States),
+		0,
+		0,
+		operationErr.Error(),
+	)
+
+	return LoadAndProcessResult{
+		IngestionRunID:   run.ID,
+		SourceName:       sourceName,
+		LoadedStateCount: len(loadResult.States),
+	}, errors.Join(operationErr, markErr)
+}
+
+func normalizedSourceName(
+	candidate string,
+	fallback string,
+) (string, error) {
+	sourceName := strings.TrimSpace(candidate)
+	if sourceName == "" {
+		sourceName = strings.TrimSpace(fallback)
+	}
+	if sourceName == "" {
+		return "", fmt.Errorf(
+			"regional traffic provider source name is required",
+		)
+	}
+	return sourceName, nil
 }

@@ -587,3 +587,14 @@ OpenSky activation remains a separate increment and must not be coupled to front
 Status: IMPLEMENTED PENDING RUNTIME INSTALLATION EVIDENCE.
 
 The production ingestion command can select `airplanes.live` or OpenSky while reusing the existing provider policy, budget, request coalescing, provider health, canonical state, data quality, trajectory, and PostgreSQL path. Automatic cross-provider fallback remains a separate increment because ingestion-run provenance must identify the provider that actually served the request.
+
+<!-- TRAFFIC-PROVIDER-AUTOMATIC-FALLBACK-V1 -->
+## Free traffic provider automatic fallback
+
+Status: Completed in implementation baseline.
+
+The production ingestion daemon now supports the explicit `auto` provider mode.
+The ordered chain is `airplanes.live` followed by OpenSky. Fallback is limited
+to budget denial, rate limiting, provider cooldown, server failure, and network
+unavailability. Actual selected-provider provenance is preserved in ingestion
+runs, canonical states, health evidence, and fallback decision evidence.

@@ -351,3 +351,10 @@ docs/37_OPENSKY_PRODUCTION_PROVIDER_SELECTION.md
 ```
 
 Document 37 records the controlled production selection boundary for the two free regional traffic providers.
+
+<!-- TRAFFIC-PROVIDER-AUTOMATIC-FALLBACK-V1 -->
+## Traffic provider automatic fallback
+
+- `38_TRAFFIC_PROVIDER_AUTOMATIC_FALLBACK.md` — ordered free-provider fallback,
+  recoverable triggers, actual-source provenance, decision evidence, and
+  non-recoverable failure boundaries.

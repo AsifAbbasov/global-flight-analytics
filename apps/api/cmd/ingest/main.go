@@ -13,6 +13,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerdecision"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerresponse"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/regionalprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
@@ -132,6 +133,7 @@ func run() error {
 		trafficProviderConfig,
 		orchestrator,
 		responseObserver,
+		providerDecisionCollector,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -243,59 +245,10 @@ func run() error {
 					lastError,
 				)
 
-				snapshot, snapshotErr := providerHealthCollector.Snapshot(
-					trafficSelection.ProviderID,
-				)
-				if snapshotErr != nil {
-					fmt.Printf(
-						"provider_health provider=%s error=%q\n",
-						trafficSelection.ProviderID,
-						snapshotErr.Error(),
-					)
-					return
-				}
-
-				fmt.Printf(
-					"provider_health provider=%s status=%s requests_total=%d requests_successful=%d success_ratio=%.4f consecutive_failures=%d latest_outcome=%s budget_state=%s reasons=%v limitations=%v\n",
-					snapshot.ProviderName,
-					snapshot.Status,
-					snapshot.RequestsTotal,
-					snapshot.RequestsSuccessful,
-					snapshot.SuccessRatio,
-					snapshot.ConsecutiveFailures,
-					snapshot.LatestOutcome,
-					snapshot.Budget.State,
-					snapshot.Reasons,
-					snapshot.Limitations,
-				)
-
-				decisionSnapshot, decisionSnapshotErr :=
-					providerDecisionCollector.Snapshot(
-						trafficSelection.ProviderID,
-					)
-				if decisionSnapshotErr != nil {
-					fmt.Printf(
-						"provider_decision provider=%s error=%q\n",
-						trafficSelection.ProviderID,
-						decisionSnapshotErr.Error(),
-					)
-					return
-				}
-
-				fmt.Printf(
-					"provider_decision provider=%s decisions_total=%d allowed_total=%d denied_total=%d latest_allowed=%t latest_reason=%s latest_request_key=%q retry_at=%s reason_counts=%v limitations=%v\n",
-					decisionSnapshot.Provider,
-					decisionSnapshot.DecisionsTotal,
-					decisionSnapshot.AllowedTotal,
-					decisionSnapshot.DeniedTotal,
-					decisionSnapshot.Latest.Allowed,
-					decisionSnapshot.Latest.Reason,
-					decisionSnapshot.Latest.RequestKey,
-					decisionSnapshot.Latest.RetryAt.Format(
-						time.RFC3339Nano,
-					),
-					decisionSnapshot.ReasonCounts,
-					decisionSnapshot.Limitations,
+				printTrafficProviderEvidence(
+					trafficSelection.ProviderIDs,
+					providerHealthCollector,
+					providerDecisionCollector,
 				)
 			},
 		},
@@ -308,8 +261,10 @@ func run() error {
 	}
 
 	fmt.Printf(
-		"traffic_ingest_daemon_started provider=%s interval=%s latitude=%f longitude=%f radius_nm=%d\n",
+		"traffic_ingest_daemon_started mode=%s primary_provider=%s providers=%v interval=%s latitude=%f longitude=%f radius_nm=%d\n",
+		trafficSelection.Mode,
 		trafficSelection.ProviderID,
+		trafficSelection.ProviderIDs,
 		daemonConfig.Interval,
 		cfg.TrafficIngestionLatitude,
 		cfg.TrafficIngestionLongitude,
@@ -330,4 +285,73 @@ func run() error {
 	)
 
 	return nil
+}
+
+func printTrafficProviderEvidence(
+	providerIDs []providerpolicy.Provider,
+	healthCollector *providerhealthservice.Collector,
+	decisionCollector *providerdecision.Collector,
+) {
+	for _, providerID := range providerIDs {
+		snapshot, snapshotErr := healthCollector.Snapshot(
+			providerID,
+		)
+		if snapshotErr != nil {
+			fmt.Printf(
+				"provider_health provider=%s error=%q\n",
+				providerID,
+				snapshotErr.Error(),
+			)
+		} else {
+			fmt.Printf(
+				"provider_health provider=%s status=%s requests_total=%d requests_successful=%d success_ratio=%.4f consecutive_failures=%d latest_outcome=%s budget_state=%s reasons=%v limitations=%v\n",
+				snapshot.ProviderName,
+				snapshot.Status,
+				snapshot.RequestsTotal,
+				snapshot.RequestsSuccessful,
+				snapshot.SuccessRatio,
+				snapshot.ConsecutiveFailures,
+				snapshot.LatestOutcome,
+				snapshot.Budget.State,
+				snapshot.Reasons,
+				snapshot.Limitations,
+			)
+		}
+
+		decisionSnapshot, decisionSnapshotErr :=
+			decisionCollector.Snapshot(
+				providerID,
+			)
+		if decisionSnapshotErr != nil {
+			fmt.Printf(
+				"provider_decision provider=%s error=%q\n",
+				providerID,
+				decisionSnapshotErr.Error(),
+			)
+			continue
+		}
+
+		fmt.Printf(
+			"provider_decision provider=%s decisions_total=%d allowed_total=%d denied_total=%d latest_allowed=%t latest_reason=%s latest_request_key=%q retry_at=%s fallback_observed=%t fallback_total=%d primary_selected=%d fallback_selected=%d no_provider_available=%d latest_fallback_outcome=%s latest_selected_provider=%s reason_counts=%v limitations=%v\n",
+			decisionSnapshot.Provider,
+			decisionSnapshot.DecisionsTotal,
+			decisionSnapshot.AllowedTotal,
+			decisionSnapshot.DeniedTotal,
+			decisionSnapshot.Latest.Allowed,
+			decisionSnapshot.Latest.Reason,
+			decisionSnapshot.Latest.RequestKey,
+			decisionSnapshot.Latest.RetryAt.Format(
+				time.RFC3339Nano,
+			),
+			decisionSnapshot.FallbackObserved,
+			decisionSnapshot.FallbackDecisionsTotal,
+			decisionSnapshot.PrimarySelectedTotal,
+			decisionSnapshot.FallbackSelectedTotal,
+			decisionSnapshot.NoProviderAvailableTotal,
+			decisionSnapshot.LatestFallback.Outcome,
+			decisionSnapshot.LatestFallback.SelectedProvider,
+			decisionSnapshot.ReasonCounts,
+			decisionSnapshot.Limitations,
+		)
+	}
 }

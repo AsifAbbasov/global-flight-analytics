@@ -288,3 +288,13 @@ Until then, the existing production ingestion path remains unchanged.
 OpenSky may be selected by the ingestion daemon only as a bounded regional provider. The shared ingestion radius is interpreted as nautical miles, matching the existing `airplanes.live` point endpoint. The OpenSky adapter converts that radius into a bounding box, rejects radii above 250 nautical miles, rejects bounding boxes above the configured free-credit cost boundary, and excludes missing or stale positions before canonical mapping.
 
 This selection capability does not imply automatic fallback, global coverage, project-owned receivers, satellite tracking, commercial schedule access, or an availability guarantee.
+
+<!-- TRAFFIC-PROVIDER-AUTOMATIC-FALLBACK-V1 -->
+## Automatic provider boundary
+
+Automatic fallback does not combine the two external datasets into an
+unqualified global feed. Only one provider supplies a successful ingestion
+cycle. The secondary request is made only after a recoverable primary failure,
+and the actual selected source is retained. Authentication failures, malformed
+responses, invalid requests, and contract violations are returned directly and
+are not hidden by fallback.

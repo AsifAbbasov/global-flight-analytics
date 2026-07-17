@@ -27,6 +27,26 @@ func TestLoadTrafficProviderConfigDefaultsToAirplanesLive(
 	}
 }
 
+func TestLoadTrafficProviderConfigAcceptsAutomaticFallback(
+	t *testing.T,
+) {
+	t.Setenv(trafficProviderEnvironmentVariable, string(TrafficProviderAuto))
+	t.Setenv(openSkyClientIDEnvironmentVariable, "")
+	t.Setenv(openSkyClientSecretEnvironmentVariable, "")
+	t.Setenv(openSkyPollingIntervalEnvironmentVariable, "")
+
+	config, err := LoadTrafficProviderConfig()
+	if err != nil {
+		t.Fatalf("load automatic traffic provider config: %v", err)
+	}
+	if config.Provider != TrafficProviderAuto {
+		t.Fatalf("provider = %q, want %q", config.Provider, TrafficProviderAuto)
+	}
+	if config.OpenSkyPollingInterval != 10*time.Second {
+		t.Fatalf("polling interval = %s, want 10s", config.OpenSkyPollingInterval)
+	}
+}
+
 func TestLoadTrafficProviderConfigUsesAuthenticatedMinimum(
 	t *testing.T,
 ) {

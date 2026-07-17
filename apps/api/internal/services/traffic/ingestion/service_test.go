@@ -53,6 +53,13 @@ func TestLoadAndProcessByPoint(t *testing.T) {
 		)
 	}
 
+	if result.SourceName != "test-provider" {
+		t.Fatalf(
+			"expected source test-provider, got %s",
+			result.SourceName,
+		)
+	}
+
 	if result.LoadedStateCount != 2 {
 		t.Fatalf(
 			"expected 2 loaded states, got %d",
@@ -89,12 +96,26 @@ func TestLoadAndProcessByPoint(t *testing.T) {
 				state.IngestionRunID,
 			)
 		}
+		if state.SourceName != "test-provider" {
+			t.Fatalf(
+				"expected source test-provider for state %s, got %s",
+				state.ICAO24,
+				state.SourceName,
+			)
+		}
 	}
 
 	if runRepository.createCount != 1 {
 		t.Fatalf(
 			"expected ingestion run create count 1, got %d",
 			runRepository.createCount,
+		)
+	}
+
+	if runRepository.lastSourceName != "test-provider" {
+		t.Fatalf(
+			"expected run source test-provider, got %s",
+			runRepository.lastSourceName,
 		)
 	}
 
@@ -123,6 +144,66 @@ func TestLoadAndProcessByPoint(t *testing.T) {
 		t.Fatalf(
 			"expected 2 inserted records, got %d",
 			runRepository.lastRecordsInserted,
+		)
+	}
+}
+
+func TestLoadAndProcessByPointPreservesSelectedFallbackSource(
+	t *testing.T,
+) {
+	provider := &testSourceAwareRegionalProvider{
+		testRegionalProvider: testRegionalProvider{
+			sourceName: "airplanes.live",
+		},
+		result: LoadResult{
+			SourceName: "opensky",
+			States: []flightstate.FlightState{
+				{
+					ICAO24:     "ABC123",
+					SourceName: "opensky",
+				},
+			},
+		},
+	}
+
+	processor := &testProcessingService{}
+	runRepository := &testIngestionRunRepository{
+		run: ingestionrun.Run{
+			ID: "run-fallback",
+		},
+	}
+
+	service := New(Config{
+		Provider:               provider,
+		ProcessingService:      processor,
+		IngestionRunRepository: runRepository,
+		Now:                    fixedIngestionTime,
+	})
+
+	result, err := service.LoadAndProcessByPoint(
+		context.Background(),
+		40.4093,
+		49.8671,
+		100,
+	)
+	if err != nil {
+		t.Fatalf("load fallback result: %v", err)
+	}
+
+	if result.SourceName != "opensky" {
+		t.Fatalf("result source = %q, want opensky", result.SourceName)
+	}
+	if runRepository.lastSourceName != "opensky" {
+		t.Fatalf(
+			"ingestion run source = %q, want opensky",
+			runRepository.lastSourceName,
+		)
+	}
+	if len(processor.lastStates) != 1 ||
+		processor.lastStates[0].SourceName != "opensky" {
+		t.Fatalf(
+			"processed states did not preserve OpenSky provenance: %+v",
+			processor.lastStates,
 		)
 	}
 }
@@ -163,6 +244,13 @@ func TestLoadAndProcessByPointWrapsProviderError(t *testing.T) {
 		t.Fatalf(
 			"expected ingestion run create count 1, got %d",
 			runRepository.createCount,
+		)
+	}
+
+	if runRepository.lastSourceName != "test-provider" {
+		t.Fatalf(
+			"expected failed run source test-provider, got %s",
+			runRepository.lastSourceName,
 		)
 	}
 
@@ -220,6 +308,21 @@ func (provider *testRegionalProvider) LoadByPoint(
 	return provider.states, nil
 }
 
+type testSourceAwareRegionalProvider struct {
+	testRegionalProvider
+	result LoadResult
+}
+
+func (provider *testSourceAwareRegionalProvider) LoadByPointWithSource(
+	context.Context,
+	float64,
+	float64,
+	int,
+) (LoadResult, error) {
+	provider.callCount++
+	return provider.result, provider.err
+}
+
 type testProcessingService struct {
 	callCount  int
 	lastStates []flightstate.FlightState
@@ -246,6 +349,7 @@ type testIngestionRunRepository struct {
 	createCount         int
 	successCount        int
 	failedCount         int
+	lastSourceName      string
 	lastRecordsReceived int
 	lastRecordsInserted int
 	lastRecordsUpdated  int
@@ -258,6 +362,7 @@ func (repository *testIngestionRunRepository) CreateRunning(
 	startedAt time.Time,
 ) (ingestionrun.Run, error) {
 	repository.createCount++
+	repository.lastSourceName = sourceName
 
 	return repository.run, nil
 }

@@ -133,3 +133,12 @@ OpenSky is an optional external research provider, not project-owned surveillanc
 ## Selectable production traffic provider
 
 The ingestion daemon can use either `airplanes.live` or OpenSky through the same provider budget, request coalescing, health, data quality, and trajectory pipeline. `airplanes.live` remains the default. OpenSky is enabled explicitly with `TRAFFIC_PROVIDER=opensky` and remains bounded by the free-data and non-commercial research constraints.
+
+<!-- TRAFFIC-PROVIDER-AUTOMATIC-FALLBACK-V1 -->
+### Automatic free-provider fallback
+
+`TRAFFIC_PROVIDER=auto` enables an ordered, budget-aware fallback from
+`airplanes.live` to OpenSky. The secondary provider is called only after a
+recoverable primary failure or access denial. Successful ingestion runs and
+canonical states preserve the provider that actually supplied the data.
+See `docs/38_TRAFFIC_PROVIDER_AUTOMATIC_FALLBACK.md`.

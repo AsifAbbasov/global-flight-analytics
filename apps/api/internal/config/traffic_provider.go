@@ -15,6 +15,7 @@ type TrafficProvider string
 const (
 	TrafficProviderAirplanesLive TrafficProvider = "airplanes.live"
 	TrafficProviderOpenSky       TrafficProvider = "opensky"
+	TrafficProviderAuto          TrafficProvider = "auto"
 )
 
 const (
@@ -29,7 +30,7 @@ const (
 
 var (
 	ErrTrafficProviderInvalid = errors.New(
-		"traffic provider must be airplanes.live or opensky",
+		"traffic provider must be airplanes.live, opensky, or auto",
 	)
 	ErrOpenSkyCredentialPairRequired = errors.New(
 		"OpenSky client id and client secret must be configured together",
@@ -60,7 +61,8 @@ func LoadTrafficProviderConfig() (
 		provider = TrafficProviderAirplanesLive
 	}
 	if provider != TrafficProviderAirplanesLive &&
-		provider != TrafficProviderOpenSky {
+		provider != TrafficProviderOpenSky &&
+		provider != TrafficProviderAuto {
 		return TrafficProviderConfig{}, fmt.Errorf(
 			"%w: %q",
 			ErrTrafficProviderInvalid,

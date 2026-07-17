@@ -125,8 +125,9 @@ func (
 	}
 
 	fmt.Printf(
-		"ingestion_run_id=%s loaded=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
+		"ingestion_run_id=%s source=%s loaded=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
 		result.IngestionRunID,
+		result.SourceName,
 		result.LoadedStateCount,
 		result.ProcessingResult.ProcessingResult.Stats.ReceivedCount,
 		result.ProcessingResult.ProcessingResult.Stats.UsableCount,
@@ -153,9 +154,27 @@ func (cycle *ingestionCycle) observeProviderEvidence(
 		return
 	}
 
+	providerID := cycle.providerID
+	if normalizedSourceName := strings.TrimSpace(
+		result.SourceName,
+	); normalizedSourceName != "" {
+		candidate := providerpolicy.Provider(
+			normalizedSourceName,
+		)
+		if _, err := providerpolicy.Get(candidate); err != nil {
+			fmt.Printf(
+				"provider_health_observation_evidence source=%q error=%q\n",
+				normalizedSourceName,
+				err.Error(),
+			)
+			return
+		}
+		providerID = candidate
+	}
+
 	stats := processingResult.Stats
 	err := cycle.observationRecorder.RecordObservationEvidence(
-		cycle.providerID,
+		providerID,
 		int64(stats.ReceivedCount),
 		int64(stats.UsableCount),
 		int64(stats.InvalidCount+stats.DuplicateCount),
@@ -163,7 +182,7 @@ func (cycle *ingestionCycle) observeProviderEvidence(
 	if err != nil {
 		fmt.Printf(
 			"provider_health_observation_evidence provider=%s error=%q\n",
-			cycle.providerID,
+			providerID,
 			err.Error(),
 		)
 	}

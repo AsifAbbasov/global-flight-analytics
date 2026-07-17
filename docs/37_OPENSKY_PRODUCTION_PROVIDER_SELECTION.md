@@ -67,3 +67,11 @@ For authenticated OpenSky access, the default polling interval becomes five seco
 ## Explicit boundary
 
 This increment provides deterministic provider selection. It does not yet implement automatic runtime fallback between `airplanes.live` and OpenSky. Automatic fallback requires ingestion-run provenance to record the provider that actually served each request. That is the next provider integration increment.
+
+<!-- TRAFFIC-PROVIDER-AUTOMATIC-FALLBACK-V1 -->
+## Automatic selection extension
+
+OpenSky can remain a directly selected provider or serve as the secondary
+provider when `TRAFFIC_PROVIDER=auto`. Direct OpenSky selection and automatic
+fallback use the same OAuth2, polling, budget, validity, attribution, and
+regional bounding-box controls.
