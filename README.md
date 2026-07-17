@@ -128,3 +128,8 @@ The bounded OpenSky REST contract foundation lives in `apps/api/internal/integra
 ### OpenSky temporal validity and publication boundary
 
 OpenSky is an optional external research provider, not project-owned surveillance infrastructure. Public outputs using OpenSky data must preserve the required provider citation and non-commercial research scope. State Vector fields may have different source timestamps; a position is accepted as provider-valid only within the documented fifteen-second reuse window. Access from large cloud-hosting IP ranges is not guaranteed, so OpenSky must remain behind provider health, budget, and fallback controls.
+
+<!-- OPENSKY-PRODUCTION-PROVIDER-V1 -->
+## Selectable production traffic provider
+
+The ingestion daemon can use either `airplanes.live` or OpenSky through the same provider budget, request coalescing, health, data quality, and trajectory pipeline. `airplanes.live` remains the default. OpenSky is enabled explicitly with `TRAFFIC_PROVIDER=opensky` and remains bounded by the free-data and non-commercial research constraints.

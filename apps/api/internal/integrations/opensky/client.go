@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
 
 var (
@@ -39,18 +41,29 @@ type StatesResult struct {
 }
 
 type Client struct {
-	config       Config
-	tokenManager *TokenManager
+	config           Config
+	tokenManager     *TokenManager
+	responseObserver integrationcommon.ProviderResponseObserver
 
 	pollMu            sync.Mutex
 	lastStatesRequest time.Time
 }
 
 func NewClient(config Config) (*Client, error) {
+	return NewClientWithResponseObserver(config, nil)
+}
+
+func NewClientWithResponseObserver(
+	config Config,
+	responseObserver integrationcommon.ProviderResponseObserver,
+) (*Client, error) {
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
-	client := &Client{config: config}
+	client := &Client{
+		config:           config,
+		responseObserver: responseObserver,
+	}
 	if config.Authenticated() {
 		manager, err := NewTokenManager(
 			config.HTTPClient,
@@ -96,9 +109,13 @@ func (client *Client) GetStates(
 		defer response.Body.Close()
 	}
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		statusErr := integrationcommon.ProviderStatusError(response.StatusCode)
+		if statusErr == nil {
+			statusErr = fmt.Errorf("unexpected provider status %d", response.StatusCode)
+		}
 		return StatesResult{}, fmt.Errorf(
-			"OpenSky states request failed with status %d",
-			response.StatusCode,
+			"OpenSky states request failed: %w",
+			statusErr,
 		)
 	}
 
@@ -195,10 +212,37 @@ func (client *Client) do(
 		}
 		request.Header.Set("Authorization", "Bearer "+token)
 	}
+
+	startedAt := time.Now()
 	response, err := client.config.HTTPClient.Do(request)
+	latency := time.Since(startedAt)
 	if err != nil {
+		observer, supported := client.responseObserver.(integrationcommon.ProviderTransportFailureObserver)
+		if supported {
+			_ = observer.ObserveProviderTransportFailure(
+				sourceName,
+				err,
+				latency,
+			)
+		}
 		return nil, fmt.Errorf("execute OpenSky request: %w", err)
 	}
+
+	if client.responseObserver != nil {
+		if err := client.responseObserver.ObserveProviderResponse(
+			sourceName,
+			response.StatusCode,
+			response.Header,
+			latency,
+		); err != nil {
+			_ = response.Body.Close()
+			return nil, fmt.Errorf(
+				"observe OpenSky provider response: %w",
+				err,
+			)
+		}
+	}
+
 	return response, nil
 }
 

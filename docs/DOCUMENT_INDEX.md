@@ -342,3 +342,12 @@ docs/36_FREE_DATA_SOURCE_AND_EVIDENCE_BOUNDARIES.md
 ```
 
 This document is authoritative for free-source-only operation, absence of first-party collection infrastructure, absence of satellite access, absence of commercial aviation data, OpenSky evidence semantics, and prohibited analytical claims.
+
+<!-- OPENSKY-PRODUCTION-PROVIDER-V1 -->
+## OpenSky production provider selection
+
+```text
+docs/37_OPENSKY_PRODUCTION_PROVIDER_SELECTION.md
+```
+
+Document 37 records the controlled production selection boundary for the two free regional traffic providers.

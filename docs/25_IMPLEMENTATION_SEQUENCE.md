@@ -580,3 +580,10 @@ provider health, budget, and fallback execution
 ```
 
 OpenSky activation remains a separate increment and must not be coupled to frontend visual work.
+
+<!-- OPENSKY-PRODUCTION-PROVIDER-V1 -->
+## OpenSky Production Provider Selection Increment
+
+Status: IMPLEMENTED PENDING RUNTIME INSTALLATION EVIDENCE.
+
+The production ingestion command can select `airplanes.live` or OpenSky while reusing the existing provider policy, budget, request coalescing, provider health, canonical state, data quality, trajectory, and PostgreSQL path. Automatic cross-provider fallback remains a separate increment because ingestion-run provenance must identify the provider that actually served the request.

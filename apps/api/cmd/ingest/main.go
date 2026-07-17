@@ -10,12 +10,9 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/airplaneslive"
-	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerdecision"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerresponse"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/regionalprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
@@ -52,6 +49,14 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf(
 			"load ingest daemon configuration: %w",
+			err,
+		)
+	}
+
+	trafficProviderConfig, err := config.LoadTrafficProviderConfig()
+	if err != nil {
+		return fmt.Errorf(
+			"load traffic provider configuration: %w",
 			err,
 		)
 	}
@@ -122,38 +127,20 @@ func run() error {
 		)
 	}
 
-	airplanesLiveClient, err := airplaneslive.NewClientWithResponseObserver(
-		integrationcommon.HTTPClientConfig{
-			BaseURL:   airplaneslive.BaseURL,
-			Timeout:   cfg.AirplanesLiveTimeout,
-			UserAgent: "global-flight-analytics-ingest",
-		},
+	trafficSelection, err := buildTrafficProvider(
+		cfg.AirplanesLiveTimeout,
+		trafficProviderConfig,
+		orchestrator,
 		responseObserver,
 	)
 	if err != nil {
 		return fmt.Errorf(
-			"create airplanes.live client: %w",
+			"build regional traffic provider: %w",
 			err,
 		)
 	}
 
-	rawTrafficProvider := airplaneslive.NewProvider(
-		airplanesLiveClient,
-	)
-
-	trafficProvider, err := regionalprovider.New(
-		regionalprovider.Config{
-			Provider:   rawTrafficProvider,
-			ProviderID: providerpolicy.ProviderAirplanesLive,
-			Executor:   orchestrator,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf(
-			"create orchestrated regional traffic provider: %w",
-			err,
-		)
-	}
+	trafficProvider := trafficSelection.Provider
 
 	flightStateRepository := postgres.NewFlightStateRepository(
 		dbPool,
@@ -257,12 +244,12 @@ func run() error {
 				)
 
 				snapshot, snapshotErr := providerHealthCollector.Snapshot(
-					providerpolicy.ProviderAirplanesLive,
+					trafficSelection.ProviderID,
 				)
 				if snapshotErr != nil {
 					fmt.Printf(
 						"provider_health provider=%s error=%q\n",
-						providerpolicy.ProviderAirplanesLive,
+						trafficSelection.ProviderID,
 						snapshotErr.Error(),
 					)
 					return
@@ -284,12 +271,12 @@ func run() error {
 
 				decisionSnapshot, decisionSnapshotErr :=
 					providerDecisionCollector.Snapshot(
-						providerpolicy.ProviderAirplanesLive,
+						trafficSelection.ProviderID,
 					)
 				if decisionSnapshotErr != nil {
 					fmt.Printf(
 						"provider_decision provider=%s error=%q\n",
-						providerpolicy.ProviderAirplanesLive,
+						trafficSelection.ProviderID,
 						decisionSnapshotErr.Error(),
 					)
 					return
@@ -321,7 +308,8 @@ func run() error {
 	}
 
 	fmt.Printf(
-		"traffic_ingest_daemon_started interval=%s latitude=%f longitude=%f radius=%d\n",
+		"traffic_ingest_daemon_started provider=%s interval=%s latitude=%f longitude=%f radius_nm=%d\n",
+		trafficSelection.ProviderID,
 		daemonConfig.Interval,
 		cfg.TrafficIngestionLatitude,
 		cfg.TrafficIngestionLongitude,

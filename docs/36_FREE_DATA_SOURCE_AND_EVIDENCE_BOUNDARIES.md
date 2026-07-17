@@ -281,3 +281,10 @@ HTTP and frontend attribution disclosure verification
 ```
 
 Until then, the existing production ingestion path remains unchanged.
+
+<!-- OPENSKY-PRODUCTION-PROVIDER-V1 -->
+## Production provider selection boundary
+
+OpenSky may be selected by the ingestion daemon only as a bounded regional provider. The shared ingestion radius is interpreted as nautical miles, matching the existing `airplanes.live` point endpoint. The OpenSky adapter converts that radius into a bounding box, rejects radii above 250 nautical miles, rejects bounding boxes above the configured free-credit cost boundary, and excludes missing or stale positions before canonical mapping.
+
+This selection capability does not imply automatic fallback, global coverage, project-owned receivers, satellite tracking, commercial schedule access, or an availability guarantee.
