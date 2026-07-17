@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.8
+Status: Documentation Index v1.9
 Project: Global Flight Analytics
 
 ---
@@ -13,7 +13,7 @@ The project documentation is divided into two groups:
 
 ```text
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
-Documents 22–34: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
+Documents 22–35: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
 ```
 
 ---
@@ -267,6 +267,24 @@ interaction graph, radius policy, local traffic scenes, proximity scanning,
 separation-risk context, temporal occupancy, synthetic-sector complexity,
 regional analytics, PostgreSQL and HTTP runtime evidence, deterministic replay,
 scope guards, known limitations, and the formal Stage 11 completion statement.
+```
+
+### Document 35 — Stage 12 Stability and Explainability Completion
+
+Path:
+
+```text
+docs/35_STAGE_12_STABILITY_AND_EXPLAINABILITY_COMPLETION.md
+```
+
+Purpose:
+
+```text
+Records the completed research-only Production Stability and Explainability
+foundation, deterministic forecast versions, Decision Stability, multi-version
+Forecast Stability Analysis, Confidence Propagation, Failure Explanation,
+Unknown Intervention and Scope Guard protection, standardized HTTP output,
+PostgreSQL and Fiber runtime evidence, limitations, and formal Stage 12 closure.
 ```
 
 

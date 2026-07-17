@@ -1,6 +1,6 @@
 # Document 25 — Implementation Sequence
 
-Status: Implementation Baseline v1.5
+Status: Implementation Baseline v1.6
 Project: Global Flight Analytics
 Scope: Ordered implementation stages and first coding slice
 
@@ -393,18 +393,47 @@ Stage 11 consumes bounded canonical flight-state evidence without changing proxi
 
 ## 14. Stage 12 — Stability and Explainability
 
-Tasks:
+Status: COMPLETED on 2026-07-17.
+
+Completed production scope:
 
 ```text
-1. Forecast Versioning
-2. Forecast Stability Analysis
-3. Decision Stability Evaluator
-4. Confidence Propagation
-5. Failure Explanation Engine
-6. Unknown Intervention Guard
-7. Scope Guard enforcement
-8. Explanation API standardization
+1. Immutable deterministic Forecast Versioning
+2. Idempotent identical forecast replay
+3. Pairwise Decision Stability Evaluator
+4. Bounded multi-version Forecast Stability Analysis
+5. Explicit confidence dependency graph and Confidence Propagation
+6. Weakest required dependency, estimated evidence, and unknown evidence caps
+7. Failure Explanation Engine with observed, derived, and unknown-cause separation
+8. Unknown Intervention Guard for pilot intent, air traffic control instruction, and exact cause
+9. Scope Guard Enforcement for operational, directive, certain, and safety-critical claims
+10. Production Stability Intelligence composition over the PostgreSQL Projection Intelligence reader
+11. Standardized Stability Intelligence HTTP data transfer object
+12. Read-only Fiber HTTP endpoint and database route wiring
+13. PostgreSQL and HTTP runtime verification
+14. Deterministic replay fingerprint and zero-row fixture cleanup
+15. Unit, race, regression, static-analysis, and documentation evidence
 ```
+
+Completion evidence:
+
+```text
+docs/35_STAGE_12_STABILITY_AND_EXPLAINABILITY_COMPLETION.md
+```
+
+Completion boundary:
+
+```text
+Stage 12 is complete as a bounded, deterministic, explainable,
+research-only Production Stability and Explainability foundation.
+
+It does not claim forecast accuracy certification, calibrated probability,
+pilot-intent detection, air traffic control instruction reconstruction,
+exact operational causation, flight-planning suitability,
+safety-critical decision support, or regulated aviation use.
+```
+
+Stage 12 evaluates analytical stability and explanation honesty without converting consistency into accuracy, association into causation, or scope enforcement into operational authorization.
 
 ---
 

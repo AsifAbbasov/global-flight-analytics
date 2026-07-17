@@ -17,6 +17,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routepipeline"
 	trafficquery "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/query"
 	trafficroutecontext "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/routecontext"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/stabilityintelligence/stabilityproduction"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -66,6 +67,21 @@ func registerDatabaseRoutes(
 	if err != nil {
 		return fmt.Errorf(
 			"compose production Projection Intelligence reader: %w",
+			err,
+		)
+	}
+
+	stabilityIntelligenceService, err :=
+		stabilityproduction.New(
+			stabilityproduction.Config{
+				ProjectionReader: stabilityProjectionReaderAdapter{
+					reader: projectionReader,
+				},
+			},
+		)
+	if err != nil {
+		return fmt.Errorf(
+			"compose production Stability Intelligence service: %w",
 			err,
 		)
 	}
@@ -140,6 +156,15 @@ func registerDatabaseRoutes(
 	); err != nil {
 		return fmt.Errorf(
 			"register Projection Intelligence route: %w",
+			err,
+		)
+	}
+	if err := RegisterStabilityIntelligenceReadRoute(
+		v1,
+		stabilityIntelligenceService,
+	); err != nil {
+		return fmt.Errorf(
+			"register Stability Intelligence route: %w",
 			err,
 		)
 	}

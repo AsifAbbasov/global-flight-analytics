@@ -30,7 +30,8 @@ type SuccessPayload interface {
 		dto.AirportProfile |
 		dto.ActiveAircraftMetricResponse |
 		dto.AnalyticalMetricResponse |
-		dto.AirspaceRegionAnalyticsResponse
+		dto.AirspaceRegionAnalyticsResponse |
+		dto.StabilityIntelligenceResponse
 }
 
 type SuccessResponse[T SuccessPayload] struct {
