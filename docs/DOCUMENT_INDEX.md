@@ -387,3 +387,11 @@ Defines the shared confidence vocabulary, Go and TypeScript trajectory contract 
 `42_STAGE_14_2_DEAD_CODE_CLASSIFICATION_AND_REMOVAL.md`
 
 Records importer-proven removal of obsolete Analytical Core foundation packages and the mandatory release disposition of every remaining non-runtime analytical package.
+
+<!-- STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION:DOCUMENT-INDEX -->
+
+## Document 43
+
+`43_STAGE_14_3_AIRPORT_INTELLIGENCE_PRODUCTION_INTEGRATION.md`
+
+Records PostgreSQL composition, read-only HTTP routes, completed-day window semantics, ranking limitations, security boundary, and runtime completion evidence for Airport Intelligence.

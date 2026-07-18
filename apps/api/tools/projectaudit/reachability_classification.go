@@ -31,36 +31,6 @@ var nonRuntimePackagePolicies = map[string]nonRuntimePackagePolicy{
 		Rationale:   "observed transponder evidence exists but is not yet exposed through a production read path",
 		NextAction:  "integrate as read-only evidence or remove before release",
 	},
-	modulePath + "/internal/airportintelligence/history": {
-		Disposition: dispositionPlannedProductionIntegration,
-		Rationale:   "airport history implementation has no production composition",
-		NextAction:  "compose into Airport Intelligence read API or remove before release",
-	},
-	modulePath + "/internal/airportintelligence/overview": {
-		Disposition: dispositionPlannedProductionIntegration,
-		Rationale:   "airport overview implementation has no production composition",
-		NextAction:  "compose into Airport Intelligence read API or remove before release",
-	},
-	modulePath + "/internal/airportintelligence/passport": {
-		Disposition: dispositionPlannedProductionIntegration,
-		Rationale:   "airport passport service has no production composition",
-		NextAction:  "compose with PostgreSQL airport and analytical readers or remove before release",
-	},
-	modulePath + "/internal/airportintelligence/ranking": {
-		Disposition: dispositionPlannedProductionIntegration,
-		Rationale:   "airport ranking implementation has no production composition",
-		NextAction:  "compose into Airport Intelligence read API or remove before release",
-	},
-	modulePath + "/internal/airportintelligence/statistics": {
-		Disposition: dispositionPlannedProductionIntegration,
-		Rationale:   "airport statistics implementation has no production composition",
-		NextAction:  "compose into Airport Intelligence read API or remove before release",
-	},
-	modulePath + "/internal/airportintelligence/trends": {
-		Disposition: dispositionPlannedProductionIntegration,
-		Rationale:   "airport trends implementation has no production composition",
-		NextAction:  "compose into Airport Intelligence read API or remove before release",
-	},
 	modulePath + "/internal/features/aircraftprovider": {
 		Disposition: dispositionUnintegratedFeaturePipeline,
 		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
@@ -137,3 +107,5 @@ func nonRuntimePackagePolicyFor(
 	policy, exists := nonRuntimePackagePolicies[importPath]
 	return policy, exists
 }
+
+// STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION

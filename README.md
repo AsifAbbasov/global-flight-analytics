@@ -165,3 +165,9 @@ Stage 14 establishes one shared confidence vocabulary, checks Go and TypeScript 
 ## Dead Code Classification
 
 Stage 14.2 removes the obsolete `analytics/query` and `analytics/window` foundation packages after importer proofs. Every remaining analytical package outside production runtime now requires an explicit disposition and next action; unknown non-runtime packages fail strict project audit.
+
+<!-- STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION:README -->
+
+## Airport Intelligence Production API
+
+Airport Passport, Statistics, Ranking, Overview, History, and Trends are composed through a PostgreSQL-backed read-only production service. The API uses completed Coordinated Universal Time days and exposes explicit open-data limitations.

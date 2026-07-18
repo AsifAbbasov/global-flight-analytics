@@ -415,3 +415,9 @@ documentation is committed
 This completion statement applies only to the domain foundation.
 
 It does not mean that the full Airport Intelligence product module, persistence layer, HTTP application layer, frontend integration, or research-grade calibration is complete.
+
+<!-- STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION:DOCUMENT-30 -->
+
+## Production Integration Amendment
+
+Stage 14.3 completes the PostgreSQL and HTTP integration steps previously listed as pending. The implementation remains open-data research software and does not claim official airport operations, complete route coverage, or calibrated universal ranking weights. See Document 43.

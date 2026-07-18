@@ -627,3 +627,11 @@ Stage 14 begins with a backend feature freeze. The first slice centralizes the o
 Status: IN PROGRESS from 2026-07-18.
 
 The first removal slice deletes two confirmed obsolete Analytical Core foundation packages and establishes mandatory classification for every remaining non-runtime analytical package. Airport Intelligence and the feature pipeline must be integrated or removed before release.
+
+<!-- STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION:IMPLEMENTATION -->
+
+### Stage 14.3 — Airport Intelligence Production Integration
+
+Status: IMPLEMENTED.
+
+The six Airport Intelligence domain packages are composed into the production server through PostgreSQL-backed read-only endpoints. Strict reachability audit must report the complete context as runtime-connected.

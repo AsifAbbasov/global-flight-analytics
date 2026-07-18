@@ -31,7 +31,11 @@ type SuccessPayload interface {
 		dto.ActiveAircraftMetricResponse |
 		dto.AnalyticalMetricResponse |
 		dto.AirspaceRegionAnalyticsResponse |
-		dto.StabilityIntelligenceResponse
+		dto.StabilityIntelligenceResponse |
+		dto.AirportIntelligenceOverviewResponse |
+		dto.AirportIntelligenceHistoryResponse |
+		dto.AirportIntelligenceTrendsResponse |
+		dto.AirportIntelligenceRankingResponse
 }
 
 type SuccessResponse[T SuccessPayload] struct {
@@ -77,3 +81,5 @@ func Error(
 		},
 	)
 }
+
+// STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION

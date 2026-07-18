@@ -9,12 +9,6 @@ func TestCurrentNonRuntimePoliciesAreExplicit(
 		modulePath + "/internal/analytics/researchbenchmark",
 		modulePath + "/internal/analytics/researchdataset",
 		modulePath + "/internal/analytics/transponderalert",
-		modulePath + "/internal/airportintelligence/history",
-		modulePath + "/internal/airportintelligence/overview",
-		modulePath + "/internal/airportintelligence/passport",
-		modulePath + "/internal/airportintelligence/ranking",
-		modulePath + "/internal/airportintelligence/statistics",
-		modulePath + "/internal/airportintelligence/trends",
 		modulePath + "/internal/features/aircraftprovider",
 		modulePath + "/internal/features/datasetprofiler",
 		modulePath + "/internal/features/extractor",
@@ -91,3 +85,24 @@ func TestUnknownNonRuntimePackageIsRejected(
 		)
 	}
 }
+
+func TestProductionAirportIntelligencePackagesAreNotAllowlisted(
+	t *testing.T,
+) {
+	productionPackages := []string{
+		modulePath + "/internal/airportintelligence/history",
+		modulePath + "/internal/airportintelligence/overview",
+		modulePath + "/internal/airportintelligence/passport",
+		modulePath + "/internal/airportintelligence/ranking",
+		modulePath + "/internal/airportintelligence/statistics",
+		modulePath + "/internal/airportintelligence/trends",
+	}
+
+	for _, importPath := range productionPackages {
+		if _, exists := nonRuntimePackagePolicyFor(importPath); exists {
+			t.Fatalf("production package remains allowlisted: %s", importPath)
+		}
+	}
+}
+
+// STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION

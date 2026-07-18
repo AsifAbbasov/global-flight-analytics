@@ -125,3 +125,9 @@ No package with disposition `planned_production_integration` or
 
 Tests and verifier commands alone do not qualify a package as a production
 feature.
+
+<!-- STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION:DOCUMENT-42 -->
+
+## Airport Intelligence Resolution
+
+Airport Intelligence was resolved through production integration rather than deletion. All six original domain packages are now reachable through the `cmd/server` dependency graph and no longer require non-runtime disposition entries.

@@ -141,6 +141,15 @@ func registerDatabaseRoutes(
 			err,
 		)
 	}
+	if err := registerAirportIntelligenceRoutes(
+		v1,
+		dbPool,
+	); err != nil {
+		return fmt.Errorf(
+			"register Airport Intelligence routes: %w",
+			err,
+		)
+	}
 	if err := registerHistoricalIntelligenceRoutes(
 		v1,
 		dbPool,
@@ -393,3 +402,5 @@ func buildDatabaseRouteHandlers(
 		trajectory:   trajectoryHandler,
 	}
 }
+
+// STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION
