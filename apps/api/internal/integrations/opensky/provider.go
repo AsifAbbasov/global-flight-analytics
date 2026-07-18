@@ -212,20 +212,25 @@ func MapStateVector(
 	)
 
 	mapped := flightstate.FlightState{
-		ICAO24:                   strings.ToUpper(state.ICAO24),
-		Latitude:                 *state.Latitude,
-		Longitude:                *state.Longitude,
-		BarometricAltitudeM:      barometricAltitude,
-		BarometricAltitudeStatus: barometricStatus,
-		GeometricAltitudeM:       geometricAltitude,
-		GeometricAltitudeStatus:  geometricStatus,
-		VelocityMPS:              optionalFloat64Value(state.VelocityMPS),
-		HeadingDegrees:           optionalFloat64Value(state.TrueTrack),
-		VerticalRateMPS:          optionalFloat64Value(state.VerticalRateMPS),
-		OnGround:                 state.OnGround,
-		OriginCountry:            strings.TrimSpace(state.OriginCountry),
-		ObservedAt:               state.TimePosition.UTC(),
-		SourceName:               sourceName,
+		ICAO24:                    strings.ToUpper(state.ICAO24),
+		Latitude:                  *state.Latitude,
+		Longitude:                 *state.Longitude,
+		BarometricAltitudeM:       barometricAltitude,
+		BarometricAltitudeStatus:  barometricStatus,
+		GeometricAltitudeM:        geometricAltitude,
+		GeometricAltitudeStatus:   geometricStatus,
+		VelocityMPS:               optionalFloat64Value(state.VelocityMPS),
+		HeadingDegrees:            optionalFloat64Value(state.TrueTrack),
+		VerticalRateMPS:           optionalFloat64Value(state.VerticalRateMPS),
+		OnGround:                  state.OnGround,
+		OriginCountry:             strings.TrimSpace(state.OriginCountry),
+		SquawkCode:                optionalTrimmedStringValue(state.Squawk),
+		SpecialPurposeIndicator:   state.SPI,
+		PositionSource:            canonicalPositionSource(state.PositionSource),
+		AircraftCategory:          int(state.Category),
+		AircraftCategoryAvailable: state.CategoryAvailable,
+		ObservedAt:                state.TimePosition.UTC(),
+		SourceName:                sourceName,
 	}
 	if state.Callsign != nil {
 		mapped.Callsign = strings.TrimSpace(*state.Callsign)
@@ -258,3 +263,31 @@ func optionalFloat64Value(value *float64) float64 {
 
 	return *value
 }
+
+func optionalTrimmedStringValue(
+	value *string,
+) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
+}
+
+func canonicalPositionSource(
+	value PositionSource,
+) flightstate.PositionSource {
+	switch value {
+	case PositionSourceADSB:
+		return flightstate.PositionSourceADSB
+	case PositionSourceASTERIX:
+		return flightstate.PositionSourceASTERIX
+	case PositionSourceMLAT:
+		return flightstate.PositionSourceMLAT
+	case PositionSourceFLARM:
+		return flightstate.PositionSourceFLARM
+	default:
+		return flightstate.PositionSourceUnknown
+	}
+}
+
+// OPEN-AVIATION-RESEARCH-EVIDENCE-V1

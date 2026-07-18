@@ -33,3 +33,9 @@ go vet ./internal/integrations/opensky ./cmd/verify-opensky-rest-compatibility
 go run ./cmd/verify-opensky-rest-compatibility
 go test ./...
 ```
+
+<!-- OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2:REST-METADATA -->
+
+## Canonical Observation Metadata Preservation
+
+REST compatibility now continues beyond parsing. Squawk code, Special Purpose Indicator, position source, aircraft category, and category availability are preserved in the canonical `FlightState` and PostgreSQL persistence boundary. Category availability remains distinct from an observed category value of zero.

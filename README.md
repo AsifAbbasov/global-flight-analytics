@@ -147,3 +147,9 @@ See `docs/38_TRAFFIC_PROVIDER_AUTOMATIC_FALLBACK.md`.
 ## OpenSky REST compatibility
 
 Production OpenSky State Vector requests include `extended=1`. The parser accepts both the seventeen-field base representation and the eighteen-field extended representation without inventing a provider category.
+
+<!-- OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2:README -->
+
+## Open Aviation Research Evidence Foundation
+
+The backend now preserves transponder and OpenSky observation metadata in the canonical `FlightState`, provides research-only Transponder Alert Evidence, and enforces bounded offline manifests for selected external aviation research datasets. Satellite ADS-C evidence, automatic bulk imports, confirmed-incident claims, and production dependencies remain blocked.

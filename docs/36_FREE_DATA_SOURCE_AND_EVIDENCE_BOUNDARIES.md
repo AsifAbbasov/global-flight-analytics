@@ -303,3 +303,11 @@ are not hidden by fallback.
 ## OpenSky category evidence boundary
 
 A missing eighteenth State Vector field means that category evidence was not returned. It is represented as no information and must not be confused with a provider-reported category value unless `CategoryAvailable` is true.
+
+<!-- OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2:SOURCE-BOUNDARY -->
+
+## Scientific Dataset Boundary
+
+Selected OpenSky scientific datasets may be used only through bounded offline manifests. Every manifest requires file checksums, byte and record limits, licence review, attribution, region filters where required, and an explicit prohibition on production dependency.
+
+The OpenSky ADS-C dataset and `readsb_adsc_sv` remain blocked because the fixed project constraints prohibit satellite-derived aviation surveillance and navigation-intent evidence.

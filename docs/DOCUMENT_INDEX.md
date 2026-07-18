@@ -363,3 +363,11 @@ Document 37 records the controlled production selection boundary for the two fre
 ## Document 39
 
 `39_OPENSKY_REST_COMPATIBILITY_HARDENING.md` records the extended category request and backward-compatible State Vector parsing contract.
+
+<!-- OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2:DOCUMENT-INDEX -->
+
+## Document 40
+
+`40_OPEN_AVIATION_RESEARCH_EVIDENCE_FOUNDATION.md`
+
+Defines canonical observation metadata preservation, bounded Transponder Alert Evidence, selected scientific dataset governance, blocked ADS-C evidence, manifest gates, and reproducible offline benchmark contracts.

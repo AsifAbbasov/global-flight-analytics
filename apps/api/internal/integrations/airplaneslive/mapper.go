@@ -23,6 +23,7 @@ func mapAircraft(
 	return flightstate.FlightState{
 		ICAO24:                   strings.ToUpper(item.Hex),
 		Callsign:                 strings.TrimSpace(item.Flight),
+		SquawkCode:               strings.TrimSpace(item.Squawk),
 		Latitude:                 item.Latitude,
 		Longitude:                item.Longitude,
 		BarometricAltitudeM:      barometricAltitude.Meters,
@@ -62,3 +63,5 @@ func MapStateResponse(response *StateResponse) []flightstate.FlightState {
 
 	return result
 }
+
+// OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2

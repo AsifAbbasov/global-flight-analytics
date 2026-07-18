@@ -81,6 +81,11 @@ func (r *FlightStateRepository) SaveFlightStates(
 			vertical_rate_mps,
 			on_ground,
 			origin_country,
+			squawk_code,
+			special_purpose_indicator,
+			position_source,
+			aircraft_category,
+			aircraft_category_available,
 			observed_at,
 			source_name,
 			ingestion_run_id
@@ -103,7 +108,12 @@ func (r *FlightStateRepository) SaveFlightStates(
 			$15,
 			$16,
 			$17,
-			$18
+			$18,
+			$19,
+			$20,
+			$21,
+			$22,
+			$23
 		);
 	`
 
@@ -136,6 +146,47 @@ func (r *FlightStateRepository) SaveFlightStates(
 			)
 		}
 
+		squawkCode, err := flightstate.NormalizeSquawkCode(
+			item.SquawkCode,
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"prepare squawk code at index %d for icao24 %s: %w",
+				index,
+				item.ICAO24,
+				err,
+			)
+		}
+
+		positionSource, err := flightstate.NormalizePositionSource(
+			item.PositionSource,
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"prepare position source at index %d for icao24 %s: %w",
+				index,
+				item.ICAO24,
+				err,
+			)
+		}
+
+		if err := flightstate.ValidateAircraftCategory(
+			item.AircraftCategory,
+			item.AircraftCategoryAvailable,
+		); err != nil {
+			return fmt.Errorf(
+				"prepare aircraft category at index %d for icao24 %s: %w",
+				index,
+				item.ICAO24,
+				err,
+			)
+		}
+
+		var aircraftCategory any
+		if item.AircraftCategoryAvailable {
+			aircraftCategory = item.AircraftCategory
+		}
+
 		_, err = tx.Exec(
 			ctx,
 			query,
@@ -154,6 +205,11 @@ func (r *FlightStateRepository) SaveFlightStates(
 			item.VerticalRateMPS,
 			item.OnGround,
 			nullableText(item.OriginCountry),
+			squawkCode,
+			item.SpecialPurposeIndicator,
+			string(positionSource),
+			aircraftCategory,
+			item.AircraftCategoryAvailable,
 			item.ObservedAt,
 			sourceNameOrUnknown(item.SourceName),
 			nullableUUID(item.IngestionRunID),
@@ -205,6 +261,11 @@ func (r *FlightStateRepository) ListByFlightID(
 			COALESCE(vertical_rate_mps, 0),
 			COALESCE(on_ground, false),
 			COALESCE(origin_country, ''),
+			COALESCE(squawk_code, ''),
+			COALESCE(special_purpose_indicator, false),
+			COALESCE(position_source, ''),
+			aircraft_category,
+			COALESCE(aircraft_category_available, false),
 			observed_at,
 			source_name
 		FROM flight_states
@@ -233,6 +294,8 @@ func (r *FlightStateRepository) ListByFlightID(
 		var geometricAltitude pgtype.Float8
 		var barometricStatus string
 		var geometricStatus string
+		var positionSource string
+		var aircraftCategory pgtype.Int2
 
 		if err := rows.Scan(
 			&item.ID,
@@ -252,10 +315,25 @@ func (r *FlightStateRepository) ListByFlightID(
 			&item.VerticalRateMPS,
 			&item.OnGround,
 			&item.OriginCountry,
+			&item.SquawkCode,
+			&item.SpecialPurposeIndicator,
+			&positionSource,
+			&aircraftCategory,
+			&item.AircraftCategoryAvailable,
 			&item.ObservedAt,
 			&item.SourceName,
 		); err != nil {
 			return nil, err
+		}
+
+		item.PositionSource = flightstate.PositionSource(
+			positionSource,
+		)
+		item.AircraftCategory = 0
+		if aircraftCategory.Valid {
+			item.AircraftCategory = int(
+				aircraftCategory.Int16,
+			)
 		}
 
 		applyAltitudeDatabaseValues(
@@ -302,6 +380,11 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 			COALESCE(vertical_rate_mps, 0),
 			COALESCE(on_ground, false),
 			COALESCE(origin_country, ''),
+			COALESCE(squawk_code, ''),
+			COALESCE(special_purpose_indicator, false),
+			COALESCE(position_source, ''),
+			aircraft_category,
+			COALESCE(aircraft_category_available, false),
 			observed_at,
 			source_name
 		FROM flight_states
@@ -315,6 +398,8 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 	var geometricAltitude pgtype.Float8
 	var barometricStatus string
 	var geometricStatus string
+	var positionSource string
+	var aircraftCategory pgtype.Int2
 
 	err := r.db.QueryRow(
 		ctx,
@@ -338,6 +423,11 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		&item.VerticalRateMPS,
 		&item.OnGround,
 		&item.OriginCountry,
+		&item.SquawkCode,
+		&item.SpecialPurposeIndicator,
+		&positionSource,
+		&aircraftCategory,
+		&item.AircraftCategoryAvailable,
 		&item.ObservedAt,
 		&item.SourceName,
 	)
@@ -351,6 +441,16 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		}
 
 		return flightstate.FlightState{}, err
+	}
+
+	item.PositionSource = flightstate.PositionSource(
+		positionSource,
+	)
+	item.AircraftCategory = 0
+	if aircraftCategory.Valid {
+		item.AircraftCategory = int(
+			aircraftCategory.Int16,
+		)
 	}
 
 	applyAltitudeDatabaseValues(
@@ -449,3 +549,5 @@ func applyAltitudeDatabaseValues(
 		geometricStatus,
 	)
 }
+
+// OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2

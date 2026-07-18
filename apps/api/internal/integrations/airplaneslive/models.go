@@ -115,4 +115,5 @@ type AircraftItem struct {
 	Type         string             `json:"type"`
 	Registration string             `json:"r"`
 	AircraftType string             `json:"t"`
+	Squawk       string             `json:"squawk"`
 }

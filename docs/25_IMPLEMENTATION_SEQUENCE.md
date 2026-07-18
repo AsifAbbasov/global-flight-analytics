@@ -603,3 +603,11 @@ runs, canonical states, health evidence, and fallback decision evidence.
 ## OpenSky REST compatibility hardening
 
 The production provider requests extended aircraft categories, while the State Vector parser remains compatible with base responses that omit the optional category field.
+
+<!-- OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2:IMPLEMENTATION -->
+
+## Open Aviation Research Evidence Foundation
+
+Status: COMPLETED when the implementation verifier, focused tests, full backend tests, migration sequence checks, and PostgreSQL migration application evidence pass.
+
+This foundation preserves transponder and provider observation metadata, adds bounded Transponder Alert Evidence, creates executable research dataset manifests, and defines offline-only benchmark plans. It does not download datasets, train models, create operational alerts, or introduce satellite ADS-C evidence.
