@@ -9,6 +9,18 @@ export type CoverageGapReason =
   | 'movement_jump'
   | 'unknown'
 
+export type FlightIdentityBasis =
+  | 'source_flight_id'
+  | 'callsign_and_start_time'
+  | 'aircraft_and_start_time'
+
+export type FlightSplitReason =
+  | 'initial_observation'
+  | 'source_flight_id_changed'
+  | 'callsign_changed'
+  | 'ground_cycle'
+  | 'continued_from_previous_batch'
+
 export interface TrajectorySegment {
   id: string
   trajectory_id: string
@@ -48,6 +60,9 @@ export interface CoverageGap {
 
 export interface AircraftTrajectory {
   id: string
+  identity_key: string
+  identity_basis: FlightIdentityBasis
+  split_reason: FlightSplitReason
   flight_id: string
   aircraft_id: string
   icao24: string
@@ -65,3 +80,5 @@ export interface AircraftTrajectory {
   created_at: string
   updated_at: string
 }
+
+// STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1

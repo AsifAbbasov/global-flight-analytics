@@ -153,3 +153,9 @@ Production OpenSky State Vector requests include `extended=1`. The parser accept
 ## Open Aviation Research Evidence Foundation
 
 The backend now preserves transponder and OpenSky observation metadata in the canonical `FlightState`, provides research-only Transponder Alert Evidence, and enforces bounded offline manifests for selected external aviation research datasets. Satellite ADS-C evidence, automatic bulk imports, confirmed-incident claims, and production dependencies remain blocked.
+
+<!-- STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1:README -->
+
+## Architecture Consolidation
+
+Stage 14 establishes one shared confidence vocabulary, checks Go and TypeScript trajectory contracts, audits analytical package reachability from real runtime roots, and adds supply-chain quality gates. Packages are not deleted until the reachability report distinguishes production, operational, verification, offline research, and genuinely obsolete code.

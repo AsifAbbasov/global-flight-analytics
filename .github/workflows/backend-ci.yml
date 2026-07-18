@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'apps/api/**'
+      - 'apps/web/types/**'
       - 'database/**'
       - '.dockerignore'
       - 'compose.yaml'
@@ -14,6 +15,7 @@ on:
       - main
     paths:
       - 'apps/api/**'
+      - 'apps/web/types/**'
       - 'database/**'
       - '.dockerignore'
       - 'compose.yaml'
@@ -66,6 +68,12 @@ jobs:
 
       - name: Run Go vet
         run: go vet ./...
+
+      - name: Run architecture and contract audit
+        run: go run ./tools/projectaudit -mode all -strict
+
+      - name: Run pinned Go vulnerability analysis
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
   backend-container:
     name: Backend Container
@@ -163,7 +171,7 @@ jobs:
   backend-race:
     name: Backend Race Safety
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     defaults:
       run:
@@ -201,6 +209,10 @@ jobs:
             ./internal/services/traffic/trackbuilder \
             ./internal/services/traffic/trajectoryquality \
             ./internal/services/traffic/validator
+
+      - name: Run analytical core race tests
+        run: |
+          go test -count=1 -race             ./internal/analytics/...             ./internal/airportintelligence/...             ./internal/airspaceintelligence/...             ./internal/features/...             ./internal/historicalintelligence/...             ./internal/projectionintelligence/...             ./internal/routeintelligence/...             ./internal/stabilityintelligence/...             ./internal/weatherintelligence/...
 
   postgres-integration:
     name: PostgreSQL 16 Integration
@@ -245,3 +257,5 @@ jobs:
 
       - name: Run PostgreSQL repository integration tests
         run: go test -count=1 ./internal/repository/postgres
+
+# STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1

@@ -371,3 +371,11 @@ Document 37 records the controlled production selection boundary for the two fre
 `40_OPEN_AVIATION_RESEARCH_EVIDENCE_FOUNDATION.md`
 
 Defines canonical observation metadata preservation, bounded Transponder Alert Evidence, selected scientific dataset governance, blocked ADS-C evidence, manifest gates, and reproducible offline benchmark contracts.
+
+<!-- STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1:DOCUMENT-INDEX -->
+
+## Document 41
+
+`41_STAGE_14_1_ARCHITECTURE_CONSOLIDATION_FOUNDATION.md`
+
+Defines the shared confidence vocabulary, Go and TypeScript trajectory contract audit, analytical production reachability evidence, supply-chain gates, and the authentication boundary for the consolidation stage.

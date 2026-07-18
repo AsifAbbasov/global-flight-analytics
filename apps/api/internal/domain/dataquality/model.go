@@ -1,5 +1,7 @@
 package dataquality
 
+import domainconfidence "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/confidence"
+
 type ValidationStatus string
 
 const (
@@ -17,13 +19,13 @@ const (
 	CompletenessLevelInsufficient CompletenessLevel = "insufficient"
 )
 
-type ConfidenceLevel string
+type ConfidenceLevel = domainconfidence.Level
 
 const (
-	ConfidenceLevelHigh   ConfidenceLevel = "high"
-	ConfidenceLevelMedium ConfidenceLevel = "medium"
-	ConfidenceLevelLow    ConfidenceLevel = "low"
-	ConfidenceLevelNone   ConfidenceLevel = "none"
+	ConfidenceLevelHigh   = domainconfidence.LevelHigh
+	ConfidenceLevelMedium = domainconfidence.LevelMedium
+	ConfidenceLevelLow    = domainconfidence.LevelLow
+	ConfidenceLevelNone   = domainconfidence.LevelNone
 )
 
 type Warning struct {
@@ -40,3 +42,5 @@ type DataQuality struct {
 	MissingFields    []string
 	Warnings         []Warning
 }
+
+// STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1

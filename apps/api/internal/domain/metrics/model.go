@@ -1,6 +1,10 @@
 package metrics
 
-import "time"
+import (
+	"time"
+
+	domainconfidence "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/confidence"
+)
 
 const (
 	ActiveAircraftMetricName = MetricName("active_aircraft")
@@ -19,13 +23,13 @@ const (
 	MetricScopeRegion MetricScopeType = "region"
 )
 
-type ConfidenceLevel string
+type ConfidenceLevel = domainconfidence.Level
 
 const (
-	ConfidenceLevelHigh   ConfidenceLevel = "high"
-	ConfidenceLevelMedium ConfidenceLevel = "medium"
-	ConfidenceLevelLow    ConfidenceLevel = "low"
-	ConfidenceLevelNone   ConfidenceLevel = "none"
+	ConfidenceLevelHigh   = domainconfidence.LevelHigh
+	ConfidenceLevelMedium = domainconfidence.LevelMedium
+	ConfidenceLevelLow    = domainconfidence.LevelLow
+	ConfidenceLevelNone   = domainconfidence.LevelNone
 )
 
 type MetricScope struct {
@@ -83,3 +87,5 @@ type ActiveAircraftMetric struct {
 	Sources       []MetricSource
 	Limitations   []string
 }
+
+// STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1

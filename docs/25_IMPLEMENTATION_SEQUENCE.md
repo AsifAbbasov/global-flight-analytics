@@ -611,3 +611,11 @@ The production provider requests extended aircraft categories, while the State V
 Status: COMPLETED when the implementation verifier, focused tests, full backend tests, migration sequence checks, and PostgreSQL migration application evidence pass.
 
 This foundation preserves transponder and provider observation metadata, adds bounded Transponder Alert Evidence, creates executable research dataset manifests, and defines offline-only benchmark plans. It does not download datasets, train models, create operational alerts, or introduce satellite ADS-C evidence.
+
+<!-- STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1:IMPLEMENTATION -->
+
+## Stage 14 — Architecture Consolidation and Dead Code Elimination
+
+Status: IN PROGRESS from 2026-07-18.
+
+Stage 14 begins with a backend feature freeze. The first slice centralizes the ordinal confidence vocabulary, closes the confirmed trajectory contract drift, adds production reachability evidence, and strengthens dependency and race analysis. Package deletion follows only after factual classification of every non-runtime-reachable package.

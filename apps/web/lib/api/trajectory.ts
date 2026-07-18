@@ -7,6 +7,8 @@ import type {
   AircraftTrajectory,
   CoverageGap,
   CoverageGapReason,
+  FlightIdentityBasis,
+  FlightSplitReason,
   TrajectorySegment,
   TrajectorySegmentStatus,
 } from '@/types/trajectory'
@@ -22,6 +24,20 @@ const coverageGapReasons = new Set<CoverageGapReason>([
   'time_gap',
   'movement_jump',
   'unknown',
+])
+
+const flightIdentityBases = new Set<FlightIdentityBasis>([
+  'source_flight_id',
+  'callsign_and_start_time',
+  'aircraft_and_start_time',
+])
+
+const flightSplitReasons = new Set<FlightSplitReason>([
+  'initial_observation',
+  'source_flight_id_changed',
+  'callsign_changed',
+  'ground_cycle',
+  'continued_from_previous_batch',
 ])
 
 export async function getLatestAircraftTrajectory(
@@ -55,9 +71,43 @@ function parseAircraftTrajectory(
   value: unknown
 ): AircraftTrajectory {
   const record = requireRecord(value, 'trajectory')
+  const identityBasis = requireString(
+    record.identity_basis,
+    'identity_basis'
+  )
+  const splitReason = requireString(
+    record.split_reason,
+    'split_reason'
+  )
+
+  if (
+    !flightIdentityBases.has(
+      identityBasis as FlightIdentityBasis
+    )
+  ) {
+    throw invalidPayload(
+      'identity_basis contains an unsupported value.'
+    )
+  }
+
+  if (
+    !flightSplitReasons.has(
+      splitReason as FlightSplitReason
+    )
+  ) {
+    throw invalidPayload(
+      'split_reason contains an unsupported value.'
+    )
+  }
 
   return {
     id: requireString(record.id, 'id'),
+    identity_key: requireString(
+      record.identity_key,
+      'identity_key'
+    ),
+    identity_basis: identityBasis as FlightIdentityBasis,
+    split_reason: splitReason as FlightSplitReason,
     flight_id: requireString(record.flight_id, 'flight_id', true),
     aircraft_id: requireString(
       record.aircraft_id,
@@ -399,3 +449,5 @@ function invalidPayload(message: string): APIRequestError {
     `The trajectory response is invalid: ${message}`
   )
 }
+
+// STAGE-14-1-TRAJECTORY-RUNTIME-PARSER-FIX
