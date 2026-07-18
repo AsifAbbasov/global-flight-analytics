@@ -159,3 +159,9 @@ The backend now preserves transponder and OpenSky observation metadata in the ca
 ## Architecture Consolidation
 
 Stage 14 establishes one shared confidence vocabulary, checks Go and TypeScript trajectory contracts, audits analytical package reachability from real runtime roots, and adds supply-chain quality gates. Packages are not deleted until the reachability report distinguishes production, operational, verification, offline research, and genuinely obsolete code.
+
+<!-- STAGE-14-2-DEAD-CODE-CLASSIFICATION:README -->
+
+## Dead Code Classification
+
+Stage 14.2 removes the obsolete `analytics/query` and `analytics/window` foundation packages after importer proofs. Every remaining analytical package outside production runtime now requires an explicit disposition and next action; unknown non-runtime packages fail strict project audit.

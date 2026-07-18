@@ -1,0 +1,93 @@
+package main
+
+import "testing"
+
+func TestCurrentNonRuntimePoliciesAreExplicit(
+	t *testing.T,
+) {
+	expected := []string{
+		modulePath + "/internal/analytics/researchbenchmark",
+		modulePath + "/internal/analytics/researchdataset",
+		modulePath + "/internal/analytics/transponderalert",
+		modulePath + "/internal/airportintelligence/history",
+		modulePath + "/internal/airportintelligence/overview",
+		modulePath + "/internal/airportintelligence/passport",
+		modulePath + "/internal/airportintelligence/ranking",
+		modulePath + "/internal/airportintelligence/statistics",
+		modulePath + "/internal/airportintelligence/trends",
+		modulePath + "/internal/features/aircraftprovider",
+		modulePath + "/internal/features/datasetprofiler",
+		modulePath + "/internal/features/extractor",
+		modulePath + "/internal/features/extractorcomposition",
+		modulePath + "/internal/features/featurepipeline",
+		modulePath + "/internal/features/featurestore",
+		modulePath + "/internal/features/flightfeatures",
+		modulePath + "/internal/features/geographicalbuilder",
+		modulePath + "/internal/features/operationalbuilder",
+		modulePath + "/internal/features/temporalbuilder",
+		modulePath + "/internal/features/trajectorybuilder",
+		modulePath + "/internal/features/validator",
+		modulePath + "/internal/projectionintelligence/projectionevaluation",
+	}
+
+	if len(nonRuntimePackagePolicies) != len(expected) {
+		t.Fatalf(
+			"policy count = %d, want %d",
+			len(nonRuntimePackagePolicies),
+			len(expected),
+		)
+	}
+
+	for _, importPath := range expected {
+		policy, exists := nonRuntimePackagePolicyFor(
+			importPath,
+		)
+		if !exists {
+			t.Fatalf(
+				"missing policy for %s",
+				importPath,
+			)
+		}
+		if policy.Disposition == "" ||
+			policy.Rationale == "" ||
+			policy.NextAction == "" {
+			t.Fatalf(
+				"incomplete policy for %s: %#v",
+				importPath,
+				policy,
+			)
+		}
+	}
+}
+
+func TestRemovedFoundationPackagesAreNotAllowlisted(
+	t *testing.T,
+) {
+	removed := []string{
+		modulePath + "/internal/analytics/query",
+		modulePath + "/internal/analytics/window",
+	}
+
+	for _, importPath := range removed {
+		if _, exists := nonRuntimePackagePolicyFor(
+			importPath,
+		); exists {
+			t.Fatalf(
+				"removed package remains allowlisted: %s",
+				importPath,
+			)
+		}
+	}
+}
+
+func TestUnknownNonRuntimePackageIsRejected(
+	t *testing.T,
+) {
+	if _, exists := nonRuntimePackagePolicyFor(
+		modulePath + "/internal/analytics/unknown",
+	); exists {
+		t.Fatal(
+			"unknown package must not receive an implicit policy",
+		)
+	}
+}

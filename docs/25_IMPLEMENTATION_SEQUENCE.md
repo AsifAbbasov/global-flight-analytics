@@ -619,3 +619,11 @@ This foundation preserves transponder and provider observation metadata, adds bo
 Status: IN PROGRESS from 2026-07-18.
 
 Stage 14 begins with a backend feature freeze. The first slice centralizes the ordinal confidence vocabulary, closes the confirmed trajectory contract drift, adds production reachability evidence, and strengthens dependency and race analysis. Package deletion follows only after factual classification of every non-runtime-reachable package.
+
+<!-- STAGE-14-2-DEAD-CODE-CLASSIFICATION:IMPLEMENTATION -->
+
+### Stage 14.2 — Dead Code Classification and Removal
+
+Status: IN PROGRESS from 2026-07-18.
+
+The first removal slice deletes two confirmed obsolete Analytical Core foundation packages and establishes mandatory classification for every remaining non-runtime analytical package. Airport Intelligence and the feature pipeline must be integrated or removed before release.

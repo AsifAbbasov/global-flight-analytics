@@ -1173,8 +1173,23 @@ func auditReachability(
 				continue
 			}
 
+			verificationReachable := false
 			if _, verificationOnly := verificationUnion[packageValue.ImportPath]; verificationOnly {
 				result.VerificationOnly++
+				verificationReachable = true
+			}
+
+			if _, classified := nonRuntimePackagePolicyFor(
+				packageValue.ImportPath,
+			); !classified {
+				failures = append(
+					failures,
+					fmt.Sprintf(
+						"non-runtime package %s has no explicit disposition policy; verification_reachable=%t",
+						packageValue.ImportPath,
+						verificationReachable,
+					),
+				)
 			}
 
 			result.NotRuntimeReachable = append(
@@ -1233,10 +1248,25 @@ func auditReachability(
 		)
 
 		for _, packagePath := range result.NotRuntimeReachable {
+			policy, classified :=
+				nonRuntimePackagePolicyFor(
+					packagePath,
+				)
+			if !classified {
+				continue
+			}
+
+			_, verificationReachable :=
+				verificationUnion[packagePath]
+
 			fmt.Fprintf(
 				output,
-				"  REVIEW_NOT_RUNTIME_REACHABLE %s\n",
+				"  CLASSIFIED_NOT_RUNTIME_REACHABLE package=%s disposition=%s verification_reachable=%t rationale=%q next_action=%q\n",
 				packagePath,
+				policy.Disposition,
+				verificationReachable,
+				policy.Rationale,
+				policy.NextAction,
 			)
 		}
 	}
@@ -1381,3 +1411,5 @@ func commandError(
 }
 
 // STAGE-14-1-TRAJECTORY-RUNTIME-PARSER-FIX
+
+// STAGE-14-2-DEAD-CODE-CLASSIFICATION

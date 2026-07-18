@@ -171,3 +171,9 @@ will fail the project architecture audit before merge.
 The runtime parser audit does not depend on a literal import formatting style.
 The audit verifies runtime validation sets and parsed response fields. TypeScript
 compilation independently verifies that imported type names exist and are used.
+
+<!-- STAGE-14-2-DEAD-CODE-CLASSIFICATION:DOCUMENT-41 -->
+
+## Stage 14.2 Continuation
+
+Document 42 applies the reachability evidence created here. It removes confirmed dead packages and converts every remaining non-runtime package from an unowned review item into an explicit release disposition.

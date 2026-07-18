@@ -379,3 +379,11 @@ Defines canonical observation metadata preservation, bounded Transponder Alert E
 `41_STAGE_14_1_ARCHITECTURE_CONSOLIDATION_FOUNDATION.md`
 
 Defines the shared confidence vocabulary, Go and TypeScript trajectory contract audit, analytical production reachability evidence, supply-chain gates, and the authentication boundary for the consolidation stage.
+
+<!-- STAGE-14-2-DEAD-CODE-CLASSIFICATION:DOCUMENT-INDEX -->
+
+## Document 42
+
+`42_STAGE_14_2_DEAD_CODE_CLASSIFICATION_AND_REMOVAL.md`
+
+Records importer-proven removal of obsolete Analytical Core foundation packages and the mandatory release disposition of every remaining non-runtime analytical package.
