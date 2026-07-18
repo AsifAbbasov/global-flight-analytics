@@ -131,3 +131,9 @@ feature.
 ## Airport Intelligence Resolution
 
 Airport Intelligence was resolved through production integration rather than deletion. All six original domain packages are now reachable through the `cmd/server` dependency graph and no longer require non-runtime disposition entries.
+
+<!-- STAGE-14-4-FEATURE-MATERIALIZATION:DOCUMENT-42 -->
+
+## Feature Pipeline Resolution
+
+The Feature Pipeline was resolved through an operational materialization command. Eleven packages now belong to the `feature_materializer` runtime root. `features/datasetprofiler` was removed as a confirmed isolated facade rather than being artificially imported.

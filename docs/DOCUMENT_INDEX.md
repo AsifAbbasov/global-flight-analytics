@@ -395,3 +395,11 @@ Records importer-proven removal of obsolete Analytical Core foundation packages 
 `43_STAGE_14_3_AIRPORT_INTELLIGENCE_PRODUCTION_INTEGRATION.md`
 
 Records PostgreSQL composition, read-only HTTP routes, completed-day window semantics, ranking limitations, security boundary, and runtime completion evidence for Airport Intelligence.
+
+<!-- STAGE-14-4-FEATURE-MATERIALIZATION:DOCUMENT-INDEX -->
+
+## Document 44
+
+`44_STAGE_14_4_FEATURE_MATERIALIZATION_AND_PROFILER_REMOVAL.md`
+
+Records the real PostgreSQL Flight Feature materialization command, deterministic selector and as-of semantics, container runtime boundary, full Feature Pipeline reachability, and importer-proven removal of the unused dataset profiler.

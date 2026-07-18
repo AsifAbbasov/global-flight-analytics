@@ -17,6 +17,7 @@ RUN set -eux; \
         healthcheck \
         import-airports \
         ingest \
+        materialize-flight-features \
         migrate \
         reconcile \
         server \
@@ -77,3 +78,5 @@ HEALTHCHECK \
     CMD ["/app/healthcheck"]
 
 CMD ["/app/server"]
+
+# STAGE-14-4-FEATURE-MATERIALIZATION

@@ -171,3 +171,9 @@ Stage 14.2 removes the obsolete `analytics/query` and `analytics/window` foundat
 ## Airport Intelligence Production API
 
 Airport Passport, Statistics, Ranking, Overview, History, and Trends are composed through a PostgreSQL-backed read-only production service. The API uses completed Coordinated Universal Time days and exposes explicit open-data limitations.
+
+<!-- STAGE-14-4-FEATURE-MATERIALIZATION:README -->
+
+## Flight Feature Materialization
+
+Persisted trajectories can now be processed through the complete Feature Pipeline with `materialize-flight-features`. The command uses real PostgreSQL trajectory and aircraft data and stores idempotent snapshots in `flight_feature_snapshots`. The isolated in-memory dataset profiler was removed rather than falsely connected.

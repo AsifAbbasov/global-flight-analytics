@@ -31,66 +31,6 @@ var nonRuntimePackagePolicies = map[string]nonRuntimePackagePolicy{
 		Rationale:   "observed transponder evidence exists but is not yet exposed through a production read path",
 		NextAction:  "integrate as read-only evidence or remove before release",
 	},
-	modulePath + "/internal/features/aircraftprovider": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/datasetprofiler": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/extractor": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/extractorcomposition": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/featurepipeline": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/featurestore": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/flightfeatures": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/geographicalbuilder": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/operationalbuilder": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/temporalbuilder": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/trajectorybuilder": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
-	modulePath + "/internal/features/validator": {
-		Disposition: dispositionUnintegratedFeaturePipeline,
-		Rationale:   "flight feature pipeline is exercised by verification tooling but not by an operational runtime root",
-		NextAction:  "connect to an operational materialization command or remove the pipeline",
-	},
 	modulePath + "/internal/projectionintelligence/projectionevaluation": {
 		Disposition: dispositionOfflineEvaluation,
 		Rationale:   "evaluation consumes future truth and must remain separated from live forecast generation",
@@ -109,3 +49,5 @@ func nonRuntimePackagePolicyFor(
 }
 
 // STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION
+
+// STAGE-14-4-FEATURE-MATERIALIZATION

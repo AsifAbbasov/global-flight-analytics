@@ -1024,6 +1024,10 @@ func auditReachability(
 			Name:    "historical_materializer",
 			Pattern: "./cmd/materialize-historical-intelligence",
 		},
+		{
+			Name:    "feature_materializer",
+			Pattern: "./cmd/materialize-flight-features",
+		},
 	}
 
 	rootDependencies := make(
@@ -1108,7 +1112,7 @@ func auditReachability(
 		},
 		{
 			Name:                 "features",
-			RequiredRuntimeReach: false,
+			RequiredRuntimeReach: true,
 		},
 		{
 			Name:                 "historicalintelligence",
@@ -1236,7 +1240,7 @@ func auditReachability(
 	for _, result := range results {
 		fmt.Fprintf(
 			output,
-			"- %s: total=%d runtime=%d verification_only=%d server=%d ingest=%d reconcile=%d historical_materializer=%d\n",
+			"- %s: total=%d runtime=%d verification_only=%d server=%d ingest=%d reconcile=%d historical_materializer=%d feature_materializer=%d\n",
 			result.Name,
 			result.Total,
 			result.RuntimeReachable,
@@ -1245,6 +1249,7 @@ func auditReachability(
 			result.RootCounts["ingest"],
 			result.RootCounts["reconcile"],
 			result.RootCounts["historical_materializer"],
+			result.RootCounts["feature_materializer"],
 		)
 
 		for _, packagePath := range result.NotRuntimeReachable {
@@ -1413,3 +1418,5 @@ func commandError(
 // STAGE-14-1-TRAJECTORY-RUNTIME-PARSER-FIX
 
 // STAGE-14-2-DEAD-CODE-CLASSIFICATION
+
+// STAGE-14-4-FEATURE-MATERIALIZATION

@@ -635,3 +635,11 @@ The first removal slice deletes two confirmed obsolete Analytical Core foundatio
 Status: IMPLEMENTED.
 
 The six Airport Intelligence domain packages are composed into the production server through PostgreSQL-backed read-only endpoints. Strict reachability audit must report the complete context as runtime-connected.
+
+<!-- STAGE-14-4-FEATURE-MATERIALIZATION:IMPLEMENTATION -->
+
+### Stage 14.4 — Feature Materialization and Profiler Removal
+
+Status: IMPLEMENTED.
+
+The complete remaining Feature Pipeline is reachable through an operational PostgreSQL materializer. The disconnected dataset profiler was deleted after importer proof because it had no bounded persisted-dataset read path.

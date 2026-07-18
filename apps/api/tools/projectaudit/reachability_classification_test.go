@@ -9,18 +9,6 @@ func TestCurrentNonRuntimePoliciesAreExplicit(
 		modulePath + "/internal/analytics/researchbenchmark",
 		modulePath + "/internal/analytics/researchdataset",
 		modulePath + "/internal/analytics/transponderalert",
-		modulePath + "/internal/features/aircraftprovider",
-		modulePath + "/internal/features/datasetprofiler",
-		modulePath + "/internal/features/extractor",
-		modulePath + "/internal/features/extractorcomposition",
-		modulePath + "/internal/features/featurepipeline",
-		modulePath + "/internal/features/featurestore",
-		modulePath + "/internal/features/flightfeatures",
-		modulePath + "/internal/features/geographicalbuilder",
-		modulePath + "/internal/features/operationalbuilder",
-		modulePath + "/internal/features/temporalbuilder",
-		modulePath + "/internal/features/trajectorybuilder",
-		modulePath + "/internal/features/validator",
 		modulePath + "/internal/projectionintelligence/projectionevaluation",
 	}
 
@@ -54,12 +42,13 @@ func TestCurrentNonRuntimePoliciesAreExplicit(
 	}
 }
 
-func TestRemovedFoundationPackagesAreNotAllowlisted(
+func TestRemovedPackagesAreNotAllowlisted(
 	t *testing.T,
 ) {
 	removed := []string{
 		modulePath + "/internal/analytics/query",
 		modulePath + "/internal/analytics/window",
+		modulePath + "/internal/features/datasetprofiler",
 	}
 
 	for _, importPath := range removed {
@@ -106,3 +95,34 @@ func TestProductionAirportIntelligencePackagesAreNotAllowlisted(
 }
 
 // STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION
+
+func TestProductionFeaturePackagesAreNotAllowlisted(
+	t *testing.T,
+) {
+	productionPackages := []string{
+		modulePath + "/internal/features/aircraftprovider",
+		modulePath + "/internal/features/extractor",
+		modulePath + "/internal/features/extractorcomposition",
+		modulePath + "/internal/features/featurepipeline",
+		modulePath + "/internal/features/featurestore",
+		modulePath + "/internal/features/flightfeatures",
+		modulePath + "/internal/features/geographicalbuilder",
+		modulePath + "/internal/features/operationalbuilder",
+		modulePath + "/internal/features/temporalbuilder",
+		modulePath + "/internal/features/trajectorybuilder",
+		modulePath + "/internal/features/validator",
+	}
+
+	for _, importPath := range productionPackages {
+		if _, exists := nonRuntimePackagePolicyFor(
+			importPath,
+		); exists {
+			t.Fatalf(
+				"production Feature Pipeline package remains allowlisted: %s",
+				importPath,
+			)
+		}
+	}
+}
+
+// STAGE-14-4-FEATURE-MATERIALIZATION
