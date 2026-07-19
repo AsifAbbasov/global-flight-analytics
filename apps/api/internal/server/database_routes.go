@@ -46,6 +46,15 @@ func databaseRouteGroups(
 			},
 		},
 		{
+			name: "transponder evidence route",
+			register: func() error {
+				return registerTransponderEvidenceDatabaseContext(
+					v1,
+					dbPool,
+				)
+			},
+		},
+		{
 			name: "Route Intelligence routes",
 			register: func() error {
 				return registerRouteIntelligenceDatabaseContext(
@@ -136,3 +145,5 @@ func registerDatabaseRouteGroups(
 }
 
 // STAGE-14-8-SERVER-COMPOSITION-ROOT-DECOMPOSITION
+
+// STAGE-14-10-TRANSPONDER-EVIDENCE-PRODUCTION

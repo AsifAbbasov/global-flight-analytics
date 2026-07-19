@@ -683,3 +683,11 @@ The overloaded database route file is decomposed into bounded-context compositio
 Status: IMPLEMENTED.
 
 Historical Intelligence latest and history parsing are separated into explicit operations. A pure aggregate store contract removes pgx and PostgreSQL construction details from the HTTP and DTO layers while compatibility aliases preserve existing materializers and verification commands.
+
+<!-- STAGE-14-10-TRANSPONDER-EVIDENCE-PRODUCTION:IMPLEMENTATION -->
+
+### Stage 14.10 — Transponder Evidence Production Integration
+
+Status: IMPLEMENTED.
+
+The previously unintegrated transponder evidence package is reachable from the production server through a read-only aircraft endpoint. The response includes provenance, freshness, qualitative confidence, deterministic fingerprinting, strict limitations, and immutable non-confirmation safety fields.

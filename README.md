@@ -207,3 +207,9 @@ Database-backed server wiring is now organized by bounded context. The coordinat
 ## Historical Intelligence Contract Boundary
 
 Historical Intelligence HTTP handlers and DTO conversion now depend on a pure aggregate store contract rather than the PostgreSQL implementation. Latest and history query parsing use separate intent-revealing functions without boolean mode arguments.
+
+<!-- STAGE-14-10-TRANSPONDER-EVIDENCE-PRODUCTION:README -->
+
+## Transponder Evidence Production API
+
+The production server now exposes the latest persisted special transponder code as read-only research evidence. Responses explicitly state that the observation is evidence-only, does not confirm an emergency, and is not an operational alert.

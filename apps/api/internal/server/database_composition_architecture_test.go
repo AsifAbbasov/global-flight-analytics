@@ -63,6 +63,7 @@ func TestDatabaseCompositionFilesDoNotRegisterHTTPRoutes(
 ) {
 	files := []string{
 		"core_database_composition.go",
+		"transponder_evidence_database_composition.go",
 		"route_intelligence_database_composition.go",
 		"projection_database_composition.go",
 		"airspace_database_composition.go",
@@ -90,6 +91,7 @@ func TestDatabaseRouteFilesDoNotConstructInfrastructure(
 ) {
 	files := []string{
 		"core_database_routes.go",
+		"transponder_evidence_database_routes.go",
 		"route_intelligence_database_routes.go",
 		"projection_database_routes.go",
 		"airspace_database_routes.go",

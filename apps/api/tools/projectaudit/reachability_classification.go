@@ -3,10 +3,9 @@ package main
 type nonRuntimeDisposition string
 
 const (
-	dispositionOfflineResearch              nonRuntimeDisposition = "offline_research"
-	dispositionPlannedProductionIntegration nonRuntimeDisposition = "planned_production_integration"
-	dispositionUnintegratedFeaturePipeline  nonRuntimeDisposition = "unintegrated_feature_pipeline"
-	dispositionOfflineEvaluation            nonRuntimeDisposition = "offline_evaluation"
+	dispositionOfflineResearch             nonRuntimeDisposition = "offline_research"
+	dispositionUnintegratedFeaturePipeline nonRuntimeDisposition = "unintegrated_feature_pipeline"
+	dispositionOfflineEvaluation           nonRuntimeDisposition = "offline_evaluation"
 )
 
 type nonRuntimePackagePolicy struct {
@@ -31,11 +30,6 @@ var nonRuntimePackagePolicies = map[string]nonRuntimePackagePolicy{
 		Rationale:   "external research dataset governance must not become a production dependency",
 		NextAction:  "retain behind offline research boundary",
 	},
-	modulePath + "/internal/analytics/transponderalert": {
-		Disposition: dispositionPlannedProductionIntegration,
-		Rationale:   "observed transponder evidence exists but is not yet exposed through a production read path",
-		NextAction:  "integrate as read-only evidence or remove before release",
-	},
 	modulePath + "/internal/projectionintelligence/projectionevaluation": {
 		Disposition: dispositionOfflineEvaluation,
 		Rationale:   "evaluation consumes future truth and must remain separated from live forecast generation",
@@ -58,3 +52,5 @@ func nonRuntimePackagePolicyFor(
 // STAGE-14-4-FEATURE-MATERIALIZATION
 
 // STAGE-14-6-FORMULA-BENCHMARK
+
+// STAGE-14-10-TRANSPONDER-EVIDENCE-PRODUCTION

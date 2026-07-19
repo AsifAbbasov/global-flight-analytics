@@ -17,6 +17,7 @@ type SuccessPayload interface {
 		dto.AircraftProfile |
 		[]dto.FlightStateItem |
 		dto.FlightStateItem |
+		dto.TransponderEvidenceResponse |
 		[]dto.CurrentTrafficItem |
 		dto.Trajectory |
 		dto.AircraftRouteContext |
@@ -83,3 +84,5 @@ func Error(
 }
 
 // STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION
+
+// STAGE-14-10-TRANSPONDER-EVIDENCE-PRODUCTION

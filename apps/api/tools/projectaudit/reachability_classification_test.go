@@ -9,7 +9,6 @@ func TestCurrentNonRuntimePoliciesAreExplicit(
 		modulePath + "/internal/analytics/formulabenchmark",
 		modulePath + "/internal/analytics/researchbenchmark",
 		modulePath + "/internal/analytics/researchdataset",
-		modulePath + "/internal/analytics/transponderalert",
 		modulePath + "/internal/projectionintelligence/projectionevaluation",
 	}
 
@@ -94,6 +93,23 @@ func TestProductionAirportIntelligencePackagesAreNotAllowlisted(
 		}
 	}
 }
+
+func TestProductionTransponderEvidencePackageIsNotAllowlisted(
+	t *testing.T,
+) {
+	importPath := modulePath +
+		"/internal/analytics/transponderalert"
+	if _, exists := nonRuntimePackagePolicyFor(
+		importPath,
+	); exists {
+		t.Fatalf(
+			"production transponder evidence package remains allowlisted: %s",
+			importPath,
+		)
+	}
+}
+
+// STAGE-14-10-TRANSPONDER-EVIDENCE-PRODUCTION
 
 // STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION
 

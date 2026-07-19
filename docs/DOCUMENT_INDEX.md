@@ -443,3 +443,11 @@ Defines the bounded-context server composition structure, preserved HTTP behavio
 `49_STAGE_14_9_HTTP_QUERY_AND_CONTRACT_BOUNDARY_HARDENING.md`
 
 Records the removal of boolean query modes, the pure Historical Intelligence aggregate store contract, HTTP error-boundary rules, compatibility strategy, regression gates, and intentionally rejected mechanical refactors.
+
+<!-- STAGE-14-10-TRANSPONDER-EVIDENCE-PRODUCTION:DOCUMENT-INDEX -->
+
+## Document 50
+
+`50_STAGE_14_10_TRANSPONDER_EVIDENCE_PRODUCTION_INTEGRATION.md`
+
+Defines the read-only production endpoint, safety semantics, freshness policy, qualitative confidence boundary, dependency wiring, reachability governance, exclusions, and acceptance gates for observed special transponder code evidence.
