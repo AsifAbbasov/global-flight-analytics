@@ -195,3 +195,9 @@ Projection formulas can now be evaluated through a bounded offline command that 
 ## Frontend Dependency Security
 
 The pnpm workspace now redirects PostCSS versions below 8.5.10 to 8.5.15, verifies the committed dependency graph without network access, and blocks moderate or more severe production dependency findings in frontend continuous integration.
+
+<!-- STAGE-14-8-SERVER-COMPOSITION-ROOT-DECOMPOSITION:README -->
+
+## Server Composition Root Decomposition
+
+Database-backed server wiring is now organized by bounded context. The coordinator describes startup order, composition files construct dependencies, and route files register HTTP topology. Existing methods, paths, contracts, and mutation protection remain unchanged.

@@ -667,3 +667,11 @@ The existing Projection Evaluation metrics are connected to a reproducible offli
 Status: IMPLEMENTED.
 
 The vulnerable Next.js transitive PostCSS 8.4.31 resolution is replaced with PostCSS 8.5.15 through a targeted pnpm 11 workspace override. Lockfile verification, policy tests, and a moderate-severity continuous integration audit prevent regression.
+
+<!-- STAGE-14-8-SERVER-COMPOSITION-ROOT-DECOMPOSITION:IMPLEMENTATION -->
+
+### Stage 14.8 — Server Composition Root Decomposition
+
+Status: IMPLEMENTED.
+
+The overloaded database route file is decomposed into bounded-context composition and registration modules. Route topology and architecture regression tests preserve all core paths, prevent infrastructure construction inside route files, and keep mutation authorization first on the Route Intelligence POST endpoint.

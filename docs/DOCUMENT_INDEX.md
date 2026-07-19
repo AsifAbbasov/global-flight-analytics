@@ -427,3 +427,11 @@ Defines the bounded projection formula benchmark plan, deterministic report, evi
 `47_STAGE_14_7_FRONTEND_DEPENDENCY_SECURITY_REMEDIATION.md`
 
 Records the PostCSS vulnerability root cause, targeted pnpm workspace override, lockfile security policy, continuous integration threshold, compatibility checks, and prohibited unsafe remediation methods.
+
+<!-- STAGE-14-8-SERVER-COMPOSITION-ROOT-DECOMPOSITION:DOCUMENT-INDEX -->
+
+## Document 48
+
+`48_STAGE_14_8_SERVER_COMPOSITION_ROOT_DECOMPOSITION.md`
+
+Defines the bounded-context server composition structure, preserved HTTP behavior, architecture boundaries, topology regression gates, and intentionally excluded dependency-injection complexity.
