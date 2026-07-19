@@ -45,16 +45,16 @@ func (
 		SELECT DISTINCT ON (fs.icao24)
 			fs.icao24,
 			COALESCE(fs.callsign, ''),
-			COALESCE(fs.latitude, 0),
-			COALESCE(fs.longitude, 0),
+			fs.latitude,
+			fs.longitude,
 			COALESCE(
 				NULLIF(fs.geometric_altitude_m, 0),
 				fs.barometric_altitude_m,
 				0
 			),
-			COALESCE(fs.velocity_mps, 0),
-			COALESCE(fs.heading_degrees, 0),
-			COALESCE(fs.on_ground, false),
+			fs.velocity_mps,
+			fs.heading_degrees,
+			fs.on_ground,
 			fs.observed_at,
 			COALESCE(am.model, ''),
 			COALESCE(al.name, ''),
@@ -65,6 +65,11 @@ func (
 		LEFT JOIN aircraft a ON a.id = fs.aircraft_id
 		LEFT JOIN aircraft_models am ON am.id = a.model_id
 		LEFT JOIN airlines al ON al.id = a.airline_id
+		WHERE fs.latitude IS NOT NULL
+		  AND fs.longitude IS NOT NULL
+		  AND fs.velocity_mps IS NOT NULL
+		  AND fs.heading_degrees IS NOT NULL
+		  AND fs.on_ground IS NOT NULL
 		ORDER BY fs.icao24, fs.observed_at DESC;
 	`
 
@@ -110,16 +115,16 @@ func (
 		SELECT DISTINCT ON (fs.icao24)
 			fs.icao24,
 			COALESCE(fs.callsign, ''),
-			COALESCE(fs.latitude, 0),
-			COALESCE(fs.longitude, 0),
+			fs.latitude,
+			fs.longitude,
 			COALESCE(
 				NULLIF(fs.geometric_altitude_m, 0),
 				fs.barometric_altitude_m,
 				0
 			),
-			COALESCE(fs.velocity_mps, 0),
-			COALESCE(fs.heading_degrees, 0),
-			COALESCE(fs.on_ground, false),
+			fs.velocity_mps,
+			fs.heading_degrees,
+			fs.on_ground,
 			fs.observed_at,
 			COALESCE(am.model, ''),
 			COALESCE(al.name, ''),
@@ -132,6 +137,9 @@ func (
 		LEFT JOIN airlines al ON al.id = a.airline_id
 		WHERE fs.latitude BETWEEN $2 AND $3
 		AND fs.longitude BETWEEN $4 AND $5
+		AND fs.velocity_mps IS NOT NULL
+		AND fs.heading_degrees IS NOT NULL
+		AND fs.on_ground IS NOT NULL
 		ORDER BY fs.icao24, fs.observed_at DESC;
 	`
 

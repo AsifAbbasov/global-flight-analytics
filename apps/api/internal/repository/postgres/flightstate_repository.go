@@ -200,10 +200,22 @@ func (r *FlightStateRepository) SaveFlightStates(
 			barometricStatus,
 			geometricAltitude,
 			geometricStatus,
-			item.VelocityMPS,
-			item.HeadingDegrees,
-			item.VerticalRateMPS,
-			item.OnGround,
+			telemetryFloatDatabaseValue(
+				item.VelocityMPS,
+				item.HasVelocity(),
+			),
+			telemetryFloatDatabaseValue(
+				item.HeadingDegrees,
+				item.HasHeading(),
+			),
+			telemetryFloatDatabaseValue(
+				item.VerticalRateMPS,
+				item.HasVerticalRate(),
+			),
+			telemetryBoolDatabaseValue(
+				item.OnGround,
+				item.HasOnGroundState(),
+			),
 			nullableText(item.OriginCountry),
 			squawkCode,
 			item.SpecialPurposeIndicator,
@@ -250,16 +262,16 @@ func (r *FlightStateRepository) ListByFlightID(
 			COALESCE(ingestion_run_id::text, ''),
 			icao24,
 			COALESCE(callsign, ''),
-			COALESCE(latitude, 0),
-			COALESCE(longitude, 0),
+			latitude::double precision,
+			longitude::double precision,
 			barometric_altitude_m::double precision,
 			barometric_altitude_status,
 			geometric_altitude_m::double precision,
 			geometric_altitude_status,
-			COALESCE(velocity_mps, 0),
-			COALESCE(heading_degrees, 0),
-			COALESCE(vertical_rate_mps, 0),
-			COALESCE(on_ground, false),
+			velocity_mps::double precision,
+			heading_degrees::double precision,
+			vertical_rate_mps::double precision,
+			on_ground,
 			COALESCE(origin_country, ''),
 			COALESCE(squawk_code, ''),
 			COALESCE(special_purpose_indicator, false),
@@ -270,6 +282,8 @@ func (r *FlightStateRepository) ListByFlightID(
 			source_name
 		FROM flight_states
 		WHERE flight_id = $1
+		  AND latitude IS NOT NULL
+		  AND longitude IS NOT NULL
 		ORDER BY observed_at ASC;
 	`
 
@@ -292,6 +306,10 @@ func (r *FlightStateRepository) ListByFlightID(
 		var item flightstate.FlightState
 		var barometricAltitude pgtype.Float8
 		var geometricAltitude pgtype.Float8
+		var velocity pgtype.Float8
+		var heading pgtype.Float8
+		var verticalRate pgtype.Float8
+		var onGround pgtype.Bool
 		var barometricStatus string
 		var geometricStatus string
 		var positionSource string
@@ -310,10 +328,10 @@ func (r *FlightStateRepository) ListByFlightID(
 			&barometricStatus,
 			&geometricAltitude,
 			&geometricStatus,
-			&item.VelocityMPS,
-			&item.HeadingDegrees,
-			&item.VerticalRateMPS,
-			&item.OnGround,
+			&velocity,
+			&heading,
+			&verticalRate,
+			&onGround,
 			&item.OriginCountry,
 			&item.SquawkCode,
 			&item.SpecialPurposeIndicator,
@@ -343,6 +361,13 @@ func (r *FlightStateRepository) ListByFlightID(
 			geometricAltitude,
 			geometricStatus,
 		)
+		applyTelemetryDatabaseValues(
+			&item,
+			velocity,
+			heading,
+			verticalRate,
+			onGround,
+		)
 
 		items = append(
 			items,
@@ -369,16 +394,16 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 			COALESCE(ingestion_run_id::text, ''),
 			icao24,
 			COALESCE(callsign, ''),
-			COALESCE(latitude, 0),
-			COALESCE(longitude, 0),
+			latitude::double precision,
+			longitude::double precision,
 			barometric_altitude_m::double precision,
 			barometric_altitude_status,
 			geometric_altitude_m::double precision,
 			geometric_altitude_status,
-			COALESCE(velocity_mps, 0),
-			COALESCE(heading_degrees, 0),
-			COALESCE(vertical_rate_mps, 0),
-			COALESCE(on_ground, false),
+			velocity_mps::double precision,
+			heading_degrees::double precision,
+			vertical_rate_mps::double precision,
+			on_ground,
 			COALESCE(origin_country, ''),
 			COALESCE(squawk_code, ''),
 			COALESCE(special_purpose_indicator, false),
@@ -389,6 +414,8 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 			source_name
 		FROM flight_states
 		WHERE icao24 = $1
+		  AND latitude IS NOT NULL
+		  AND longitude IS NOT NULL
 		ORDER BY observed_at DESC
 		LIMIT 1;
 	`
@@ -396,6 +423,10 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 	var item flightstate.FlightState
 	var barometricAltitude pgtype.Float8
 	var geometricAltitude pgtype.Float8
+	var velocity pgtype.Float8
+	var heading pgtype.Float8
+	var verticalRate pgtype.Float8
+	var onGround pgtype.Bool
 	var barometricStatus string
 	var geometricStatus string
 	var positionSource string
@@ -418,10 +449,10 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		&barometricStatus,
 		&geometricAltitude,
 		&geometricStatus,
-		&item.VelocityMPS,
-		&item.HeadingDegrees,
-		&item.VerticalRateMPS,
-		&item.OnGround,
+		&velocity,
+		&heading,
+		&verticalRate,
+		&onGround,
 		&item.OriginCountry,
 		&item.SquawkCode,
 		&item.SpecialPurposeIndicator,
@@ -459,6 +490,13 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		barometricStatus,
 		geometricAltitude,
 		geometricStatus,
+	)
+	applyTelemetryDatabaseValues(
+		&item,
+		velocity,
+		heading,
+		verticalRate,
+		onGround,
 	)
 
 	return item, nil

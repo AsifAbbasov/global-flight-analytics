@@ -196,6 +196,10 @@ func auditRepository(
 			rules: nullableTelemetryRules(),
 		},
 		{
+			name:  "End-to-end telemetry availability",
+			rules: endToEndTelemetryAvailabilityRules(),
+		},
+		{
 			name:  "Historical pagination integrity",
 			rules: historicalPaginationRules(),
 		},
@@ -520,6 +524,161 @@ func nullableTelemetryRules() []fileRule {
 				"heading.Valid &&",
 				"verticalRate.Valid &&",
 				"onGround.Valid",
+			},
+		},
+	}
+}
+
+func endToEndTelemetryAvailabilityRules() []fileRule {
+	return []fileRule{
+		{
+			Name: "Flight State exposes explicit telemetry availability",
+			Path: "apps/api/internal/domain/flightstate/model.go",
+			Required: []string{
+				"TelemetryAvailabilityKnown",
+				"VelocityAvailable",
+				"HeadingAvailable",
+				"VerticalRateAvailable",
+				"OnGroundAvailable",
+			},
+		},
+		{
+			Name: "Flight State availability helpers preserve explicit zero",
+			Path: "apps/api/internal/domain/flightstate/telemetry_availability.go",
+			Required: []string{
+				"func (state FlightState) HasVelocity() bool",
+				"func (state FlightState) HasHeading() bool",
+				"func (state FlightState) HasVerticalRate() bool",
+				"func (state FlightState) HasOnGroundState() bool",
+				"func (state FlightState) HasCompleteKinematics() bool",
+				"if !state.TelemetryAvailabilityKnown",
+			},
+		},
+		{
+			Name: "OpenSky preserves optional kinematic availability",
+			Path: "apps/api/internal/integrations/opensky/provider.go",
+			Required: []string{
+				"optionalFiniteFloat64(",
+				"VelocityAvailable:",
+				"HeadingAvailable:",
+				"VerticalRateAvailable:",
+				"OnGroundAvailable:",
+				"TelemetryAvailabilityKnown:",
+				"return 0, false",
+				"return *value, true",
+			},
+			Forbidden: []string{
+				"optionalFloat64Value(",
+			},
+		},
+		{
+			Name: "Airplanes live declares provider telemetry availability",
+			Path: "apps/api/internal/integrations/airplaneslive/mapper.go",
+			Required: []string{
+				"TelemetryAvailabilityKnown:",
+				"VelocityAvailable:",
+				"HeadingAvailable:",
+				"VerticalRateAvailable:",
+				"OnGroundAvailable:",
+			},
+		},
+		{
+			Name: "Flight State persistence writes nullable telemetry",
+			Path: "apps/api/internal/repository/postgres/flightstate_repository.go",
+			Required: []string{
+				"telemetryFloatDatabaseValue(",
+				"item.HasVelocity()",
+				"item.HasHeading()",
+				"item.HasVerticalRate()",
+				"telemetryBoolDatabaseValue(",
+				"item.HasOnGroundState()",
+				"applyTelemetryDatabaseValues(",
+				"velocity_mps::double precision",
+				"heading_degrees::double precision",
+				"vertical_rate_mps::double precision",
+			},
+			Forbidden: []string{
+				"COALESCE(velocity_mps, 0)",
+				"COALESCE(heading_degrees, 0)",
+				"COALESCE(vertical_rate_mps, 0)",
+				"COALESCE(on_ground, false)",
+			},
+		},
+		{
+			Name: "Reconciliation preserves nullable telemetry",
+			Path: "apps/api/internal/repository/postgres/flightstate_reconciliation_repository.go",
+			Required: []string{
+				"velocity_mps::double precision",
+				"heading_degrees::double precision",
+				"vertical_rate_mps::double precision",
+				"applyTelemetryDatabaseValues(",
+			},
+			Forbidden: []string{
+				"COALESCE(velocity_mps, 0)",
+				"COALESCE(heading_degrees, 0)",
+				"COALESCE(vertical_rate_mps, 0)",
+				"COALESCE(on_ground, false)",
+			},
+		},
+		{
+			Name: "Traffic excludes incomplete display kinematics",
+			Path: "apps/api/internal/repository/postgres/traffic_repository.go",
+			Required: []string{
+				"fs.velocity_mps IS NOT NULL",
+				"fs.heading_degrees IS NOT NULL",
+				"fs.on_ground IS NOT NULL",
+			},
+			Forbidden: []string{
+				"COALESCE(fs.velocity_mps, 0)",
+				"COALESCE(fs.heading_degrees, 0)",
+				"COALESCE(fs.on_ground, false)",
+			},
+			Counts: []fragmentCount{
+				{
+					Fragment: "fs.velocity_mps IS NOT NULL",
+					Minimum:  2,
+					Maximum:  2,
+				},
+				{
+					Fragment: "fs.heading_degrees IS NOT NULL",
+					Minimum:  2,
+					Maximum:  2,
+				},
+				{
+					Fragment: "fs.on_ground IS NOT NULL",
+					Minimum:  2,
+					Maximum:  2,
+				},
+			},
+		},
+		{
+			Name: "Airspace excludes incomplete analytical kinematics",
+			Path: "apps/api/internal/airspaceintelligence/airspaceproduction/postgres_reader.go",
+			Required: []string{
+				"fs.velocity_mps IS NOT NULL",
+				"fs.heading_degrees IS NOT NULL",
+				"fs.vertical_rate_mps IS NOT NULL",
+				"fs.on_ground IS NOT NULL",
+			},
+			Forbidden: []string{
+				"COALESCE(fs.velocity_mps, 0)",
+				"COALESCE(fs.heading_degrees, 0)",
+				"COALESCE(fs.vertical_rate_mps, 0)",
+				"COALESCE(fs.on_ground, false)",
+			},
+		},
+		{
+			Name: "Traffic validation understands telemetry availability",
+			Path: "apps/api/internal/services/traffic/validator/validator.go",
+			Required: []string{
+				"velocityAvailable := item.HasVelocity()",
+				"headingAvailable := item.HasHeading()",
+				"verticalRateAvailable := item.HasVerticalRate()",
+				"onGroundAvailable := item.HasOnGroundState()",
+				`"velocity_mps"`,
+				`"heading_degrees"`,
+				`"vertical_rate_mps"`,
+				`"on_ground"`,
 			},
 		},
 	}

@@ -352,7 +352,16 @@ func EvaluateFlightState(
 		)
 	}
 
-	velocityValid :=
+	onGroundAvailable := item.HasOnGroundState()
+	if !onGroundAvailable {
+		addMissingField(
+			"on_ground",
+		)
+		hasMovementError = true
+	}
+
+	velocityAvailable := item.HasVelocity()
+	velocityValid := velocityAvailable &&
 		aviationconstraints.IsNonNegativeFloat64(
 			item.VelocityMPS,
 		)
@@ -361,7 +370,12 @@ func EvaluateFlightState(
 		velocityValid,
 	)
 
-	if !velocityValid {
+	if !velocityAvailable {
+		addMissingField(
+			"velocity_mps",
+		)
+		hasMovementError = true
+	} else if !velocityValid {
 		addWarning(
 			"invalid_velocity",
 			"Velocity must be finite and non-negative.",
@@ -371,7 +385,8 @@ func EvaluateFlightState(
 		hasMovementError = true
 	}
 
-	verticalRateValid :=
+	verticalRateAvailable := item.HasVerticalRate()
+	verticalRateValid := verticalRateAvailable &&
 		aviationconstraints.IsFiniteFloat64(
 			item.VerticalRateMPS,
 		)
@@ -380,15 +395,22 @@ func EvaluateFlightState(
 		verticalRateValid,
 	)
 
-	if !verticalRateValid {
+	if !verticalRateAvailable {
+		addMissingField(
+			"vertical_rate_mps",
+		)
+		hasMovementError = true
+	} else if !verticalRateValid {
 		addWarning(
 			"invalid_vertical_rate",
 			"Vertical rate must be finite.",
 			"vertical_rate_mps",
 		)
+		hasMovementError = true
 	}
 
-	headingValid :=
+	headingAvailable := item.HasHeading()
+	headingValid := headingAvailable &&
 		aviationconstraints.IsHeadingDegreesExclusive(
 			item.HeadingDegrees,
 		)
@@ -397,7 +419,12 @@ func EvaluateFlightState(
 		headingValid,
 	)
 
-	if !headingValid {
+	if !headingAvailable {
+		addMissingField(
+			"heading_degrees",
+		)
+		hasMovementError = true
+	} else if !headingValid {
 		addWarning(
 			"invalid_heading",
 			"Heading must be finite and between 0 inclusive and 360 exclusive.",

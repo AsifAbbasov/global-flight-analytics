@@ -739,3 +739,11 @@ Weather route registration is now isolated from provider, orchestration, reposit
 Status: IMPLEMENTED.
 
 The final Stage 14 backend gate combines source-level invariant checks, strict architecture and security audits, corrected-boundary tests, race detection, complete command compilation, static analysis, and the complete Go test suite. Passing this gate closes backend correction work before Stage 15.
+
+<!-- STAGE-14-16-END-TO-END-TELEMETRY-AVAILABILITY:IMPLEMENTATION -->
+
+### Stage 14.16 — End-to-End Telemetry Availability
+
+Status: IMPLEMENTED.
+
+OpenSky optional kinematics now retain explicit availability, PostgreSQL writes and readers preserve `NULL` semantics, Traffic and Airspace exclude incomplete kinematic rows, validator completeness reflects missing movement telemetry, and the backend final correctness audit covers the complete provider-to-analytics path.

@@ -249,3 +249,9 @@ Weather production wiring now separates provider governance and integration, Pos
 ## Backend Final Correctness Audit
 
 The repository now includes a permanent backend correctness gate for Projection read snapshot consistency, nullable telemetry integrity, Historical pagination, and Weather composition. Run `scripts/verify-backend-final-correctness.sh` before backend release or architecture-sensitive changes.
+
+<!-- STAGE-14-16-END-TO-END-TELEMETRY-AVAILABILITY:README -->
+
+## End-to-End Telemetry Availability
+
+Flight State now preserves velocity, heading, vertical-rate, and on-ground availability from provider mapping through PostgreSQL persistence and downstream analytical reads. Missing provider telemetry remains `NULL`; real zero values remain valid observations.

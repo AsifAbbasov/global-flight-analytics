@@ -210,27 +210,44 @@ func MapStateVector(
 		state.GeoAltitudeM,
 		false,
 	)
+	velocity, velocityAvailable :=
+		optionalFiniteFloat64(
+			state.VelocityMPS,
+		)
+	heading, headingAvailable :=
+		optionalFiniteFloat64(
+			state.TrueTrack,
+		)
+	verticalRate, verticalRateAvailable :=
+		optionalFiniteFloat64(
+			state.VerticalRateMPS,
+		)
 
 	mapped := flightstate.FlightState{
-		ICAO24:                    strings.ToUpper(state.ICAO24),
-		Latitude:                  *state.Latitude,
-		Longitude:                 *state.Longitude,
-		BarometricAltitudeM:       barometricAltitude,
-		BarometricAltitudeStatus:  barometricStatus,
-		GeometricAltitudeM:        geometricAltitude,
-		GeometricAltitudeStatus:   geometricStatus,
-		VelocityMPS:               optionalFloat64Value(state.VelocityMPS),
-		HeadingDegrees:            optionalFloat64Value(state.TrueTrack),
-		VerticalRateMPS:           optionalFloat64Value(state.VerticalRateMPS),
-		OnGround:                  state.OnGround,
-		OriginCountry:             strings.TrimSpace(state.OriginCountry),
-		SquawkCode:                optionalTrimmedStringValue(state.Squawk),
-		SpecialPurposeIndicator:   state.SPI,
-		PositionSource:            canonicalPositionSource(state.PositionSource),
-		AircraftCategory:          int(state.Category),
-		AircraftCategoryAvailable: state.CategoryAvailable,
-		ObservedAt:                state.TimePosition.UTC(),
-		SourceName:                sourceName,
+		ICAO24:                     strings.ToUpper(state.ICAO24),
+		Latitude:                   *state.Latitude,
+		Longitude:                  *state.Longitude,
+		BarometricAltitudeM:        barometricAltitude,
+		BarometricAltitudeStatus:   barometricStatus,
+		GeometricAltitudeM:         geometricAltitude,
+		GeometricAltitudeStatus:    geometricStatus,
+		VelocityMPS:                velocity,
+		VelocityAvailable:          velocityAvailable,
+		HeadingDegrees:             heading,
+		HeadingAvailable:           headingAvailable,
+		VerticalRateMPS:            verticalRate,
+		VerticalRateAvailable:      verticalRateAvailable,
+		OnGround:                   state.OnGround,
+		OnGroundAvailable:          true,
+		TelemetryAvailabilityKnown: true,
+		OriginCountry:              strings.TrimSpace(state.OriginCountry),
+		SquawkCode:                 optionalTrimmedStringValue(state.Squawk),
+		SpecialPurposeIndicator:    state.SPI,
+		PositionSource:             canonicalPositionSource(state.PositionSource),
+		AircraftCategory:           int(state.Category),
+		AircraftCategoryAvailable:  state.CategoryAvailable,
+		ObservedAt:                 state.TimePosition.UTC(),
+		SourceName:                 sourceName,
 	}
 	if state.Callsign != nil {
 		mapped.Callsign = strings.TrimSpace(*state.Callsign)
@@ -256,12 +273,16 @@ func altitudeReading(
 	return *value, flightstate.AltitudeStatusObserved
 }
 
-func optionalFloat64Value(value *float64) float64 {
-	if value == nil || math.IsNaN(*value) || math.IsInf(*value, 0) {
-		return 0
+func optionalFiniteFloat64(
+	value *float64,
+) (float64, bool) {
+	if value == nil ||
+		math.IsNaN(*value) ||
+		math.IsInf(*value, 0) {
+		return 0, false
 	}
 
-	return *value
+	return *value, true
 }
 
 func optionalTrimmedStringValue(

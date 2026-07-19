@@ -65,10 +65,10 @@ func (reader *PostgresObservationReader) ListAirspaceObservations(
 			fs.barometric_altitude_status,
 			fs.geometric_altitude_m::double precision,
 			fs.geometric_altitude_status,
-			COALESCE(fs.velocity_mps, 0),
-			COALESCE(fs.heading_degrees, 0),
-			COALESCE(fs.vertical_rate_mps, 0),
-			COALESCE(fs.on_ground, false),
+			fs.velocity_mps,
+			fs.heading_degrees,
+			fs.vertical_rate_mps,
+			fs.on_ground,
 			fs.observed_at,
 			COALESCE(NULLIF(BTRIM(fs.source_name), ''), $8)
 		FROM flight_states fs
@@ -79,6 +79,10 @@ func (reader *PostgresObservationReader) ListAirspaceObservations(
 		  AND fs.observed_at <= $2
 		  AND fs.latitude BETWEEN $3 AND $4
 		  AND fs.longitude BETWEEN $5 AND $6
+		  AND fs.velocity_mps IS NOT NULL
+		  AND fs.heading_degrees IS NOT NULL
+		  AND fs.vertical_rate_mps IS NOT NULL
+		  AND fs.on_ground IS NOT NULL
 		ORDER BY fs.observed_at ASC, fs.icao24 ASC, fs.id ASC
 		LIMIT $7;
 	`

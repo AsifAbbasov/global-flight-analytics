@@ -172,6 +172,7 @@ func TestRulesCoverAllFinalCorrectnessBoundaries(
 	groups := map[string][]fileRule{
 		"projection": projectionSnapshotRules(),
 		"telemetry":  nullableTelemetryRules(),
+		"end_to_end": endToEndTelemetryAvailabilityRules(),
 		"pagination": historicalPaginationRules(),
 		"weather":    weatherCompositionRules(),
 		"evidence":   evidenceRules(),

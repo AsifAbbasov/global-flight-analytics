@@ -61,21 +61,23 @@ func (repository *FlightStateRepository) ListByReconciliationScope(
 			COALESCE(ingestion_run_id::text, ''),
 			icao24,
 			COALESCE(callsign, ''),
-			COALESCE(latitude, 0),
-			COALESCE(longitude, 0),
+			latitude::double precision,
+			longitude::double precision,
 			barometric_altitude_m::double precision,
 			barometric_altitude_status,
 			geometric_altitude_m::double precision,
 			geometric_altitude_status,
-			COALESCE(velocity_mps, 0),
-			COALESCE(heading_degrees, 0),
-			COALESCE(vertical_rate_mps, 0),
-			COALESCE(on_ground, false),
+			velocity_mps::double precision,
+			heading_degrees::double precision,
+			vertical_rate_mps::double precision,
+			on_ground,
 			COALESCE(origin_country, ''),
 			observed_at,
 			source_name
 		FROM flight_states
 		WHERE icao24 = $1
+			AND latitude IS NOT NULL
+			AND longitude IS NOT NULL
 			AND observed_at >= $2
 			AND observed_at <= $3
 			AND (
@@ -116,6 +118,10 @@ func (repository *FlightStateRepository) ListByReconciliationScope(
 		var item flightstate.FlightState
 		var barometricAltitude pgtype.Float8
 		var geometricAltitude pgtype.Float8
+		var velocity pgtype.Float8
+		var heading pgtype.Float8
+		var verticalRate pgtype.Float8
+		var onGround pgtype.Bool
 		var barometricStatus string
 		var geometricStatus string
 
@@ -132,10 +138,10 @@ func (repository *FlightStateRepository) ListByReconciliationScope(
 			&barometricStatus,
 			&geometricAltitude,
 			&geometricStatus,
-			&item.VelocityMPS,
-			&item.HeadingDegrees,
-			&item.VerticalRateMPS,
-			&item.OnGround,
+			&velocity,
+			&heading,
+			&verticalRate,
+			&onGround,
 			&item.OriginCountry,
 			&item.ObservedAt,
 			&item.SourceName,
@@ -152,6 +158,13 @@ func (repository *FlightStateRepository) ListByReconciliationScope(
 			barometricStatus,
 			geometricAltitude,
 			geometricStatus,
+		)
+		applyTelemetryDatabaseValues(
+			&item,
+			velocity,
+			heading,
+			verticalRate,
+			onGround,
 		)
 
 		item.ObservedAt = item.ObservedAt.UTC()

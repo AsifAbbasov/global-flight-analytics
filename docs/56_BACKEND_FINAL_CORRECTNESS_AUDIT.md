@@ -237,3 +237,9 @@ git diff check
 After this gate is committed, Stage 14 backend correction work is closed and
 the project may proceed to Stage 15 Frontend Visual System and Application
 Layout.
+
+<!-- STAGE-14-16-END-TO-END-TELEMETRY-AVAILABILITY:SCOPE-AMENDMENT -->
+
+## Stage 14.16 Scope Amendment
+
+The original nullable telemetry section protected the Projection PostgreSQL read boundary. Stage 14.16 expands the permanent audit to the full production chain: provider mapping, Flight State availability, PostgreSQL writes, general and reconciliation reads, Traffic, Airspace, validator behavior, and Projection eligibility.

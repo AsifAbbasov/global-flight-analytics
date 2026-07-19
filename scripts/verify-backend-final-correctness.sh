@@ -35,7 +35,11 @@ go test \
   ./internal/http/handlers \
   ./internal/server \
   ./internal/services/weather \
+  ./internal/services/traffic/validator \
   ./internal/integrations/openmeteo \
+  ./internal/integrations/opensky \
+  ./internal/integrations/airplaneslive \
+  ./internal/airspaceintelligence/airspaceproduction \
   ./internal/orchestration/weatherprovider \
   ./internal/orchestration/providerresponse \
   ./internal/orchestration/providerbudget \
@@ -63,7 +67,11 @@ go test \
   ./internal/http/historicalcursor \
   ./internal/server \
   ./internal/services/weather \
+  ./internal/services/traffic/validator \
   ./internal/integrations/openmeteo \
+  ./internal/integrations/opensky \
+  ./internal/integrations/airplaneslive \
+  ./internal/airspaceintelligence/airspaceproduction \
   ./internal/orchestration/weatherprovider \
   ./internal/orchestration/providerresponse \
   ./internal/orchestration/providerbudget \

@@ -499,3 +499,11 @@ Defines the former mixed Weather composition problem, responsibility-specific se
 `56_BACKEND_FINAL_CORRECTNESS_AUDIT.md`
 
 Defines the permanent backend correctness gate, protected Stage 14 invariants, existing architecture and security checks, runtime verifier coverage, race detection scope, reproducible command, non-goals, and acceptance evidence.
+
+<!-- STAGE-14-16-END-TO-END-TELEMETRY-AVAILABILITY:DOCUMENT-INDEX -->
+
+## Document 57
+
+`57_STAGE_14_16_END_TO_END_TELEMETRY_AVAILABILITY.md`
+
+Defines the provider-to-PostgreSQL-to-analytics telemetry availability contract, legacy compatibility rule, OpenSky optional mapping, nullable persistence, Traffic and Airspace eligibility, validation behavior, expanded final audit, and acceptance evidence.
