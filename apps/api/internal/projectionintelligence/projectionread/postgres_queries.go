@@ -92,16 +92,16 @@ const trajectoryPointsByFlightSQL = `
 		COALESCE(aircraft_id::text, ''),
 		icao24,
 		COALESCE(callsign, ''),
-		COALESCE(latitude, 0)::float8,
-		COALESCE(longitude, 0)::float8,
+		latitude::float8,
+		longitude::float8,
 		barometric_altitude_m::float8,
 		barometric_altitude_status,
 		geometric_altitude_m::float8,
 		geometric_altitude_status,
-		COALESCE(velocity_mps, 0)::float8,
-		COALESCE(heading_degrees, 0)::float8,
-		COALESCE(vertical_rate_mps, 0)::float8,
-		COALESCE(on_ground, false),
+		velocity_mps::float8,
+		heading_degrees::float8,
+		vertical_rate_mps::float8,
+		on_ground,
 		COALESCE(origin_country, ''),
 		observed_at,
 		source_name
@@ -109,6 +109,12 @@ const trajectoryPointsByFlightSQL = `
 	WHERE flight_id = $1::uuid
 	  AND observed_at >= $2
 	  AND observed_at <= $3
+	  AND latitude IS NOT NULL
+	  AND longitude IS NOT NULL
+	  AND velocity_mps IS NOT NULL
+	  AND heading_degrees IS NOT NULL
+	  AND vertical_rate_mps IS NOT NULL
+	  AND on_ground IS NOT NULL
 	ORDER BY
 		observed_at ASC,
 		id ASC
@@ -122,16 +128,16 @@ const trajectoryPointsByAircraftSQL = `
 		COALESCE(aircraft_id::text, ''),
 		icao24,
 		COALESCE(callsign, ''),
-		COALESCE(latitude, 0)::float8,
-		COALESCE(longitude, 0)::float8,
+		latitude::float8,
+		longitude::float8,
 		barometric_altitude_m::float8,
 		barometric_altitude_status,
 		geometric_altitude_m::float8,
 		geometric_altitude_status,
-		COALESCE(velocity_mps, 0)::float8,
-		COALESCE(heading_degrees, 0)::float8,
-		COALESCE(vertical_rate_mps, 0)::float8,
-		COALESCE(on_ground, false),
+		velocity_mps::float8,
+		heading_degrees::float8,
+		vertical_rate_mps::float8,
+		on_ground,
 		COALESCE(origin_country, ''),
 		observed_at,
 		source_name
@@ -140,6 +146,12 @@ const trajectoryPointsByAircraftSQL = `
 	  AND ($2 = '' OR COALESCE(callsign, '') = $2)
 	  AND observed_at >= $3
 	  AND observed_at <= $4
+	  AND latitude IS NOT NULL
+	  AND longitude IS NOT NULL
+	  AND velocity_mps IS NOT NULL
+	  AND heading_degrees IS NOT NULL
+	  AND vertical_rate_mps IS NOT NULL
+	  AND on_ground IS NOT NULL
 	ORDER BY
 		observed_at ASC,
 		id ASC

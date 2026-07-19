@@ -469,8 +469,14 @@ func projectionReadPointRow(
 		"a20eef16-c12c-41fd-870e-cd5a814ef3ad",
 		"4A1234",
 		"AHY123",
-		latitude,
-		longitude,
+		pgtype.Float8{
+			Float64: latitude,
+			Valid:   true,
+		},
+		pgtype.Float8{
+			Float64: longitude,
+			Valid:   true,
+		},
 		pgtype.Float8{
 			Float64: 10000,
 			Valid:   true,
@@ -487,10 +493,22 @@ func projectionReadPointRow(
 			flightstate.
 				AltitudeStatusObserved,
 		),
-		220.0,
-		270.0,
-		0.0,
-		false,
+		pgtype.Float8{
+			Float64: 220,
+			Valid:   true,
+		},
+		pgtype.Float8{
+			Float64: 270,
+			Valid:   true,
+		},
+		pgtype.Float8{
+			Float64: 0,
+			Valid:   true,
+		},
+		pgtype.Bool{
+			Bool:  false,
+			Valid: true,
+		},
 		"Azerbaijan",
 		observedAt.UTC(),
 		"projection-read-test",

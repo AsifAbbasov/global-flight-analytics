@@ -521,13 +521,16 @@ func (
 			MaximumTrajectoryPointCount,
 	)
 	for rows.Next() {
-		point, err := scanTrackPoint(rows)
+		point, usable, err := scanTrackPoint(rows)
 		if err != nil {
 			return trajectory.FlightTrajectory{},
 				fmt.Errorf(
 					"scan trajectory observation point: %w",
 					err,
 				)
+		}
+		if !usable {
+			continue
 		}
 		points = append(
 			points,
@@ -603,10 +606,16 @@ func (
 
 func scanTrackPoint(
 	scanner rowScanner,
-) (trajectory.TrackPoint4D, error) {
+) (trajectory.TrackPoint4D, bool, error) {
 	var point trajectory.TrackPoint4D
+	var latitude pgtype.Float8
+	var longitude pgtype.Float8
 	var barometricAltitude pgtype.Float8
 	var geometricAltitude pgtype.Float8
+	var velocity pgtype.Float8
+	var heading pgtype.Float8
+	var verticalRate pgtype.Float8
+	var onGround pgtype.Bool
 	var barometricStatus string
 	var geometricStatus string
 
@@ -616,23 +625,37 @@ func scanTrackPoint(
 		&point.AircraftID,
 		&point.ICAO24,
 		&point.Callsign,
-		&point.Latitude,
-		&point.Longitude,
+		&latitude,
+		&longitude,
 		&barometricAltitude,
 		&barometricStatus,
 		&geometricAltitude,
 		&geometricStatus,
-		&point.VelocityMPS,
-		&point.HeadingDegrees,
-		&point.VerticalRateMPS,
-		&point.OnGround,
+		&velocity,
+		&heading,
+		&verticalRate,
+		&onGround,
 		&point.OriginCountry,
 		&point.ObservedAt,
 		&point.SourceName,
 	)
 	if err != nil {
 		return trajectory.TrackPoint4D{},
+			false,
 			err
+	}
+
+	if !completeRequiredTelemetry(
+		latitude,
+		longitude,
+		velocity,
+		heading,
+		verticalRate,
+		onGround,
+	) {
+		return trajectory.TrackPoint4D{},
+			false,
+			nil
 	}
 
 	point.FlightStateID =
@@ -647,6 +670,12 @@ func scanTrackPoint(
 	)
 	point.ObservedAt =
 		point.ObservedAt.UTC()
+	point.Latitude = latitude.Float64
+	point.Longitude = longitude.Float64
+	point.VelocityMPS = velocity.Float64
+	point.HeadingDegrees = heading.Float64
+	point.VerticalRateMPS = verticalRate.Float64
+	point.OnGround = onGround.Bool
 	point.BarometricAltitudeStatus =
 		flightstate.AltitudeStatus(
 			barometricStatus,
@@ -664,7 +693,23 @@ func scanTrackPoint(
 			geometricAltitude.Float64
 	}
 
-	return point, nil
+	return point, true, nil
+}
+
+func completeRequiredTelemetry(
+	latitude pgtype.Float8,
+	longitude pgtype.Float8,
+	velocity pgtype.Float8,
+	heading pgtype.Float8,
+	verticalRate pgtype.Float8,
+	onGround pgtype.Bool,
+) bool {
+	return latitude.Valid &&
+		longitude.Valid &&
+		velocity.Valid &&
+		heading.Valid &&
+		verticalRate.Valid &&
+		onGround.Valid
 }
 
 func completeRouteEndpoints(

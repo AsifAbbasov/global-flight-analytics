@@ -707,3 +707,11 @@ The final Backend Architecture Hardening increment decomposes confirmed large-mo
 Status: IMPLEMENTED.
 
 Projection Intelligence production reads now use one read-only PostgreSQL repeatable-read transaction. The service consumes a single snapshot contract instead of coordinating four independent storage operations.
+
+<!-- STAGE-14-13-NULLABLE-TELEMETRY-INTEGRITY:IMPLEMENTATION -->
+
+### Stage 14.13 — Nullable Telemetry Integrity
+
+Status: IMPLEMENTED.
+
+Projection Intelligence trajectory reads remove telemetry default fabrication. PostgreSQL and application scanning now enforce complete required kinematics while preserving explicit zero values and the existing optional altitude contract.

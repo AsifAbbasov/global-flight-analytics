@@ -467,3 +467,11 @@ Records the targeted audit findings, responsibility-based source decomposition, 
 `52_STAGE_14_12_PROJECTION_READ_SNAPSHOT_CONSISTENCY.md`
 
 Defines the PostgreSQL repeatable-read snapshot boundary, transaction-scoped trajectory repository, service contract, lifecycle behavior, preserved semantics, regression gates, and acceptance evidence for reproducible Projection Intelligence input loading.
+
+<!-- STAGE-14-13-NULLABLE-TELEMETRY-INTEGRITY:DOCUMENT-INDEX -->
+
+## Document 53
+
+`53_STAGE_14_13_NULLABLE_TELEMETRY_INTEGRITY.md`
+
+Defines the nullable telemetry failure mode, conservative completeness boundary, legitimate-zero semantics, altitude handling, ordering and limit behavior, preserved contracts, regression gates, and acceptance evidence.

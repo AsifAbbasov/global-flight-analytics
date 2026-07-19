@@ -225,3 +225,9 @@ Historical and Route Intelligence validation are divided by contract responsibil
 ## Projection Read Snapshot Consistency
 
 One Projection Intelligence result now loads its current trajectory, route, historical candidates, and route-frequency history through one PostgreSQL read-only repeatable-read snapshot. Concurrent ingestion or materialization cannot make different input queries observe different committed database states.
+
+<!-- STAGE-14-13-NULLABLE-TELEMETRY-INTEGRITY:README -->
+
+## Nullable Telemetry Integrity
+
+Projection Intelligence no longer converts absent coordinates, motion telemetry, or on-ground state into plausible zero or false values. Only complete required kinematic observations become analytical trajectory points; legitimate stored zero values remain valid.
