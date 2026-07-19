@@ -8,82 +8,25 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionroutefrequency"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
 )
 
 type dataSourceStub struct {
-	current    trajectory.FlightTrajectory
-	currentErr error
-
-	route    routecontract.Result
-	routeErr error
-
-	candidates    []trajectory.FlightTrajectory
-	candidatesErr error
-
-	history    projectionroutefrequency.HistorySummary
-	historyErr error
-
-	currentCalls   int
-	routeCalls     int
-	candidateCalls int
-	historyCalls   int
+	snapshot Snapshot
+	err      error
+	request  SnapshotRequest
+	calls    int
 }
 
 func (
 	stub *dataSourceStub,
-) LoadCurrentTrajectory(
-	context.Context,
-	string,
-	time.Time,
-) (trajectory.FlightTrajectory, error) {
-	stub.currentCalls++
-	return stub.current,
-		stub.currentErr
-}
-
-func (
-	stub *dataSourceStub,
-) LoadRoute(
-	context.Context,
-	string,
-	time.Time,
-) (routecontract.Result, error) {
-	stub.routeCalls++
-	return stub.route,
-		stub.routeErr
-}
-
-func (
-	stub *dataSourceStub,
-) LoadHistoricalCandidates(
-	context.Context,
-	trajectory.FlightTrajectory,
-	routecontract.Result,
-	time.Time,
-) ([]trajectory.FlightTrajectory, error) {
-	stub.candidateCalls++
-	return append(
-			[]trajectory.FlightTrajectory(nil),
-			stub.candidates...,
-		),
-		stub.candidatesErr
-}
-
-func (
-	stub *dataSourceStub,
-) LoadRouteHistory(
-	context.Context,
-	routecontract.Result,
-	time.Time,
-) (
-	projectionroutefrequency.HistorySummary,
-	error,
-) {
-	stub.historyCalls++
-	return stub.history.Clone(),
-		stub.historyErr
+) LoadSnapshot(
+	_ context.Context,
+	request SnapshotRequest,
+) (Snapshot, error) {
+	stub.calls++
+	stub.request = request
+	return stub.snapshot.Clone(), stub.err
 }
 
 type composerStub struct {
@@ -100,11 +43,10 @@ func (
 ) (projectionproduction.Result, error) {
 	stub.calls++
 	stub.request = request
-	return stub.result.Clone(),
-		stub.err
+	return stub.result.Clone(), stub.err
 }
 
-func TestServiceLoadsCompleteProductionInputs(
+func TestServiceLoadsOneConsistentProductionSnapshot(
 	t *testing.T,
 ) {
 	asOfTime := projectionReadTestAsOfTime()
@@ -116,21 +58,20 @@ func TestServiceLoadsCompleteProductionInputs(
 		current,
 		asOfTime,
 	)
-	history := projectionReadHistory(
-		asOfTime,
+	history := projectionReadHistory(asOfTime)
+	candidate := projectionReadTrajectory(
+		"83aa02ab-7061-4e9e-a238-d32710371ee3",
+		asOfTime.Add(-24*time.Hour),
 	)
 	source := &dataSourceStub{
-		current: current,
-		route:   route,
-		candidates: []trajectory.FlightTrajectory{
-			projectionReadTrajectory(
-				"83aa02ab-7061-4e9e-a238-d32710371ee3",
-				asOfTime.Add(
-					-24*time.Hour,
-				),
-			),
+		snapshot: Snapshot{
+			CurrentTrajectory: current,
+			Route:             routePointer(route),
+			HistoricalCandidates: []trajectory.FlightTrajectory{
+				candidate,
+			},
+			RouteHistory: historyPointer(history),
 		},
-		history: history,
 	}
 	composer := &composerStub{
 		result: projectionproduction.Result{
@@ -143,17 +84,12 @@ func TestServiceLoadsCompleteProductionInputs(
 			Composer:   composer,
 			Policy:     DefaultPolicy(),
 			Now: func() time.Time {
-				return asOfTime.Add(
-					time.Second,
-				)
+				return asOfTime.Add(time.Second)
 			},
 		},
 	)
 	if err != nil {
-		t.Fatalf(
-			"NewService() error = %v",
-			err,
-		)
+		t.Fatalf("NewService() error = %v", err)
 	}
 
 	_, err = service.Get(
@@ -165,27 +101,24 @@ func TestServiceLoadsCompleteProductionInputs(
 		},
 	)
 	if err != nil {
-		t.Fatalf(
-			"Get() error = %v",
-			err,
-		)
+		t.Fatalf("Get() error = %v", err)
 	}
 
-	if source.currentCalls != 1 ||
-		source.routeCalls != 1 ||
-		source.candidateCalls != 1 ||
-		source.historyCalls != 1 ||
-		composer.calls != 1 {
+	if source.calls != 1 || composer.calls != 1 {
 		t.Fatalf(
-			"unexpected call counts: source=%#v composer=%d",
-			source,
+			"unexpected call counts: snapshot=%d composer=%d",
+			source.calls,
 			composer.calls,
 		)
 	}
-	if len(
-		composer.request.
-			HistoricalCandidates,
-	) != 1 ||
+	if source.request.TrajectoryID != current.ID ||
+		!source.request.AsOfTime.Equal(asOfTime) {
+		t.Fatalf(
+			"unexpected snapshot request: %#v",
+			source.request,
+		)
+	}
+	if len(composer.request.HistoricalCandidates) != 1 ||
 		composer.request.RouteHistory == nil ||
 		composer.request.Route.Status !=
 			routecontract.RouteStatusComplete ||
@@ -199,7 +132,7 @@ func TestServiceLoadsCompleteProductionInputs(
 	}
 }
 
-func TestServiceUsesAuditableUnavailableRouteWithoutMaterializedRoute(
+func TestServiceUsesAuditableUnavailableRouteWithoutSnapshotRoute(
 	t *testing.T,
 ) {
 	asOfTime := projectionReadTestAsOfTime()
@@ -208,8 +141,9 @@ func TestServiceUsesAuditableUnavailableRouteWithoutMaterializedRoute(
 		asOfTime,
 	)
 	source := &dataSourceStub{
-		current:  current,
-		routeErr: ErrRouteNotFound,
+		snapshot: Snapshot{
+			CurrentTrajectory: current,
+		},
 	}
 	composer := &composerStub{
 		result: projectionproduction.Result{
@@ -222,17 +156,12 @@ func TestServiceUsesAuditableUnavailableRouteWithoutMaterializedRoute(
 			Composer:   composer,
 			Policy:     DefaultPolicy(),
 			Now: func() time.Time {
-				return asOfTime.Add(
-					time.Second,
-				)
+				return asOfTime.Add(time.Second)
 			},
 		},
 	)
 	if err != nil {
-		t.Fatalf(
-			"NewService() error = %v",
-			err,
-		)
+		t.Fatalf("NewService() error = %v", err)
 	}
 
 	_, err = service.Get(
@@ -244,36 +173,28 @@ func TestServiceUsesAuditableUnavailableRouteWithoutMaterializedRoute(
 		},
 	)
 	if err != nil {
-		t.Fatalf(
-			"Get() error = %v",
-			err,
-		)
+		t.Fatalf("Get() error = %v", err)
 	}
 
 	report := routecontract.Validate(
 		composer.request.Route,
 	)
-	if report.Status !=
-		routecontract.ValidationStatusValid ||
+	if report.Status != routecontract.ValidationStatusValid ||
 		composer.request.Route.Status !=
 			routecontract.RouteStatusUnavailable ||
 		composer.request.RouteHistory != nil ||
-		len(
-			composer.request.
-				HistoricalCandidates,
-		) != 0 ||
-		source.candidateCalls != 0 ||
-		source.historyCalls != 0 {
+		len(composer.request.HistoricalCandidates) != 0 ||
+		source.calls != 1 {
 		t.Fatalf(
-			"unexpected unavailable-route composition: report=%#v request=%#v source=%#v",
+			"unexpected unavailable-route composition: report=%#v request=%#v calls=%d",
 			report,
 			composer.request,
-			source,
+			source.calls,
 		)
 	}
 }
 
-func TestServiceRejectsFutureAsOfBeforeLoadingData(
+func TestServiceRejectsFutureAsOfBeforeLoadingSnapshot(
 	t *testing.T,
 ) {
 	now := projectionReadTestAsOfTime()
@@ -290,10 +211,7 @@ func TestServiceRejectsFutureAsOfBeforeLoadingData(
 		},
 	)
 	if err != nil {
-		t.Fatalf(
-			"NewService() error = %v",
-			err,
-		)
+		t.Fatalf("NewService() error = %v", err)
 	}
 
 	_, err = service.Get(
@@ -304,31 +222,24 @@ func TestServiceRejectsFutureAsOfBeforeLoadingData(
 			RequestedDuration: 5 * time.Minute,
 		},
 	)
-	if !errors.Is(
-		err,
-		ErrInvalidRequest,
-	) {
-		t.Fatalf(
-			"error = %v, want ErrInvalidRequest",
-			err,
-		)
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Fatalf("error = %v, want ErrInvalidRequest", err)
 	}
-	if source.currentCalls != 0 ||
-		composer.calls != 0 {
+	if source.calls != 0 || composer.calls != 0 {
 		t.Fatalf(
 			"future request reached dependencies: source=%d composer=%d",
-			source.currentCalls,
+			source.calls,
 			composer.calls,
 		)
 	}
 }
 
-func TestServiceMapsCurrentTrajectoryNotFound(
+func TestServiceMapsSnapshotTrajectoryNotFound(
 	t *testing.T,
 ) {
 	asOfTime := projectionReadTestAsOfTime()
 	source := &dataSourceStub{
-		currentErr: ErrTrajectoryNotFound,
+		err: ErrTrajectoryNotFound,
 	}
 	service, err := NewService(
 		ServiceConfig{
@@ -341,10 +252,7 @@ func TestServiceMapsCurrentTrajectoryNotFound(
 		},
 	)
 	if err != nil {
-		t.Fatalf(
-			"NewService() error = %v",
-			err,
-		)
+		t.Fatalf("NewService() error = %v", err)
 	}
 
 	_, err = service.Get(
@@ -355,10 +263,7 @@ func TestServiceMapsCurrentTrajectoryNotFound(
 			RequestedDuration: time.Minute,
 		},
 	)
-	if !errors.Is(
-		err,
-		ErrTrajectoryNotFound,
-	) {
+	if !errors.Is(err, ErrTrajectoryNotFound) {
 		t.Fatalf(
 			"error = %v, want ErrTrajectoryNotFound",
 			err,

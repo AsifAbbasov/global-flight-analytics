@@ -149,7 +149,7 @@ func (
 ) (trajectory.FlightTrajectory, error) {
 	var item trajectory.FlightTrajectory
 
-	err := repository.db.QueryRow(
+	err := repository.trajectoryReadExecutor().QueryRow(
 		ctx,
 		query,
 		argument,
@@ -254,7 +254,7 @@ func (
 		ORDER BY sequence_number ASC;
 	`
 
-	rows, err := repository.db.Query(
+	rows, err := repository.trajectoryReadExecutor().Query(
 		ctx,
 		query,
 		strings.TrimSpace(
@@ -349,7 +349,7 @@ func (
 		ORDER BY gap_start_time ASC;
 	`
 
-	rows, err := repository.db.Query(
+	rows, err := repository.trajectoryReadExecutor().Query(
 		ctx,
 		query,
 		strings.TrimSpace(

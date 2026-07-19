@@ -699,3 +699,11 @@ The previously unintegrated transponder evidence package is reachable from the p
 Status: IMPLEMENTED.
 
 The final Backend Architecture Hardening increment decomposes confirmed large-module cohesion problems in Historical Intelligence validation, Route Intelligence validation, historical-neighbor continuation, and estimated-arrival projection without changing formulas, contracts, persistence, providers, or frontend behavior.
+
+<!-- STAGE-14-12-PROJECTION-READ-SNAPSHOT-CONSISTENCY:IMPLEMENTATION -->
+
+### Stage 14.12 — Projection Read Snapshot Consistency
+
+Status: IMPLEMENTED.
+
+Projection Intelligence production reads now use one read-only PostgreSQL repeatable-read transaction. The service consumes a single snapshot contract instead of coordinating four independent storage operations.

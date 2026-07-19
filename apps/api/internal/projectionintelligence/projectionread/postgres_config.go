@@ -25,6 +25,7 @@ type PostgresDataSourceConfig struct {
 type PostgresDataSource struct {
 	client               postgresClient
 	trajectoryRepository trajectoryRepository
+	snapshotExecutor     snapshotExecutor
 	policy               DataSourcePolicy
 }
 
@@ -32,27 +33,34 @@ func NewPostgresDataSource(
 	config PostgresDataSourceConfig,
 ) (*PostgresDataSource, error) {
 	if config.Pool == nil {
-		return nil,
-			fmt.Errorf(
-				"Projection Intelligence PostgreSQL pool is required",
-			)
+		return nil, fmt.Errorf(
+			"Projection Intelligence PostgreSQL pool is required",
+		)
 	}
 
 	repository := config.TrajectoryRepository
 	if repository == nil {
-		repository =
-			postgres.NewTrajectoryRepository(
-				config.Pool,
-			)
+		repository = postgres.NewTrajectoryRepository(
+			config.Pool,
+		)
 	}
 
-	return newPostgresDataSource(
+	source, err := newPostgresDataSource(
 		pgxPoolClient{
 			pool: config.Pool,
 		},
 		repository,
 		config.Policy,
 	)
+	if err != nil {
+		return nil, err
+	}
+	source.snapshotExecutor = repeatableReadSnapshotExecutor{
+		starter: pgxSnapshotTransactionStarter{
+			pool: config.Pool,
+		},
+	}
+	return source, nil
 }
 
 func newPostgresDataSource(
@@ -61,16 +69,14 @@ func newPostgresDataSource(
 	policy DataSourcePolicy,
 ) (*PostgresDataSource, error) {
 	if client == nil {
-		return nil,
-			fmt.Errorf(
-				"Projection Intelligence PostgreSQL client is required",
-			)
+		return nil, fmt.Errorf(
+			"Projection Intelligence PostgreSQL client is required",
+		)
 	}
 	if repository == nil {
-		return nil,
-			fmt.Errorf(
-				"Projection Intelligence trajectory repository is required",
-			)
+		return nil, fmt.Errorf(
+			"Projection Intelligence trajectory repository is required",
+		)
 	}
 	if policy.MaximumTrajectoryPointCount < 2 ||
 		policy.MaximumHistoricalCandidateCount < 1 ||
@@ -80,15 +86,18 @@ func newPostgresDataSource(
 		policy.RecentRouteWindow >
 			policy.RouteHistoryWindow ||
 		policy.SourceName == "" {
-		return nil,
-			fmt.Errorf(
-				"Projection Intelligence PostgreSQL data-source policy is invalid",
-			)
+		return nil, fmt.Errorf(
+			"Projection Intelligence PostgreSQL data-source policy is invalid",
+		)
 	}
 
 	return &PostgresDataSource{
 		client:               client,
 		trajectoryRepository: repository,
-		policy:               policy,
+		snapshotExecutor: directSnapshotExecutor{
+			client:     client,
+			repository: repository,
+		},
+		policy: policy,
 	}, nil
 }

@@ -219,3 +219,9 @@ The production server now exposes the latest persisted special transponder code 
 ## Targeted Large-Module Hardening
 
 Historical and Route Intelligence validation are divided by contract responsibility. Projection continuation and estimated-arrival public methods are narrow coordinators, while detailed preparation, computation, fallback, confidence, provenance, and result construction remain isolated and testable.
+
+<!-- STAGE-14-12-PROJECTION-READ-SNAPSHOT-CONSISTENCY:README -->
+
+## Projection Read Snapshot Consistency
+
+One Projection Intelligence result now loads its current trajectory, route, historical candidates, and route-frequency history through one PostgreSQL read-only repeatable-read snapshot. Concurrent ingestion or materialization cannot make different input queries observe different committed database states.

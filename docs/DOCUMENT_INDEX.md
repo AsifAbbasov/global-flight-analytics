@@ -459,3 +459,11 @@ Defines the read-only production endpoint, safety semantics, freshness policy, q
 `51_STAGE_14_11_TARGETED_LARGE_MODULE_HARDENING.md`
 
 Records the targeted audit findings, responsibility-based source decomposition, projection workflow extraction, preserved behavior, rejected mechanical refactors, regression gates, and final acceptance criteria for Backend Architecture Hardening.
+
+<!-- STAGE-14-12-PROJECTION-READ-SNAPSHOT-CONSISTENCY:DOCUMENT-INDEX -->
+
+## Document 52
+
+`52_STAGE_14_12_PROJECTION_READ_SNAPSHOT_CONSISTENCY.md`
+
+Defines the PostgreSQL repeatable-read snapshot boundary, transaction-scoped trajectory repository, service contract, lifecycle behavior, preserved semantics, regression gates, and acceptance evidence for reproducible Projection Intelligence input loading.

@@ -12,14 +12,16 @@ import (
 )
 
 type TrajectoryRepository struct {
-	db *pgxpool.Pool
+	db         *pgxpool.Pool
+	readClient TrajectoryReadClient
 }
 
 func NewTrajectoryRepository(
 	db *pgxpool.Pool,
 ) *TrajectoryRepository {
 	return &TrajectoryRepository{
-		db: db,
+		db:         db,
+		readClient: db,
 	}
 }
 

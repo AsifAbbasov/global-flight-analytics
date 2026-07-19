@@ -3,6 +3,7 @@ package projectionread
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -62,10 +63,45 @@ func (
 		args...,
 	)
 	if err != nil {
-		return nil,
-			err
+		return nil, err
 	}
 
-	return rows,
-		nil
+	return rows, nil
+}
+
+type pgxTxClient struct {
+	transaction pgx.Tx
+}
+
+func (
+	client pgxTxClient,
+) QueryRow(
+	ctx context.Context,
+	query string,
+	args ...any,
+) rowScanner {
+	return client.transaction.QueryRow(
+		ctx,
+		query,
+		args...,
+	)
+}
+
+func (
+	client pgxTxClient,
+) Query(
+	ctx context.Context,
+	query string,
+	args ...any,
+) (rowIterator, error) {
+	rows, err := client.transaction.Query(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
 }

@@ -31,19 +31,16 @@ func NewService(
 	config ServiceConfig,
 ) (*Service, error) {
 	if config.DataSource == nil {
-		return nil,
-			ErrDataSourceRequired
+		return nil, ErrDataSourceRequired
 	}
 	if config.Composer == nil {
-		return nil,
-			ErrComposerRequired
+		return nil, ErrComposerRequired
 	}
 	if err := config.Policy.Validate(); err != nil {
-		return nil,
-			fmt.Errorf(
-				"validate Projection Intelligence read policy: %w",
-				err,
-			)
+		return nil, fmt.Errorf(
+			"validate Projection Intelligence read policy: %w",
+			err,
+		)
 	}
 
 	now := config.Now
@@ -75,8 +72,7 @@ func (
 		ctx = context.Background()
 	}
 	if err := ctx.Err(); err != nil {
-		return projectionproduction.Result{},
-			err
+		return projectionproduction.Result{}, err
 	}
 
 	trajectoryID := strings.TrimSpace(
@@ -92,9 +88,7 @@ func (
 
 	generatedAt := service.now().UTC()
 	if generatedAt.IsZero() ||
-		asOfTime.After(
-			generatedAt,
-		) {
+		asOfTime.After(generatedAt) {
 		return projectionproduction.Result{},
 			fmt.Errorf(
 				"%w: as-of time must not exceed generation time",
@@ -102,89 +96,45 @@ func (
 			)
 	}
 
-	current, err :=
-		service.dataSource.LoadCurrentTrajectory(
-			ctx,
-			trajectoryID,
-			asOfTime,
-		)
+	snapshot, err := service.dataSource.LoadSnapshot(
+		ctx,
+		SnapshotRequest{
+			TrajectoryID: trajectoryID,
+			AsOfTime:     asOfTime,
+		},
+	)
 	if err != nil {
 		return projectionproduction.Result{},
-			classifyCurrentTrajectoryError(
-				err,
-			)
+			classifySnapshotError(err)
 	}
 
-	route, err :=
-		service.dataSource.LoadRoute(
-			ctx,
-			trajectoryID,
-			asOfTime,
-		)
-	if errors.Is(err, ErrRouteNotFound) {
-		route = unavailableRoute(
-			current,
-			asOfTime,
-			generatedAt,
-		)
-	} else if err != nil {
-		return projectionproduction.Result{},
-			fmt.Errorf(
-				"load Projection Intelligence route: %w",
-				err,
-			)
+	route := unavailableRoute(
+		snapshot.CurrentTrajectory,
+		asOfTime,
+		generatedAt,
+	)
+	if snapshot.Route != nil {
+		route = snapshot.Route.Clone()
 	}
 
-	historicalCandidates := []trajectory.FlightTrajectory{}
+	historicalCandidates :=
+		[]trajectory.FlightTrajectory{}
 	var routeHistoryPointer *projectionroutefrequency.HistorySummary
-
-	if route.Status ==
-		routecontract.RouteStatusComplete {
-		historicalCandidates, err =
-			service.dataSource.
-				LoadHistoricalCandidates(
-					ctx,
-					current,
-					route,
-					asOfTime,
-				)
-		if err != nil {
-			return projectionproduction.Result{},
-				fmt.Errorf(
-					"load Projection Intelligence historical candidates: %w",
-					err,
-				)
-		}
-
-		routeHistory, historyErr :=
-			service.dataSource.LoadRouteHistory(
-				ctx,
-				route,
-				asOfTime,
-			)
-		switch {
-		case historyErr == nil:
-			routeHistoryCopy :=
-				routeHistory.Clone()
-			routeHistoryPointer =
-				&routeHistoryCopy
-		case errors.Is(
-			historyErr,
-			ErrRouteHistoryNotFound,
-		):
-			routeHistoryPointer = nil
-		default:
-			return projectionproduction.Result{},
-				fmt.Errorf(
-					"load Projection Intelligence route history: %w",
-					historyErr,
-				)
+	if route.Status == routecontract.RouteStatusComplete {
+		historicalCandidates = append(
+			[]trajectory.FlightTrajectory(nil),
+			snapshot.HistoricalCandidates...,
+		)
+		if snapshot.RouteHistory != nil {
+			historyCopy := snapshot.RouteHistory.Clone()
+			routeHistoryPointer = &historyCopy
 		}
 	}
 
 	result, err := service.composer.Compose(
 		projectionproduction.Request{
-			CurrentTrajectory:    current,
+			CurrentTrajectory: snapshot.
+				CurrentTrajectory,
 			HistoricalCandidates: historicalCandidates,
 			Route:                route,
 			RouteHistory:         routeHistoryPointer,
@@ -205,18 +155,15 @@ func (
 	return result.Clone(), nil
 }
 
-func classifyCurrentTrajectoryError(
+func classifySnapshotError(
 	err error,
 ) error {
-	if errors.Is(
-		err,
-		ErrTrajectoryNotFound,
-	) {
+	if errors.Is(err, ErrTrajectoryNotFound) {
 		return ErrTrajectoryNotFound
 	}
 
 	return fmt.Errorf(
-		"load Projection Intelligence current trajectory: %w",
+		"load Projection Intelligence snapshot: %w",
 		err,
 	)
 }
