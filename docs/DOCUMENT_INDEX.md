@@ -451,3 +451,11 @@ Records the removal of boolean query modes, the pure Historical Intelligence agg
 `50_STAGE_14_10_TRANSPONDER_EVIDENCE_PRODUCTION_INTEGRATION.md`
 
 Defines the read-only production endpoint, safety semantics, freshness policy, qualitative confidence boundary, dependency wiring, reachability governance, exclusions, and acceptance gates for observed special transponder code evidence.
+
+<!-- STAGE-14-11-TARGETED-LARGE-MODULE-HARDENING:DOCUMENT-INDEX -->
+
+## Document 51
+
+`51_STAGE_14_11_TARGETED_LARGE_MODULE_HARDENING.md`
+
+Records the targeted audit findings, responsibility-based source decomposition, projection workflow extraction, preserved behavior, rejected mechanical refactors, regression gates, and final acceptance criteria for Backend Architecture Hardening.

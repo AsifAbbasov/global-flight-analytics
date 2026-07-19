@@ -691,3 +691,11 @@ Historical Intelligence latest and history parsing are separated into explicit o
 Status: IMPLEMENTED.
 
 The previously unintegrated transponder evidence package is reachable from the production server through a read-only aircraft endpoint. The response includes provenance, freshness, qualitative confidence, deterministic fingerprinting, strict limitations, and immutable non-confirmation safety fields.
+
+<!-- STAGE-14-11-TARGETED-LARGE-MODULE-HARDENING:IMPLEMENTATION -->
+
+### Stage 14.11 — Targeted Large-Module Hardening
+
+Status: IMPLEMENTED.
+
+The final Backend Architecture Hardening increment decomposes confirmed large-module cohesion problems in Historical Intelligence validation, Route Intelligence validation, historical-neighbor continuation, and estimated-arrival projection without changing formulas, contracts, persistence, providers, or frontend behavior.

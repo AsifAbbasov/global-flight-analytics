@@ -213,3 +213,9 @@ Historical Intelligence HTTP handlers and DTO conversion now depend on a pure ag
 ## Transponder Evidence Production API
 
 The production server now exposes the latest persisted special transponder code as read-only research evidence. Responses explicitly state that the observation is evidence-only, does not confirm an emergency, and is not an operational alert.
+
+<!-- STAGE-14-11-TARGETED-LARGE-MODULE-HARDENING:README -->
+
+## Targeted Large-Module Hardening
+
+Historical and Route Intelligence validation are divided by contract responsibility. Projection continuation and estimated-arrival public methods are narrow coordinators, while detailed preparation, computation, fallback, confidence, provenance, and result construction remain isolated and testable.
