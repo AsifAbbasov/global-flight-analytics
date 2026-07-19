@@ -491,3 +491,11 @@ Defines lossless store and HTTP keyset pagination, opaque cursor encoding, recov
 `55_STAGE_14_15_WEATHER_COMPOSITION_BOUNDARY.md`
 
 Defines the former mixed Weather composition problem, responsibility-specific server files, preserved dependency graph and endpoint behavior, same-package decomposition rationale, regression gates, and acceptance evidence.
+
+<!-- BACKEND-FINAL-CORRECTNESS-AUDIT:DOCUMENT-INDEX -->
+
+## Document 56
+
+`56_BACKEND_FINAL_CORRECTNESS_AUDIT.md`
+
+Defines the permanent backend correctness gate, protected Stage 14 invariants, existing architecture and security checks, runtime verifier coverage, race detection scope, reproducible command, non-goals, and acceptance evidence.

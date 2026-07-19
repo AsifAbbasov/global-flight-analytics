@@ -243,3 +243,9 @@ Historical Intelligence history now uses a versioned opaque `cursor` token that 
 ## Weather Composition Boundary
 
 Weather production wiring now separates provider governance and integration, PostgreSQL-backed application construction, dependency coordination, and Fiber route registration. The current weather endpoint and runtime dependency graph remain unchanged.
+
+<!-- BACKEND-FINAL-CORRECTNESS-AUDIT:README -->
+
+## Backend Final Correctness Audit
+
+The repository now includes a permanent backend correctness gate for Projection read snapshot consistency, nullable telemetry integrity, Historical pagination, and Weather composition. Run `scripts/verify-backend-final-correctness.sh` before backend release or architecture-sensitive changes.

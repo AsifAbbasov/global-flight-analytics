@@ -731,3 +731,11 @@ Historical aggregate pagination now uses a validated four-field keyset cursor ac
 Status: IMPLEMENTED.
 
 Weather route registration is now isolated from provider, orchestration, repository, service, and handler construction. The same Open-Meteo, provider-budget, request-coalescing, PostgreSQL, service, and HTTP contracts remain in production.
+
+<!-- BACKEND-FINAL-CORRECTNESS-AUDIT:IMPLEMENTATION -->
+
+### Backend Final Correctness Audit
+
+Status: IMPLEMENTED.
+
+The final Stage 14 backend gate combines source-level invariant checks, strict architecture and security audits, corrected-boundary tests, race detection, complete command compilation, static analysis, and the complete Go test suite. Passing this gate closes backend correction work before Stage 15.
