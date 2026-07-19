@@ -659,3 +659,11 @@ All `POST`, `PUT`, `PATCH`, and `DELETE` route registrations are guarded by a ma
 Status: IMPLEMENTED.
 
 The existing Projection Evaluation metrics are connected to a reproducible offline benchmark command, bounded dataset governance, deterministic fingerprints, explicit release gates, and a mandatory manual-review boundary. Production formulas remain unchanged.
+
+<!-- STAGE-14-7-FRONTEND-DEPENDENCY-SECURITY:IMPLEMENTATION -->
+
+### Stage 14.7 — Frontend Dependency Security Remediation
+
+Status: IMPLEMENTED.
+
+The vulnerable Next.js transitive PostCSS 8.4.31 resolution is replaced with PostCSS 8.5.15 through a targeted pnpm 11 workspace override. Lockfile verification, policy tests, and a moderate-severity continuous integration audit prevent regression.

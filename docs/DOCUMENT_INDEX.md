@@ -419,3 +419,11 @@ Defines the backend-only mutation credential digest, constant-time request autho
 `46_STAGE_14_6_FORMULA_BENCHMARK_AND_CALIBRATION_GATE.md`
 
 Defines the bounded projection formula benchmark plan, deterministic report, evidence and performance gates, exit codes, production separation, and the prohibition on automatic calibration.
+
+<!-- STAGE-14-7-FRONTEND-DEPENDENCY-SECURITY:DOCUMENT-INDEX -->
+
+## Document 47
+
+`47_STAGE_14_7_FRONTEND_DEPENDENCY_SECURITY_REMEDIATION.md`
+
+Records the PostCSS vulnerability root cause, targeted pnpm workspace override, lockfile security policy, continuous integration threshold, compatibility checks, and prohibited unsafe remediation methods.

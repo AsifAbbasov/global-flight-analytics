@@ -189,3 +189,9 @@ Public read routes remain unauthenticated. Every state-changing or computation-t
 ## Formula Benchmark and Calibration Gate
 
 Projection formulas can now be evaluated through a bounded offline command that consumes an approved research dataset manifest and an immutable Projection Evaluation aggregate. Reports distinguish insufficient evidence, failed gates, and passed gates while permanently prohibiting automatic formula changes or calibration claims.
+
+<!-- STAGE-14-7-FRONTEND-DEPENDENCY-SECURITY:README -->
+
+## Frontend Dependency Security
+
+The pnpm workspace now redirects PostCSS versions below 8.5.10 to 8.5.15, verifies the committed dependency graph without network access, and blocks moderate or more severe production dependency findings in frontend continuous integration.

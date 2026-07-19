@@ -5,6 +5,8 @@
     "dev:web": "pnpm --dir apps/web dev",
     "build:web": "pnpm --dir apps/web build",
     "lint:web": "pnpm --dir apps/web lint",
+    "verify:web-dependencies": "node scripts/verify-frontend-dependency-security.mjs",
+    "test:web-dependency-policy": "node --test scripts/verify-frontend-dependency-security.test.mjs",
     "dev:api": "cd apps/api && go run ./cmd/server",
     "test:api": "cd apps/api && go test ./..."
   },
