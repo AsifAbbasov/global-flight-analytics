@@ -16,6 +16,11 @@ type nonRuntimePackagePolicy struct {
 }
 
 var nonRuntimePackagePolicies = map[string]nonRuntimePackagePolicy{
+	modulePath + "/internal/analytics/formulabenchmark": {
+		Disposition: dispositionOfflineEvaluation,
+		Rationale:   "formula benchmarking consumes bounded offline future truth and must not enter production runtime",
+		NextAction:  "retain behind benchmark-projection-formulas and require manual review before any formula change",
+	},
 	modulePath + "/internal/analytics/researchbenchmark": {
 		Disposition: dispositionOfflineResearch,
 		Rationale:   "bounded external dataset benchmark contracts are intentionally excluded from production runtime",
@@ -34,7 +39,7 @@ var nonRuntimePackagePolicies = map[string]nonRuntimePackagePolicy{
 	modulePath + "/internal/projectionintelligence/projectionevaluation": {
 		Disposition: dispositionOfflineEvaluation,
 		Rationale:   "evaluation consumes future truth and must remain separated from live forecast generation",
-		NextAction:  "connect to an offline benchmark command before calibration claims",
+		NextAction:  "retain behind benchmark-projection-formulas and require immutable benchmark evidence before manual calibration review",
 	},
 }
 
@@ -51,3 +56,5 @@ func nonRuntimePackagePolicyFor(
 // STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION
 
 // STAGE-14-4-FEATURE-MATERIALIZATION
+
+// STAGE-14-6-FORMULA-BENCHMARK

@@ -183,3 +183,9 @@ Persisted trajectories can now be processed through the complete Feature Pipelin
 ## Mutation Endpoint Protection
 
 Public read routes remain unauthenticated. Every state-changing or computation-triggering HTTP route requires the backend-only `X-Internal-API-Key` header. The backend stores only `API_MUTATION_KEY_SHA256`, compares presented credentials in constant time, and refuses database-backed production configuration without the digest.
+
+<!-- STAGE-14-6-FORMULA-BENCHMARK:README -->
+
+## Formula Benchmark and Calibration Gate
+
+Projection formulas can now be evaluated through a bounded offline command that consumes an approved research dataset manifest and an immutable Projection Evaluation aggregate. Reports distinguish insufficient evidence, failed gates, and passed gates while permanently prohibiting automatic formula changes or calibration claims.

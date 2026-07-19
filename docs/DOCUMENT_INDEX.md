@@ -411,3 +411,11 @@ Records the real PostgreSQL Flight Feature materialization command, deterministi
 `45_STAGE_14_5_MUTATION_ENDPOINT_PROTECTION.md`
 
 Defines the backend-only mutation credential digest, constant-time request authorization, fail-closed production configuration, frontend separation, rotation process, and architecture gate for all state-changing HTTP methods.
+
+<!-- STAGE-14-6-FORMULA-BENCHMARK:DOCUMENT-INDEX -->
+
+## Document 46
+
+`46_STAGE_14_6_FORMULA_BENCHMARK_AND_CALIBRATION_GATE.md`
+
+Defines the bounded projection formula benchmark plan, deterministic report, evidence and performance gates, exit codes, production separation, and the prohibition on automatic calibration.

@@ -11,11 +11,12 @@ import (
 type Kind string
 
 const (
-	KindTransponderEvidence  Kind = "transponder_evidence"
-	KindClimbPrediction      Kind = "climb_prediction"
-	KindOpenSkyCompatibility Kind = "opensky_compatibility"
-	KindHistoricalReplay     Kind = "historical_replay"
-	KindTakeoffWeight        Kind = "takeoff_weight"
+	KindTransponderEvidence         Kind = "transponder_evidence"
+	KindClimbPrediction             Kind = "climb_prediction"
+	KindOpenSkyCompatibility        Kind = "opensky_compatibility"
+	KindHistoricalReplay            Kind = "historical_replay"
+	KindProjectionFormulaEvaluation Kind = "projection_formula_evaluation"
+	KindTakeoffWeight               Kind = "takeoff_weight"
 )
 
 var ErrPlanInvalid = errors.New(
@@ -107,6 +108,30 @@ func DefaultPlans() []Plan {
 			},
 		},
 		{
+			ID:        ProjectionFormulaEvaluationPlanID,
+			Kind:      KindProjectionFormulaEvaluation,
+			DatasetID: researchdataset.IDWeeklyStateVectors,
+			Metrics: []string{
+				"evaluation_count",
+				"complete_evaluation_ratio",
+				"point_coverage_ratio",
+				"mean_horizontal_error_m",
+				"p95_horizontal_error_m",
+				"horizontal_uncertainty_coverage_ratio",
+				"mean_altitude_absolute_error_m",
+				"vertical_uncertainty_coverage_ratio",
+				"mean_arrival_absolute_error_seconds",
+				"arrival_interval_coverage_ratio",
+			},
+			MaximumRecords:             1_000_000,
+			OfflineOnly:                true,
+			RequiresApplicabilityGuard: true,
+			Limitations: []string{
+				"Monday-only regional samples cannot establish universal projection accuracy.",
+				"A passing report permits manual review only and never automatic formula calibration.",
+			},
+		},
+		{
 			ID:        "takeoff-weight-baseline-v1",
 			Kind:      KindTakeoffWeight,
 			DatasetID: researchdataset.IDPRCTakeoffWeight,
@@ -179,3 +204,5 @@ func Validate(
 
 	return nil
 }
+
+// STAGE-14-6-FORMULA-BENCHMARK

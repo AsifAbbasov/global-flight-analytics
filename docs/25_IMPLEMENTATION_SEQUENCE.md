@@ -651,3 +651,11 @@ The complete remaining Feature Pipeline is reachable through an operational Post
 Status: IMPLEMENTED.
 
 All `POST`, `PUT`, `PATCH`, and `DELETE` route registrations are guarded by a mandatory architecture audit. The existing Route Intelligence calculation route uses backend-only internal key authorization. Public frontend source is audited to prevent credential coupling.
+
+<!-- STAGE-14-6-FORMULA-BENCHMARK:IMPLEMENTATION -->
+
+### Stage 14.6 — Formula Benchmark and Calibration Gate
+
+Status: IMPLEMENTED.
+
+The existing Projection Evaluation metrics are connected to a reproducible offline benchmark command, bounded dataset governance, deterministic fingerprints, explicit release gates, and a mandatory manual-review boundary. Production formulas remain unchanged.

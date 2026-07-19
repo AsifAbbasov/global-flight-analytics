@@ -30,6 +30,7 @@ const (
 	modeContracts    auditMode = "contracts"
 	modeDuplicates   auditMode = "duplicates"
 	modeSecurity     auditMode = "security"
+	modeFormulas     auditMode = "formulas"
 )
 
 type packageInfo struct {
@@ -93,7 +94,7 @@ func run(
 	modeValue := flags.String(
 		"mode",
 		string(modeAll),
-		"audit mode: all, reachability, contracts, duplicates, or security",
+		"audit mode: all, reachability, contracts, duplicates, security, or formulas",
 	)
 	strict := flags.Bool(
 		"strict",
@@ -171,6 +172,19 @@ func run(
 	}
 
 	if mode == modeAll ||
+		mode == modeFormulas {
+		if err := auditFormulaBenchmarkBoundary(
+			repositoryRoot,
+			stdout,
+		); err != nil {
+			failures = append(
+				failures,
+				err.Error(),
+			)
+		}
+	}
+
+	if mode == modeAll ||
 		mode == modeReachability {
 		if err := auditReachability(
 			repositoryRoot,
@@ -214,7 +228,8 @@ func knownMode(
 		modeReachability,
 		modeContracts,
 		modeDuplicates,
-		modeSecurity:
+		modeSecurity,
+		modeFormulas:
 		return true
 	default:
 		return false
@@ -1087,6 +1102,10 @@ func auditReachability(
 			) &&
 			!strings.Contains(
 				packageValue.ImportPath,
+				"/cmd/benchmark-",
+			) &&
+			!strings.Contains(
+				packageValue.ImportPath,
 				"/tools/projectaudit",
 			) {
 			continue
@@ -1437,3 +1456,5 @@ func commandError(
 // STAGE-14-4-FEATURE-MATERIALIZATION
 
 // STAGE-14-5-MUTATION-ENDPOINT-PROTECTION
+
+// STAGE-14-6-FORMULA-BENCHMARK

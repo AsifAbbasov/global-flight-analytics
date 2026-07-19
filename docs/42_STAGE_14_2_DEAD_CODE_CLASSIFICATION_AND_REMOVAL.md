@@ -143,3 +143,9 @@ The Feature Pipeline was resolved through an operational materialization command
 ## Mutation Security Resolution
 
 The architecture audit now covers mutation route authorization in addition to reachability, duplicate vocabulary, and Go-to-TypeScript contract alignment. A newly added mutation route cannot pass strict audit unless its first route middleware is `mutationAuthorization`.
+
+<!-- STAGE-14-6-FORMULA-BENCHMARK:DOCUMENT-42 -->
+
+## Offline Projection Evaluation Resolution
+
+`projectionevaluation` is now reachable from `benchmark-projection-formulas` as an explicit verification root while remaining excluded from production runtime. `formulabenchmark` receives the same offline-evaluation disposition and cannot enter the backend Docker image.

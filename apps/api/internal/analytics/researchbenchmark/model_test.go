@@ -4,8 +4,8 @@ import "testing"
 
 func TestDefaultPlansRemainBoundedAndOffline(t *testing.T) {
 	plans := DefaultPlans()
-	if len(plans) != 5 {
-		t.Fatalf("plan count = %d, want 5", len(plans))
+	if len(plans) != 6 {
+		t.Fatalf("plan count = %d, want 6", len(plans))
 	}
 	for _, plan := range plans {
 		if err := Validate(plan); err != nil {
@@ -16,3 +16,5 @@ func TestDefaultPlansRemainBoundedAndOffline(t *testing.T) {
 		}
 	}
 }
+
+// STAGE-14-6-FORMULA-BENCHMARK

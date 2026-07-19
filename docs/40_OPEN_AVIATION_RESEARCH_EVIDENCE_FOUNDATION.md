@@ -152,3 +152,9 @@ automatic external dataset downloads
 machine-learning model training
 production reliance on static research datasets
 ```
+
+<!-- STAGE-14-6-FORMULA-BENCHMARK:DOCUMENT-40 -->
+
+## Projection Formula Benchmark Amendment
+
+The adopted bounded weekly state-vector dataset now has an executable `projection-formula-evaluation-v1` plan. Execution remains offline, region-filtered, non-production, licence-reviewed, and attribution-bound. A passing report supports manual review only.

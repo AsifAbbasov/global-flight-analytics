@@ -6,6 +6,7 @@ func TestCurrentNonRuntimePoliciesAreExplicit(
 	t *testing.T,
 ) {
 	expected := []string{
+		modulePath + "/internal/analytics/formulabenchmark",
 		modulePath + "/internal/analytics/researchbenchmark",
 		modulePath + "/internal/analytics/researchdataset",
 		modulePath + "/internal/analytics/transponderalert",
@@ -126,3 +127,5 @@ func TestProductionFeaturePackagesAreNotAllowlisted(
 }
 
 // STAGE-14-4-FEATURE-MATERIALIZATION
+
+// STAGE-14-6-FORMULA-BENCHMARK
