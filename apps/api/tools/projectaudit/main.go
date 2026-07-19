@@ -29,6 +29,7 @@ const (
 	modeReachability auditMode = "reachability"
 	modeContracts    auditMode = "contracts"
 	modeDuplicates   auditMode = "duplicates"
+	modeSecurity     auditMode = "security"
 )
 
 type packageInfo struct {
@@ -92,7 +93,7 @@ func run(
 	modeValue := flags.String(
 		"mode",
 		string(modeAll),
-		"audit mode: all, reachability, contracts, or duplicates",
+		"audit mode: all, reachability, contracts, duplicates, or security",
 	)
 	strict := flags.Bool(
 		"strict",
@@ -157,6 +158,19 @@ func run(
 	}
 
 	if mode == modeAll ||
+		mode == modeSecurity {
+		if err := auditMutationRouteProtection(
+			repositoryRoot,
+			stdout,
+		); err != nil {
+			failures = append(
+				failures,
+				err.Error(),
+			)
+		}
+	}
+
+	if mode == modeAll ||
 		mode == modeReachability {
 		if err := auditReachability(
 			repositoryRoot,
@@ -199,7 +213,8 @@ func knownMode(
 	case modeAll,
 		modeReachability,
 		modeContracts,
-		modeDuplicates:
+		modeDuplicates,
+		modeSecurity:
 		return true
 	default:
 		return false
@@ -1420,3 +1435,5 @@ func commandError(
 // STAGE-14-2-DEAD-CODE-CLASSIFICATION
 
 // STAGE-14-4-FEATURE-MATERIALIZATION
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

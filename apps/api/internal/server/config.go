@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/security/internalapikey"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -18,6 +19,9 @@ type ProtectionConfig struct {
 
 	RateLimitMax    int
 	RateLimitWindow time.Duration
+
+	MutationKeyDigest     internalapikey.Digest
+	MutationKeyConfigured bool
 }
 
 type Config struct {
@@ -26,3 +30,5 @@ type Config struct {
 	OpenMeteoTimeout time.Duration
 	Protection       ProtectionConfig
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

@@ -246,6 +246,10 @@ func setServerWithoutDatabaseEnvironment(
 		openMeteoTimeoutEnvironmentVariable,
 		"",
 	)
+	t.Setenv(
+		apiMutationKeySHA256EnvironmentVariable,
+		"",
+	)
 }
 
 func clearAPIProtectionEnvironment(
@@ -261,6 +265,7 @@ func clearAPIProtectionEnvironment(
 		apiIdleTimeoutEnvironmentVariable,
 		apiRateLimitMaxEnvironmentVariable,
 		apiRateLimitWindowEnvironmentVariable,
+		apiMutationKeySHA256EnvironmentVariable,
 	} {
 		t.Setenv(
 			name,
@@ -268,3 +273,5 @@ func clearAPIProtectionEnvironment(
 		)
 	}
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

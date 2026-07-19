@@ -177,3 +177,9 @@ Airport Passport, Statistics, Ranking, Overview, History, and Trends are compose
 ## Flight Feature Materialization
 
 Persisted trajectories can now be processed through the complete Feature Pipeline with `materialize-flight-features`. The command uses real PostgreSQL trajectory and aircraft data and stores idempotent snapshots in `flight_feature_snapshots`. The isolated in-memory dataset profiler was removed rather than falsely connected.
+
+<!-- STAGE-14-5-MUTATION-ENDPOINT-PROTECTION:README -->
+
+## Mutation Endpoint Protection
+
+Public read routes remain unauthenticated. Every state-changing or computation-triggering HTTP route requires the backend-only `X-Internal-API-Key` header. The backend stores only `API_MUTATION_KEY_SHA256`, compares presented credentials in constant time, and refuses database-backed production configuration without the digest.

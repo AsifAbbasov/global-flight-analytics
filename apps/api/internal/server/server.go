@@ -21,7 +21,26 @@ func New(cfg Config) (*fiber.App, error) {
 	v1 := app.Group("/api").Group("/v1")
 	registerSystemRoutes(v1)
 	if normalizedConfig.DatabasePool != nil {
-		if err := registerDatabaseRoutes(v1, normalizedConfig.DatabasePool, normalizedConfig.OpenMeteoTimeout); err != nil {
+		mutationAuthorization, err :=
+			internalmiddleware.NewMutationAuthorization(
+				internalmiddleware.MutationAuthorizationConfig{
+					ExpectedDigest: normalizedConfig.Protection.MutationKeyDigest,
+					Configured:     normalizedConfig.Protection.MutationKeyConfigured,
+				},
+			)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"create mutation authorization middleware: %w",
+				err,
+			)
+		}
+
+		if err := registerDatabaseRoutes(
+			v1,
+			normalizedConfig.DatabasePool,
+			normalizedConfig.OpenMeteoTimeout,
+			mutationAuthorization,
+		); err != nil {
 			return nil, err
 		}
 	}
@@ -44,3 +63,5 @@ func registerSystemRoutes(v1 fiber.Router) {
 	v1.Get("/health", handlers.Health)
 	v1.Get("/version", handlers.Version)
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

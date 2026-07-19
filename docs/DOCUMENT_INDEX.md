@@ -403,3 +403,11 @@ Records PostgreSQL composition, read-only HTTP routes, completed-day window sema
 `44_STAGE_14_4_FEATURE_MATERIALIZATION_AND_PROFILER_REMOVAL.md`
 
 Records the real PostgreSQL Flight Feature materialization command, deterministic selector and as-of semantics, container runtime boundary, full Feature Pipeline reachability, and importer-proven removal of the unused dataset profiler.
+
+<!-- STAGE-14-5-MUTATION-ENDPOINT-PROTECTION:DOCUMENT-INDEX -->
+
+## Document 45
+
+`45_STAGE_14_5_MUTATION_ENDPOINT_PROTECTION.md`
+
+Defines the backend-only mutation credential digest, constant-time request authorization, fail-closed production configuration, frontend separation, rotation process, and architecture gate for all state-changing HTTP methods.

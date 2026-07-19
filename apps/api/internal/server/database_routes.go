@@ -39,6 +39,7 @@ func registerDatabaseRoutes(
 	v1 fiber.Router,
 	dbPool *pgxpool.Pool,
 	openMeteoTimeout time.Duration,
+	mutationAuthorization fiber.Handler,
 ) error {
 	h := buildDatabaseRouteHandlers(dbPool)
 
@@ -227,6 +228,7 @@ func registerDatabaseRoutes(
 	)
 	v1.Post(
 		"/trajectories/:id/route-intelligence",
+		mutationAuthorization,
 		h.routeIntelligence.ProcessByTrajectoryID,
 	)
 	v1.Get(
@@ -404,3 +406,5 @@ func buildDatabaseRouteHandlers(
 }
 
 // STAGE-14-3-AIRPORT-INTELLIGENCE-PRODUCTION
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

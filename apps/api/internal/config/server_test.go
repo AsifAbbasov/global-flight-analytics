@@ -346,6 +346,10 @@ func TestLoadServerConfigWithDatabase(
 		openMeteoTimeoutEnvironmentVariable,
 		" 5s ",
 	)
+	t.Setenv(
+		apiMutationKeySHA256EnvironmentVariable,
+		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+	)
 
 	loadedConfig, err := LoadServerConfig()
 	if err != nil {
@@ -393,3 +397,5 @@ func TestLoadServerConfigWithDatabase(
 	}
 
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

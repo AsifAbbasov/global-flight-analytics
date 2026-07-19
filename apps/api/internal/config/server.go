@@ -60,6 +60,13 @@ func LoadServerConfig() (
 		)
 	}
 
+	if !apiProtection.MutationKeyConfigured {
+		return ServerConfig{}, fmt.Errorf(
+			"%s is required when DATABASE_URL is configured",
+			apiMutationKeySHA256EnvironmentVariable,
+		)
+	}
+
 	return ServerConfig{
 		Port: port,
 		Database: &PostgresConfig{
@@ -70,3 +77,5 @@ func LoadServerConfig() (
 		APIProtection:    apiProtection,
 	}, nil
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

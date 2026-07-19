@@ -1,6 +1,10 @@
 package config
 
-import "time"
+import (
+	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/security/internalapikey"
+)
 
 type PostgresConfig struct {
 	URL            string
@@ -18,6 +22,9 @@ type APIProtectionConfig struct {
 
 	RateLimitMax    int
 	RateLimitWindow time.Duration
+
+	MutationKeyDigest     internalapikey.Digest
+	MutationKeyConfigured bool
 }
 
 type ServerConfig struct {
@@ -63,3 +70,5 @@ type HistoricalMaterializationConfig struct {
 type VerifyAirportsConfig struct {
 	DatabaseURL string
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

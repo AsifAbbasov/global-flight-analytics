@@ -59,13 +59,15 @@ func main() {
 			Logger:           log,
 			OpenMeteoTimeout: cfg.OpenMeteoTimeout,
 			Protection: server.ProtectionConfig{
-				AllowedOrigins:  cfg.APIProtection.AllowedOrigins,
-				BodyLimitBytes:  cfg.APIProtection.BodyLimitBytes,
-				ReadTimeout:     cfg.APIProtection.ReadTimeout,
-				WriteTimeout:    cfg.APIProtection.WriteTimeout,
-				IdleTimeout:     cfg.APIProtection.IdleTimeout,
-				RateLimitMax:    cfg.APIProtection.RateLimitMax,
-				RateLimitWindow: cfg.APIProtection.RateLimitWindow,
+				AllowedOrigins:        cfg.APIProtection.AllowedOrigins,
+				BodyLimitBytes:        cfg.APIProtection.BodyLimitBytes,
+				ReadTimeout:           cfg.APIProtection.ReadTimeout,
+				WriteTimeout:          cfg.APIProtection.WriteTimeout,
+				IdleTimeout:           cfg.APIProtection.IdleTimeout,
+				RateLimitMax:          cfg.APIProtection.RateLimitMax,
+				RateLimitWindow:       cfg.APIProtection.RateLimitWindow,
+				MutationKeyDigest:     cfg.APIProtection.MutationKeyDigest,
+				MutationKeyConfigured: cfg.APIProtection.MutationKeyConfigured,
 			},
 		},
 	)
@@ -142,3 +144,5 @@ func main() {
 		"api server stopped",
 	)
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

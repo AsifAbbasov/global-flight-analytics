@@ -3,19 +3,23 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/security/internalapikey"
 )
 
 const (
-	apiAllowedOriginsEnvironmentVariable  = "API_ALLOWED_ORIGINS"
-	apiBodyLimitBytesEnvironmentVariable  = "API_BODY_LIMIT_BYTES"
-	apiReadTimeoutEnvironmentVariable     = "API_READ_TIMEOUT"
-	apiWriteTimeoutEnvironmentVariable    = "API_WRITE_TIMEOUT"
-	apiIdleTimeoutEnvironmentVariable     = "API_IDLE_TIMEOUT"
-	apiRateLimitMaxEnvironmentVariable    = "API_RATE_LIMIT_MAX"
-	apiRateLimitWindowEnvironmentVariable = "API_RATE_LIMIT_WINDOW"
+	apiAllowedOriginsEnvironmentVariable    = "API_ALLOWED_ORIGINS"
+	apiBodyLimitBytesEnvironmentVariable    = "API_BODY_LIMIT_BYTES"
+	apiReadTimeoutEnvironmentVariable       = "API_READ_TIMEOUT"
+	apiWriteTimeoutEnvironmentVariable      = "API_WRITE_TIMEOUT"
+	apiIdleTimeoutEnvironmentVariable       = "API_IDLE_TIMEOUT"
+	apiRateLimitMaxEnvironmentVariable      = "API_RATE_LIMIT_MAX"
+	apiRateLimitWindowEnvironmentVariable   = "API_RATE_LIMIT_WINDOW"
+	apiMutationKeySHA256EnvironmentVariable = "API_MUTATION_KEY_SHA256"
 
 	defaultAPIAllowedOrigins  = "http://localhost:3000,http://localhost:3001"
 	defaultAPIBodyLimitBytes  = 1024 * 1024
@@ -86,15 +90,53 @@ func loadAPIProtectionConfig() (
 		return APIProtectionConfig{}, err
 	}
 
+	mutationKeyDigest, mutationKeyConfigured, err :=
+		optionalMutationKeyDigestEnvironmentVariable()
+	if err != nil {
+		return APIProtectionConfig{}, err
+	}
+
 	return APIProtectionConfig{
-		AllowedOrigins:  allowedOrigins,
-		BodyLimitBytes:  bodyLimitBytes,
-		ReadTimeout:     readTimeout,
-		WriteTimeout:    writeTimeout,
-		IdleTimeout:     idleTimeout,
-		RateLimitMax:    rateLimitMax,
-		RateLimitWindow: rateLimitWindow,
+		AllowedOrigins:        allowedOrigins,
+		BodyLimitBytes:        bodyLimitBytes,
+		ReadTimeout:           readTimeout,
+		WriteTimeout:          writeTimeout,
+		IdleTimeout:           idleTimeout,
+		RateLimitMax:          rateLimitMax,
+		RateLimitWindow:       rateLimitWindow,
+		MutationKeyDigest:     mutationKeyDigest,
+		MutationKeyConfigured: mutationKeyConfigured,
 	}, nil
+}
+
+func optionalMutationKeyDigestEnvironmentVariable() (
+	internalapikey.Digest,
+	bool,
+	error,
+) {
+	value, exists := os.LookupEnv(
+		apiMutationKeySHA256EnvironmentVariable,
+	)
+	if !exists || value == "" {
+		return internalapikey.Digest{},
+			false,
+			nil
+	}
+
+	digest, err := internalapikey.ParseDigestHex(
+		value,
+	)
+	if err != nil {
+		return internalapikey.Digest{},
+			false,
+			fmt.Errorf(
+				"load %s: %w",
+				apiMutationKeySHA256EnvironmentVariable,
+				err,
+			)
+	}
+
+	return digest, true, nil
 }
 
 func optionalAllowedOriginsEnvironmentVariable(
@@ -243,3 +285,5 @@ func optionalPositiveDurationEnvironmentVariable(
 
 	return parsed, nil
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

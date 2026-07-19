@@ -116,6 +116,13 @@ func normalizeProtectionConfig(
 		)
 	}
 
+	if config.MutationKeyConfigured &&
+		config.MutationKeyDigest.IsZero() {
+		return ProtectionConfig{}, fmt.Errorf(
+			"configured mutation key digest must not be zero",
+		)
+	}
+
 	return config, nil
 }
 
@@ -311,3 +318,5 @@ func rateLimitReached(
 		"Too many requests",
 	)
 }
+
+// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

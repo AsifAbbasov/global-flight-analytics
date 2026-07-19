@@ -137,3 +137,9 @@ Airport Intelligence was resolved through production integration rather than del
 ## Feature Pipeline Resolution
 
 The Feature Pipeline was resolved through an operational materialization command. Eleven packages now belong to the `feature_materializer` runtime root. `features/datasetprofiler` was removed as a confirmed isolated facade rather than being artificially imported.
+
+<!-- STAGE-14-5-MUTATION-ENDPOINT-PROTECTION:DOCUMENT-42 -->
+
+## Mutation Security Resolution
+
+The architecture audit now covers mutation route authorization in addition to reachability, duplicate vocabulary, and Go-to-TypeScript contract alignment. A newly added mutation route cannot pass strict audit unless its first route middleware is `mutationAuthorization`.

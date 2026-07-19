@@ -643,3 +643,11 @@ The six Airport Intelligence domain packages are composed into the production se
 Status: IMPLEMENTED.
 
 The complete remaining Feature Pipeline is reachable through an operational PostgreSQL materializer. The disconnected dataset profiler was deleted after importer proof because it had no bounded persisted-dataset read path.
+
+<!-- STAGE-14-5-MUTATION-ENDPOINT-PROTECTION:IMPLEMENTATION -->
+
+### Stage 14.5 — Mutation Endpoint Protection
+
+Status: IMPLEMENTED.
+
+All `POST`, `PUT`, `PATCH`, and `DELETE` route registrations are guarded by a mandatory architecture audit. The existing Route Intelligence calculation route uses backend-only internal key authorization. Public frontend source is audited to prevent credential coupling.
