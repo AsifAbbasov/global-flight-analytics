@@ -94,6 +94,7 @@ func TestSemanticErrorsRemainDistinct(
 		ErrUnsupportedSchemaVersion,
 		ErrInputFingerprintRequired,
 		ErrInvalidListLimit,
+		ErrInvalidListCursor,
 		ErrResultNotFound,
 		ErrResultConflict,
 		ErrScopeInvalid,

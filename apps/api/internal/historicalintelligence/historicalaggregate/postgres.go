@@ -132,7 +132,7 @@ const (
 		LIMIT $5;
 	`
 
-	listResultsBeforeSQL = `
+	listResultsAfterCursorSQL = `
 		SELECT
 			id,
 			input_fingerprint,
@@ -143,13 +143,30 @@ const (
 		  AND metric_name = $2
 		  AND scope_key = $3
 		  AND granularity = $4
-		  AND window_end_unix_nano < $5
+		  AND (
+			window_end_unix_nano < $5
+			OR (
+				window_end_unix_nano = $5
+				AND window_start_unix_nano < $6
+			)
+			OR (
+				window_end_unix_nano = $5
+				AND window_start_unix_nano = $6
+				AND as_of_time_unix_nano < $7
+			)
+			OR (
+				window_end_unix_nano = $5
+				AND window_start_unix_nano = $6
+				AND as_of_time_unix_nano = $7
+				AND id > $8
+			)
+		  )
 		ORDER BY
 			window_end_unix_nano DESC,
 			window_start_unix_nano DESC,
 			as_of_time_unix_nano DESC,
 			id ASC
-		LIMIT $6;
+		LIMIT $9;
 	`
 )
 
@@ -495,7 +512,7 @@ func (store *PostgresStore) List(
 	limitWithSentinel := normalized.Limit + 1
 	var rows rowIterator
 
-	if normalized.BeforeWindowEnd.IsZero() {
+	if normalized.Cursor == nil {
 		rows, err = store.client.Query(
 			ctx,
 			listResultsSQL,
@@ -506,14 +523,18 @@ func (store *PostgresStore) List(
 			limitWithSentinel,
 		)
 	} else {
+		cursor := normalized.Cursor
 		rows, err = store.client.Query(
 			ctx,
-			listResultsBeforeSQL,
+			listResultsAfterCursorSQL,
 			string(normalized.SchemaVersion),
 			string(normalized.MetricName),
 			encodedScope,
 			string(normalized.Granularity),
-			normalized.BeforeWindowEnd.UnixNano(),
+			cursor.WindowEnd.UnixNano(),
+			cursor.WindowStart.UnixNano(),
+			cursor.AsOfTime.UnixNano(),
+			cursor.ID,
 			limitWithSentinel,
 		)
 	}
@@ -558,13 +579,18 @@ func (store *PostgresStore) List(
 
 	hasMore := len(records) >
 		normalized.Limit
+	var nextCursor *ListCursor
 	if hasMore {
 		records = records[:normalized.Limit]
+		nextCursor = listCursorFromRecord(
+			records[len(records)-1],
+		)
 	}
 
 	return Page{
-		Records: records,
-		HasMore: hasMore,
+		Records:    records,
+		HasMore:    hasMore,
+		NextCursor: nextCursor,
 	}.Clone(), nil
 }
 

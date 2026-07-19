@@ -12,6 +12,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/historicalcursor"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -145,7 +146,7 @@ func TestHistoricalIntelligenceHistoryParsing(
 		handler.ListHistory,
 	)
 
-	before := time.Date(
+	windowEnd := time.Date(
 		2026,
 		time.July,
 		15,
@@ -155,6 +156,23 @@ func TestHistoricalIntelligenceHistoryParsing(
 		123,
 		time.UTC,
 	)
+	cursor := historicalaggregate.ListCursor{
+		WindowEnd:   windowEnd,
+		WindowStart: windowEnd.Add(-time.Hour),
+		AsOfTime:    windowEnd.Add(5 * time.Minute),
+		ID: "historical-aggregate-record-" +
+			strings.Repeat("c", 64),
+	}
+	encodedCursor, err := historicalcursor.Encode(
+		cursor,
+	)
+	if err != nil {
+		t.Fatalf(
+			"encode history cursor: %v",
+			err,
+		)
+	}
+
 	values := url.Values{}
 	values.Set(
 		"metric",
@@ -165,10 +183,7 @@ func TestHistoricalIntelligenceHistoryParsing(
 	values.Set("origin_icao", "ubbb")
 	values.Set("destination_icao", "ugtb")
 	values.Set("limit", "7")
-	values.Set(
-		"before_window_end",
-		before.Format(time.RFC3339Nano),
-	)
+	values.Set("cursor", encodedCursor)
 
 	result, err := app.Test(
 		httptest.NewRequest(
@@ -205,9 +220,17 @@ func TestHistoricalIntelligenceHistoryParsing(
 		store.listQuery.Granularity !=
 			historicalcontract.GranularityHour ||
 		store.listQuery.Limit != 7 ||
-		!store.listQuery.BeforeWindowEnd.Equal(
-			before,
-		) {
+		store.listQuery.Cursor == nil ||
+		!store.listQuery.Cursor.WindowEnd.Equal(
+			cursor.WindowEnd,
+		) ||
+		!store.listQuery.Cursor.WindowStart.Equal(
+			cursor.WindowStart,
+		) ||
+		!store.listQuery.Cursor.AsOfTime.Equal(
+			cursor.AsOfTime,
+		) ||
+		store.listQuery.Cursor.ID != cursor.ID {
 		t.Fatalf(
 			"unexpected history query: %#v",
 			store.listQuery,
@@ -240,7 +263,7 @@ func TestHistoricalIntelligenceRequestValidation(
 		},
 		{
 			name: "cursor timestamp",
-			path: "?metric=flight_count&scope=global&granularity=hour&before_window_end=bad",
+			path: "?metric=flight_count&scope=global&granularity=hour&cursor=bad",
 		},
 		{
 			name: "global scope rejects identifiers",

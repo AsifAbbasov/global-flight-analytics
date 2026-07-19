@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 )
 
@@ -189,18 +190,26 @@ func normalizeListQuery(
 		return ListQuery{}, ErrInvalidListLimit
 	}
 
-	beforeWindowEnd := query.BeforeWindowEnd
-	if !beforeWindowEnd.IsZero() {
-		beforeWindowEnd = beforeWindowEnd.UTC()
+	var cursor *ListCursor
+	if query.Cursor != nil {
+		normalizedCursor, err :=
+			historicalaggregatecontract.
+				NormalizeListCursor(
+					*query.Cursor,
+				)
+		if err != nil {
+			return ListQuery{}, err
+		}
+		cursor = &normalizedCursor
 	}
 
 	return ListQuery{
-		SchemaVersion:   query.SchemaVersion,
-		MetricName:      query.MetricName,
-		Scope:           scope,
-		Granularity:     query.Granularity,
-		BeforeWindowEnd: beforeWindowEnd,
-		Limit:           limit,
+		SchemaVersion: query.SchemaVersion,
+		MetricName:    query.MetricName,
+		Scope:         scope,
+		Granularity:   query.Granularity,
+		Cursor:        cursor,
+		Limit:         limit,
 	}, nil
 }
 

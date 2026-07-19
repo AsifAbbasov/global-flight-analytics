@@ -21,6 +21,8 @@ var (
 					ErrInputFingerprintRequired
 	ErrInvalidListLimit = historicalaggregatecontract.
 				ErrInvalidListLimit
+	ErrInvalidListCursor = historicalaggregatecontract.
+				ErrInvalidListCursor
 	ErrResultNotFound = historicalaggregatecontract.
 				ErrResultNotFound
 	ErrResultConflict = historicalaggregatecontract.

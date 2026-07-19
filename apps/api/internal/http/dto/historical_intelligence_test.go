@@ -8,6 +8,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/historicalcursor"
 )
 
 func TestToHistoricalIntelligenceAggregateRecordUsesStableJSONContract(
@@ -73,29 +74,61 @@ func TestToHistoricalIntelligenceAggregateHistoryBuildsCursor(
 	t *testing.T,
 ) {
 	record := historicalIntelligenceDTORecord()
-	history :=
+	cursor := &historicalaggregate.ListCursor{
+		WindowEnd: record.Key.Window.EndTime,
+		WindowStart: record.Key.Window.
+			StartTime,
+		AsOfTime: record.Key.Window.AsOfTime,
+		ID:       record.ID,
+	}
+	history, err :=
 		ToHistoricalIntelligenceAggregateHistory(
 			historicalaggregate.Page{
 				Records: []historicalaggregate.Record{
 					record,
 				},
-				HasMore: true,
+				HasMore:    true,
+				NextCursor: cursor,
 			},
 		)
-
-	if len(history.Items) != 1 ||
-		!history.HasMore ||
-		history.NextBeforeWindowEnd == nil ||
-		!history.NextBeforeWindowEnd.Equal(
-			record.Key.Window.EndTime,
-		) {
+	if err != nil {
 		t.Fatalf(
-			"unexpected history response: %#v",
-			history,
+			"convert history response: %v",
+			err,
 		)
 	}
 
-	withoutMore :=
+	decoded, err := historicalcursor.Decode(
+		history.NextCursor,
+	)
+	if err != nil {
+		t.Fatalf(
+			"decode history cursor: %v",
+			err,
+		)
+	}
+	if len(history.Items) != 1 ||
+		!history.HasMore ||
+		history.NextCursor == "" ||
+		decoded == nil ||
+		!decoded.WindowEnd.Equal(
+			cursor.WindowEnd,
+		) ||
+		!decoded.WindowStart.Equal(
+			cursor.WindowStart,
+		) ||
+		!decoded.AsOfTime.Equal(
+			cursor.AsOfTime,
+		) ||
+		decoded.ID != cursor.ID {
+		t.Fatalf(
+			"unexpected history response: %#v decoded=%#v",
+			history,
+			decoded,
+		)
+	}
+
+	withoutMore, err :=
 		ToHistoricalIntelligenceAggregateHistory(
 			historicalaggregate.Page{
 				Records: []historicalaggregate.Record{
@@ -104,10 +137,16 @@ func TestToHistoricalIntelligenceAggregateHistoryBuildsCursor(
 				HasMore: false,
 			},
 		)
-	if withoutMore.NextBeforeWindowEnd != nil {
+	if err != nil {
 		t.Fatalf(
-			"unexpected cursor without more records: %#v",
-			withoutMore.NextBeforeWindowEnd,
+			"convert terminal history response: %v",
+			err,
+		)
+	}
+	if withoutMore.NextCursor != "" {
+		t.Fatalf(
+			"unexpected cursor without more records: %q",
+			withoutMore.NextCursor,
 		)
 	}
 }

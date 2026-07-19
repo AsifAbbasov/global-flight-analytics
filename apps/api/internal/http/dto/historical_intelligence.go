@@ -1,10 +1,12 @@
 package dto
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/historicalcursor"
 )
 
 type HistoricalIntelligenceTimeWindow struct {
@@ -106,9 +108,9 @@ type HistoricalIntelligenceAggregateRecord struct {
 }
 
 type HistoricalIntelligenceAggregateHistory struct {
-	Items               []HistoricalIntelligenceAggregateRecord `json:"items"`
-	HasMore             bool                                    `json:"has_more"`
-	NextBeforeWindowEnd *time.Time                              `json:"next_before_window_end,omitempty"`
+	Items      []HistoricalIntelligenceAggregateRecord `json:"items"`
+	HasMore    bool                                    `json:"has_more"`
+	NextCursor string                                  `json:"next_cursor,omitempty"`
 }
 
 func ToHistoricalIntelligenceAggregateRecord(
@@ -126,7 +128,10 @@ func ToHistoricalIntelligenceAggregateRecord(
 
 func ToHistoricalIntelligenceAggregateHistory(
 	page historicalaggregatecontract.Page,
-) HistoricalIntelligenceAggregateHistory {
+) (
+	HistoricalIntelligenceAggregateHistory,
+	error,
+) {
 	items := make(
 		[]HistoricalIntelligenceAggregateRecord,
 		0,
@@ -141,18 +146,32 @@ func ToHistoricalIntelligenceAggregateHistory(
 		)
 	}
 
-	var nextBeforeWindowEnd *time.Time
-	if page.HasMore && len(page.Records) > 0 {
-		value := page.Records[len(page.Records)-1].
-			Key.Window.EndTime.UTC()
-		nextBeforeWindowEnd = &value
+	nextCursor := ""
+	if page.HasMore {
+		if page.NextCursor == nil {
+			return HistoricalIntelligenceAggregateHistory{},
+				fmt.Errorf(
+					"Historical Intelligence page with more records has no next cursor",
+				)
+		}
+		encoded, err := historicalcursor.Encode(
+			*page.NextCursor,
+		)
+		if err != nil {
+			return HistoricalIntelligenceAggregateHistory{},
+				fmt.Errorf(
+					"encode Historical Intelligence next cursor: %w",
+					err,
+				)
+		}
+		nextCursor = encoded
 	}
 
 	return HistoricalIntelligenceAggregateHistory{
-		Items:               items,
-		HasMore:             page.HasMore,
-		NextBeforeWindowEnd: nextBeforeWindowEnd,
-	}
+		Items:      items,
+		HasMore:    page.HasMore,
+		NextCursor: nextCursor,
+	}, nil
 }
 
 func toHistoricalIntelligenceResult(

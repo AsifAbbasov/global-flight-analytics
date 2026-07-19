@@ -715,3 +715,11 @@ Projection Intelligence production reads now use one read-only PostgreSQL repeat
 Status: IMPLEMENTED.
 
 Projection Intelligence trajectory reads remove telemetry default fabrication. PostgreSQL and application scanning now enforce complete required kinematics while preserving explicit zero values and the existing optional altitude contract.
+
+<!-- STAGE-14-14-COMPOSITE-HISTORICAL-PAGINATION-V3:IMPLEMENTATION -->
+
+### Stage 14.14 — Composite Historical Pagination Cursor
+
+Status: IMPLEMENTED.
+
+Historical aggregate pagination now uses a validated four-field keyset cursor across the store and HTTP API. The history endpoint accepts `cursor`, returns `next_cursor`, rejects malformed or partial boundaries, and no longer exposes the lossy single-timestamp contract.

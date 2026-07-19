@@ -16,6 +16,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/historicalcursor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/server"
 	"github.com/gofiber/fiber/v2"
@@ -273,18 +274,40 @@ func verifyHistoryPagination(
 	if !first.Success ||
 		len(first.Data.Items) != 2 ||
 		!first.Data.HasMore ||
-		first.Data.NextBeforeWindowEnd == nil ||
+		first.Data.NextCursor == "" ||
 		first.Data.Items[0].Result.Summary.Total != 3 ||
 		first.Data.Items[1].Result.Summary.Total != 2 {
-		return fmt.Errorf("unexpected first history page: %#v", first)
+		return fmt.Errorf(
+			"unexpected first history page: %#v",
+			first,
+		)
 	}
 
-	expectedCursor := schedule.ClosedBoundary.Add(-time.Hour)
-	if !first.Data.NextBeforeWindowEnd.Equal(expectedCursor) {
+	decoded, err := historicalcursor.Decode(
+		first.Data.NextCursor,
+	)
+	if err != nil {
 		return fmt.Errorf(
-			"history cursor = %s, want %s",
-			first.Data.NextBeforeWindowEnd,
-			expectedCursor,
+			"decode first history cursor: %w",
+			err,
+		)
+	}
+	lastVisible := first.Data.Items[1]
+	if decoded == nil ||
+		decoded.ID != lastVisible.ID ||
+		!decoded.WindowEnd.Equal(
+			lastVisible.Result.Window.EndTime,
+		) ||
+		!decoded.WindowStart.Equal(
+			lastVisible.Result.Window.StartTime,
+		) ||
+		!decoded.AsOfTime.Equal(
+			lastVisible.Result.Window.AsOfTime,
+		) {
+		return fmt.Errorf(
+			"history cursor does not match last visible record: cursor=%#v record=%#v",
+			decoded,
+			lastVisible,
 		)
 	}
 
@@ -293,8 +316,8 @@ func verifyHistoryPagination(
 	)
 	secondValues.Set("limit", "2")
 	secondValues.Set(
-		"before_window_end",
-		first.Data.NextBeforeWindowEnd.Format(time.RFC3339Nano),
+		"cursor",
+		first.Data.NextCursor,
 	)
 
 	second, err := getSuccessHistory(
@@ -307,9 +330,12 @@ func verifyHistoryPagination(
 	if !second.Success ||
 		len(second.Data.Items) != 1 ||
 		second.Data.HasMore ||
-		second.Data.NextBeforeWindowEnd != nil ||
+		second.Data.NextCursor != "" ||
 		second.Data.Items[0].Result.Summary.Total != 1 {
-		return fmt.Errorf("unexpected second history page: %#v", second)
+		return fmt.Errorf(
+			"unexpected second history page: %#v",
+			second,
+		)
 	}
 
 	return nil
@@ -380,7 +406,7 @@ func verifyHTTPErrorContracts(app *fiber.App) error {
 	invalidCursor := baseGlobalQuery(
 		historicalcontract.MetricNameFlightCount,
 	)
-	invalidCursor.Set("before_window_end", "not-a-time")
+	invalidCursor.Set("cursor", "not-a-cursor")
 	return expectError(
 		app,
 		"/api/v1"+server.HistoricalIntelligenceHistoryPath+"?"+invalidCursor.Encode(),

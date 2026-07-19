@@ -231,3 +231,9 @@ One Projection Intelligence result now loads its current trajectory, route, hist
 ## Nullable Telemetry Integrity
 
 Projection Intelligence no longer converts absent coordinates, motion telemetry, or on-ground state into plausible zero or false values. Only complete required kinematic observations become analytical trajectory points; legitimate stored zero values remain valid.
+
+<!-- STAGE-14-14-COMPOSITE-HISTORICAL-PAGINATION-V3:README -->
+
+## Lossless Historical Pagination
+
+Historical Intelligence history now uses a versioned opaque `cursor` token that carries the complete PostgreSQL ordering boundary: window end, window start, as-of time, and record identifier. Store, HTTP response, handler parsing, and runtime verification use the same lossless keyset contract.

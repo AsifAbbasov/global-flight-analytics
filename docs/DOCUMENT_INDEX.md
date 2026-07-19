@@ -475,3 +475,11 @@ Defines the PostgreSQL repeatable-read snapshot boundary, transaction-scoped tra
 `53_STAGE_14_13_NULLABLE_TELEMETRY_INTEGRITY.md`
 
 Defines the nullable telemetry failure mode, conservative completeness boundary, legitimate-zero semantics, altitude handling, ordering and limit behavior, preserved contracts, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-14-COMPOSITE-HISTORICAL-PAGINATION-V3:DOCUMENT-INDEX -->
+
+## Document 54
+
+`54_STAGE_14_14_COMPOSITE_HISTORICAL_PAGINATION_CURSOR.md`
+
+Defines lossless store and HTTP keyset pagination, opaque cursor encoding, recovery from the failed first installer, validation rules, removed legacy names, preserved behavior, regression gates, and acceptance evidence.

@@ -26,6 +26,9 @@ var (
 	ErrInvalidListLimit = errors.New(
 		"historical aggregate list limit is invalid",
 	)
+	ErrInvalidListCursor = errors.New(
+		"historical aggregate list cursor is invalid",
+	)
 	ErrResultNotFound = errors.New(
 		"historical aggregate result was not found",
 	)
@@ -68,13 +71,14 @@ type ListQuery struct {
 	Scope         historicalcontract.Scope
 	Granularity   historicalcontract.Granularity
 
-	BeforeWindowEnd time.Time
-	Limit           int
+	Cursor *ListCursor
+	Limit  int
 }
 
 type Page struct {
-	Records []Record
-	HasMore bool
+	Records    []Record
+	HasMore    bool
+	NextCursor *ListCursor
 }
 
 func (page Page) Clone() Page {
@@ -85,6 +89,10 @@ func (page Page) Clone() Page {
 			len(page.Records),
 		),
 		HasMore: page.HasMore,
+	}
+	if page.NextCursor != nil {
+		cursor := page.NextCursor.Clone()
+		cloned.NextCursor = &cursor
 	}
 	for _, record := range page.Records {
 		cloned.Records = append(

@@ -7,6 +7,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/historicalcursor"
 )
 
 func TestParseHistoricalLatestQueryBuildsBaseQuery(
@@ -14,11 +15,11 @@ func TestParseHistoricalLatestQueryBuildsBaseQuery(
 ) {
 	query, err := parseHistoricalLatestQuery(
 		historicalIntelligenceQueryValues{
-			Metric:          "flight_count",
-			Scope:           "global",
-			Granularity:     "hour",
-			Limit:           "invalid-for-history",
-			BeforeWindowEnd: "invalid-for-history",
+			Metric:      "flight_count",
+			Scope:       "global",
+			Granularity: "hour",
+			Limit:       "invalid-for-history",
+			Cursor:      "invalid-for-history",
 		},
 	)
 	if err != nil {
@@ -57,7 +58,7 @@ func TestParseHistoricalLatestQueryBuildsBaseQuery(
 		)
 	}
 	if query.Limit != 0 ||
-		!query.BeforeWindowEnd.IsZero() {
+		query.Cursor != nil {
 		t.Fatalf(
 			"latest query contains history pagination: %#v",
 			query,
@@ -65,27 +66,57 @@ func TestParseHistoricalLatestQueryBuildsBaseQuery(
 	}
 }
 
-func TestParseHistoricalHistoryQueryAddsPagination(
+func TestParseHistoricalHistoryQueryAddsCompositePagination(
 	t *testing.T,
 ) {
-	before := time.Date(
-		2026,
-		time.July,
-		19,
-		9,
-		30,
-		0,
-		123,
-		time.UTC,
-	)
+	cursor := historicalaggregatecontract.ListCursor{
+		WindowEnd: time.Date(
+			2026,
+			time.July,
+			19,
+			9,
+			30,
+			0,
+			123,
+			time.UTC,
+		),
+		WindowStart: time.Date(
+			2026,
+			time.July,
+			19,
+			8,
+			30,
+			0,
+			123,
+			time.UTC,
+		),
+		AsOfTime: time.Date(
+			2026,
+			time.July,
+			19,
+			9,
+			35,
+			0,
+			123,
+			time.UTC,
+		),
+		ID: "historical-aggregate-record-a",
+	}
+	encoded, err := historicalcursor.Encode(cursor)
+	if err != nil {
+		t.Fatalf(
+			"encode cursor: %v",
+			err,
+		)
+	}
 
 	query, err := parseHistoricalHistoryQuery(
 		historicalIntelligenceQueryValues{
-			Metric:          "flight_count",
-			Scope:           "global",
-			Granularity:     "hour",
-			Limit:           "7",
-			BeforeWindowEnd: before.Format(time.RFC3339Nano),
+			Metric:      "flight_count",
+			Scope:       "global",
+			Granularity: "hour",
+			Limit:       "7",
+			Cursor:      encoded,
 		},
 	)
 	if err != nil {
@@ -101,11 +132,20 @@ func TestParseHistoricalHistoryQueryAddsPagination(
 			query.Limit,
 		)
 	}
-	if !query.BeforeWindowEnd.Equal(before) {
+	if query.Cursor == nil ||
+		!query.Cursor.WindowEnd.Equal(
+			cursor.WindowEnd,
+		) ||
+		!query.Cursor.WindowStart.Equal(
+			cursor.WindowStart,
+		) ||
+		!query.Cursor.AsOfTime.Equal(
+			cursor.AsOfTime,
+		) ||
+		query.Cursor.ID != cursor.ID {
 		t.Fatalf(
-			"cursor = %s, want %s",
-			query.BeforeWindowEnd,
-			before,
+			"unexpected parsed cursor: %#v",
+			query.Cursor,
 		)
 	}
 }
@@ -133,11 +173,11 @@ func TestParseHistoricalHistoryQueryRejectsInvalidPagination(
 
 	_, err = parseHistoricalHistoryQuery(
 		historicalIntelligenceQueryValues{
-			Metric:          "flight_count",
-			Scope:           "global",
-			Granularity:     "hour",
-			Limit:           "1",
-			BeforeWindowEnd: "not-a-timestamp",
+			Metric:      "flight_count",
+			Scope:       "global",
+			Granularity: "hour",
+			Limit:       "1",
+			Cursor:      "not-a-cursor",
 		},
 	)
 	if !errors.Is(

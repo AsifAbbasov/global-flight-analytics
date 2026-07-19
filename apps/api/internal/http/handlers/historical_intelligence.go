@@ -6,11 +6,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/historicalcursor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	"github.com/gofiber/fiber/v2"
 )
@@ -24,7 +24,7 @@ const (
 	historicalOriginICAOQuery      = "origin_icao"
 	historicalDestinationICAOQuery = "destination_icao"
 	historicalLimitQuery           = "limit"
-	historicalBeforeWindowEndQuery = "before_window_end"
+	historicalCursorQuery          = "cursor"
 )
 
 var (
@@ -158,8 +158,8 @@ func (handler *HistoricalIntelligenceHandler) ListHistory(
 			Limit: ctx.Query(
 				historicalLimitQuery,
 			),
-			BeforeWindowEnd: ctx.Query(
-				historicalBeforeWindowEndQuery,
+			Cursor: ctx.Query(
+				historicalCursorQuery,
 			),
 		},
 	)
@@ -183,11 +183,22 @@ func (handler *HistoricalIntelligenceHandler) ListHistory(
 		)
 	}
 
-	return response.OK(
-		ctx,
+	history, err :=
 		dto.ToHistoricalIntelligenceAggregateHistory(
 			page,
-		),
+		)
+	if err != nil {
+		return writeHistoricalIntelligenceError(
+			ctx,
+			err,
+			"HISTORICAL_INTELLIGENCE_CURSOR_ENCODING_FAILED",
+			"Failed to encode Historical Intelligence history cursor",
+		)
+	}
+
+	return response.OK(
+		ctx,
+		history,
 	)
 }
 
@@ -200,8 +211,8 @@ type historicalIntelligenceQueryValues struct {
 	OriginICAO      string
 	DestinationICAO string
 
-	Limit           string
-	BeforeWindowEnd string
+	Limit  string
+	Cursor string
 }
 
 func parseHistoricalLatestQuery(
@@ -234,17 +245,16 @@ func parseHistoricalHistoryQuery(
 		return historicalaggregatecontract.ListQuery{},
 			err
 	}
-	beforeWindowEnd, err :=
-		parseHistoricalBeforeWindowEnd(
-			values.BeforeWindowEnd,
-		)
+	cursor, err := parseHistoricalCursor(
+		values.Cursor,
+	)
 	if err != nil {
 		return historicalaggregatecontract.ListQuery{},
 			err
 	}
 
 	query.Limit = limit
-	query.BeforeWindowEnd = beforeWindowEnd
+	query.Cursor = cursor
 
 	return query, nil
 }
@@ -422,24 +432,18 @@ func parseHistoricalLimit(
 	return limit, nil
 }
 
-func parseHistoricalBeforeWindowEnd(
+func parseHistoricalCursor(
 	value string,
-) (time.Time, error) {
-	normalized := strings.TrimSpace(value)
-	if normalized == "" {
-		return time.Time{}, nil
-	}
-
-	parsed, err := time.Parse(
-		time.RFC3339Nano,
-		normalized,
-	)
+) (
+	*historicalaggregatecontract.ListCursor,
+	error,
+) {
+	cursor, err := historicalcursor.Decode(value)
 	if err != nil {
-		return time.Time{},
+		return nil,
 			errHistoricalCursorInvalid
 	}
-
-	return parsed.UTC(), nil
+	return cursor, nil
 }
 
 func historicalIntelligenceRequestError(
@@ -499,7 +503,7 @@ func historicalIntelligenceRequestError(
 			ctx,
 			fiber.StatusBadRequest,
 			"INVALID_HISTORICAL_INTELLIGENCE_CURSOR",
-			"Historical Intelligence history cursor must be a valid RFC 3339 timestamp",
+			"Historical Intelligence history cursor must be a valid opaque composite cursor",
 		)
 
 	default:
@@ -579,6 +583,15 @@ func writeHistoricalIntelligenceError(
 		return historicalIntelligenceRequestError(
 			ctx,
 			errHistoricalLimitInvalid,
+		)
+
+	case errors.Is(
+		err,
+		historicalaggregatecontract.ErrInvalidListCursor,
+	):
+		return historicalIntelligenceRequestError(
+			ctx,
+			errHistoricalCursorInvalid,
 		)
 
 	default:

@@ -13,6 +13,7 @@ const (
 
 type ResultKey = historicalaggregatecontract.ResultKey
 type Record = historicalaggregatecontract.Record
+type ListCursor = historicalaggregatecontract.ListCursor
 type ListQuery = historicalaggregatecontract.ListQuery
 type Page = historicalaggregatecontract.Page
 type Reader = historicalaggregatecontract.Reader
