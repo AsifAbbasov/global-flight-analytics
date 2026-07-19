@@ -237,3 +237,9 @@ Projection Intelligence no longer converts absent coordinates, motion telemetry,
 ## Lossless Historical Pagination
 
 Historical Intelligence history now uses a versioned opaque `cursor` token that carries the complete PostgreSQL ordering boundary: window end, window start, as-of time, and record identifier. Store, HTTP response, handler parsing, and runtime verification use the same lossless keyset contract.
+
+<!-- STAGE-14-15-WEATHER-COMPOSITION-BOUNDARY:README -->
+
+## Weather Composition Boundary
+
+Weather production wiring now separates provider governance and integration, PostgreSQL-backed application construction, dependency coordination, and Fiber route registration. The current weather endpoint and runtime dependency graph remain unchanged.

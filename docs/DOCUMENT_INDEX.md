@@ -483,3 +483,11 @@ Defines the nullable telemetry failure mode, conservative completeness boundary,
 `54_STAGE_14_14_COMPOSITE_HISTORICAL_PAGINATION_CURSOR.md`
 
 Defines lossless store and HTTP keyset pagination, opaque cursor encoding, recovery from the failed first installer, validation rules, removed legacy names, preserved behavior, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-15-WEATHER-COMPOSITION-BOUNDARY:DOCUMENT-INDEX -->
+
+## Document 55
+
+`55_STAGE_14_15_WEATHER_COMPOSITION_BOUNDARY.md`
+
+Defines the former mixed Weather composition problem, responsibility-specific server files, preserved dependency graph and endpoint behavior, same-package decomposition rationale, regression gates, and acceptance evidence.

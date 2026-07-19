@@ -723,3 +723,11 @@ Projection Intelligence trajectory reads remove telemetry default fabrication. P
 Status: IMPLEMENTED.
 
 Historical aggregate pagination now uses a validated four-field keyset cursor across the store and HTTP API. The history endpoint accepts `cursor`, returns `next_cursor`, rejects malformed or partial boundaries, and no longer exposes the lossy single-timestamp contract.
+
+<!-- STAGE-14-15-WEATHER-COMPOSITION-BOUNDARY:IMPLEMENTATION -->
+
+### Stage 14.15 — Weather Composition Boundary
+
+Status: IMPLEMENTED.
+
+Weather route registration is now isolated from provider, orchestration, repository, service, and handler construction. The same Open-Meteo, provider-budget, request-coalescing, PostgreSQL, service, and HTTP contracts remain in production.
