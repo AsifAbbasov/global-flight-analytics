@@ -8,12 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -50,23 +49,12 @@ var (
 	)
 )
 
-type historicalIntelligenceStore interface {
-	GetLatest(
-		context.Context,
-		historicalaggregate.ListQuery,
-	) (historicalaggregate.Record, error)
-	List(
-		context.Context,
-		historicalaggregate.ListQuery,
-	) (historicalaggregate.Page, error)
-}
-
 type HistoricalIntelligenceHandler struct {
-	store historicalIntelligenceStore
+	store historicalaggregatecontract.Reader
 }
 
 func NewHistoricalIntelligenceHandler(
-	store historicalIntelligenceStore,
+	store historicalaggregatecontract.Reader,
 ) *HistoricalIntelligenceHandler {
 	return &HistoricalIntelligenceHandler{
 		store: store,
@@ -82,7 +70,7 @@ func (handler *HistoricalIntelligenceHandler) GetLatest(
 		)
 	}
 
-	query, err := parseHistoricalIntelligenceQuery(
+	query, err := parseHistoricalLatestQuery(
 		historicalIntelligenceQueryValues{
 			Metric: ctx.Query(
 				historicalMetricQuery,
@@ -106,7 +94,6 @@ func (handler *HistoricalIntelligenceHandler) GetLatest(
 				historicalDestinationICAOQuery,
 			),
 		},
-		false,
 	)
 	if err != nil {
 		return historicalIntelligenceRequestError(
@@ -145,7 +132,7 @@ func (handler *HistoricalIntelligenceHandler) ListHistory(
 		)
 	}
 
-	query, err := parseHistoricalIntelligenceQuery(
+	query, err := parseHistoricalHistoryQuery(
 		historicalIntelligenceQueryValues{
 			Metric: ctx.Query(
 				historicalMetricQuery,
@@ -175,7 +162,6 @@ func (handler *HistoricalIntelligenceHandler) ListHistory(
 				historicalBeforeWindowEndQuery,
 			),
 		},
-		true,
 	)
 	if err != nil {
 		return historicalIntelligenceRequestError(
@@ -218,50 +204,34 @@ type historicalIntelligenceQueryValues struct {
 	BeforeWindowEnd string
 }
 
-func parseHistoricalIntelligenceQuery(
+func parseHistoricalLatestQuery(
 	values historicalIntelligenceQueryValues,
-	includePagination bool,
-) (historicalaggregate.ListQuery, error) {
-	metricName, err := parseHistoricalMetric(
-		values.Metric,
-	)
-	if err != nil {
-		return historicalaggregate.ListQuery{},
-			err
-	}
+) (
+	historicalaggregatecontract.ListQuery,
+	error,
+) {
+	return parseHistoricalQueryBase(values)
+}
 
-	scope, err := parseHistoricalScope(
+func parseHistoricalHistoryQuery(
+	values historicalIntelligenceQueryValues,
+) (
+	historicalaggregatecontract.ListQuery,
+	error,
+) {
+	query, err := parseHistoricalQueryBase(
 		values,
 	)
 	if err != nil {
-		return historicalaggregate.ListQuery{},
+		return historicalaggregatecontract.ListQuery{},
 			err
-	}
-
-	granularity, err := parseHistoricalGranularity(
-		values.Granularity,
-	)
-	if err != nil {
-		return historicalaggregate.ListQuery{},
-			err
-	}
-
-	query := historicalaggregate.ListQuery{
-		SchemaVersion: historicalcontract.SchemaVersionV1,
-		MetricName:    metricName,
-		Scope:         scope,
-		Granularity:   granularity,
-	}
-
-	if !includePagination {
-		return query, nil
 	}
 
 	limit, err := parseHistoricalLimit(
 		values.Limit,
 	)
 	if err != nil {
-		return historicalaggregate.ListQuery{},
+		return historicalaggregatecontract.ListQuery{},
 			err
 	}
 	beforeWindowEnd, err :=
@@ -269,7 +239,7 @@ func parseHistoricalIntelligenceQuery(
 			values.BeforeWindowEnd,
 		)
 	if err != nil {
-		return historicalaggregate.ListQuery{},
+		return historicalaggregatecontract.ListQuery{},
 			err
 	}
 
@@ -277,6 +247,44 @@ func parseHistoricalIntelligenceQuery(
 	query.BeforeWindowEnd = beforeWindowEnd
 
 	return query, nil
+}
+
+func parseHistoricalQueryBase(
+	values historicalIntelligenceQueryValues,
+) (
+	historicalaggregatecontract.ListQuery,
+	error,
+) {
+	metricName, err := parseHistoricalMetric(
+		values.Metric,
+	)
+	if err != nil {
+		return historicalaggregatecontract.ListQuery{},
+			err
+	}
+
+	scope, err := parseHistoricalScope(
+		values,
+	)
+	if err != nil {
+		return historicalaggregatecontract.ListQuery{},
+			err
+	}
+
+	granularity, err := parseHistoricalGranularity(
+		values.Granularity,
+	)
+	if err != nil {
+		return historicalaggregatecontract.ListQuery{},
+			err
+	}
+
+	return historicalaggregatecontract.ListQuery{
+		SchemaVersion: historicalcontract.SchemaVersionV1,
+		MetricName:    metricName,
+		Scope:         scope,
+		Granularity:   granularity,
+	}, nil
 }
 
 func parseHistoricalMetric(
@@ -399,14 +407,14 @@ func parseHistoricalLimit(
 ) (int, error) {
 	normalized := strings.TrimSpace(value)
 	if normalized == "" {
-		return historicalaggregate.
+		return historicalaggregatecontract.
 			DefaultListLimit, nil
 	}
 
 	limit, err := strconv.Atoi(normalized)
 	if err != nil ||
 		limit < 1 ||
-		limit > historicalaggregate.
+		limit > historicalaggregatecontract.
 			MaximumListLimit {
 		return 0, errHistoricalLimitInvalid
 	}
@@ -546,12 +554,8 @@ func writeHistoricalIntelligenceError(
 
 	case errors.Is(
 		err,
-		pgx.ErrNoRows,
-	),
-		errors.Is(
-			err,
-			historicalaggregate.ErrResultNotFound,
-		):
+		historicalaggregatecontract.ErrResultNotFound,
+	):
 		return response.Error(
 			ctx,
 			fiber.StatusNotFound,
@@ -561,7 +565,7 @@ func writeHistoricalIntelligenceError(
 
 	case errors.Is(
 		err,
-		historicalaggregate.ErrScopeInvalid,
+		historicalaggregatecontract.ErrScopeInvalid,
 	):
 		return historicalIntelligenceRequestError(
 			ctx,
@@ -570,25 +574,11 @@ func writeHistoricalIntelligenceError(
 
 	case errors.Is(
 		err,
-		historicalaggregate.ErrInvalidListLimit,
+		historicalaggregatecontract.ErrInvalidListLimit,
 	):
 		return historicalIntelligenceRequestError(
 			ctx,
 			errHistoricalLimitInvalid,
-		)
-
-	case errors.Is(
-		err,
-		historicalaggregate.
-			ErrPostgresPoolRequired,
-	),
-		errors.Is(
-			err,
-			historicalaggregate.
-				ErrPostgresExecutorRequired,
-		):
-		return historicalIntelligenceUnavailable(
-			ctx,
 		)
 
 	default:

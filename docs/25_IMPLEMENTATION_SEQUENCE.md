@@ -675,3 +675,11 @@ The vulnerable Next.js transitive PostCSS 8.4.31 resolution is replaced with Pos
 Status: IMPLEMENTED.
 
 The overloaded database route file is decomposed into bounded-context composition and registration modules. Route topology and architecture regression tests preserve all core paths, prevent infrastructure construction inside route files, and keep mutation authorization first on the Route Intelligence POST endpoint.
+
+<!-- STAGE-14-9-HTTP-QUERY-CONTRACT-BOUNDARY:IMPLEMENTATION -->
+
+### Stage 14.9 — HTTP Query and Contract Boundary Hardening
+
+Status: IMPLEMENTED.
+
+Historical Intelligence latest and history parsing are separated into explicit operations. A pure aggregate store contract removes pgx and PostgreSQL construction details from the HTTP and DTO layers while compatibility aliases preserve existing materializers and verification commands.

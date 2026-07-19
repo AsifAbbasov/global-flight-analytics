@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 )
 
@@ -112,7 +112,7 @@ type HistoricalIntelligenceAggregateHistory struct {
 }
 
 func ToHistoricalIntelligenceAggregateRecord(
-	record historicalaggregate.Record,
+	record historicalaggregatecontract.Record,
 ) HistoricalIntelligenceAggregateRecord {
 	return HistoricalIntelligenceAggregateRecord{
 		ID:               record.ID,
@@ -125,7 +125,7 @@ func ToHistoricalIntelligenceAggregateRecord(
 }
 
 func ToHistoricalIntelligenceAggregateHistory(
-	page historicalaggregate.Page,
+	page historicalaggregatecontract.Page,
 ) HistoricalIntelligenceAggregateHistory {
 	items := make(
 		[]HistoricalIntelligenceAggregateRecord,

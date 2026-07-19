@@ -435,3 +435,11 @@ Records the PostCSS vulnerability root cause, targeted pnpm workspace override, 
 `48_STAGE_14_8_SERVER_COMPOSITION_ROOT_DECOMPOSITION.md`
 
 Defines the bounded-context server composition structure, preserved HTTP behavior, architecture boundaries, topology regression gates, and intentionally excluded dependency-injection complexity.
+
+<!-- STAGE-14-9-HTTP-QUERY-CONTRACT-BOUNDARY:DOCUMENT-INDEX -->
+
+## Document 49
+
+`49_STAGE_14_9_HTTP_QUERY_AND_CONTRACT_BOUNDARY_HARDENING.md`
+
+Records the removal of boolean query modes, the pure Historical Intelligence aggregate store contract, HTTP error-boundary rules, compatibility strategy, regression gates, and intentionally rejected mechanical refactors.

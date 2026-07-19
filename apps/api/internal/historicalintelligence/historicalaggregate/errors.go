@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 )
 
 var (
@@ -14,44 +14,24 @@ var (
 	ErrPostgresExecutorRequired = errors.New(
 		"historical aggregate PostgreSQL executor is required",
 	)
-	ErrUnsupportedSchemaVersion = errors.New(
-		"historical aggregate schema version is unsupported",
-	)
-	ErrInputFingerprintRequired = errors.New(
-		"historical aggregate input fingerprint is required",
-	)
-	ErrInvalidListLimit = errors.New(
-		"historical aggregate list limit is invalid",
-	)
-	ErrResultNotFound = errors.New(
-		"historical aggregate result was not found",
-	)
-	ErrResultConflict = errors.New(
-		"historical aggregate result key already exists with a different input fingerprint",
-	)
-	ErrScopeInvalid = errors.New(
-		"historical aggregate scope is invalid",
-	)
-	ErrWindowRequired = errors.New(
-		"historical aggregate window is required",
-	)
+
+	ErrUnsupportedSchemaVersion = historicalaggregatecontract.
+					ErrUnsupportedSchemaVersion
+	ErrInputFingerprintRequired = historicalaggregatecontract.
+					ErrInputFingerprintRequired
+	ErrInvalidListLimit = historicalaggregatecontract.
+				ErrInvalidListLimit
+	ErrResultNotFound = historicalaggregatecontract.
+				ErrResultNotFound
+	ErrResultConflict = historicalaggregatecontract.
+				ErrResultConflict
+	ErrScopeInvalid = historicalaggregatecontract.
+			ErrScopeInvalid
+	ErrWindowRequired = historicalaggregatecontract.
+				ErrWindowRequired
 )
 
-type ValidationError struct {
-	Report historicalcontract.ValidationReport
-}
-
-func (err *ValidationError) Error() string {
-	if err == nil {
-		return "historical aggregate validation failed"
-	}
-
-	return fmt.Sprintf(
-		"historical aggregate validation failed: errors=%d warnings=%d",
-		err.Report.ErrorCount,
-		err.Report.WarningCount,
-	)
-}
+type ValidationError = historicalaggregatecontract.ValidationError
 
 type DatabaseError struct {
 	Operation string

@@ -201,3 +201,9 @@ The pnpm workspace now redirects PostCSS versions below 8.5.10 to 8.5.15, verifi
 ## Server Composition Root Decomposition
 
 Database-backed server wiring is now organized by bounded context. The coordinator describes startup order, composition files construct dependencies, and route files register HTTP topology. Existing methods, paths, contracts, and mutation protection remain unchanged.
+
+<!-- STAGE-14-9-HTTP-QUERY-CONTRACT-BOUNDARY:README -->
+
+## Historical Intelligence Contract Boundary
+
+Historical Intelligence HTTP handlers and DTO conversion now depend on a pure aggregate store contract rather than the PostgreSQL implementation. Latest and history query parsing use separate intent-revealing functions without boolean mode arguments.
