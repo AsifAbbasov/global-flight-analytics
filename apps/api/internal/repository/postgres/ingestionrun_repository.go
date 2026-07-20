@@ -14,6 +14,9 @@ var (
 	ErrIngestionRunNotFound = errors.New(
 		"ingestion run not found",
 	)
+	ErrIngestionRunTransitionRejected = errors.New(
+		"ingestion run transition rejected",
+	)
 	ErrIngestionRunRepositoryPoolRequired = errors.New(
 		"ingestion run repository pool is required",
 	)
@@ -152,18 +155,35 @@ func (r *IngestionRunRepository) markFinished(
 	}
 
 	const query = `
-		UPDATE ingestion_runs
-		SET
-			finished_at = $2,
-			status = $3,
-			records_received = $4,
-			records_inserted = $5,
-			records_updated = $6,
-			error_message = $7
-		WHERE id = $1;
+		WITH updated AS (
+			UPDATE ingestion_runs
+			SET
+				finished_at = $2,
+				status = $3,
+				records_received = $4,
+				records_inserted = $5,
+				records_updated = $6,
+				error_message = $7
+			WHERE id = $1
+				AND status = $8
+			RETURNING id
+		)
+		SELECT CASE
+			WHEN EXISTS (SELECT 1 FROM updated)
+				THEN 'updated'
+			WHEN EXISTS (
+				SELECT 1
+				FROM ingestion_runs
+				WHERE id = $1
+			)
+				THEN 'transition_rejected'
+			ELSE 'not_found'
+		END;
 	`
 
-	commandTag, err := r.db.Exec(
+	var outcome string
+
+	err := r.db.QueryRow(
 		ctx,
 		query,
 		id,
@@ -173,6 +193,9 @@ func (r *IngestionRunRepository) markFinished(
 		recordsInserted,
 		recordsUpdated,
 		nullableText(errorMessage),
+		string(ingestionrun.StatusRunning),
+	).Scan(
+		&outcome,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -182,9 +205,21 @@ func (r *IngestionRunRepository) markFinished(
 		)
 	}
 
-	if commandTag.RowsAffected() == 0 {
-		return ErrIngestionRunNotFound
-	}
+	switch outcome {
+	case "updated":
+		return nil
 
-	return nil
+	case "transition_rejected":
+		return ErrIngestionRunTransitionRejected
+
+	case "not_found":
+		return ErrIngestionRunNotFound
+
+	default:
+		return fmt.Errorf(
+			"mark ingestion run %s returned unknown outcome %q",
+			status,
+			outcome,
+		)
+	}
 }

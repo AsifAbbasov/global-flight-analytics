@@ -539,3 +539,11 @@ Defines canonical Data Quality Report parent integrity, explicit rejected-observ
 `61_STAGE_14_20_TRAJECTORY_READ_SNAPSHOT_CONSISTENCY.md`
 
 Defines the repository-owned PostgreSQL read-only repeatable-read boundary for complete FlightTrajectory aggregates, caller-owned transaction compatibility, pool constructor behavior, concurrent mutation evidence, rollback semantics, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-21-INGESTION-RUN-TERMINAL-INTEGRITY:DOCUMENT-INDEX -->
+
+## Document 62
+
+`62_STAGE_14_21_INGESTION_RUN_TERMINAL_INTEGRITY.md`
+
+Defines the one-way Ingestion Run completion transition, explicit transition-rejected semantics, lifecycle shape constraint, terminal-row immutability trigger, concurrent finalization behavior, PostgreSQL integration evidence, regression gates, and acceptance evidence.

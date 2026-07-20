@@ -98,7 +98,6 @@ This increment closes only migration atomicity and migrator process serializatio
 It does not close:
 
 ```text
-Ingestion Run transition integrity
 trajectory relational constraints
 shared migration filename parser
 altitude precision policy
