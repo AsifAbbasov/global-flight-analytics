@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -191,23 +190,28 @@ func normalizeAirport(
 			false
 	}
 
-	if math.IsNaN(item.ElevationM) ||
-		math.IsInf(item.ElevationM, 0) {
+	elevationM, elevationStatus, elevationAvailable :=
+		airport.ResolveElevation(
+			item.ElevationM,
+			item.ElevationAvailable,
+		)
+	if elevationStatus == airport.ElevationStatusInvalid {
 		return routecontract.AirportReference{},
 			ExclusionReasonInvalidElevation,
 			false
 	}
 
 	return routecontract.AirportReference{
-		ICAOCode:   icaoCode,
-		IATACode:   iataCode,
-		Name:       name,
-		City:       strings.TrimSpace(item.City),
-		Country:    strings.TrimSpace(item.Country),
-		Latitude:   normalizeSignedZero(item.Latitude),
-		Longitude:  normalizeSignedZero(item.Longitude),
-		ElevationM: normalizeSignedZero(item.ElevationM),
-		Timezone:   strings.TrimSpace(item.Timezone),
+		ICAOCode:           icaoCode,
+		IATACode:           iataCode,
+		Name:               name,
+		City:               strings.TrimSpace(item.City),
+		Country:            strings.TrimSpace(item.Country),
+		Latitude:           normalizeSignedZero(item.Latitude),
+		Longitude:          normalizeSignedZero(item.Longitude),
+		ElevationM:         normalizeSignedZero(elevationM),
+		ElevationAvailable: elevationAvailable,
+		Timezone:           strings.TrimSpace(item.Timezone),
 	}, "", true
 }
 
@@ -280,6 +284,7 @@ func canonicalAirportKey(
 				-1,
 				64,
 			),
+			strconv.FormatBool(item.ElevationAvailable),
 			item.Timezone,
 		},
 		"\x00",

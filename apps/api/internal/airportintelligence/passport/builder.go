@@ -60,15 +60,21 @@ func (builder Builder) Build(
 		return Passport{}, fmt.Errorf("%w: observed time cannot be after generated time", ErrInvalidTime)
 	}
 
+	elevationM, _, elevationAvailable := airport.ResolveElevation(
+		source.ElevationM,
+		source.ElevationAvailable,
+	)
+
 	return Passport{
 		Identity: identity,
 		Location: Location{
-			City:       strings.TrimSpace(source.City),
-			Country:    strings.TrimSpace(source.Country),
-			Latitude:   source.Latitude,
-			Longitude:  source.Longitude,
-			ElevationM: source.ElevationM,
-			Timezone:   strings.TrimSpace(source.Timezone),
+			City:               strings.TrimSpace(source.City),
+			Country:            strings.TrimSpace(source.Country),
+			Latitude:           source.Latitude,
+			Longitude:          source.Longitude,
+			ElevationM:         elevationM,
+			ElevationAvailable: elevationAvailable,
+			Timezone:           strings.TrimSpace(source.Timezone),
 		},
 		Operations: Operations{
 			Arrivals:       analytics.Arrivals,

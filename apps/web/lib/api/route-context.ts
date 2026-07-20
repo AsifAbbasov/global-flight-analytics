@@ -18,6 +18,9 @@ const confidenceLevels = new Set<RouteConfidenceLevel>([
   'medium',
   'high',
 ])
+const airportElevationStatuses = new Set<
+  RouteContextAirport['elevation_status']
+>(['observed', 'unknown', 'invalid'])
 
 export async function getAircraftRouteContext(
   icao24: string,
@@ -140,9 +143,10 @@ function parseAirport(
       record.longitude,
       `${fieldName}.longitude`
     ),
-    elevation_m: requireFiniteNumber(
+    ...parseAirportElevation(
       record.elevation_m,
-      `${fieldName}.elevation_m`
+      record.elevation_status,
+      fieldName
     ),
     timezone: requireString(
       record.timezone,
@@ -154,6 +158,44 @@ function parseAirport(
       `${fieldName}.description`,
       true
     ),
+  }
+}
+
+function parseAirportElevation(
+  value: unknown,
+  statusValue: unknown,
+  fieldName: string
+): Pick<RouteContextAirport, 'elevation_m' | 'elevation_status'> {
+  const status = requireString(
+    statusValue,
+    `${fieldName}.elevation_status`
+  ) as RouteContextAirport['elevation_status']
+
+  if (!airportElevationStatuses.has(status)) {
+    throw invalidPayload(
+      `${fieldName}.elevation_status contains an unsupported value.`
+    )
+  }
+
+  if (status === 'observed') {
+    return {
+      elevation_m: requireFiniteNumber(
+        value,
+        `${fieldName}.elevation_m`
+      ),
+      elevation_status: status,
+    }
+  }
+
+  if (value !== null) {
+    throw invalidPayload(
+      `${fieldName}.elevation_m must be null when elevation is not observed.`
+    )
+  }
+
+  return {
+    elevation_m: null,
+    elevation_status: status,
   }
 }
 

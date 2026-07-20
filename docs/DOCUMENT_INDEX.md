@@ -579,3 +579,11 @@ Defines the explicit whole-metre altitude persistence policy, deterministic roun
 `66_STAGE_14_25_TRAFFIC_ALTITUDE_STATUS_SEMANTICS.md`
 
 Defines typed current-traffic altitude selection, observed-zero preservation, geometric-to-barometric fallback, nullable absence semantics, explicit ground handling, HTTP contract propagation, frontend presentation, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-26-AIRPORT-ELEVATION-SEMANTICS:DOCUMENT-INDEX -->
+
+## Document 67
+
+`67_STAGE_14_26_AIRPORT_ELEVATION_SEMANTICS.md`
+
+Defines nullable airport elevation semantics from PostgreSQL through Airport profiles, Airport Intelligence, route context, production Route Intelligence, and frontend presentation, including observed sea-level values, unknown evidence, regression gates, and acceptance evidence.

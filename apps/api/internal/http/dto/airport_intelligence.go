@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
+
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airportintelligence/airportproduction"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airportintelligence/passport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airportintelligence/ranking"
@@ -27,12 +29,13 @@ type AirportPassportIdentity struct {
 	Name     string `json:"name"`
 }
 type AirportPassportLocation struct {
-	City       string  `json:"city"`
-	Country    string  `json:"country"`
-	Latitude   float64 `json:"latitude"`
-	Longitude  float64 `json:"longitude"`
-	ElevationM float64 `json:"elevation_m"`
-	Timezone   string  `json:"timezone"`
+	City            string                  `json:"city"`
+	Country         string                  `json:"country"`
+	Latitude        float64                 `json:"latitude"`
+	Longitude       float64                 `json:"longitude"`
+	ElevationM      *float64                `json:"elevation_m"`
+	ElevationStatus airport.ElevationStatus `json:"elevation_status"`
+	Timezone        string                  `json:"timezone"`
 }
 type AirportPassportOperations struct {
 	Arrivals       int `json:"arrivals"`
@@ -209,7 +212,11 @@ func toAirportIntelligenceLimitations(values []airportproduction.Limitation) []A
 	return result
 }
 func toAirportPassportResponse(value passport.Passport) AirportPassportResponse {
-	return AirportPassportResponse{Identity: AirportPassportIdentity{ICAOCode: value.Identity.ICAOCode, IATACode: value.Identity.IATACode, Name: value.Identity.Name}, Location: AirportPassportLocation{City: value.Location.City, Country: value.Location.Country, Latitude: value.Location.Latitude, Longitude: value.Location.Longitude, ElevationM: value.Location.ElevationM, Timezone: value.Location.Timezone}, Operations: AirportPassportOperations{Arrivals: value.Operations.Arrivals, Departures: value.Operations.Departures, Activity: value.Operations.Activity, ActiveAircraft: value.Operations.ActiveAircraft}, DataQuality: AirportPassportDataQuality{FreshnessScore: value.DataQuality.FreshnessScore, CoverageScore: value.DataQuality.CoverageScore, ObservedAt: value.DataQuality.ObservedAt}, Description: value.Description, GeneratedAt: value.GeneratedAt}
+	elevationM, elevationStatus := ToAirportElevation(
+		value.Location.ElevationM,
+		value.Location.ElevationAvailable,
+	)
+	return AirportPassportResponse{Identity: AirportPassportIdentity{ICAOCode: value.Identity.ICAOCode, IATACode: value.Identity.IATACode, Name: value.Identity.Name}, Location: AirportPassportLocation{City: value.Location.City, Country: value.Location.Country, Latitude: value.Location.Latitude, Longitude: value.Location.Longitude, ElevationM: elevationM, ElevationStatus: elevationStatus, Timezone: value.Location.Timezone}, Operations: AirportPassportOperations{Arrivals: value.Operations.Arrivals, Departures: value.Operations.Departures, Activity: value.Operations.Activity, ActiveAircraft: value.Operations.ActiveAircraft}, DataQuality: AirportPassportDataQuality{FreshnessScore: value.DataQuality.FreshnessScore, CoverageScore: value.DataQuality.CoverageScore, ObservedAt: value.DataQuality.ObservedAt}, Description: value.Description, GeneratedAt: value.GeneratedAt}
 }
 func toAirportStatisticsResponse(value statistics.Statistics) AirportStatisticsResponse {
 	return AirportStatisticsResponse{ICAOCode: value.ICAOCode, WindowStart: value.WindowStart, WindowEnd: value.WindowEnd, Arrivals: value.Arrivals, Departures: value.Departures, TotalMovements: value.TotalMovements, ArrivalShare: value.ArrivalShare, DepartureShare: value.DepartureShare, MovementsPerHour: value.MovementsPerHour, ActiveAircraft: value.ActiveAircraft, ActiveRoutes: value.ActiveRoutes, ObservedSamples: value.ObservedSamples, ExpectedSamples: value.ExpectedSamples, CoverageScore: value.CoverageScore, FreshnessScore: value.FreshnessScore, LatestObservationAt: value.LatestObservationAt, GeneratedAt: value.GeneratedAt}

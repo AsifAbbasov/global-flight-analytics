@@ -15,6 +15,8 @@ export interface RouteContextConfidence {
   reasons: RouteContextNotice[]
 }
 
+export type AirportElevationStatus = 'observed' | 'unknown' | 'invalid'
+
 export interface RouteContextAirport {
   icao_code: string
   iata_code: string
@@ -23,7 +25,8 @@ export interface RouteContextAirport {
   country: string
   latitude: number
   longitude: number
-  elevation_m: number
+  elevation_m: number | null
+  elevation_status: AirportElevationStatus
   timezone: string
   description: string
 }

@@ -170,6 +170,9 @@ func TestAirportRepositoryListMapsRowsConvertsElevationAndDoesNotTruncateAtOneHu
 			item.ElevationM,
 			304.8,
 		)
+		if !item.ElevationAvailable {
+			t.Fatal("expected mapped airport elevation to be available")
+		}
 
 		if item.Timezone != "Asia/Baku" {
 			t.Fatalf(
@@ -270,12 +273,59 @@ func TestAirportRepositoryGetByICAOMapsRowAndConvertsElevation(
 		item.ElevationM,
 		494.9952,
 	)
+	if !item.ElevationAvailable {
+		t.Fatal("expected airport elevation to be available")
+	}
 
 	if item.Description != "Georgia repository path test airport" {
 		t.Fatalf(
 			"unexpected description: got %q",
 			item.Description,
 		)
+	}
+}
+
+func TestAirportRepositoryDistinguishesUnknownElevationFromObservedSeaLevel(
+	t *testing.T,
+) {
+	fixture := newAirportRepositoryIntegrationFixture(t)
+	ctx := context.Background()
+
+	for _, row := range []struct {
+		id        string
+		icao      string
+		elevation any
+	}{
+		{id: "00000000-0000-0000-0000-000000000021", icao: "NULL", elevation: nil},
+		{id: "00000000-0000-0000-0000-000000000022", icao: "ZERO", elevation: 0},
+	} {
+		_, err := fixture.pool.Exec(
+			ctx,
+			`INSERT INTO airports (id, icao_code, name, latitude, longitude, elevation_ft) VALUES ($1, $2, $3, 0, 0, $4)`,
+			row.id,
+			row.icao,
+			row.icao+" airport",
+			row.elevation,
+		)
+		if err != nil {
+			t.Fatalf("insert elevation semantics airport %s: %v", row.icao, err)
+		}
+	}
+
+	unknown, err := fixture.repository.GetByICAO(ctx, "NULL")
+	if err != nil {
+		t.Fatalf("get unknown-elevation airport: %v", err)
+	}
+	if unknown.ElevationAvailable || unknown.ElevationM != 0 {
+		t.Fatalf("unknown elevation was not preserved: %#v", unknown)
+	}
+
+	seaLevel, err := fixture.repository.GetByICAO(ctx, "ZERO")
+	if err != nil {
+		t.Fatalf("get sea-level airport: %v", err)
+	}
+	if !seaLevel.ElevationAvailable || seaLevel.ElevationM != 0 {
+		t.Fatalf("observed sea-level elevation was not preserved: %#v", seaLevel)
 	}
 }
 

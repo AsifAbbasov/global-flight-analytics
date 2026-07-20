@@ -4,6 +4,7 @@ import {
   type APIRequestOptions,
 } from '@/lib/api/client'
 import type {
+  RouteIntelligenceAirport,
   RouteIntelligenceConfidenceLevel,
   RouteIntelligenceEndpointRole,
   RouteIntelligenceHistory,
@@ -15,6 +16,11 @@ import type {
 const statuses = new Set<RouteIntelligenceStatus>(['unavailable', 'partial', 'complete'])
 const levels = new Set<RouteIntelligenceConfidenceLevel>(['none', 'low', 'medium', 'high'])
 const roles = new Set<RouteIntelligenceEndpointRole>(['origin', 'destination'])
+const elevationStatuses = new Set<RouteIntelligenceAirport['elevation_status']>([
+  'observed',
+  'unknown',
+  'invalid',
+])
 
 export async function processRouteIntelligence(
   trajectoryID: string,
@@ -131,7 +137,7 @@ function endpoint(value: unknown, expected: RouteIntelligenceEndpointRole, field
   }
 }
 
-function airport(value: unknown, field: string) {
+function airport(value: unknown, field: string): RouteIntelligenceAirport {
   const r=record(value,field)
   return {
     icao_code:stringValue(r.icao_code,`${field}.icao_code`),
@@ -141,9 +147,38 @@ function airport(value: unknown, field: string) {
     country:stringValue(r.country,`${field}.country`,true),
     latitude:bounded(r.latitude,`${field}.latitude`,-90,90),
     longitude:bounded(r.longitude,`${field}.longitude`,-180,180),
-    elevation_m:numberValue(r.elevation_m,`${field}.elevation_m`),
+    ...airportElevation(
+      r.elevation_m,
+      r.elevation_status,
+      field
+    ),
     timezone:stringValue(r.timezone,`${field}.timezone`,true),
   }
+}
+function airportElevation(
+  value: unknown,
+  statusValue: unknown,
+  field: string
+): Pick<RouteIntelligenceAirport, 'elevation_m' | 'elevation_status'> {
+  const status = stringValue(
+    statusValue,
+    `${field}.elevation_status`
+  ) as RouteIntelligenceAirport['elevation_status']
+  if (!elevationStatuses.has(status)) {
+    invalid(`${field}.elevation_status is unsupported.`)
+  }
+  if (status === 'observed') {
+    return {
+      elevation_m: numberValue(value, `${field}.elevation_m`),
+      elevation_status: status,
+    }
+  }
+  if (value !== null) {
+    invalid(
+      `${field}.elevation_m must be null when elevation is not observed.`
+    )
+  }
+  return { elevation_m: null, elevation_status: status }
 }
 function windowValue(value: unknown,field:string){const r=record(value,field);return{start_time:timestamp(r.start_time,`${field}.start_time`),end_time:timestamp(r.end_time,`${field}.end_time`),as_of_time:timestamp(r.as_of_time,`${field}.as_of_time`)}}
 function summaryValue(value:unknown,field:string){const r=record(value,field);return{great_circle_distance_km:nonNegative(r.great_circle_distance_km,`${field}.great_circle_distance_km`),same_airport:booleanValue(r.same_airport,`${field}.same_airport`)}}

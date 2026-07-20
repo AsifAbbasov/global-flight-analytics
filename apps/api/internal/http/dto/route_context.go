@@ -19,16 +19,17 @@ type RouteContextConfidence struct {
 }
 
 type RouteContextAirport struct {
-	ICAOCode    string  `json:"icao_code"`
-	IATACode    string  `json:"iata_code"`
-	Name        string  `json:"name"`
-	City        string  `json:"city"`
-	Country     string  `json:"country"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	ElevationM  float64 `json:"elevation_m"`
-	Timezone    string  `json:"timezone"`
-	Description string  `json:"description"`
+	ICAOCode        string                  `json:"icao_code"`
+	IATACode        string                  `json:"iata_code"`
+	Name            string                  `json:"name"`
+	City            string                  `json:"city"`
+	Country         string                  `json:"country"`
+	Latitude        float64                 `json:"latitude"`
+	Longitude       float64                 `json:"longitude"`
+	ElevationM      *float64                `json:"elevation_m"`
+	ElevationStatus airport.ElevationStatus `json:"elevation_status"`
+	Timezone        string                  `json:"timezone"`
+	Description     string                  `json:"description"`
 }
 
 type RouteContextAirportCandidate struct {
@@ -78,17 +79,23 @@ func toRouteContextAirportCandidate(
 func toRouteContextAirport(
 	item airport.Airport,
 ) RouteContextAirport {
+	elevationM, elevationStatus := ToAirportElevation(
+		item.ElevationM,
+		item.ElevationAvailable,
+	)
+
 	return RouteContextAirport{
-		ICAOCode:    item.ICAOCode,
-		IATACode:    item.IATACode,
-		Name:        item.Name,
-		City:        item.City,
-		Country:     item.Country,
-		Latitude:    item.Latitude,
-		Longitude:   item.Longitude,
-		ElevationM:  item.ElevationM,
-		Timezone:    item.Timezone,
-		Description: item.Description,
+		ICAOCode:        item.ICAOCode,
+		IATACode:        item.IATACode,
+		Name:            item.Name,
+		City:            item.City,
+		Country:         item.Country,
+		Latitude:        item.Latitude,
+		Longitude:       item.Longitude,
+		ElevationM:      elevationM,
+		ElevationStatus: elevationStatus,
+		Timezone:        item.Timezone,
+		Description:     item.Description,
 	}
 }
 

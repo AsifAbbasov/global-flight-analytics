@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routestore"
 )
@@ -43,15 +44,16 @@ type RouteIntelligenceLimitation struct {
 }
 
 type RouteIntelligenceAirport struct {
-	ICAOCode   string  `json:"icao_code"`
-	IATACode   string  `json:"iata_code"`
-	Name       string  `json:"name"`
-	City       string  `json:"city"`
-	Country    string  `json:"country"`
-	Latitude   float64 `json:"latitude"`
-	Longitude  float64 `json:"longitude"`
-	ElevationM float64 `json:"elevation_m"`
-	Timezone   string  `json:"timezone"`
+	ICAOCode        string                  `json:"icao_code"`
+	IATACode        string                  `json:"iata_code"`
+	Name            string                  `json:"name"`
+	City            string                  `json:"city"`
+	Country         string                  `json:"country"`
+	Latitude        float64                 `json:"latitude"`
+	Longitude       float64                 `json:"longitude"`
+	ElevationM      *float64                `json:"elevation_m"`
+	ElevationStatus airport.ElevationStatus `json:"elevation_status"`
+	Timezone        string                  `json:"timezone"`
 }
 
 type RouteIntelligenceEndpoint struct {
@@ -160,13 +162,17 @@ func toRouteIntelligenceEndpoint(item *routecontract.EndpointInference) *RouteIn
 	if item == nil {
 		return nil
 	}
+	elevationM, elevationStatus := ToAirportElevation(
+		item.Airport.ElevationM,
+		item.Airport.ElevationAvailable,
+	)
 	return &RouteIntelligenceEndpoint{
 		Role: string(item.Role),
 		Airport: RouteIntelligenceAirport{
 			ICAOCode: item.Airport.ICAOCode, IATACode: item.Airport.IATACode,
 			Name: item.Airport.Name, City: item.Airport.City, Country: item.Airport.Country,
 			Latitude: item.Airport.Latitude, Longitude: item.Airport.Longitude,
-			ElevationM: item.Airport.ElevationM, Timezone: item.Airport.Timezone,
+			ElevationM: elevationM, ElevationStatus: elevationStatus, Timezone: item.Airport.Timezone,
 		},
 		DistanceKM:  item.DistanceKM,
 		Confidence:  toRouteIntelligenceConfidence(item.Confidence),

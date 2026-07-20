@@ -450,7 +450,10 @@ function AirportCandidateCard({
         />
         <Detail
           label='Elevation'
-          value={formatAltitude(candidate.airport.elevation_m)}
+          value={formatAirportElevation(
+            candidate.airport.elevation_m,
+            candidate.airport.elevation_status
+          )}
         />
         <Detail
           label='Timezone'
@@ -837,8 +840,19 @@ function formatGapReason(
   return 'Unknown gap'
 }
 
-function formatAltitude(value: number): string {
-  if (!Number.isFinite(value)) {
+function formatAirportElevation(
+  value: number | null,
+  status: RouteContextAirportCandidate['airport']['elevation_status']
+): string {
+  if (status === 'unknown') {
+    return 'Unknown'
+  }
+
+  if (status === 'invalid') {
+    return 'Invalid evidence'
+  }
+
+  if (value === null || !Number.isFinite(value)) {
     return 'Unknown'
   }
 

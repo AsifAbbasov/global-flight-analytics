@@ -18,12 +18,13 @@ type Identity struct {
 }
 
 type Location struct {
-	City       string
-	Country    string
-	Latitude   float64
-	Longitude  float64
-	ElevationM float64
-	Timezone   string
+	City               string
+	Country            string
+	Latitude           float64
+	Longitude          float64
+	ElevationM         float64
+	ElevationAvailable bool
+	Timezone           string
 }
 
 type Operations struct {

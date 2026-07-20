@@ -62,16 +62,22 @@ func toAirportListItems(items []airport.Airport) []dto.AirportListItem {
 }
 
 func toAirportProfile(item airport.Airport) dto.AirportProfile {
+	elevationM, elevationStatus := dto.ToAirportElevation(
+		item.ElevationM,
+		item.ElevationAvailable,
+	)
+
 	return dto.AirportProfile{
-		ICAOCode:    item.ICAOCode,
-		IATACode:    item.IATACode,
-		Name:        item.Name,
-		City:        item.City,
-		Country:     item.Country,
-		Latitude:    item.Latitude,
-		Longitude:   item.Longitude,
-		ElevationM:  item.ElevationM,
-		Timezone:    item.Timezone,
-		Description: item.Description,
+		ICAOCode:        item.ICAOCode,
+		IATACode:        item.IATACode,
+		Name:            item.Name,
+		City:            item.City,
+		Country:         item.Country,
+		Latitude:        item.Latitude,
+		Longitude:       item.Longitude,
+		ElevationM:      elevationM,
+		ElevationStatus: elevationStatus,
+		Timezone:        item.Timezone,
+		Description:     item.Description,
 	}
 }

@@ -28,6 +28,7 @@ export interface RouteIntelligenceConfidence {
   reasons: RouteIntelligenceConfidenceReason[]
 }
 export interface RouteIntelligenceLimitation { code: string; message: string; scope: string }
+export type AirportElevationStatus = 'observed' | 'unknown' | 'invalid'
 export interface RouteIntelligenceAirport {
   icao_code: string
   iata_code: string
@@ -36,7 +37,8 @@ export interface RouteIntelligenceAirport {
   country: string
   latitude: number
   longitude: number
-  elevation_m: number
+  elevation_m: number | null
+  elevation_status: AirportElevationStatus
   timezone: string
 }
 export interface RouteIntelligenceEndpoint {
