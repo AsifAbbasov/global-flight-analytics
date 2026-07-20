@@ -1,6 +1,6 @@
 # Document 58 — Stage 14.17 PostgreSQL Migration Atomicity
 
-Status: Implementation Baseline v1.2
+Status: Implementation Baseline v1.3
 Project: Global Flight Analytics
 Scope: make schema mutation and migration history recording one atomic operation
 
@@ -102,3 +102,14 @@ contract, transaction semantics, or SQL behavior.
 No known PostgreSQL correctness or repository-decomposition debt remains in the
 Stage 14 register. Any future finding must be recorded as a new evidence-backed
 increment rather than being treated as part of this closed list.
+
+## 9. Final closure verification
+
+Document 70 makes this closure reproducible rather than documentary only. Its unified
+Stage 14 gate runs the PostgreSQL integration packages that own Documents 60 through 69,
+including `internal/features/featurestore`, whose timestamp mirror integration test
+requires `TEST_DATABASE_URL`.
+
+The closed PostgreSQL register remains closed only while the final source audit, package
+tests, isolated PostgreSQL integration, and continuous integration reachability checks
+continue to pass.

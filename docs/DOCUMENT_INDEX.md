@@ -605,3 +605,11 @@ fail-closed corruption handling, regression gates, and acceptance evidence.
 `69_STAGE_14_28_POSTGRES_TRAJECTORY_REPOSITORY_DECOMPOSITION.md`
 
 Defines responsibility-based decomposition of the PostgreSQL Trajectory Repository write and read paths, preserves the public repository contract and snapshot semantics, moves relational-integrity source ownership, adds permanent anti-monolith gates, and closes the final known PostgreSQL maintainability debt.
+
+<!-- STAGE-14-FINAL-COMPLETION-AUDIT:DOCUMENT-INDEX -->
+
+## Document 70
+
+`70_STAGE_14_FINAL_COMPLETION_AUDIT.md`
+
+Defines the unified cross-stack Stage 14 acceptance gate, patched Go 1.26.5 toolchain ownership, continuous integration reachability, isolated PostgreSQL integration for repository and Flight Feature timestamp semantics, dependency security, frontend production validation, backend container health evidence, final source governance, and the formal completion marker.

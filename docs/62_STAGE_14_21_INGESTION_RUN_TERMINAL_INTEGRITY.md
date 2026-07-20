@@ -1,6 +1,6 @@
 # Document 62 — Stage 14.21 Ingestion Run Terminal Integrity
 
-Status: Implementation Baseline v1.0
+Status: Implementation Baseline v1.2
 Project: Global Flight Analytics
 Scope: make completed ingestion runs terminal and immutable
 
@@ -141,3 +141,21 @@ git status --short
 Stage 14.21 closes Ingestion Run transition integrity. Completion is now a one-way
 state transition and the resulting PostgreSQL row is durable terminal evidence rather
 than mutable operational state.
+
+## 10. Final integration-fixture parity
+
+The unified Stage 14 PostgreSQL run exposed an outdated direct-SQL fixture in
+`reconciliation_result_identity_integration_test.go`. It inserted a terminal `success`
+ingestion run without `finished_at`, which correctly violated
+`ingestion_runs_lifecycle_check`.
+
+The fixture now supplies a non-null finish time equal to its start time. The final source
+audit scans every PostgreSQL integration test for direct terminal `ingestion_runs`
+inserts and rejects any statement that omits `finished_at`. Production lifecycle
+semantics are unchanged; the fixture now obeys the contract already defined here.
+
+The same final audit distinguishes complete `FlightStateRepository` fixtures from
+purpose-built minimal schemas used only by migration, metric, or traffic-query tests.
+Only fixtures that instantiate the complete repository must reproduce every current
+Flight State evidence column. This avoids both stale repository fixtures and false
+positives against intentionally narrow test tables.

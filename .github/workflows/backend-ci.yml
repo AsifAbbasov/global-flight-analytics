@@ -9,6 +9,11 @@ on:
       - '.dockerignore'
       - 'compose.yaml'
       - '.github/workflows/backend-ci.yml'
+      - 'scripts/**'
+      - 'docs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
 
   push:
     branches:
@@ -20,6 +25,11 @@ on:
       - '.dockerignore'
       - 'compose.yaml'
       - '.github/workflows/backend-ci.yml'
+      - 'scripts/**'
+      - 'docs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
 
 permissions:
   contents: read
@@ -71,6 +81,9 @@ jobs:
 
       - name: Run architecture and contract audit
         run: go run ./tools/projectaudit -mode all -strict
+
+      - name: Run Stage 14 completion source audit
+        run: go run ./tools/stage14finalaudit -strict
 
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
@@ -255,7 +268,10 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Run PostgreSQL repository integration tests
-        run: go test -count=1 ./internal/repository/postgres
+      - name: Run PostgreSQL repository and Flight Feature integration tests
+        run: |
+          go test -count=1 \
+            ./internal/repository/postgres \
+            ./internal/features/featurestore
 
 # STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1

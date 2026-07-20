@@ -653,11 +653,13 @@ func prepareDerivedIdentityData(
 				id,
 				source_name,
 				started_at,
+				finished_at,
 				status
 			)
 			VALUES (
 				$1,
 				'test',
+				$2,
 				$2,
 				'success'
 			);

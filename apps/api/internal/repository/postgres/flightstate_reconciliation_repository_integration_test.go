@@ -50,6 +50,11 @@ func TestFlightStateRepositoryListsReconciliationScopeUsingCanonicalICAO24(
 				vertical_rate_mps numeric,
 				on_ground boolean,
 				origin_country text,
+				squawk_code text,
+				special_purpose_indicator boolean,
+				position_source text,
+				aircraft_category smallint,
+				aircraft_category_available boolean,
 				observed_at timestamptz NOT NULL,
 				source_name text NOT NULL
 			);

@@ -74,7 +74,7 @@ BEGIN
             SELECT
                 trajectory_id,
                 COUNT(*)::integer AS actual_segment_count,
-                COALESCE(SUM(point_count), 0)::integer AS actual_point_count,
+                COALESCE(SUM(segment.point_count), 0)::integer AS actual_point_count,
                 MIN(sequence_number) AS minimum_sequence_number,
                 MAX(sequence_number) AS maximum_sequence_number,
                 BOOL_AND(segment.icao24 = parent.icao24) AS identity_matches
@@ -174,18 +174,18 @@ BEGIN
 
     SELECT
         COUNT(*)::integer,
-        COALESCE(SUM(point_count), 0)::integer,
-        MIN(sequence_number),
-        MAX(sequence_number),
-        COALESCE(BOOL_AND(icao24 = parent_record.icao24), TRUE)
+        COALESCE(SUM(segment.point_count), 0)::integer,
+        MIN(segment.sequence_number),
+        MAX(segment.sequence_number),
+        COALESCE(BOOL_AND(segment.icao24 = parent_record.icao24), TRUE)
     INTO
         actual_segment_count,
         actual_point_count,
         minimum_sequence_number,
         maximum_sequence_number,
         segment_identity_matches
-    FROM trajectory_segments
-    WHERE trajectory_id = target_trajectory_id;
+    FROM trajectory_segments AS segment
+    WHERE segment.trajectory_id = target_trajectory_id;
 
     SELECT
         COUNT(*)::integer,
