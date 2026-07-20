@@ -97,9 +97,9 @@ func (r *FlightStateRepository) SaveFlightStates(
 			$4,
 			$5,
 			$6,
-			CAST($7::double precision AS integer),
+			$7,
 			$8,
-			CAST($9::double precision AS integer),
+			$9,
 			$10,
 			$11,
 			$12,
@@ -506,7 +506,7 @@ func altitudeDatabaseValue(
 	value float64,
 	status flightstate.AltitudeStatus,
 ) (
-	pgtype.Float8,
+	pgtype.Int4,
 	string,
 	error,
 ) {
@@ -518,7 +518,7 @@ func altitudeDatabaseValue(
 	if !flightstate.IsKnownAltitudeStatus(
 		effectiveStatus,
 	) {
-		return pgtype.Float8{},
+		return pgtype.Int4{},
 			"",
 			fmt.Errorf(
 				"unsupported altitude status %q",
@@ -528,17 +528,22 @@ func altitudeDatabaseValue(
 
 	switch effectiveStatus {
 	case flightstate.AltitudeStatusObserved:
-		return pgtype.Float8{
-				Float64: value,
-				Valid:   true,
+		integerValue, err := altitudeMetersToPostgresInteger(value)
+		if err != nil {
+			return pgtype.Int4{}, "", err
+		}
+
+		return pgtype.Int4{
+				Int32: integerValue,
+				Valid: true,
 			},
 			string(effectiveStatus),
 			nil
 
 	case flightstate.AltitudeStatusGround:
-		return pgtype.Float8{
-				Float64: 0,
-				Valid:   true,
+		return pgtype.Int4{
+				Int32: 0,
+				Valid: true,
 			},
 			string(effectiveStatus),
 			nil
@@ -546,14 +551,14 @@ func altitudeDatabaseValue(
 	case flightstate.AltitudeStatusUnknown,
 		flightstate.AltitudeStatusUnavailable,
 		flightstate.AltitudeStatusInvalid:
-		return pgtype.Float8{
+		return pgtype.Int4{
 				Valid: false,
 			},
 			string(effectiveStatus),
 			nil
 
 	default:
-		return pgtype.Float8{},
+		return pgtype.Int4{},
 			"",
 			fmt.Errorf(
 				"unsupported altitude status %q",

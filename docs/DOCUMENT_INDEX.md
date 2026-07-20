@@ -563,3 +563,11 @@ Defines mandatory trajectory child ownership, per-trajectory segment ordering, s
 `64_STAGE_14_23_CANONICAL_MIGRATION_FILENAME_CONTRACT.md`
 
 Defines the single canonical PostgreSQL migration filename parser shared by execution, audit, and repair verification, strict version and name rules, removed duplicate parsers, preserved behavior, regression ownership gates, and acceptance evidence.
+
+<!-- STAGE-14-24-EXPLICIT-ALTITUDE-INTEGER-POLICY:DOCUMENT-INDEX -->
+
+## Document 65
+
+`65_STAGE_14_24_EXPLICIT_ALTITUDE_INTEGER_POLICY.md`
+
+Defines the explicit whole-metre altitude persistence policy, deterministic rounding and integer-range rules, non-finite value rejection, preserved typed altitude status semantics, removal of SQL-owned conversion, regression gates, and acceptance evidence.

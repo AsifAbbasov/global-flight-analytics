@@ -98,7 +98,6 @@ This increment closes only migration atomicity and migrator process serializatio
 It does not close:
 
 ```text
-altitude precision policy
 Traffic altitude-status semantics
 timestamp and Unix-nanosecond consistency
 large PostgreSQL repository decomposition
