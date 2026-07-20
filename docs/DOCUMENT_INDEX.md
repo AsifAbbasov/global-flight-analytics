@@ -523,3 +523,11 @@ Defines the atomic PostgreSQL migration transaction, migration-history coupling,
 `59_STAGE_14_18_POSTGRES_BASELINE_REMOVAL.md`
 
 Records removal of the unsafe migration baseline operation, preserved normal migration behavior, supported recovery paths, regression protection, and the completion boundary for trustworthy migration history.
+
+<!-- STAGE-14-19-DATA-QUALITY-PARENT-INTEGRITY:DOCUMENT-INDEX -->
+
+## Document 60
+
+`60_STAGE_14_19_DATA_QUALITY_PARENT_INTEGRITY.md`
+
+Defines canonical Data Quality Report parent integrity, explicit rejected-observation evidence storage, migration of legacy null-parent rows, cascade semantics, repository enforcement, regression gates, and acceptance evidence.

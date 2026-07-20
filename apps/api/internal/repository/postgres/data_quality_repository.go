@@ -13,6 +13,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var ErrDataQualityFlightStateNotPersisted = errors.New(
+	"data quality report requires a persisted flight state",
+)
+
 type DataQualityRepository struct {
 	db *pgxpool.Pool
 }
@@ -87,6 +91,16 @@ func (repository *DataQualityRepository) saveFlightStateQuality(
 		)
 	}
 
+	if reconciliationTaskID == "" &&
+		quality.ValidationStatus == dataquality.ValidationStatusInvalid {
+		return repository.insertRejectedFlightStateQuality(
+			ctx,
+			state,
+			quality,
+			string(warningsJSON),
+		)
+	}
+
 	if reconciliationTaskID == "" {
 		return repository.insertFlightStateQuality(
 			ctx,
@@ -123,23 +137,23 @@ func (repository *DataQualityRepository) insertFlightStateQuality(
 			missing_fields,
 			warnings_json
 		)
-		VALUES (
-			$1,
-			(
-				SELECT persisted_state.id
-				FROM flight_states AS persisted_state
-				WHERE persisted_state.id = $1
-			),
+		SELECT
+			persisted_state.id,
+			persisted_state.id,
 			$2,
 			$3,
 			$4,
 			$5,
 			$6,
 			$7::jsonb
-		);
+		FROM flight_states AS persisted_state
+		WHERE persisted_state.id = $1
+		RETURNING id::text;
 	`
 
-	_, err := repository.db.Exec(
+	var reportID string
+
+	err := repository.db.QueryRow(
 		ctx,
 		query,
 		nullableUUID(state.ID),
@@ -149,10 +163,78 @@ func (repository *DataQualityRepository) insertFlightStateQuality(
 		quality.Score,
 		quality.MissingFields,
 		warningsJSON,
+	).Scan(
+		&reportID,
 	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrDataQualityFlightStateNotPersisted
+	}
 	if err != nil {
 		return fmt.Errorf(
 			"insert flight state quality report: %w",
+			err,
+		)
+	}
+
+	return nil
+}
+
+func (repository *DataQualityRepository) insertRejectedFlightStateQuality(
+	ctx context.Context,
+	state flightstate.FlightState,
+	quality dataquality.DataQuality,
+	warningsJSON string,
+) error {
+	const query = `
+		INSERT INTO rejected_flight_state_quality_reports (
+			state_id,
+			icao24,
+			callsign,
+			observed_at,
+			source_name,
+			ingestion_run_id,
+			validation_status,
+			completeness,
+			confidence,
+			score,
+			missing_fields,
+			warnings_json
+		)
+		VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			$7,
+			$8,
+			$9,
+			$10,
+			$11,
+			$12::jsonb
+		);
+	`
+
+	_, err := repository.db.Exec(
+		ctx,
+		query,
+		nullableUUID(state.ID),
+		state.ICAO24,
+		state.Callsign,
+		state.ObservedAt,
+		state.SourceName,
+		nullableUUID(state.IngestionRunID),
+		string(quality.ValidationStatus),
+		string(quality.Completeness),
+		string(quality.Confidence),
+		quality.Score,
+		quality.MissingFields,
+		warningsJSON,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"insert rejected flight state quality report: %w",
 			err,
 		)
 	}
@@ -176,48 +258,58 @@ func (repository *DataQualityRepository) upsertReconciledFlightStateQuality(
 				AND status = 'processing'
 				AND attempt_count = $9
 			FOR UPDATE
-		)
-		INSERT INTO data_quality_reports (
-			state_id,
-			flight_state_id,
-			validation_status,
-			completeness,
-			confidence,
-			score,
-			missing_fields,
-			warnings_json,
-			reconciliation_task_id
+		),
+		persisted_state AS (
+			SELECT id
+			FROM flight_states
+			WHERE id = $1
+		),
+		upserted_report AS (
+			INSERT INTO data_quality_reports (
+				state_id,
+				flight_state_id,
+				validation_status,
+				completeness,
+				confidence,
+				score,
+				missing_fields,
+				warnings_json,
+				reconciliation_task_id
+			)
+			SELECT
+				persisted_state.id,
+				persisted_state.id,
+				$2,
+				$3,
+				$4,
+				$5,
+				$6,
+				$7::jsonb,
+				owned_task.id
+			FROM owned_task
+			CROSS JOIN persisted_state
+			ON CONFLICT (reconciliation_task_id)
+				WHERE reconciliation_task_id IS NOT NULL
+			DO UPDATE SET
+				state_id = EXCLUDED.state_id,
+				flight_state_id = EXCLUDED.flight_state_id,
+				validation_status = EXCLUDED.validation_status,
+				completeness = EXCLUDED.completeness,
+				confidence = EXCLUDED.confidence,
+				score = EXCLUDED.score,
+				missing_fields = EXCLUDED.missing_fields,
+				warnings_json = EXCLUDED.warnings_json,
+				calculated_at = now()
+			RETURNING id::text AS id
 		)
 		SELECT
-			$1,
-			(
-				SELECT persisted_state.id
-				FROM flight_states AS persisted_state
-				WHERE persisted_state.id = $1
-			),
-			$2,
-			$3,
-			$4,
-			$5,
-			$6,
-			$7::jsonb,
-			owned_task.id
-		FROM owned_task
-		ON CONFLICT (reconciliation_task_id)
-			WHERE reconciliation_task_id IS NOT NULL
-		DO UPDATE SET
-			state_id = EXCLUDED.state_id,
-			flight_state_id = EXCLUDED.flight_state_id,
-			validation_status = EXCLUDED.validation_status,
-			completeness = EXCLUDED.completeness,
-			confidence = EXCLUDED.confidence,
-			score = EXCLUDED.score,
-			missing_fields = EXCLUDED.missing_fields,
-			warnings_json = EXCLUDED.warnings_json,
-			calculated_at = now()
-		RETURNING id::text;
+			EXISTS (SELECT 1 FROM owned_task),
+			EXISTS (SELECT 1 FROM persisted_state),
+			COALESCE((SELECT id FROM upserted_report), '');
 	`
 
+	var taskOwned bool
+	var statePersisted bool
 	var reportID string
 
 	err := repository.db.QueryRow(
@@ -233,18 +325,25 @@ func (repository *DataQualityRepository) upsertReconciledFlightStateQuality(
 		taskID,
 		attemptCount,
 	).Scan(
+		&taskOwned,
+		&statePersisted,
 		&reportID,
 	)
-	if errors.Is(
-		err,
-		pgx.ErrNoRows,
-	) {
-		return reconciliation.ErrTaskTransitionRejected
-	}
 	if err != nil {
 		return fmt.Errorf(
 			"upsert reconciled flight state quality report: %w",
 			err,
+		)
+	}
+	if !taskOwned {
+		return reconciliation.ErrTaskTransitionRejected
+	}
+	if !statePersisted {
+		return ErrDataQualityFlightStateNotPersisted
+	}
+	if reportID == "" {
+		return errors.New(
+			"upsert reconciled flight state quality report returned no report",
 		)
 	}
 

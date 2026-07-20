@@ -98,7 +98,6 @@ This increment closes only migration atomicity and migrator process serializatio
 It does not close:
 
 ```text
-Data Quality orphan prevention
 FlightTrajectory production snapshot consistency
 Ingestion Run transition integrity
 trajectory relational constraints

@@ -143,12 +143,16 @@ func TestDataQualityAssociationMigrationRejectsUnsupportedLegacyObjectType(t *te
 	}
 }
 
-func TestDataQualityRepositoryMaintainsPersistedAndRejectedStateAssociations(t *testing.T) {
+func TestDataQualityRepositorySeparatesPersistedAndRejectedStateEvidence(t *testing.T) {
 	fixture := newQualityAssociationFixture(t)
 	createLegacyQualitySchema(t, fixture.pool)
+	createQualityParentIntegritySupportSchema(t, fixture.pool)
 
 	if err := applyQualityAssociationMigration(t, fixture.pool); err != nil {
 		t.Fatalf("apply quality association migration: %v", err)
+	}
+	if err := applyDataQualityParentIntegrityMigration(t, fixture.pool); err != nil {
+		t.Fatalf("apply data quality parent integrity migration: %v", err)
 	}
 
 	persistedID := "44444444-4444-4444-4444-444444444444"
@@ -193,14 +197,20 @@ func TestDataQualityRepositoryMaintainsPersistedAndRejectedStateAssociations(t *
 
 	if err := fixture.repository.SaveFlightStateQuality(
 		context.Background(),
-		flightstate.FlightState{ID: rejectedID},
+		flightstate.FlightState{
+			ID:         rejectedID,
+			ICAO24:     "REJECTED",
+			ObservedAt: time.Date(2026, time.July, 20, 8, 0, 0, 0, time.UTC),
+			SourceName: "test",
+		},
 		rejectedQuality,
 	); err != nil {
 		t.Fatalf("save rejected state quality: %v", err)
 	}
 
 	assertQualityAssociation(t, fixture.pool, persistedID, persistedID)
-	assertQualityAssociation(t, fixture.pool, rejectedID, "")
+	assertRejectedQualityAssociation(t, fixture.pool, rejectedID)
+	assertNoQualityAssociation(t, fixture.pool, rejectedID)
 
 	if _, err := fixture.pool.Exec(
 		context.Background(),
@@ -210,7 +220,7 @@ func TestDataQualityRepositoryMaintainsPersistedAndRejectedStateAssociations(t *
 		t.Fatalf("delete persisted flight state: %v", err)
 	}
 
-	assertQualityAssociation(t, fixture.pool, persistedID, "")
+	assertNoQualityAssociation(t, fixture.pool, persistedID)
 }
 
 func newQualityAssociationFixture(t *testing.T) *qualityAssociationFixture {
