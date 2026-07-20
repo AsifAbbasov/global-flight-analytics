@@ -4,6 +4,7 @@ import {
   APIRequestError,
   getRequestErrorMessage,
 } from '@/lib/api/client'
+import { formatTrafficAltitude } from '@/lib/traffic/altitude'
 import { useAircraftProfile } from '@/lib/queries/aircraft'
 import type {
   AircraftRouteContext,
@@ -119,7 +120,7 @@ export function AircraftDetailPanel({
             />
             <Detail
               label='Altitude'
-              value={formatAltitude(aircraft.altitude_m)}
+              value={formatTrafficAltitude(aircraft)}
             />
             <Detail
               label='Speed'

@@ -571,3 +571,11 @@ Defines the single canonical PostgreSQL migration filename parser shared by exec
 `65_STAGE_14_24_EXPLICIT_ALTITUDE_INTEGER_POLICY.md`
 
 Defines the explicit whole-metre altitude persistence policy, deterministic rounding and integer-range rules, non-finite value rejection, preserved typed altitude status semantics, removal of SQL-owned conversion, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-25-TRAFFIC-ALTITUDE-STATUS-SEMANTICS:DOCUMENT-INDEX -->
+
+## Document 66
+
+`66_STAGE_14_25_TRAFFIC_ALTITUDE_STATUS_SEMANTICS.md`
+
+Defines typed current-traffic altitude selection, observed-zero preservation, geometric-to-barometric fallback, nullable absence semantics, explicit ground handling, HTTP contract propagation, frontend presentation, regression gates, and acceptance evidence.

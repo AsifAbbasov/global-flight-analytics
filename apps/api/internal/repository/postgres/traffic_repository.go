@@ -3,9 +3,11 @@ package postgres
 import (
 	"context"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -47,11 +49,10 @@ func (
 			COALESCE(fs.callsign, ''),
 			fs.latitude,
 			fs.longitude,
-			COALESCE(
-				NULLIF(fs.geometric_altitude_m, 0),
-				fs.barometric_altitude_m,
-				0
-			),
+			fs.geometric_altitude_m::double precision,
+			fs.geometric_altitude_status,
+			fs.barometric_altitude_m::double precision,
+			fs.barometric_altitude_status,
 			fs.velocity_mps,
 			fs.heading_degrees,
 			fs.on_ground,
@@ -117,11 +118,10 @@ func (
 			COALESCE(fs.callsign, ''),
 			fs.latitude,
 			fs.longitude,
-			COALESCE(
-				NULLIF(fs.geometric_altitude_m, 0),
-				fs.barometric_altitude_m,
-				0
-			),
+			fs.geometric_altitude_m::double precision,
+			fs.geometric_altitude_status,
+			fs.barometric_altitude_m::double precision,
+			fs.barometric_altitude_status,
 			fs.velocity_mps,
 			fs.heading_degrees,
 			fs.on_ground,
@@ -176,13 +176,20 @@ func scanCurrentTrafficRows(
 
 	for rows.Next() {
 		var item traffic.CurrentTrafficItem
+		var geometricAltitude pgtype.Float8
+		var geometricStatus string
+		var barometricAltitude pgtype.Float8
+		var barometricStatus string
 
 		if err := rows.Scan(
 			&item.ICAO24,
 			&item.Callsign,
 			&item.Latitude,
 			&item.Longitude,
-			&item.AltitudeM,
+			&geometricAltitude,
+			&geometricStatus,
+			&barometricAltitude,
+			&barometricStatus,
 			&item.VelocityMPS,
 			&item.HeadingDegrees,
 			&item.OnGround,
@@ -194,6 +201,25 @@ func scanCurrentTrafficRows(
 			return nil,
 				err
 		}
+
+		item.AltitudeM,
+			item.AltitudeStatus,
+			item.AltitudeSource =
+			traffic.ResolveCurrentAltitude(
+				item.OnGround,
+				nullableTrafficAltitude(
+					geometricAltitude,
+				),
+				flightstate.AltitudeStatus(
+					geometricStatus,
+				),
+				nullableTrafficAltitude(
+					barometricAltitude,
+				),
+				flightstate.AltitudeStatus(
+					barometricStatus,
+				),
+			)
 
 		items = append(
 			items,
@@ -208,4 +234,16 @@ func scanCurrentTrafficRows(
 
 	return items,
 		nil
+}
+
+func nullableTrafficAltitude(
+	value pgtype.Float8,
+) *float64 {
+	if !value.Valid {
+		return nil
+	}
+
+	result := value.Float64
+
+	return &result
 }

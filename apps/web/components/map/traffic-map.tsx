@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 
 import { buildRegionView } from '@/lib/geo/region-view'
+import { formatTrafficAltitude } from '@/lib/traffic/altitude'
 import {
   buildProjectionFeatureCollection,
   emptyProjectionFeatureCollection,
@@ -575,7 +576,7 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
     'Aircraft',
     item.aircraft_model || 'Unknown'
   )
-  appendDetail(details, 'Altitude', `${item.altitude_m} m`)
+  appendDetail(details, 'Altitude', formatTrafficAltitude(item))
   appendDetail(details, 'Speed', `${item.velocity_mps} m/s`)
   appendDetail(
     details,
