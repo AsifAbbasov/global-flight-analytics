@@ -74,12 +74,12 @@ func evaluateState(
 
 	version010 := appliedByVersion(
 		state.AppliedMigrations,
-		"010",
+		expectedAppliedVersion010.Version,
 	)
 	version010Exact :=
 		len(version010) == 1 &&
 			version010[0].Name ==
-				ExpectedAppliedVersion010Name &&
+				expectedAppliedVersion010.Name &&
 			version010[0].Checksum ==
 				ExpectedAppliedVersion010Checksum
 	appendCheck(
@@ -88,11 +88,11 @@ func evaluateState(
 		version010Exact,
 		fmt.Sprintf(
 			"Applied version 010 is exactly %s with the expected checksum.",
-			ExpectedAppliedVersion010Name,
+			expectedAppliedVersion010.Name,
 		),
 		fmt.Sprintf(
 			"Applied version 010 does not exactly match %s and checksum %s.",
-			ExpectedAppliedVersion010Name,
+			expectedAppliedVersion010.Name,
 			ExpectedAppliedVersion010Checksum,
 		),
 	)

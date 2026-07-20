@@ -97,27 +97,6 @@ func TestScanLocalMigrationsReportsInvalidSQLFileNames(
 	}
 }
 
-func TestParseLocalMigrationFileName(t *testing.T) {
-	version, name, err :=
-		parseLocalMigrationFileName(
-			"010_add_identity.sql",
-		)
-	if err != nil {
-		t.Fatalf(
-			"parseLocalMigrationFileName() error = %v",
-			err,
-		)
-	}
-	if version != "010" ||
-		name != "add_identity" {
-		t.Fatalf(
-			"result = %q, %q",
-			version,
-			name,
-		)
-	}
-}
-
 func writeTestFile(
 	t *testing.T,
 	dir string,

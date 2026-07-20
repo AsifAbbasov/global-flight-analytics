@@ -198,8 +198,8 @@ func readyState() State {
 		SchemaMigrationsTableExists: true,
 		AppliedMigrations: []AppliedMigration{
 			{
-				Version:  "010",
-				Name:     ExpectedAppliedVersion010Name,
+				Version:  expectedAppliedVersion010.Version,
+				Name:     expectedAppliedVersion010.Name,
 				Checksum: ExpectedAppliedVersion010Checksum,
 			},
 		},

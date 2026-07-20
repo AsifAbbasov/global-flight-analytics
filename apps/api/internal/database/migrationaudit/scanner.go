@@ -3,12 +3,12 @@ package migrationaudit
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"unicode"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database/migrationfile"
 )
 
 type localScan struct {
@@ -53,8 +53,8 @@ func scanLocalMigrations(
 			migrationsDir,
 			fileName,
 		)
-		version, name, parseErr :=
-			parseLocalMigrationFileName(fileName)
+		identity, parseErr :=
+			migrationfile.Parse(fileName)
 		if parseErr != nil {
 			result.invalid = append(
 				result.invalid,
@@ -79,9 +79,9 @@ func scanLocalMigrations(
 		result.migrations = append(
 			result.migrations,
 			LocalMigration{
-				Version:  version,
-				Name:     name,
-				FileName: fileName,
+				Version:  identity.Version,
+				Name:     identity.Name,
+				FileName: identity.FileName,
 				Path:     path,
 				Checksum: checksum,
 			},
@@ -115,70 +115,6 @@ func scanLocalMigrations(
 	)
 
 	return result, nil
-}
-
-func parseLocalMigrationFileName(
-	fileName string,
-) (string, string, error) {
-	trimmed := strings.TrimSpace(fileName)
-	if trimmed == "" {
-		return "", "", fmt.Errorf(
-			"migration file name is empty",
-		)
-	}
-	if !strings.HasSuffix(trimmed, ".sql") {
-		return "", "", fmt.Errorf(
-			"migration file must have .sql extension",
-		)
-	}
-
-	withoutExtension := strings.TrimSuffix(
-		trimmed,
-		".sql",
-	)
-	parts := strings.SplitN(
-		withoutExtension,
-		"_",
-		2,
-	)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf(
-			"migration file must use format 001_name.sql",
-		)
-	}
-
-	version := strings.TrimSpace(parts[0])
-	name := strings.TrimSpace(parts[1])
-	if len(version) != 3 {
-		return "", "", fmt.Errorf(
-			"migration version must contain exactly three digits",
-		)
-	}
-	for _, character := range version {
-		if !unicode.IsDigit(character) {
-			return "", "", fmt.Errorf(
-				"migration version must contain only digits",
-			)
-		}
-	}
-	if name == "" {
-		return "", "", fmt.Errorf(
-			"migration name is required",
-		)
-	}
-	for _, character := range name {
-		if unicode.IsLetter(character) ||
-			unicode.IsDigit(character) ||
-			character == '_' {
-			continue
-		}
-
-		return "", "", fmt.Errorf(
-			"migration name may contain only letters, digits, and underscores",
-		)
-	}
-
-	return version, name, nil
 }
 
 func calculateChecksum(path string) (string, error) {

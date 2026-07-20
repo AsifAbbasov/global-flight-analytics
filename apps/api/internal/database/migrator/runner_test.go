@@ -6,25 +6,18 @@ import (
 	"testing"
 )
 
-func TestParseMigrationFileName(t *testing.T) {
-	version, name, err := parseMigrationFileName("003_weather_foundation.sql")
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+func TestListMigrationsRejectsNonCanonicalSQLFileName(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "10_short.sql")
+	if err := os.WriteFile(path, []byte("SELECT 1;"), 0o600); err != nil {
+		t.Fatalf("write invalid migration file: %v", err)
 	}
 
-	if version != "003" {
-		t.Fatalf("expected version 003, got %s", version)
+	runner := &Runner{
+		migrationsDir: dir,
 	}
-
-	if name != "weather_foundation" {
-		t.Fatalf("expected name weather_foundation, got %s", name)
-	}
-}
-
-func TestParseMigrationFileNameRejectsInvalidName(t *testing.T) {
-	_, _, err := parseMigrationFileName("invalid.sql")
-	if err == nil {
-		t.Fatal("expected error")
+	if _, err := runner.ListMigrations(); err == nil {
+		t.Fatal("expected non-canonical migration file name to be rejected")
 	}
 }
 

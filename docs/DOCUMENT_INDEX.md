@@ -555,3 +555,11 @@ Defines the one-way Ingestion Run completion transition, explicit transition-rej
 `63_STAGE_14_22_TRAJECTORY_RELATIONAL_INTEGRITY.md`
 
 Defines mandatory trajectory child ownership, per-trajectory segment ordering, same-trajectory coverage-gap references, deferred stored-count verification, repository fail-fast validation, legacy preflight policy, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-23-CANONICAL-MIGRATION-FILENAME-CONTRACT:DOCUMENT-INDEX -->
+
+## Document 64
+
+`64_STAGE_14_23_CANONICAL_MIGRATION_FILENAME_CONTRACT.md`
+
+Defines the single canonical PostgreSQL migration filename parser shared by execution, audit, and repair verification, strict version and name rules, removed duplicate parsers, preserved behavior, regression ownership gates, and acceptance evidence.

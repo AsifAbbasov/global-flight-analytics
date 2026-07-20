@@ -3,13 +3,19 @@ package migrationrepair
 import (
 	"context"
 	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database/migrationfile"
 )
 
 const Version = "migration-sequence-repair-preflight-v1"
 
 const (
-	ExpectedAppliedVersion010Name     = "add_reconciliation_result_identity"
+	ExpectedAppliedVersion010FileName = "010_add_reconciliation_result_identity.sql"
 	ExpectedAppliedVersion010Checksum = "5c6481b807271a856654cdb1ada298dbac43b3b3aaab0bc8dbc62354916fae91"
+)
+
+var expectedAppliedVersion010 = migrationfile.MustParse(
+	ExpectedAppliedVersion010FileName,
 )
 
 type Severity string

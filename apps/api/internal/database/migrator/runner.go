@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database/migrationfile"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -123,7 +124,7 @@ func (runner *Runner) ListMigrations() ([]Migration, error) {
 			continue
 		}
 
-		version, name, err := parseMigrationFileName(fileName)
+		identity, err := migrationfile.Parse(fileName)
 		if err != nil {
 			return nil, err
 		}
@@ -136,8 +137,8 @@ func (runner *Runner) ListMigrations() ([]Migration, error) {
 		}
 
 		migrations = append(migrations, Migration{
-			Version:  version,
-			Name:     name,
+			Version:  identity.Version,
+			Name:     identity.Name,
 			Path:     path,
 			Checksum: checksum,
 		})
@@ -491,32 +492,6 @@ func (
 	}
 
 	return result, nil
-}
-
-func parseMigrationFileName(fileName string) (string, string, error) {
-	trimmed := strings.TrimSpace(fileName)
-	if trimmed == "" {
-		return "", "", errors.New("migration file name is empty")
-	}
-
-	if !strings.HasSuffix(trimmed, ".sql") {
-		return "", "", fmt.Errorf("migration file %s must have .sql extension", fileName)
-	}
-
-	nameWithoutExtension := strings.TrimSuffix(trimmed, ".sql")
-	parts := strings.SplitN(nameWithoutExtension, "_", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("migration file %s must use format 001_name.sql", fileName)
-	}
-
-	version := strings.TrimSpace(parts[0])
-	name := strings.TrimSpace(parts[1])
-
-	if version == "" || name == "" {
-		return "", "", fmt.Errorf("migration file %s has invalid version or name", fileName)
-	}
-
-	return version, name, nil
 }
 
 func calculateFileChecksum(path string) (string, error) {
