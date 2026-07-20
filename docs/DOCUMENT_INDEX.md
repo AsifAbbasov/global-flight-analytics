@@ -507,3 +507,19 @@ Defines the permanent backend correctness gate, protected Stage 14 invariants, e
 `57_STAGE_14_16_END_TO_END_TELEMETRY_AVAILABILITY.md`
 
 Defines the provider-to-PostgreSQL-to-analytics telemetry availability contract, legacy compatibility rule, OpenSky optional mapping, nullable persistence, Traffic and Airspace eligibility, validation behavior, expanded final audit, and acceptance evidence.
+
+<!-- STAGE-14-17-POSTGRES-MIGRATION-ATOMICITY:DOCUMENT-INDEX -->
+
+## Document 58
+
+`58_STAGE_14_17_POSTGRES_MIGRATION_ATOMICITY.md`
+
+Defines the atomic PostgreSQL migration transaction, migration-history coupling, outer transaction-envelope handling, advisory lock serialization, failure rollback behavior, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-18-POSTGRES-BASELINE-REMOVAL:DOCUMENT-INDEX -->
+
+## Document 59
+
+`59_STAGE_14_18_POSTGRES_BASELINE_REMOVAL.md`
+
+Records removal of the unsafe migration baseline operation, preserved normal migration behavior, supported recovery paths, regression protection, and the completion boundary for trustworthy migration history.

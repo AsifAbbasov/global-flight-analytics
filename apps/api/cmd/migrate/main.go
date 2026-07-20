@@ -19,12 +19,6 @@ func main() {
 	_ = godotenv.Load(".env")
 	_ = godotenv.Load("apps/api/.env")
 
-	baseline := flag.Bool(
-		"baseline",
-		false,
-		"record existing migrations as applied without executing SQL",
-	)
-
 	status := flag.Bool(
 		"status",
 		false,
@@ -106,40 +100,6 @@ func main() {
 		printStatuses(
 			statuses,
 		)
-
-		return
-	}
-
-	if *baseline {
-		baselined, err := runner.Baseline(
-			ctx,
-		)
-		if err != nil {
-			log.Error(
-				"failed to baseline migrations",
-				"error",
-				err,
-			)
-			os.Exit(1)
-		}
-
-		if len(baselined) == 0 {
-			log.Info(
-				"no migrations were baselined",
-			)
-
-			return
-		}
-
-		for _, migration := range baselined {
-			log.Info(
-				"migration baselined",
-				"version",
-				migration.Version,
-				"name",
-				migration.Name,
-			)
-		}
 
 		return
 	}

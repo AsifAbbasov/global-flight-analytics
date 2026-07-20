@@ -1,6 +1,6 @@
 # Document 58 — Stage 14.17 PostgreSQL Migration Atomicity
 
-Status: Implementation Baseline v1.0
+Status: Implementation Baseline v1.1
 Project: Global Flight Analytics
 Scope: make schema mutation and migration history recording one atomic operation
 
@@ -42,19 +42,23 @@ the schema statements inside that boundary.
 
 ## 4. Interprocess serialization
 
-`ApplyPending` and `Baseline` acquire the same PostgreSQL session advisory lock
-through a dedicated pooled connection. A second compliant migration process
-waits instead of evaluating and applying the same pending migration concurrently.
+`ApplyPending` acquires a PostgreSQL session advisory lock through a dedicated
+pooled connection. A second compliant migration process waits instead of
+evaluating and applying the same pending migration concurrently.
 
 The lock is released on the same PostgreSQL connection with a bounded independent
 context, including when the caller context has already been cancelled.
 
-## 5. Baseline boundary
+## 5. Baseline supersession
 
-This increment serializes baseline execution and records all baseline history
-changes in one transaction. It does not claim that baseline schema validation is
-complete. Structural verification before accepting a baseline remains a separate
-P0 remediation increment.
+The original Document 58 implementation also serialized `Baseline` and recorded
+its history writes transactionally. That reduced concurrency risk but did not
+prove that the existing database schema matched the migrations being marked as
+applied.
+
+Document 59 removes the baseline operation from both the runner and command-line
+interface. Migration history can no longer be manufactured without executing the
+corresponding SQL.
 
 ## 6. Regression protection
 
@@ -94,7 +98,6 @@ This increment closes only migration atomicity and migrator process serializatio
 It does not close:
 
 ```text
-safe structural baseline verification
 Data Quality orphan prevention
 FlightTrajectory production snapshot consistency
 Ingestion Run transition integrity
