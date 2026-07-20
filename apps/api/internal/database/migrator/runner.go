@@ -8,16 +8,29 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
 	ErrMigrationPoolRequired = errors.New("migration database pool is required")
 	ErrMigrationDirRequired  = errors.New("migration directory is required")
+)
+
+const (
+	migrationAdvisoryLockNamespace int32 = 0x474641
+	migrationAdvisoryLockResource  int32 = 0x4D494752
+	migrationLockReleaseTimeout          = 5 * time.Second
+)
+
+var nestedTransactionControlPattern = regexp.MustCompile(
+	`(?mi)^\s*(BEGIN(?:\s+TRANSACTION)?|COMMIT(?:\s+TRANSACTION)?|ROLLBACK(?:\s+TRANSACTION)?)\s*;`,
 )
 
 type Migration struct {
@@ -38,6 +51,19 @@ type Runner struct {
 	migrationsDir string
 }
 
+type migrationExecutor interface {
+	Exec(
+		context.Context,
+		string,
+		...any,
+	) (pgconn.CommandTag, error)
+	Query(
+		context.Context,
+		string,
+		...any,
+	) (pgx.Rows, error)
+}
+
 func NewRunner(pool *pgxpool.Pool, migrationsDir string) (*Runner, error) {
 	if pool == nil {
 		return nil, ErrMigrationPoolRequired
@@ -55,7 +81,16 @@ func NewRunner(pool *pgxpool.Pool, migrationsDir string) (*Runner, error) {
 }
 
 func (runner *Runner) EnsureSchemaMigrations(ctx context.Context) error {
-	_, err := runner.pool.Exec(ctx, `
+	return runner.ensureSchemaMigrations(ctx, runner.pool)
+}
+
+func (
+	runner *Runner,
+) ensureSchemaMigrations(
+	ctx context.Context,
+	executor migrationExecutor,
+) error {
+	_, err := executor.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version text PRIMARY KEY,
 			name text NOT NULL,
@@ -154,94 +189,341 @@ func (runner *Runner) Status(ctx context.Context) ([]MigrationStatus, error) {
 }
 
 func (runner *Runner) Baseline(ctx context.Context) ([]Migration, error) {
-	if err := runner.EnsureSchemaMigrations(ctx); err != nil {
-		return nil, err
-	}
-
-	migrations, err := runner.ListMigrations()
-	if err != nil {
-		return nil, err
-	}
-
-	applied, err := runner.appliedMigrations(ctx)
-	if err != nil {
-		return nil, err
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
 	baselined := make([]Migration, 0)
 
-	for _, migration := range migrations {
-		record, ok := applied[migration.Version]
-		if ok {
-			if record.checksum != migration.Checksum {
-				return nil, fmt.Errorf("migration %s checksum mismatch", migration.Version)
+	err := runner.withMigrationLock(
+		ctx,
+		func(conn *pgxpool.Conn) error {
+			if err := runner.ensureSchemaMigrations(ctx, conn); err != nil {
+				return err
 			}
 
-			continue
-		}
+			migrations, err := runner.ListMigrations()
+			if err != nil {
+				return err
+			}
 
-		_, err := runner.pool.Exec(ctx, `
-			INSERT INTO schema_migrations (version, name, checksum)
-			VALUES ($1, $2, $3);
-		`, migration.Version, migration.Name, migration.Checksum)
-		if err != nil {
-			return nil, fmt.Errorf("baseline migration %s: %w", migration.Version, err)
-		}
+			applied, err := runner.appliedMigrationsWith(ctx, conn)
+			if err != nil {
+				return err
+			}
 
-		baselined = append(baselined, migration)
+			tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+			if err != nil {
+				return fmt.Errorf("begin migration baseline transaction: %w", err)
+			}
+
+			committed := false
+			defer func() {
+				if !committed {
+					rollbackMigrationTransaction(tx)
+				}
+			}()
+
+			for _, migration := range migrations {
+				record, ok := applied[migration.Version]
+				if ok {
+					if record.checksum != migration.Checksum {
+						return fmt.Errorf(
+							"migration %s checksum mismatch",
+							migration.Version,
+						)
+					}
+
+					continue
+				}
+
+				_, err := tx.Exec(ctx, `
+					INSERT INTO schema_migrations (version, name, checksum)
+					VALUES ($1, $2, $3);
+				`, migration.Version, migration.Name, migration.Checksum)
+				if err != nil {
+					return fmt.Errorf(
+						"baseline migration %s: %w",
+						migration.Version,
+						err,
+					)
+				}
+
+				baselined = append(baselined, migration)
+			}
+
+			if err := tx.Commit(ctx); err != nil {
+				return fmt.Errorf("commit migration baseline transaction: %w", err)
+			}
+
+			committed = true
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return baselined, nil
 }
 
 func (runner *Runner) ApplyPending(ctx context.Context) ([]Migration, error) {
-	if err := runner.EnsureSchemaMigrations(ctx); err != nil {
-		return nil, err
-	}
-
-	migrations, err := runner.ListMigrations()
-	if err != nil {
-		return nil, err
-	}
-
-	applied, err := runner.appliedMigrations(ctx)
-	if err != nil {
-		return nil, err
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
 	appliedNow := make([]Migration, 0)
 
-	for _, migration := range migrations {
-		record, ok := applied[migration.Version]
-		if ok {
-			if record.checksum != migration.Checksum {
-				return nil, fmt.Errorf("migration %s checksum mismatch", migration.Version)
+	err := runner.withMigrationLock(
+		ctx,
+		func(conn *pgxpool.Conn) error {
+			if err := runner.ensureSchemaMigrations(ctx, conn); err != nil {
+				return err
 			}
 
-			continue
-		}
+			migrations, err := runner.ListMigrations()
+			if err != nil {
+				return err
+			}
 
-		sqlBytes, err := os.ReadFile(migration.Path)
-		if err != nil {
-			return nil, fmt.Errorf("read migration %s: %w", migration.Version, err)
-		}
+			applied, err := runner.appliedMigrationsWith(ctx, conn)
+			if err != nil {
+				return err
+			}
 
-		if _, err := runner.pool.Exec(ctx, string(sqlBytes)); err != nil {
-			return nil, fmt.Errorf("apply migration %s: %w", migration.Version, err)
-		}
+			for _, migration := range migrations {
+				record, ok := applied[migration.Version]
+				if ok {
+					if record.checksum != migration.Checksum {
+						return fmt.Errorf(
+							"migration %s checksum mismatch",
+							migration.Version,
+						)
+					}
 
-		_, err = runner.pool.Exec(ctx, `
-			INSERT INTO schema_migrations (version, name, checksum)
-			VALUES ($1, $2, $3);
-		`, migration.Version, migration.Name, migration.Checksum)
-		if err != nil {
-			return nil, fmt.Errorf("record migration %s: %w", migration.Version, err)
-		}
+					continue
+				}
 
-		appliedNow = append(appliedNow, migration)
+				if err := runner.applyMigrationAtomically(
+					ctx,
+					conn,
+					migration,
+				); err != nil {
+					return err
+				}
+
+				appliedNow = append(appliedNow, migration)
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return appliedNow, nil
+}
+
+func (
+	runner *Runner,
+) applyMigrationAtomically(
+	ctx context.Context,
+	conn *pgxpool.Conn,
+	migration Migration,
+) error {
+	sqlBytes, err := os.ReadFile(migration.Path)
+	if err != nil {
+		return fmt.Errorf("read migration %s: %w", migration.Version, err)
+	}
+
+	sqlBody, err := prepareMigrationSQL(string(sqlBytes))
+	if err != nil {
+		return fmt.Errorf("prepare migration %s: %w", migration.Version, err)
+	}
+
+	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin migration %s transaction: %w", migration.Version, err)
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			rollbackMigrationTransaction(tx)
+		}
+	}()
+
+	if _, err := tx.Exec(ctx, sqlBody); err != nil {
+		return fmt.Errorf("apply migration %s: %w", migration.Version, err)
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO schema_migrations (version, name, checksum)
+		VALUES ($1, $2, $3);
+	`, migration.Version, migration.Name, migration.Checksum); err != nil {
+		return fmt.Errorf("record migration %s: %w", migration.Version, err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit migration %s: %w", migration.Version, err)
+	}
+
+	committed = true
+	return nil
+}
+
+func (
+	runner *Runner,
+) withMigrationLock(
+	ctx context.Context,
+	operation func(*pgxpool.Conn) error,
+) (resultErr error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	conn, err := runner.pool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire migration lock connection: %w", err)
+	}
+
+	if _, err := conn.Exec(ctx, `
+		SELECT pg_advisory_lock($1, $2);
+	`, migrationAdvisoryLockNamespace, migrationAdvisoryLockResource); err != nil {
+		conn.Release()
+		return fmt.Errorf("acquire migration advisory lock: %w", err)
+	}
+
+	defer func() {
+		unlockErr := releaseMigrationLock(conn)
+		if unlockErr == nil {
+			conn.Release()
+		} else {
+			destroyLockedConnection(conn)
+		}
+
+		if resultErr == nil && unlockErr != nil {
+			resultErr = unlockErr
+		}
+	}()
+
+	return operation(conn)
+}
+
+func releaseMigrationLock(conn *pgxpool.Conn) error {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		migrationLockReleaseTimeout,
+	)
+	defer cancel()
+
+	var unlocked bool
+	if err := conn.QueryRow(ctx, `
+		SELECT pg_advisory_unlock($1, $2);
+	`, migrationAdvisoryLockNamespace, migrationAdvisoryLockResource).Scan(
+		&unlocked,
+	); err != nil {
+		return fmt.Errorf("release migration advisory lock: %w", err)
+	}
+
+	if !unlocked {
+		return errors.New("migration advisory lock was not held by the connection")
+	}
+
+	return nil
+}
+
+func destroyLockedConnection(conn *pgxpool.Conn) {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		migrationLockReleaseTimeout,
+	)
+	defer cancel()
+
+	_ = conn.Hijack().Close(ctx)
+}
+
+func rollbackMigrationTransaction(tx pgx.Tx) {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		migrationLockReleaseTimeout,
+	)
+	defer cancel()
+
+	_ = tx.Rollback(ctx)
+}
+
+func prepareMigrationSQL(rawSQL string) (string, error) {
+	trimmed := strings.TrimSpace(
+		strings.TrimPrefix(rawSQL, "\ufeff"),
+	)
+	if trimmed == "" {
+		return "", errors.New("migration SQL is empty")
+	}
+
+	beginLength := transactionBeginPrefixLength(trimmed)
+	commitLength := transactionCommitSuffixLength(trimmed)
+
+	if (beginLength > 0) != (commitLength > 0) {
+		return "", errors.New(
+			"migration transaction envelope must contain both BEGIN and COMMIT",
+		)
+	}
+
+	if beginLength == 0 {
+		if nestedTransactionControlPattern.MatchString(trimmed) {
+			return "", errors.New(
+				"migration SQL contains unsupported transaction control statements",
+			)
+		}
+
+		return trimmed, nil
+	}
+
+	body := strings.TrimSpace(
+		trimmed[beginLength : len(trimmed)-commitLength],
+	)
+	if body == "" {
+		return "", errors.New("migration transaction body is empty")
+	}
+	if nestedTransactionControlPattern.MatchString(body) {
+		return "", errors.New(
+			"migration transaction body contains nested transaction control statements",
+		)
+	}
+
+	return body, nil
+}
+
+func transactionBeginPrefixLength(sql string) int {
+	upper := strings.ToUpper(sql)
+
+	for _, prefix := range []string{
+		"BEGIN;",
+		"BEGIN TRANSACTION;",
+	} {
+		if strings.HasPrefix(upper, prefix) {
+			return len(prefix)
+		}
+	}
+
+	return 0
+}
+
+func transactionCommitSuffixLength(sql string) int {
+	upper := strings.ToUpper(sql)
+
+	for _, suffix := range []string{
+		"COMMIT;",
+		"COMMIT TRANSACTION;",
+	} {
+		if strings.HasSuffix(upper, suffix) {
+			return len(suffix)
+		}
+	}
+
+	return 0
 }
 
 type appliedMigrationRecord struct {
@@ -249,8 +531,19 @@ type appliedMigrationRecord struct {
 	appliedAt time.Time
 }
 
-func (runner *Runner) appliedMigrations(ctx context.Context) (map[string]appliedMigrationRecord, error) {
-	rows, err := runner.pool.Query(ctx, `
+func (runner *Runner) appliedMigrations(
+	ctx context.Context,
+) (map[string]appliedMigrationRecord, error) {
+	return runner.appliedMigrationsWith(ctx, runner.pool)
+}
+
+func (
+	runner *Runner,
+) appliedMigrationsWith(
+	ctx context.Context,
+	executor migrationExecutor,
+) (map[string]appliedMigrationRecord, error) {
+	rows, err := executor.Query(ctx, `
 		SELECT version, checksum, applied_at
 		FROM schema_migrations;
 	`)
