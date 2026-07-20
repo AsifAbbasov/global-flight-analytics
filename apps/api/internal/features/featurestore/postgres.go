@@ -50,10 +50,12 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			validation_status,
 			features_json,
+			stored_at,
 			stored_at_unix_nano;
 	`
 
@@ -62,10 +64,12 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			validation_status,
 			features_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
@@ -78,10 +82,12 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			validation_status,
 			features_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
@@ -97,10 +103,12 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			validation_status,
 			features_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
@@ -116,10 +124,12 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			validation_status,
 			features_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
@@ -476,10 +486,12 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		id               string
 		trajectoryID     string
 		schemaVersion    string
+		asOfTime         time.Time
 		asOfTimeUnixNano int64
 		inputFingerprint string
 		validationStatus string
 		payload          []byte
+		storedAt         time.Time
 		storedAtUnixNano int64
 	)
 
@@ -487,10 +499,12 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		&id,
 		&trajectoryID,
 		&schemaVersion,
+		&asOfTime,
 		&asOfTimeUnixNano,
 		&inputFingerprint,
 		&validationStatus,
 		&payload,
+		&storedAt,
 		&storedAtUnixNano,
 	); err != nil {
 		return Record{}, err
@@ -504,6 +518,21 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		0,
 		storedAtUnixNano,
 	).UTC()
+
+	if err := validateTimestampMirror(
+		"as_of_time",
+		asOfTime,
+		keyAsOfTime,
+	); err != nil {
+		return Record{}, err
+	}
+	if err := validateTimestampMirror(
+		"stored_at",
+		storedAt,
+		exactStoredAt,
+	); err != nil {
+		return Record{}, err
+	}
 
 	var features flightfeatures.FlightFeatures
 	if err := json.Unmarshal(payload, &features); err != nil {

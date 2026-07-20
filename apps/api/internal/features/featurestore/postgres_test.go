@@ -678,10 +678,12 @@ func rowFromInsertArguments(
 				args[0].(string),
 				args[1].(string),
 				schemaVersion,
+				args[3].(time.Time),
 				args[4].(int64),
 				args[5].(string),
 				validationStatus,
 				args[7].([]byte),
+				args[8].(time.Time),
 				args[9].(int64),
 			)
 
@@ -712,10 +714,12 @@ func rowFromRecord(
 				record.ID,
 				record.Key.TrajectoryID,
 				string(record.Key.SchemaVersion),
+				record.Key.AsOfTime,
 				record.Key.AsOfTime.UnixNano(),
 				record.InputFingerprint,
 				string(record.Features.Quality.Status),
 				payload,
+				record.StoredAt,
 				record.StoredAt.UnixNano(),
 			)
 
@@ -751,17 +755,19 @@ func assignDatabaseRow(
 	id string,
 	trajectoryID string,
 	schemaVersion string,
+	asOfTime time.Time,
 	asOfTimeUnixNano int64,
 	inputFingerprint string,
 	validationStatus string,
 	payload []byte,
+	storedAt time.Time,
 	storedAtUnixNano int64,
 ) {
 	t.Helper()
 
-	if len(destinations) != 8 {
+	if len(destinations) != 10 {
 		t.Fatalf(
-			"scan destinations = %d, want 8",
+			"scan destinations = %d, want 10",
 			len(destinations),
 		)
 	}
@@ -769,14 +775,16 @@ func assignDatabaseRow(
 	*destinations[0].(*string) = id
 	*destinations[1].(*string) = trajectoryID
 	*destinations[2].(*string) = schemaVersion
-	*destinations[3].(*int64) = asOfTimeUnixNano
-	*destinations[4].(*string) = inputFingerprint
-	*destinations[5].(*string) = validationStatus
-	*destinations[6].(*[]byte) = append(
+	*destinations[3].(*time.Time) = asOfTime
+	*destinations[4].(*int64) = asOfTimeUnixNano
+	*destinations[5].(*string) = inputFingerprint
+	*destinations[6].(*string) = validationStatus
+	*destinations[7].(*[]byte) = append(
 		[]byte(nil),
 		payload...,
 	)
-	*destinations[7].(*int64) = storedAtUnixNano
+	*destinations[8].(*time.Time) = storedAt
+	*destinations[9].(*int64) = storedAtUnixNano
 }
 
 func validPostgresFeatures(

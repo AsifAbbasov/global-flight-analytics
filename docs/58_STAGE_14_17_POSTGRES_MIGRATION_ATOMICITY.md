@@ -1,6 +1,6 @@
 # Document 58 — Stage 14.17 PostgreSQL Migration Atomicity
 
-Status: Implementation Baseline v1.1
+Status: Implementation Baseline v1.2
 Project: Global Flight Analytics
 Scope: make schema mutation and migration history recording one atomic operation
 
@@ -94,11 +94,10 @@ git status --short
 
 ## 8. Remaining PostgreSQL debt
 
-This increment closes only migration atomicity and migrator process serialization.
-It does not close:
+Documents 67 and 68 close Airport elevation semantics and Flight Feature
+timestamp mirror consistency. The only known PostgreSQL debt remaining after
+those increments is:
 
 ```text
-Airport elevation semantics
-timestamp and Unix-nanosecond consistency
 large PostgreSQL repository decomposition
 ```

@@ -587,3 +587,13 @@ Defines typed current-traffic altitude selection, observed-zero preservation, ge
 `67_STAGE_14_26_AIRPORT_ELEVATION_SEMANTICS.md`
 
 Defines nullable airport elevation semantics from PostgreSQL through Airport profiles, Airport Intelligence, route context, production Route Intelligence, and frontend presentation, including observed sea-level values, unknown evidence, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-27-FLIGHT-FEATURE-TIMESTAMP-CONSISTENCY:DOCUMENT-INDEX -->
+
+## Document 68
+
+`68_STAGE_14_27_FLIGHT_FEATURE_TIMESTAMP_CONSISTENCY.md`
+
+Defines exact Unix-nanosecond ownership for Flight Feature snapshot identity,
+PostgreSQL timestamp mirror validation, permitted sub-microsecond precision loss,
+fail-closed corruption handling, regression gates, and acceptance evidence.
