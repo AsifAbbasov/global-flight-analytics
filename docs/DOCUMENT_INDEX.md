@@ -547,3 +547,11 @@ Defines the repository-owned PostgreSQL read-only repeatable-read boundary for c
 `62_STAGE_14_21_INGESTION_RUN_TERMINAL_INTEGRITY.md`
 
 Defines the one-way Ingestion Run completion transition, explicit transition-rejected semantics, lifecycle shape constraint, terminal-row immutability trigger, concurrent finalization behavior, PostgreSQL integration evidence, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-22-TRAJECTORY-RELATIONAL-INTEGRITY:DOCUMENT-INDEX -->
+
+## Document 63
+
+`63_STAGE_14_22_TRAJECTORY_RELATIONAL_INTEGRITY.md`
+
+Defines mandatory trajectory child ownership, per-trajectory segment ordering, same-trajectory coverage-gap references, deferred stored-count verification, repository fail-fast validation, legacy preflight policy, regression gates, and acceptance evidence.

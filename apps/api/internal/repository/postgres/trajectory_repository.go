@@ -72,6 +72,13 @@ func (repository *TrajectoryRepository) saveTrajectory(
 		ctx = context.Background()
 	}
 
+	if err := validateTrajectoryRelationalIntegrity(item); err != nil {
+		return fmt.Errorf(
+			"validate trajectory relational integrity: %w",
+			err,
+		)
+	}
+
 	if err := validatePersistedFlightIdentity(item); err != nil {
 		return fmt.Errorf(
 			"validate flight identity metadata: %w",
