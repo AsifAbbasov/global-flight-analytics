@@ -92,12 +92,13 @@ git diff --check
 git status --short
 ```
 
-## 8. Remaining PostgreSQL debt
+## 8. PostgreSQL debt closure
 
-Documents 67 and 68 close Airport elevation semantics and Flight Feature
-timestamp mirror consistency. The only known PostgreSQL debt remaining after
-those increments is:
+Documents 59 through 69 close the PostgreSQL correctness and maintainability
+findings recorded after migration atomicity. Document 69 decomposes the final
+known monolithic Trajectory Repository sources without changing their public
+contract, transaction semantics, or SQL behavior.
 
-```text
-large PostgreSQL repository decomposition
-```
+No known PostgreSQL correctness or repository-decomposition debt remains in the
+Stage 14 register. Any future finding must be recorded as a new evidence-backed
+increment rather than being treated as part of this closed list.

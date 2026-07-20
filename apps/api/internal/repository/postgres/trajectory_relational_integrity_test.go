@@ -70,9 +70,9 @@ func TestValidateTrajectoryRelationalIntegrityRejectsPointTotalMismatch(
 func TestSaveTrajectoryValidatesRelationalIntegrityBeforeBeginningTransaction(
 	t *testing.T,
 ) {
-	sourceBytes, err := os.ReadFile("trajectory_repository.go")
+	sourceBytes, err := os.ReadFile("trajectory_write_repository.go")
 	if err != nil {
-		t.Fatalf("read trajectory_repository.go: %v", err)
+		t.Fatalf("read trajectory_write_repository.go: %v", err)
 	}
 
 	source := string(sourceBytes)

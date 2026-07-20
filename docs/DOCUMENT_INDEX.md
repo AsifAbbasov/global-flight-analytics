@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v1.9
+Status: Documentation Index v2.0
 Project: Global Flight Analytics
 
 ---
@@ -597,3 +597,11 @@ Defines nullable airport elevation semantics from PostgreSQL through Airport pro
 Defines exact Unix-nanosecond ownership for Flight Feature snapshot identity,
 PostgreSQL timestamp mirror validation, permitted sub-microsecond precision loss,
 fail-closed corruption handling, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-28-POSTGRES-TRAJECTORY-REPOSITORY-DECOMPOSITION:DOCUMENT-INDEX -->
+
+## Document 69
+
+`69_STAGE_14_28_POSTGRES_TRAJECTORY_REPOSITORY_DECOMPOSITION.md`
+
+Defines responsibility-based decomposition of the PostgreSQL Trajectory Repository write and read paths, preserves the public repository contract and snapshot semantics, moves relational-integrity source ownership, adds permanent anti-monolith gates, and closes the final known PostgreSQL maintainability debt.
