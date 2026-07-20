@@ -531,3 +531,11 @@ Records removal of the unsafe migration baseline operation, preserved normal mig
 `60_STAGE_14_19_DATA_QUALITY_PARENT_INTEGRITY.md`
 
 Defines canonical Data Quality Report parent integrity, explicit rejected-observation evidence storage, migration of legacy null-parent rows, cascade semantics, repository enforcement, regression gates, and acceptance evidence.
+
+<!-- STAGE-14-20-TRAJECTORY-READ-SNAPSHOT-CONSISTENCY:DOCUMENT-INDEX -->
+
+## Document 61
+
+`61_STAGE_14_20_TRAJECTORY_READ_SNAPSHOT_CONSISTENCY.md`
+
+Defines the repository-owned PostgreSQL read-only repeatable-read boundary for complete FlightTrajectory aggregates, caller-owned transaction compatibility, pool constructor behavior, concurrent mutation evidence, rollback semantics, regression gates, and acceptance evidence.

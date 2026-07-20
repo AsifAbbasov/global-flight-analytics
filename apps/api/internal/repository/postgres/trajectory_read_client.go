@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // TrajectoryReadClient is the minimal PostgreSQL read contract used by the
@@ -22,14 +23,22 @@ type TrajectoryReadClient interface {
 }
 
 // NewTrajectoryReadRepository creates a read-only repository bound to the
-// supplied PostgreSQL client. Passing a pgx transaction keeps trajectory
-// metadata, segments, and coverage gaps inside the same database snapshot.
+// supplied PostgreSQL client. A transaction keeps trajectory metadata,
+// segments, and coverage gaps inside its caller-owned snapshot. A pool is
+// retained so public aggregate reads can create their own repeatable-read
+// snapshot.
 func NewTrajectoryReadRepository(
 	client TrajectoryReadClient,
 ) *TrajectoryRepository {
-	return &TrajectoryRepository{
+	repository := &TrajectoryRepository{
 		readClient: client,
 	}
+
+	if pool, ok := client.(*pgxpool.Pool); ok {
+		repository.db = pool
+	}
+
+	return repository
 }
 
 func (

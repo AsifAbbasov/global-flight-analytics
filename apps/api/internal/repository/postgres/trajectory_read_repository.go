@@ -19,6 +19,25 @@ func (
 		ctx = context.Background()
 	}
 
+	return repository.withTrajectoryReadSnapshot(
+		ctx,
+		func(
+			snapshotRepository *TrajectoryRepository,
+		) (trajectory.FlightTrajectory, error) {
+			return snapshotRepository.getLatestTrajectoryByICAO24(
+				ctx,
+				icao24,
+			)
+		},
+	)
+}
+
+func (
+	repository *TrajectoryRepository,
+) getLatestTrajectoryByICAO24(
+	ctx context.Context,
+	icao24 string,
+) (trajectory.FlightTrajectory, error) {
 	normalizedICAO24 := normalizeICAO24Lookup(
 		icao24,
 	)
@@ -85,6 +104,25 @@ func (
 		ctx = context.Background()
 	}
 
+	return repository.withTrajectoryReadSnapshot(
+		ctx,
+		func(
+			snapshotRepository *TrajectoryRepository,
+		) (trajectory.FlightTrajectory, error) {
+			return snapshotRepository.getTrajectoryByID(
+				ctx,
+				trajectoryID,
+			)
+		},
+	)
+}
+
+func (
+	repository *TrajectoryRepository,
+) getTrajectoryByID(
+	ctx context.Context,
+	trajectoryID string,
+) (trajectory.FlightTrajectory, error) {
 	trimmedTrajectoryID := strings.TrimSpace(
 		trajectoryID,
 	)
