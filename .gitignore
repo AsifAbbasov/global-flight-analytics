@@ -12,3 +12,6 @@ build
 
 # Local API environment configuration and secrets
 /apps/api/.env
+
+# Local installer backup directories
+/.*-backups/
