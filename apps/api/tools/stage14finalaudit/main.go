@@ -58,6 +58,7 @@ var stage14Documents = []string{
 	"70_STAGE_14_FINAL_COMPLETION_AUDIT.md",
 	"71_STAGE_14_29_MIGRATION_CATALOG_INTEGRITY.md",
 	"72_STAGE_14_30_POSTGRES_CORRECTNESS_HARDENING.md",
+	"73_STAGE_14_31_POSTGRES_WRITE_REPOSITORY_DECOMPOSITION.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -433,6 +434,7 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"docker image inspect",
 				"docker run",
 				"git diff --check",
+				"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			},
 			MaxLines: 320,
@@ -580,6 +582,71 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 				"func validateTimestampMirror(",
 				"delta <= -postgresTimestampMirrorTolerance",
 				"delta >= postgresTimestampMirrorTolerance",
+			},
+		},
+		{
+			Name: "Airport import write remains coordinator-only",
+			Path: "apps/api/internal/repository/postgres/airport_import_repository.go",
+			Required: []string{
+				"executeAirportImport(",
+				"rollbackRepositoryTransaction(tx)",
+			},
+			Forbidden: []string{
+				"CREATE TEMP TABLE",
+				"UPDATE airports AS target",
+				"INSERT INTO airports (",
+				"stageAirportImportRecords(",
+			},
+			MaxLines: 110,
+		},
+		{
+			Name: "Flight State write delegates preparation and SQL",
+			Path: "apps/api/internal/repository/postgres/flightstate_repository.go",
+			Required: []string{
+				"saveFlightStateBatch(",
+				"rollbackRepositoryTransaction(tx)",
+			},
+			Forbidden: []string{
+				"INSERT INTO flight_states",
+				"flightstate.NormalizeSquawkCode(",
+				"flightstate.ValidateAircraftCategory(",
+			},
+		},
+		{
+			Name: "Airport import staging has a dedicated owner",
+			Path: "apps/api/internal/repository/postgres/airport_import_staging_write.go",
+			Required: []string{
+				"CREATE TEMP TABLE airport_import_staging",
+				"INSERT INTO airport_import_staging",
+				"func stageAirportImportRecords(",
+			},
+		},
+		{
+			Name: "Airport import merge has a dedicated owner",
+			Path: "apps/api/internal/repository/postgres/airport_import_merge_write.go",
+			Required: []string{
+				"UPDATE airports AS target",
+				"INSERT INTO airports (",
+				"func updateAirportsByICAO(",
+				"func insertRemainingAirports(",
+			},
+		},
+		{
+			Name: "Flight State preparation has a dedicated owner",
+			Path: "apps/api/internal/repository/postgres/flightstate_write.go",
+			Required: []string{
+				"INSERT INTO flight_states",
+				"func saveFlightStateBatch(",
+				"func prepareFlightStateInsertArguments(",
+			},
+		},
+		{
+			Name: "Write repository decomposition test remains permanent",
+			Path: "apps/api/internal/repository/postgres/write_repository_decomposition_test.go",
+			Required: []string{
+				"TestWriteRepositoryCoordinatorsRemainNarrow",
+				"TestWriteRepositoryResponsibilitiesHaveDedicatedOwners",
+				"TestWriteRepositoryCoordinatorsPreserveTransactionBoundary",
 			},
 		},
 		{

@@ -279,3 +279,12 @@ The PostgreSQL gate now applies migration 020 and runs repository, Feature Store
 Store, and Historical Aggregate tests. It verifies Ingestion Run evidence constraints,
 timestamp mirrors, and independent rollback ownership. `STAGE_14_CURRENT_SCOPE_AUDIT=PASS`
 remains a current-scope marker only; `STAGE_14_OVERALL_STATUS=REOPENED` remains authoritative.
+
+<!-- STAGE-14-31-POSTGRES-WRITE-REPOSITORY-DECOMPOSITION:DOCUMENT-70 -->
+
+## Stage 14.31 write-repository decomposition amendment
+
+The Airport Import and Flight State write coordinators no longer own embedded SQL and
+preparation workflows. Dedicated owner files and parser-backed architecture tests are part
+of the current-scope gate. The Stage 14 overall status remains reopened because Airport
+catalog pagination requires a separate domain contract migration.

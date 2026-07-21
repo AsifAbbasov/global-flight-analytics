@@ -275,3 +275,12 @@ Migration 020 now enforces Ingestion Run evidence consistency and exact timestam
 mirror contracts for Route and Historical results. Transactional repository writes use
 an independent bounded rollback context. Stage 14 remains reopened for the separate
 maintainability and Clean Code backlog recorded in Document 72.
+
+<!-- STAGE-14-31-POSTGRES-WRITE-REPOSITORY-DECOMPOSITION:README -->
+
+## Stage 14 PostgreSQL Write Repository Decomposition
+
+Airport Import and Flight State PostgreSQL write paths now keep transaction coordination
+separate from staging, merge, validation, mapping, and insert ownership. Permanent Go parser
+and Stage 14 audit gates prevent the coordinator methods from becoming monoliths again.
+Stage 14 remains reopened for the separate Airport pagination contract.

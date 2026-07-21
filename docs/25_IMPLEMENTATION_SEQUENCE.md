@@ -769,3 +769,11 @@ Migration 020, repository fail-fast validation, timestamp mirror reads, isolated
 production-catalog tests, and independent rollback contexts close the confirmed
 Ingestion Run, Route/Historical timestamp, and cancelled-context rollback gaps.
 Stage 14 remains reopened for the separate maintainability and Clean Code register.
+
+<!-- STAGE-14-31-POSTGRES-WRITE-REPOSITORY-DECOMPOSITION:IMPLEMENTATION -->
+
+## Stage 14.31 PostgreSQL Write Repository Decomposition
+
+Completed: Airport Import staging and merge ownership, Flight State preparation and insert
+ownership, narrow transaction coordinators, permanent architecture tests, and strict source
+audit coverage. Stage 14 remains reopened for Stage 14.32 Airport pagination contract work.

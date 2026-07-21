@@ -634,3 +634,14 @@ reopening of Stage 14.
 Defines Ingestion Run processed-count and error-evidence invariants, Route and Historical
 timestamp mirror integrity, independent bounded repository rollback contexts, migration
 020, isolated production-catalog integration evidence, and the remaining reopened scope.
+
+<!-- STAGE-14-31-POSTGRES-WRITE-REPOSITORY-DECOMPOSITION:DOCUMENT-INDEX -->
+
+## Document 73
+
+`73_STAGE_14_31_POSTGRES_WRITE_REPOSITORY_DECOMPOSITION.md`
+
+Defines responsibility-based decomposition of Airport Import and Flight State PostgreSQL
+write paths, preserved public and transactional behavior, dedicated SQL and preparation
+owners, parser-backed anti-monolith gates, acceptance evidence, and the separate pagination
+contract boundary.

@@ -134,6 +134,25 @@ func TestAuditRulesReportsEveryInvariantFailure(
 	}
 }
 
+func TestFlightStateTelemetryRulesFollowSplitOwnership(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	rules := endToEndTelemetryAvailabilityRules()
+	paths := make(map[string]string)
+	for _, rule := range rules {
+		paths[rule.Name] = rule.Path
+	}
+
+	if got := paths["Flight State persistence writes nullable telemetry"]; got != "apps/api/internal/repository/postgres/flightstate_write.go" {
+		t.Fatalf("write telemetry owner = %q", got)
+	}
+	if got := paths["Flight State persistence reads nullable telemetry"]; got != "apps/api/internal/repository/postgres/flightstate_repository.go" {
+		t.Fatalf("read telemetry owner = %q", got)
+	}
+}
+
 func TestRunFailsForInvalidRepositoryRoot(
 	t *testing.T,
 ) {

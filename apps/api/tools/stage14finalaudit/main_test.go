@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 32 {
-		t.Fatalf("document count = %d, want 32", len(stage14Documents))
+	if len(stage14Documents) != 33 {
+		t.Fatalf("document count = %d, want 33", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -253,6 +253,32 @@ func TestAuditRepositoryDetectsOutdatedGoToolchain(t *testing.T) {
 	}
 }
 
+func TestAuditRepositoryDetectsFlightStateWriteResponsibilityLeak(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"repository",
+		"postgres",
+		"flightstate_repository.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content = append(content, []byte("// INSERT INTO flight_states\n")...)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureDetail(failures, "INSERT INTO flight_states") {
+		t.Fatalf("Flight State write responsibility leak was not detected: %#v", failures)
+	}
+}
+
 func TestRunReturnsFailureForMissingDocument(t *testing.T) {
 	root := createCompleteFixture(t)
 	missing := filepath.Join(root, "docs", stage14Documents[len(stage14Documents)-1])
@@ -351,6 +377,7 @@ func createCompleteFixture(t *testing.T) string {
 			"docker image inspect",
 			"docker run",
 			"git diff --check",
+			"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 		}, "\n")+"\n",
 	)
@@ -475,13 +502,48 @@ func createCompleteFixture(t *testing.T) string {
 		"apps/api/internal/repository/postgres/transaction_rollback.go",
 		"package postgres\n// context.WithTimeout(\n// context.Background()\n// repositoryRollbackTimeout\n",
 	)
-	for _, path := range []string{
+	writeFixtureFile(
+		t,
+		root,
 		"apps/api/internal/repository/postgres/airport_import_repository.go",
+		"package postgres\n// executeAirportImport(\n// rollbackRepositoryTransaction(tx)\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
 		"apps/api/internal/repository/postgres/flightstate_repository.go",
+		"package postgres\n// saveFlightStateBatch(\n// rollbackRepositoryTransaction(tx)\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
 		"apps/api/internal/repository/postgres/trajectory_write_repository.go",
-	} {
-		writeFixtureFile(t, root, path, "package postgres\n// rollbackRepositoryTransaction(tx)\n")
-	}
+		"package postgres\n// rollbackRepositoryTransaction(tx)\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_import_staging_write.go",
+		"package postgres\n// CREATE TEMP TABLE airport_import_staging\n// INSERT INTO airport_import_staging\n// func stageAirportImportRecords(\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_import_merge_write.go",
+		"package postgres\n// UPDATE airports AS target\n// INSERT INTO airports (\n// func updateAirportsByICAO(\n// func insertRemainingAirports(\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/flightstate_write.go",
+		"package postgres\n// INSERT INTO flight_states\n// func saveFlightStateBatch(\n// func prepareFlightStateInsertArguments(\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/write_repository_decomposition_test.go",
+		"package postgres\n// TestWriteRepositoryCoordinatorsRemainNarrow\n// TestWriteRepositoryResponsibilitiesHaveDedicatedOwners\n// TestWriteRepositoryCoordinatorsPreserveTransactionBoundary\n",
+	)
 	writeFixtureFile(
 		t,
 		root,

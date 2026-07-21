@@ -260,5 +260,6 @@ git diff --check
 cd "$API_ROOT"
 go run ./tools/stage14finalaudit -root "$REPOSITORY_ROOT" -strict
 
+echo 'STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS'
 echo 'STAGE_14_CURRENT_SCOPE_AUDIT=PASS'
 echo 'STAGE_14_OVERALL_STATUS=REOPENED'

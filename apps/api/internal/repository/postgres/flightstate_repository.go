@@ -55,194 +55,22 @@ func (r *FlightStateRepository) SaveFlightStates(
 	}
 
 	committed := false
-
 	defer func() {
 		if !committed {
 			rollbackRepositoryTransaction(tx)
 		}
 	}()
 
-	const query = `
-		INSERT INTO flight_states (
-			flight_id,
-			aircraft_id,
-			icao24,
-			callsign,
-			latitude,
-			longitude,
-			barometric_altitude_m,
-			barometric_altitude_status,
-			geometric_altitude_m,
-			geometric_altitude_status,
-			velocity_mps,
-			heading_degrees,
-			vertical_rate_mps,
-			on_ground,
-			origin_country,
-			squawk_code,
-			special_purpose_indicator,
-			position_source,
-			aircraft_category,
-			aircraft_category_available,
-			observed_at,
-			source_name,
-			ingestion_run_id
-		)
-		VALUES (
-			$1,
-			$2,
-			$3,
-			$4,
-			$5,
-			$6,
-			$7,
-			$8,
-			$9,
-			$10,
-			$11,
-			$12,
-			$13,
-			$14,
-			$15,
-			$16,
-			$17,
-			$18,
-			$19,
-			$20,
-			$21,
-			$22,
-			$23
-		);
-	`
-
-	for index, item := range items {
-		barometricAltitude, barometricStatus, err :=
-			altitudeDatabaseValue(
-				item.BarometricAltitudeM,
-				item.BarometricAltitudeStatus,
-			)
-		if err != nil {
-			return fmt.Errorf(
-				"prepare barometric altitude at index %d for icao24 %s: %w",
-				index,
-				item.ICAO24,
-				err,
-			)
-		}
-
-		geometricAltitude, geometricStatus, err :=
-			altitudeDatabaseValue(
-				item.GeometricAltitudeM,
-				item.GeometricAltitudeStatus,
-			)
-		if err != nil {
-			return fmt.Errorf(
-				"prepare geometric altitude at index %d for icao24 %s: %w",
-				index,
-				item.ICAO24,
-				err,
-			)
-		}
-
-		squawkCode, err := flightstate.NormalizeSquawkCode(
-			item.SquawkCode,
-		)
-		if err != nil {
-			return fmt.Errorf(
-				"prepare squawk code at index %d for icao24 %s: %w",
-				index,
-				item.ICAO24,
-				err,
-			)
-		}
-
-		positionSource, err := flightstate.NormalizePositionSource(
-			item.PositionSource,
-		)
-		if err != nil {
-			return fmt.Errorf(
-				"prepare position source at index %d for icao24 %s: %w",
-				index,
-				item.ICAO24,
-				err,
-			)
-		}
-
-		if err := flightstate.ValidateAircraftCategory(
-			item.AircraftCategory,
-			item.AircraftCategoryAvailable,
-		); err != nil {
-			return fmt.Errorf(
-				"prepare aircraft category at index %d for icao24 %s: %w",
-				index,
-				item.ICAO24,
-				err,
-			)
-		}
-
-		var aircraftCategory any
-		if item.AircraftCategoryAvailable {
-			aircraftCategory = item.AircraftCategory
-		}
-
-		_, err = tx.Exec(
-			ctx,
-			query,
-			nullableUUID(item.FlightID),
-			nullableUUID(item.AircraftID),
-			item.ICAO24,
-			nullableText(item.Callsign),
-			item.Latitude,
-			item.Longitude,
-			barometricAltitude,
-			barometricStatus,
-			geometricAltitude,
-			geometricStatus,
-			telemetryFloatDatabaseValue(
-				item.VelocityMPS,
-				item.HasVelocity(),
-			),
-			telemetryFloatDatabaseValue(
-				item.HeadingDegrees,
-				item.HasHeading(),
-			),
-			telemetryFloatDatabaseValue(
-				item.VerticalRateMPS,
-				item.HasVerticalRate(),
-			),
-			telemetryBoolDatabaseValue(
-				item.OnGround,
-				item.HasOnGroundState(),
-			),
-			nullableText(item.OriginCountry),
-			squawkCode,
-			item.SpecialPurposeIndicator,
-			string(positionSource),
-			aircraftCategory,
-			item.AircraftCategoryAvailable,
-			item.ObservedAt,
-			sourceNameOrUnknown(item.SourceName),
-			nullableUUID(item.IngestionRunID),
-		)
-		if err != nil {
-			return fmt.Errorf(
-				"insert flight state at index %d for icao24 %s: %w",
-				index,
-				item.ICAO24,
-				err,
-			)
-		}
+	if err := saveFlightStateBatch(ctx, tx, items); err != nil {
+		return err
 	}
 
-	if err := tx.Commit(
-		ctx,
-	); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf(
 			"commit flight states transaction: %w",
 			err,
 		)
 	}
-
 	committed = true
 
 	return nil

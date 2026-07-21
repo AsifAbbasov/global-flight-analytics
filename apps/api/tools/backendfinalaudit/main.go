@@ -584,7 +584,7 @@ func endToEndTelemetryAvailabilityRules() []fileRule {
 		},
 		{
 			Name: "Flight State persistence writes nullable telemetry",
-			Path: "apps/api/internal/repository/postgres/flightstate_repository.go",
+			Path: "apps/api/internal/repository/postgres/flightstate_write.go",
 			Required: []string{
 				"telemetryFloatDatabaseValue(",
 				"item.HasVelocity()",
@@ -592,6 +592,18 @@ func endToEndTelemetryAvailabilityRules() []fileRule {
 				"item.HasVerticalRate()",
 				"telemetryBoolDatabaseValue(",
 				"item.HasOnGroundState()",
+			},
+			Forbidden: []string{
+				"COALESCE(velocity_mps, 0)",
+				"COALESCE(heading_degrees, 0)",
+				"COALESCE(vertical_rate_mps, 0)",
+				"COALESCE(on_ground, false)",
+			},
+		},
+		{
+			Name: "Flight State persistence reads nullable telemetry",
+			Path: "apps/api/internal/repository/postgres/flightstate_repository.go",
+			Required: []string{
 				"applyTelemetryDatabaseValues(",
 				"velocity_mps::double precision",
 				"heading_degrees::double precision",
