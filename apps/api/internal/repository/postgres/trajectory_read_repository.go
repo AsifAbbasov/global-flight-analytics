@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
@@ -11,10 +12,9 @@ func (
 	ctx context.Context,
 	icao24 string,
 ) (trajectory.FlightTrajectory, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return trajectory.FlightTrajectory{}, err
 	}
-
 	return repository.withTrajectoryReadSnapshot(
 		ctx,
 		func(
@@ -27,16 +27,16 @@ func (
 		},
 	)
 }
+
 func (
 	repository *TrajectoryRepository,
 ) GetTrajectoryByID(
 	ctx context.Context,
 	trajectoryID string,
 ) (trajectory.FlightTrajectory, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return trajectory.FlightTrajectory{}, err
 	}
-
 	return repository.withTrajectoryReadSnapshot(
 		ctx,
 		func(

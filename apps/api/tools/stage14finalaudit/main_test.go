@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 36 {
-		t.Fatalf("document count = %d, want 36", len(stage14Documents))
+	if len(stage14Documents) != 37 {
+		t.Fatalf("document count = %d, want 37", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -451,6 +451,27 @@ func TestAuditRepositoryDetectsHardCodedMigrationRepairSequence(t *testing.T) {
 	}
 }
 
+func TestAuditRepositoryDetectsMissingTrajectoryQueryProfileMigration(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"database",
+		"migrations",
+		"021_trajectory_query_profiles.sql",
+	)
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureCheck(
+		failures,
+		"Trajectory query profile migration owns proven index changes",
+	) {
+		t.Fatalf("missing trajectory profile migration was not detected: %#v", failures)
+	}
+}
+
 func TestRunReturnsFailureForMissingDocument(t *testing.T) {
 	root := createCompleteFixture(t)
 	missing := filepath.Join(root, "docs", stage14Documents[len(stage14Documents)-1])
@@ -553,6 +574,9 @@ func createCompleteFixture(t *testing.T) string {
 			"STAGE_14_32_AIRPORT_PAGINATION=PASS",
 			"STAGE_14_33_EXPLICIT_CONTEXT_AND_WRITE_MODE=PASS",
 			"STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION=PASS",
+			"scripts/profile-stage-14-trajectory-queries.sh",
+			"STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS",
+			"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 		}, "\n")+"\n",
 	)
@@ -599,6 +623,30 @@ func createCompleteFixture(t *testing.T) string {
 	for _, path := range trajectoryOwnerFiles {
 		writeFixtureFile(t, root, path, "package postgres\n")
 	}
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/trajectory_read_consolidation_test.go",
+		"package postgres\n// TestTrajectoryReadQueriesHaveOneCanonicalOwner\n// TestTrajectoryRowMappingHasDedicatedOwners\n// TestAllTrajectoryReadBoundariesPreserveCallerContext\n// TestTrajectoryProfileIndexesMatchProductionOrdering\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/trajectory_query_profile_integration_test.go",
+		"package postgres\n// TestTrajectoryQueryProfilesUseExpectedIndexes\n// EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)\n// flight_trajectories_icao24_latest_idx\n// flight_trajectories_end_time_order_idx\n// trajectory_segments_trajectory_sequence_unique\n// coverage_gaps_trajectory_time_idx\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"database/migrations/021_trajectory_query_profiles.sql",
+		"BEGIN;\nDROP INDEX trajectory_segments_trajectory_sequence_idx;\nCREATE INDEX flight_trajectories_icao24_latest_idx ON flight_trajectories (icao24, end_time DESC, start_time DESC, created_at DESC);\nCREATE INDEX flight_trajectories_end_time_order_idx ON flight_trajectories (end_time DESC, start_time DESC, created_at DESC);\nCOMMIT;\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"scripts/profile-stage-14-trajectory-queries.sh",
+		"TEST_DATABASE_URL\nTestTrajectoryQueryProfilesUseExpectedIndexes\nSTAGE_14_TRAJECTORY_QUERY_PROFILING=PASS\n",
+	)
 	writeFixtureFile(
 		t,
 		root,

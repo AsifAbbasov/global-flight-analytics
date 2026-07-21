@@ -675,3 +675,4 @@ validation, preserved behavior, permanent regression gates, and remaining reopen
 Defines repository-derived migration repair planning, concrete nullable database arguments,
 required source provenance, native UUID array membership, PostgreSQL integration evidence,
 permanent regression gates, and the remaining profiling and closure scope.
+77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md

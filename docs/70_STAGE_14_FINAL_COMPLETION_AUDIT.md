@@ -315,3 +315,9 @@ Stage 14.34 closes the combined migration-repair, nullable-argument, source-prov
 UUID membership query group. The cross-stack audit now protects these boundaries. The overall
 Stage 14 status remains reopened for evidence-backed trajectory index profiling and final
 closure.
+
+<!-- STAGE-14-35-TRAJECTORY-QUERY-CONSOLIDATION-AND-PROFILING:FINAL-AUDIT -->
+
+## Stage 14.35 current-scope evidence
+
+Trajectory query ownership, row mapping, caller context, index migration, and EXPLAIN ANALYZE evidence are now enforced by permanent source and PostgreSQL integration gates. A successful current run emits `STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS`. This is not the Stage 14 closure statement; Stage 14 remains reopened until the independent final closure audit.

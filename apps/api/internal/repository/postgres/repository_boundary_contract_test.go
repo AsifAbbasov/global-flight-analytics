@@ -15,6 +15,12 @@ func TestRepositoryOperationsDoNotInventCallerContext(t *testing.T) {
 		"airport_pagination_read.go",
 		"flightstate_repository.go",
 		"trajectory_write_repository.go",
+		"trajectory_read_repository.go",
+		"trajectory_read_snapshot.go",
+		"analytical_trajectory_repository.go",
+		"analytical_trajectory_region_repository.go",
+		"trajectory_segment_read.go",
+		"trajectory_gap_read.go",
 	} {
 		source := readRepositoryBoundarySource(t, fileName)
 		if !strings.Contains(source, "requireRepositoryContext(ctx)") {

@@ -27,8 +27,8 @@ func (
 	ctx context.Context,
 	operation trajectoryReadOperation,
 ) (trajectory.FlightTrajectory, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return trajectory.FlightTrajectory{}, err
 	}
 	if repository == nil {
 		return trajectory.FlightTrajectory{}, errTrajectoryReadRepositoryNil

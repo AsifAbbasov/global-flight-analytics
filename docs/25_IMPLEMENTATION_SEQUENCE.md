@@ -801,3 +801,11 @@ validation; permanent source and unit gates. Stage 14 remains reopened.
 Completed: repository-derived migration repair planning, concrete nullable driver values,
 required source evidence, native UUID-column array membership, PostgreSQL integration evidence,
 and permanent audit gates. Stage 14 remains reopened for profiling and final closure.
+
+<!-- STAGE-14-35-TRAJECTORY-QUERY-CONSOLIDATION-AND-PROFILING:IMPLEMENTATION -->
+
+## Stage 14.35 — Trajectory Query Consolidation and Profiling
+
+Status: completed current scope.
+
+The Trajectory read layer now has one SQL owner, dedicated row scanners, caller-owned context, two order-aligned parent indexes, removal of the redundant non-unique segment-order index, and permanent PostgreSQL EXPLAIN ANALYZE evidence. Stage 14 remains reopened for Stage 14.36 final closure only.

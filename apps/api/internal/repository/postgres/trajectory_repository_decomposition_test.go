@@ -19,14 +19,13 @@ func TestTrajectoryRepositoryCoordinatorsRemainNarrow(t *testing.T) {
 			lines,
 		)
 	}
-	forbiddenWriteTokens := []string{
+	for _, token := range []string{
 		"SaveTrajectory(",
 		"SaveReconciledTrajectory(",
 		"INSERT INTO",
 		"DELETE FROM",
 		"BeginTx(",
-	}
-	for _, token := range forbiddenWriteTokens {
+	} {
 		if strings.Contains(writeCoordinator, token) {
 			t.Fatalf(
 				"trajectory_repository.go regained write responsibility %q",
@@ -39,7 +38,7 @@ func TestTrajectoryRepositoryCoordinatorsRemainNarrow(t *testing.T) {
 		t,
 		"trajectory_read_repository.go",
 	)
-	if lines := sourceLineCount(readCoordinator); lines > 110 {
+	if lines := sourceLineCount(readCoordinator); lines > 100 {
 		t.Fatalf(
 			"trajectory_read_repository.go grew beyond its snapshot-coordinator responsibility: %d lines",
 			lines,
@@ -54,17 +53,17 @@ func TestTrajectoryRepositoryCoordinatorsRemainNarrow(t *testing.T) {
 			count,
 		)
 	}
-	forbiddenReadTokens := []string{
+	for _, token := range []string{
 		"SELECT",
 		"FROM flight_trajectories",
 		"FROM trajectory_segments",
 		"FROM coverage_gaps",
 		".Scan(",
-	}
-	for _, token := range forbiddenReadTokens {
+		"ctx = context.Background()",
+	} {
 		if strings.Contains(readCoordinator, token) {
 			t.Fatalf(
-				"trajectory_read_repository.go regained SQL or mapping responsibility %q",
+				"trajectory_read_repository.go regained SQL, mapping, or invented-context responsibility %q",
 				token,
 			)
 		}
@@ -101,7 +100,6 @@ func TestTrajectoryRepositoryResponsibilitiesHaveDedicatedOwners(t *testing.T) {
 		"trajectory_parent_read.go": {
 			") getLatestTrajectoryByICAO24(",
 			") getTrajectoryByID(",
-			") queryTrajectory(",
 			"func normalizeICAO24Lookup(",
 		},
 		"trajectory_child_read.go": {
@@ -109,9 +107,32 @@ func TestTrajectoryRepositoryResponsibilitiesHaveDedicatedOwners(t *testing.T) {
 		},
 		"trajectory_segment_read.go": {
 			") ListTrajectorySegments(",
+			"scanTrajectorySegmentRows(rows)",
 		},
 		"trajectory_gap_read.go": {
 			") ListCoverageGaps(",
+			"scanCoverageGapRows(rows)",
+		},
+		"trajectory_read_queries.go": {
+			"const flightTrajectorySelectColumns",
+			"const latestTrajectoryByICAO24Query",
+			"const trajectoriesByEndTimeQuery",
+			"const trajectoriesByEndTimeAndBoundsQuery",
+			"const trajectorySegmentsByTrajectoryIDQuery",
+			"const coverageGapsByTrajectoryIDQuery",
+		},
+		"trajectory_row_scan.go": {
+			"func scanFlightTrajectory(",
+			") queryFlightTrajectory(",
+			"func scanFlightTrajectoryRows(",
+		},
+		"trajectory_segment_row_scan.go": {
+			"func scanTrajectorySegment(",
+			"func scanTrajectorySegmentRows(",
+		},
+		"trajectory_gap_row_scan.go": {
+			"func scanCoverageGap(",
+			"func scanCoverageGapRows(",
 		},
 	}
 

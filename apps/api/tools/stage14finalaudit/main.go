@@ -62,6 +62,7 @@ var stage14Documents = []string{
 	"74_STAGE_14_32_AIRPORT_KEYSET_PAGINATION.md",
 	"75_STAGE_14_33_EXPLICIT_REPOSITORY_CONTEXT_AND_TRAJECTORY_WRITE_MODE.md",
 	"76_STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION.md",
+	"77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -75,6 +76,10 @@ var trajectoryOwnerFiles = []string{
 	"apps/api/internal/repository/postgres/trajectory_segment_write.go",
 	"apps/api/internal/repository/postgres/trajectory_write_mode.go",
 	"apps/api/internal/repository/postgres/trajectory_write_repository.go",
+	"apps/api/internal/repository/postgres/trajectory_read_queries.go",
+	"apps/api/internal/repository/postgres/trajectory_row_scan.go",
+	"apps/api/internal/repository/postgres/trajectory_segment_row_scan.go",
+	"apps/api/internal/repository/postgres/trajectory_gap_row_scan.go",
 }
 
 func main() {
@@ -442,6 +447,9 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"STAGE_14_32_AIRPORT_PAGINATION=PASS",
 				"STAGE_14_33_EXPLICIT_CONTEXT_AND_WRITE_MODE=PASS",
 				"STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION=PASS",
+				"scripts/profile-stage-14-trajectory-queries.sh",
+				"STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS",
+				"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			},
 			MaxLines: 320,
@@ -939,6 +947,52 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 			},
 			Forbidden: []string{
 				"WHERE version IN ('010', '011', '012')",
+			},
+		},
+		{
+			Name: "Trajectory read consolidation contract remains permanent",
+			Path: "apps/api/internal/repository/postgres/trajectory_read_consolidation_test.go",
+			Required: []string{
+				"TestTrajectoryReadQueriesHaveOneCanonicalOwner",
+				"TestTrajectoryRowMappingHasDedicatedOwners",
+				"TestAllTrajectoryReadBoundariesPreserveCallerContext",
+				"TestTrajectoryProfileIndexesMatchProductionOrdering",
+			},
+		},
+		{
+			Name: "Trajectory query profile migration owns proven index changes",
+			Path: "database/migrations/021_trajectory_query_profiles.sql",
+			Required: []string{
+				"DROP INDEX trajectory_segments_trajectory_sequence_idx",
+				"flight_trajectories_icao24_latest_idx",
+				"flight_trajectories_end_time_order_idx",
+				"end_time DESC",
+				"start_time DESC",
+				"created_at DESC",
+			},
+			Forbidden: []string{
+				"coverage_gaps_trajectory_start_idx",
+			},
+		},
+		{
+			Name: "Trajectory query profiles retain PostgreSQL execution evidence",
+			Path: "apps/api/internal/repository/postgres/trajectory_query_profile_integration_test.go",
+			Required: []string{
+				"TestTrajectoryQueryProfilesUseExpectedIndexes",
+				"EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)",
+				"flight_trajectories_icao24_latest_idx",
+				"flight_trajectories_end_time_order_idx",
+				"trajectory_segments_trajectory_sequence_unique",
+				"coverage_gaps_trajectory_time_idx",
+			},
+		},
+		{
+			Name: "Trajectory query profiling has a focused repeatable command",
+			Path: "scripts/profile-stage-14-trajectory-queries.sh",
+			Required: []string{
+				"TEST_DATABASE_URL",
+				"TestTrajectoryQueryProfilesUseExpectedIndexes",
+				"STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS",
 			},
 		},
 		{

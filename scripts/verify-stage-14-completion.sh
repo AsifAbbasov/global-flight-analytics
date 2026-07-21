@@ -161,6 +161,9 @@ go test -count=1 \
   ./internal/routeintelligence/routestore \
   ./internal/historicalintelligence/historicalaggregate
 
+bash "$REPOSITORY_ROOT/scripts/profile-stage-14-trajectory-queries.sh"
+echo 'STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS'
+
 echo 'STAGE_14_POSTGRES_INTEGRATION=PASS'
 
 docker rm --force "$POSTGRES_CONTAINER" >/dev/null
@@ -264,5 +267,6 @@ echo 'STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS'
 echo 'STAGE_14_32_AIRPORT_PAGINATION=PASS'
 echo 'STAGE_14_33_EXPLICIT_CONTEXT_AND_WRITE_MODE=PASS'
 echo 'STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION=PASS'
+echo 'STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS'
 echo 'STAGE_14_CURRENT_SCOPE_AUDIT=PASS'
 echo 'STAGE_14_OVERALL_STATUS=REOPENED'

@@ -310,3 +310,9 @@ Migration repair now derives its anchor checksum and later-version boundary from
 plan. Repository nullable arguments are concrete driver values, missing source evidence fails
 closed instead of becoming `unknown`, and UUID array queries keep UUID columns typed. Stage 14
 remains reopened for trajectory profiling and the final closure audit.
+
+<!-- STAGE-14-35-TRAJECTORY-QUERY-CONSOLIDATION-AND-PROFILING:README -->
+
+## Stage 14 Trajectory Query Consolidation and Profiling
+
+Trajectory parent, analytical, segment, and coverage-gap reads now share canonical SQL and dedicated row scanners. Every Trajectory read boundary preserves caller-owned context. Migration 021 adds order-aligned parent indexes, retires one duplicate segment index, and a permanent EXPLAIN ANALYZE gate verifies index eligibility. Stage 14 remains reopened only for the independent final closure audit.
