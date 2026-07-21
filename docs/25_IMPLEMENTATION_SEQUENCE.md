@@ -785,3 +785,11 @@ audit coverage. Stage 14 remains reopened for Stage 14.32 Airport pagination con
 Completed: bounded `(name, id)` keyset pages, a backward-compatible complete-list adapter,
 one canonical Airport row scanner, duplicate-name PostgreSQL integration evidence, and
 permanent anti-offset audit gates. Stage 14 remains reopened.
+
+<!-- STAGE-14-33-EXPLICIT-REPOSITORY-CONTEXT-AND-TRAJECTORY-WRITE-MODE:IMPLEMENTATION -->
+
+## Stage 14.33 — Explicit Repository Context and Trajectory Write Mode
+
+Completed: shared nil-context rejection for database-reaching Airport, Flight State, and
+Trajectory paths; explicit live and reconciled Trajectory write requests; invalid-mode
+validation; permanent source and unit gates. Stage 14 remains reopened.

@@ -292,3 +292,12 @@ Stage 14 remains reopened for the separate Airport pagination contract.
 Airport reads now expose bounded keyset pages ordered by the complete `(name, id)` key.
 The legacy complete-list method delegates to those pages, and `ListPage` plus `GetByICAO`
 share one canonical row scanner. Stage 14 remains reopened for the remaining recorded scope.
+
+<!-- STAGE-14-33-EXPLICIT-REPOSITORY-CONTEXT-AND-TRAJECTORY-WRITE-MODE:README -->
+
+## Stage 14 Explicit Repository Context and Trajectory Write Mode
+
+Database-reaching Airport, Flight State, and Trajectory repository paths now reject a nil
+caller context instead of silently inventing `context.Background()`. Trajectory persistence
+uses an explicit live or reconciled write request rather than an empty task identifier as a
+hidden mode switch. Stage 14 remains reopened for the remaining recorded scope.

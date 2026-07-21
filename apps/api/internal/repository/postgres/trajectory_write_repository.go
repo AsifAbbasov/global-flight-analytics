@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/reconciliation"
+
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/jackc/pgx/v5"
 )
@@ -14,52 +14,45 @@ func (repository *TrajectoryRepository) SaveTrajectory(
 ) error {
 	return repository.saveTrajectory(
 		ctx,
-		"",
-		0,
-		item,
+		newLiveTrajectoryWriteRequest(item),
 	)
 }
+
 func (repository *TrajectoryRepository) SaveReconciledTrajectory(
 	ctx context.Context,
 	taskID string,
 	attemptCount int,
 	item trajectory.FlightTrajectory,
 ) error {
-	normalizedTaskID := reconciliation.NormalizeTaskID(
+	request, err := newReconciledTrajectoryWriteRequest(
 		taskID,
-	)
-	if normalizedTaskID == "" {
-		return reconciliation.ErrTaskIDRequired
-	}
-
-	if attemptCount <= 0 {
-		return reconciliation.ErrAttemptCountInvalid
-	}
-
-	return repository.saveTrajectory(
-		ctx,
-		normalizedTaskID,
 		attemptCount,
 		item,
 	)
+	if err != nil {
+		return err
+	}
+	return repository.saveTrajectory(ctx, request)
 }
+
 func (repository *TrajectoryRepository) saveTrajectory(
 	ctx context.Context,
-	reconciliationTaskID string,
-	attemptCount int,
-	item trajectory.FlightTrajectory,
+	request trajectoryWriteRequest,
 ) error {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return err
+	}
+	if err := request.validate(); err != nil {
+		return err
 	}
 
+	item := request.item
 	if err := validateTrajectoryRelationalIntegrity(item); err != nil {
 		return fmt.Errorf(
 			"validate trajectory relational integrity: %w",
 			err,
 		)
 	}
-
 	if err := validatePersistedFlightIdentity(item); err != nil {
 		return fmt.Errorf(
 			"validate flight identity metadata: %w",
@@ -67,64 +60,60 @@ func (repository *TrajectoryRepository) saveTrajectory(
 		)
 	}
 
-	tx, err := repository.db.BeginTx(
-		ctx,
-		pgx.TxOptions{},
-	)
+	tx, err := repository.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
 
 	committed := false
-
 	defer func() {
 		if !committed {
 			rollbackRepositoryTransaction(tx)
 		}
 	}()
 
-	if reconciliationTaskID != "" {
+	if request.isReconciled() {
 		if err := assertReconciliationAttemptOwned(
 			ctx,
 			tx,
-			reconciliationTaskID,
-			attemptCount,
+			request.reconciliationTaskID,
+			request.attemptCount,
 		); err != nil {
 			return err
 		}
-	}
-
-	if reconciliationTaskID != "" {
 		if err := deleteExistingReconciledTrajectory(
 			ctx,
 			tx,
-			reconciliationTaskID,
+			request.reconciliationTaskID,
 		); err != nil {
 			return err
 		}
 	}
 
 	var trajectoryID string
-
-	if reconciliationTaskID == "" {
+	switch request.mode {
+	case trajectoryWriteModeLive:
 		trajectoryID, err = repository.insertFlightTrajectory(
 			ctx,
 			tx,
 			item,
 		)
-	} else {
+	case trajectoryWriteModeReconciled:
 		trajectoryID, err = repository.insertReconciledFlightTrajectory(
 			ctx,
 			tx,
-			reconciliationTaskID,
+			request.reconciliationTaskID,
 			item,
+		)
+	default:
+		return fmt.Errorf(
+			"%w: got %d",
+			ErrTrajectoryWriteModeInvalid,
+			request.mode,
 		)
 	}
 	if err != nil {
-		return fmt.Errorf(
-			"insert flight trajectory: %w",
-			err,
-		)
+		return fmt.Errorf("insert flight trajectory: %w", err)
 	}
 
 	segmentIDs, err := repository.insertTrajectorySegments(
@@ -134,10 +123,7 @@ func (repository *TrajectoryRepository) saveTrajectory(
 		item.Segments,
 	)
 	if err != nil {
-		return fmt.Errorf(
-			"insert trajectory segments: %w",
-			err,
-		)
+		return fmt.Errorf("insert trajectory segments: %w", err)
 	}
 
 	if err := repository.insertCoverageGaps(
@@ -147,19 +133,12 @@ func (repository *TrajectoryRepository) saveTrajectory(
 		segmentIDs,
 		item.CoverageGaps,
 	); err != nil {
-		return fmt.Errorf(
-			"insert coverage gaps: %w",
-			err,
-		)
+		return fmt.Errorf("insert coverage gaps: %w", err)
 	}
 
-	if err := tx.Commit(
-		ctx,
-	); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
-
 	committed = true
-
 	return nil
 }

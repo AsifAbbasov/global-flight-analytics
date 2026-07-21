@@ -39,8 +39,8 @@ func (r *FlightStateRepository) SaveFlightStates(
 		return ErrFlightStateRepositoryPoolRequired
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return err
 	}
 
 	tx, err := r.db.BeginTx(

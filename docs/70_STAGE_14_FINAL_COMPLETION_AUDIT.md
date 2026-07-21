@@ -297,3 +297,12 @@ Stage 14.32 removes the unbounded Airport catalog query by introducing keyset `L
 reads ordered by `(name, id)`. The legacy `List` contract is preserved as a bounded-page
 adapter, and all Airport read paths use one scanner. The overall Stage 14 status remains
 reopened for the remaining explicitly recorded backlog.
+
+<!-- STAGE-14-33-EXPLICIT-REPOSITORY-CONTEXT-AND-TRAJECTORY-WRITE-MODE:FINAL-AUDIT -->
+
+## Reopened Scope Update: Explicit Context and Trajectory Write Mode
+
+Stage 14.33 removes silent nil-context replacement from the selected PostgreSQL repository
+boundaries and replaces the Trajectory empty-task-identifier mode sentinel with a validated
+typed request. The independent rollback background context remains intentional cleanup.
+The overall Stage 14 status remains reopened for the remaining recorded backlog.

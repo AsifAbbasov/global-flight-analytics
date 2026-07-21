@@ -655,3 +655,13 @@ contract boundary.
 Defines the bounded Airport page contract, stable `(name, id)` keyset cursor, legacy
 complete-list adapter, canonical row scanner, duplicate-name PostgreSQL integration,
 anti-offset regression gates, acceptance evidence, and remaining reopened scope.
+
+<!-- STAGE-14-33-EXPLICIT-REPOSITORY-CONTEXT-AND-TRAJECTORY-WRITE-MODE:DOCUMENT-INDEX -->
+
+## Document 75
+
+`75_STAGE_14_33_EXPLICIT_REPOSITORY_CONTEXT_AND_TRAJECTORY_WRITE_MODE.md`
+
+Defines caller-owned PostgreSQL repository context semantics, the intentionally independent
+rollback context, explicit live and reconciled Trajectory write requests, invalid-mode
+validation, preserved behavior, permanent regression gates, and remaining reopened scope.

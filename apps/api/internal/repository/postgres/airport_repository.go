@@ -47,8 +47,8 @@ func (repository *AirportRepository) GetByICAO(
 	ctx context.Context,
 	icao string,
 ) (airport.Airport, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return airport.Airport{}, err
 	}
 
 	record, err := scanAirportRecord(

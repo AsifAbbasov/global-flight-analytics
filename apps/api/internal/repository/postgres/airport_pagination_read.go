@@ -17,8 +17,8 @@ func (repository *AirportRepository) ListPage(
 	if err != nil {
 		return airport.ListPage{}, err
 	}
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return airport.ListPage{}, err
 	}
 
 	queryLimit := normalized.Limit + 1

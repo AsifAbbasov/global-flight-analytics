@@ -60,6 +60,7 @@ var stage14Documents = []string{
 	"72_STAGE_14_30_POSTGRES_CORRECTNESS_HARDENING.md",
 	"73_STAGE_14_31_POSTGRES_WRITE_REPOSITORY_DECOMPOSITION.md",
 	"74_STAGE_14_32_AIRPORT_KEYSET_PAGINATION.md",
+	"75_STAGE_14_33_EXPLICIT_REPOSITORY_CONTEXT_AND_TRAJECTORY_WRITE_MODE.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -71,6 +72,7 @@ var trajectoryOwnerFiles = []string{
 	"apps/api/internal/repository/postgres/trajectory_reconciliation_write.go",
 	"apps/api/internal/repository/postgres/trajectory_segment_read.go",
 	"apps/api/internal/repository/postgres/trajectory_segment_write.go",
+	"apps/api/internal/repository/postgres/trajectory_write_mode.go",
 	"apps/api/internal/repository/postgres/trajectory_write_repository.go",
 }
 
@@ -437,6 +439,7 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"git diff --check",
 				"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
 				"STAGE_14_32_AIRPORT_PAGINATION=PASS",
+				"STAGE_14_33_EXPLICIT_CONTEXT_AND_WRITE_MODE=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			},
 			MaxLines: 320,
@@ -807,6 +810,76 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 				"TestAirportListPageUsesStableDuplicateNameCursor",
 				"TestAirportListLegacyAdapterCollectsBoundedPages",
 				"Alpha Airport",
+			},
+		},
+		{
+			Name: "Repository context validation has one owner",
+			Path: "apps/api/internal/repository/postgres/repository_context.go",
+			Required: []string{
+				"ErrRepositoryContextRequired",
+				"func requireRepositoryContext(",
+			},
+			Forbidden: []string{"context.Background()"},
+		},
+		{
+			Name:      "Airport reads preserve caller-owned context",
+			Path:      "apps/api/internal/repository/postgres/airport_repository.go",
+			Required:  []string{"requireRepositoryContext(ctx)"},
+			Forbidden: []string{"ctx = context.Background()"},
+		},
+		{
+			Name:      "Airport page reads preserve caller-owned context",
+			Path:      "apps/api/internal/repository/postgres/airport_pagination_read.go",
+			Required:  []string{"requireRepositoryContext(ctx)"},
+			Forbidden: []string{"ctx = context.Background()"},
+		},
+		{
+			Name:      "Airport import writes preserve caller-owned context",
+			Path:      "apps/api/internal/repository/postgres/airport_import_repository.go",
+			Required:  []string{"requireRepositoryContext(ctx)"},
+			Forbidden: []string{"ctx = context.Background()"},
+		},
+		{
+			Name:      "Flight State writes preserve caller-owned context",
+			Path:      "apps/api/internal/repository/postgres/flightstate_repository.go",
+			Required:  []string{"requireRepositoryContext(ctx)"},
+			Forbidden: []string{"ctx = context.Background()"},
+		},
+		{
+			Name: "Trajectory writes preserve caller-owned context and explicit mode",
+			Path: "apps/api/internal/repository/postgres/trajectory_write_repository.go",
+			Required: []string{
+				"requireRepositoryContext(ctx)",
+				"newLiveTrajectoryWriteRequest(item)",
+				"newReconciledTrajectoryWriteRequest(",
+				"request.isReconciled()",
+				"switch request.mode",
+			},
+			Forbidden: []string{
+				"ctx = context.Background()",
+				`saveTrajectory(ctx, "",`,
+				`reconciliationTaskID == ""`,
+				`reconciliationTaskID != ""`,
+			},
+		},
+		{
+			Name: "Trajectory write mode has a dedicated validator",
+			Path: "apps/api/internal/repository/postgres/trajectory_write_mode.go",
+			Required: []string{
+				"trajectoryWriteModeLive",
+				"trajectoryWriteModeReconciled",
+				"type trajectoryWriteRequest struct",
+				"func newLiveTrajectoryWriteRequest(",
+				"func newReconciledTrajectoryWriteRequest(",
+				"func (request trajectoryWriteRequest) validate() error",
+			},
+		},
+		{
+			Name: "Repository boundary contract tests remain permanent",
+			Path: "apps/api/internal/repository/postgres/repository_boundary_contract_test.go",
+			Required: []string{
+				"TestRepositoryOperationsDoNotInventCallerContext",
+				"TestTrajectoryWriteCoordinatorUsesExplicitMode",
 			},
 		},
 		{

@@ -28,8 +28,8 @@ func (
 		return 0, nil
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return 0, err
 	}
 
 	tx, err := r.pool.BeginTx(

@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 34 {
-		t.Fatalf("document count = %d, want 34", len(stage14Documents))
+	if len(stage14Documents) != 35 {
+		t.Fatalf("document count = %d, want 35", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -338,6 +338,61 @@ func TestAuditRepositoryDetectsAirportOffsetPagination(t *testing.T) {
 	}
 }
 
+func TestAuditRepositoryDetectsInventedRepositoryContext(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"repository",
+		"postgres",
+		"airport_repository.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content = append(content, []byte("// ctx = context.Background()\n")...)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureDetail(failures, "ctx = context.Background()") {
+		t.Fatalf("invented repository context was not detected: %#v", failures)
+	}
+}
+
+func TestAuditRepositoryDetectsImplicitTrajectoryWriteMode(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"repository",
+		"postgres",
+		"trajectory_write_repository.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content = append(content, []byte("// reconciliationTaskID == \"\"\n")...)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureCheck(
+		failures,
+		"Trajectory writes preserve caller-owned context and explicit mode",
+	) {
+		t.Fatalf("implicit Trajectory write mode audit rule was not triggered: %#v", failures)
+	}
+}
+
 func TestRunReturnsFailureForMissingDocument(t *testing.T) {
 	root := createCompleteFixture(t)
 	missing := filepath.Join(root, "docs", stage14Documents[len(stage14Documents)-1])
@@ -438,6 +493,7 @@ func createCompleteFixture(t *testing.T) string {
 			"git diff --check",
 			"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
 			"STAGE_14_32_AIRPORT_PAGINATION=PASS",
+			"STAGE_14_33_EXPLICIT_CONTEXT_AND_WRITE_MODE=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 		}, "\n")+"\n",
 	)
@@ -566,19 +622,19 @@ func createCompleteFixture(t *testing.T) string {
 		t,
 		root,
 		"apps/api/internal/repository/postgres/airport_import_repository.go",
-		"package postgres\n// executeAirportImport(\n// rollbackRepositoryTransaction(tx)\n",
+		"package postgres\n// executeAirportImport(\n// rollbackRepositoryTransaction(tx)\n// requireRepositoryContext(ctx)\n",
 	)
 	writeFixtureFile(
 		t,
 		root,
 		"apps/api/internal/repository/postgres/flightstate_repository.go",
-		"package postgres\n// saveFlightStateBatch(\n// rollbackRepositoryTransaction(tx)\n",
+		"package postgres\n// saveFlightStateBatch(\n// rollbackRepositoryTransaction(tx)\n// requireRepositoryContext(ctx)\n",
 	)
 	writeFixtureFile(
 		t,
 		root,
 		"apps/api/internal/repository/postgres/trajectory_write_repository.go",
-		"package postgres\n// rollbackRepositoryTransaction(tx)\n",
+		"package postgres\n// rollbackRepositoryTransaction(tx)\n// requireRepositoryContext(ctx)\n// newLiveTrajectoryWriteRequest(item)\n// newReconciledTrajectoryWriteRequest(\n// request.isReconciled()\n// switch request.mode\n",
 	)
 	writeFixtureFile(
 		t,
@@ -620,7 +676,7 @@ func createCompleteFixture(t *testing.T) string {
 		t,
 		root,
 		"apps/api/internal/repository/postgres/airport_repository.go",
-		"package postgres\n// airport.MaximumListPageSize\n// repository.ListPage(ctx, request)\n// scanAirportRecord(\n",
+		"package postgres\n// airport.MaximumListPageSize\n// repository.ListPage(ctx, request)\n// scanAirportRecord(\n// requireRepositoryContext(ctx)\n",
 	)
 	writeFixtureFile(
 		t,
@@ -632,7 +688,7 @@ func createCompleteFixture(t *testing.T) string {
 		t,
 		root,
 		"apps/api/internal/repository/postgres/airport_pagination_read.go",
-		"package postgres\n// func (repository *AirportRepository) ListPage(\n// normalized.Limit + 1\n// scanAirportRecord(rows)\n// buildAirportPage(records, normalized.Limit)\n",
+		"package postgres\n// func (repository *AirportRepository) ListPage(\n// normalized.Limit + 1\n// scanAirportRecord(rows)\n// buildAirportPage(records, normalized.Limit)\n// requireRepositoryContext(ctx)\n",
 	)
 	writeFixtureFile(
 		t,
@@ -657,6 +713,24 @@ func createCompleteFixture(t *testing.T) string {
 		root,
 		"apps/api/internal/repository/postgres/airport_pagination_integration_test.go",
 		"package postgres\n// TestAirportListPageUsesStableDuplicateNameCursor\n// TestAirportListLegacyAdapterCollectsBoundedPages\n// Alpha Airport\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/repository_context.go",
+		"package postgres\\n// ErrRepositoryContextRequired\\n// func requireRepositoryContext(\\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/trajectory_write_mode.go",
+		"package postgres\\n// trajectoryWriteModeLive\\n// trajectoryWriteModeReconciled\\n// type trajectoryWriteRequest struct\\n// func newLiveTrajectoryWriteRequest(\\n// func newReconciledTrajectoryWriteRequest(\\n// func (request trajectoryWriteRequest) validate() error\\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/repository_boundary_contract_test.go",
+		"package postgres\\n// TestRepositoryOperationsDoNotInventCallerContext\\n// TestTrajectoryWriteCoordinatorUsesExplicitMode\\n",
 	)
 	writeFixtureFile(
 		t,
