@@ -820,3 +820,13 @@ Stage 14 is closed after the independent cross-stack gate passes on the committe
 baseline. Documents 41 through 78 form the contiguous evidence register. The authoritative
 machine status is `STAGE_14_OVERALL_STATUS=CLOSED`. Future work belongs to a later stage and
 must not silently reopen Stage 14 without a new documented blocker and explicit status change.
+
+<!-- POST-CLOSURE-MIGRATOR-CONTEXT-HARDENING:IMPLEMENTATION -->
+
+## Post-Closure Migrator Context Hardening
+
+Status: IMPLEMENTED WITHOUT REOPENING STAGE 14.
+
+The migrator now rejects nil caller context explicitly through ErrMigrationContextRequired.
+The existing Stage 14 cross-stack gate permanently protects this contract. Stage 14 remains
+closed because this is a corrective hardening increment outside the recorded Stage 14 backlog.

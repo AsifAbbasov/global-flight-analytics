@@ -325,3 +325,11 @@ Stage 14 is closed. The independent closure increment reruns the complete source
 race, security, PostgreSQL, Trajectory profiling, frontend production, Docker image, and
 container health gates after Stage 14.35 is already committed. The authoritative machine
 status is `STAGE_14_OVERALL_STATUS=CLOSED`.
+
+<!-- POST-CLOSURE-MIGRATOR-CONTEXT-HARDENING:README -->
+
+## Post-Closure Migrator Context Hardening
+
+The PostgreSQL migrator now rejects a nil caller context at every public database-reaching
+operation and at the advisory-lock boundary. Independent bounded cleanup contexts remain for
+rollback, advisory-lock release, and forced connection close. Stage 14 remains closed.

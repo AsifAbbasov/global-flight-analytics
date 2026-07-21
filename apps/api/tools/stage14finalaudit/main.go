@@ -454,6 +454,7 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS",
 				"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
 				"STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS",
+				"POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 				"STAGE_14_OVERALL_STATUS=CLOSED",
 			},
@@ -730,6 +731,51 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 				"context.WithTimeout(",
 				"context.Background()",
 				"repositoryRollbackTimeout",
+			},
+		},
+		{
+			Name: "Migrator operations reject nil caller context",
+			Path: "apps/api/internal/database/migrator/runner.go",
+			Required: []string{
+				"ErrMigrationContextRequired",
+				"func requireMigrationContext(",
+				"func (runner *Runner) EnsureSchemaMigrations(",
+				"func (runner *Runner) Status(",
+				"func (runner *Runner) ApplyPending(",
+				"withMigrationLock(",
+				"context.WithTimeout(",
+				"context.Background()",
+				"migrationLockReleaseTimeout",
+			},
+			Forbidden: []string{
+				"ctx = context.Background()",
+			},
+		},
+		{
+			Name: "Migrator context contract tests remain permanent",
+			Path: "apps/api/internal/database/migrator/context_contract_test.go",
+			Required: []string{
+				"TestMigratorPublicOperationsRejectNilContext",
+				"TestWithMigrationLockRejectsNilContextBeforePoolAccess",
+				"TestMigratorContextSourceContract",
+				"TestMigratorCleanupContextsRemainIndependentAndBounded",
+			},
+		},
+		{
+			Name: "Post-closure migrator context document records the hardened boundary",
+			Path: "docs/79_POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING.md",
+			Required: []string{
+				"Stage 14 remains closed",
+				"ErrMigrationContextRequired",
+				"POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS",
+			},
+		},
+		{
+			Name: "Document index registers post-closure migrator context hardening",
+			Path: "docs/DOCUMENT_INDEX.md",
+			Required: []string{
+				"POST-CLOSURE-MIGRATOR-CONTEXT-HARDENING:DOCUMENT-INDEX",
+				"79_POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING.md",
 			},
 		},
 		{

@@ -20,8 +20,9 @@ import (
 )
 
 var (
-	ErrMigrationPoolRequired = errors.New("migration database pool is required")
-	ErrMigrationDirRequired  = errors.New("migration directory is required")
+	ErrMigrationPoolRequired    = errors.New("migration database pool is required")
+	ErrMigrationDirRequired     = errors.New("migration directory is required")
+	ErrMigrationContextRequired = errors.New("migration context is required")
 )
 
 const (
@@ -81,7 +82,17 @@ func NewRunner(pool *pgxpool.Pool, migrationsDir string) (*Runner, error) {
 	}, nil
 }
 
+func requireMigrationContext(ctx context.Context) error {
+	if ctx == nil {
+		return ErrMigrationContextRequired
+	}
+	return nil
+}
+
 func (runner *Runner) EnsureSchemaMigrations(ctx context.Context) error {
+	if err := requireMigrationContext(ctx); err != nil {
+		return err
+	}
 	return runner.ensureSchemaMigrations(ctx, runner.pool)
 }
 
@@ -91,6 +102,9 @@ func (
 	ctx context.Context,
 	executor migrationExecutor,
 ) error {
+	if err := requireMigrationContext(ctx); err != nil {
+		return err
+	}
 	_, err := executor.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
 			version text PRIMARY KEY,
@@ -160,6 +174,9 @@ func (runner *Runner) ListMigrations() ([]Migration, error) {
 }
 
 func (runner *Runner) Status(ctx context.Context) ([]MigrationStatus, error) {
+	if err := requireMigrationContext(ctx); err != nil {
+		return nil, err
+	}
 	if err := runner.EnsureSchemaMigrations(ctx); err != nil {
 		return nil, err
 	}
@@ -190,8 +207,8 @@ func (runner *Runner) Status(ctx context.Context) ([]MigrationStatus, error) {
 }
 
 func (runner *Runner) ApplyPending(ctx context.Context) ([]Migration, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireMigrationContext(ctx); err != nil {
+		return nil, err
 	}
 
 	appliedNow := make([]Migration, 0)
@@ -254,6 +271,9 @@ func (
 	conn *pgxpool.Conn,
 	migration Migration,
 ) error {
+	if err := requireMigrationContext(ctx); err != nil {
+		return err
+	}
 	sqlBytes, err := os.ReadFile(migration.Path)
 	if err != nil {
 		return fmt.Errorf("read migration %s: %w", migration.Version, err)
@@ -301,8 +321,8 @@ func (
 	ctx context.Context,
 	operation func(*pgxpool.Conn) error,
 ) (resultErr error) {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireMigrationContext(ctx); err != nil {
+		return err
 	}
 
 	conn, err := runner.pool.Acquire(ctx)
@@ -456,6 +476,9 @@ type appliedMigrationRecord struct {
 func (runner *Runner) appliedMigrations(
 	ctx context.Context,
 ) (map[string]appliedMigrationRecord, error) {
+	if err := requireMigrationContext(ctx); err != nil {
+		return nil, err
+	}
 	return runner.appliedMigrationsWith(ctx, runner.pool)
 }
 
@@ -465,6 +488,9 @@ func (
 	ctx context.Context,
 	executor migrationExecutor,
 ) (map[string]appliedMigrationRecord, error) {
+	if err := requireMigrationContext(ctx); err != nil {
+		return nil, err
+	}
 	rows, err := executor.Query(ctx, `
 		SELECT version, checksum, applied_at
 		FROM schema_migrations;

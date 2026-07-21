@@ -686,3 +686,13 @@ permanent regression gates, and the remaining profiling and closure scope.
 Defines the committed Stage 14.35 closure baseline, complete Documents 41–78 evidence register,
 authoritative cross-stack command, mandatory final markers, anti-reopening regression gate,
 preserved boundaries, evidence limitations, and formal Stage 14 closed decision.
+
+<!-- POST-CLOSURE-MIGRATOR-CONTEXT-HARDENING:DOCUMENT-INDEX -->
+
+## Document 79
+
+`79_POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING.md`
+
+Defines explicit nil-context rejection for PostgreSQL migration execution and advisory locking,
+preserves bounded independent cleanup contexts, adds permanent regression protection, and
+records that Stage 14 remains closed.

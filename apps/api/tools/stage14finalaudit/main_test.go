@@ -472,6 +472,24 @@ func TestAuditRepositoryDetectsMissingTrajectoryQueryProfileMigration(t *testing
 	}
 }
 
+func TestAuditRepositoryDetectsMigratorNilContextFallback(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(root, "apps", "api", "internal", "database", "migrator", "runner.go")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content = append(content, []byte("// ctx = context.Background()\n")...)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureCheck(failures, "Migrator operations reject nil caller context") {
+		t.Fatalf("migrator nil-context fallback was not detected: %#v", failures)
+	}
+}
+
 func TestAuditRepositoryRejectsReopenedOverallStatus(t *testing.T) {
 	root := createCompleteFixture(t)
 	path := filepath.Join(root, "scripts", "verify-stage-14-completion.sh")
@@ -564,7 +582,26 @@ func createCompleteFixture(t *testing.T) string {
 		index.WriteString(fileName)
 		index.WriteByte('\n')
 	}
+	index.WriteString("<!-- POST-CLOSURE-MIGRATOR-CONTEXT-HARDENING:DOCUMENT-INDEX -->\n79_POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING.md\n")
 	writeFixtureFile(t, root, "docs/DOCUMENT_INDEX.md", index.String())
+	writeFixtureFile(
+		t,
+		root,
+		"docs/79_POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING.md",
+		"Stage 14 remains closed\nErrMigrationContextRequired\nPOST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/database/migrator/runner.go",
+		"package migrator\n// ErrMigrationContextRequired\n// func requireMigrationContext(\n// func (runner *Runner) EnsureSchemaMigrations(\n// func (runner *Runner) Status(\n// func (runner *Runner) ApplyPending(\n// func (runner *Runner) withMigrationLock(\n// context.WithTimeout(\n// context.Background()\n// migrationLockReleaseTimeout\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/database/migrator/context_contract_test.go",
+		"package migrator\n// TestMigratorPublicOperationsRejectNilContext\n// TestWithMigrationLockRejectsNilContextBeforePoolAccess\n// TestMigratorContextSourceContract\n// TestMigratorCleanupContextsRemainIndependentAndBounded\n",
+	)
 
 	writeFixtureFile(
 		t,
@@ -602,6 +639,7 @@ func createCompleteFixture(t *testing.T) string {
 			"STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS",
 			"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
 			"STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS",
+			"POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			"STAGE_14_OVERALL_STATUS=CLOSED",
 		}, "\n")+"\n",
