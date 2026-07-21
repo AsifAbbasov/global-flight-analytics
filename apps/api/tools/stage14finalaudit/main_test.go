@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 33 {
-		t.Fatalf("document count = %d, want 33", len(stage14Documents))
+	if len(stage14Documents) != 34 {
+		t.Fatalf("document count = %d, want 34", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -279,6 +279,65 @@ func TestAuditRepositoryDetectsFlightStateWriteResponsibilityLeak(t *testing.T) 
 	}
 }
 
+func TestAuditRepositoryDetectsRetiredAirportElevationSourceOwner(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"repository",
+		"postgres",
+		"airport_elevation_semantics_test.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := strings.ReplaceAll(
+		string(content),
+		"airport_read_queries.go",
+		"airport_repository.go",
+	)
+	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureDetail(failures, "airport_read_queries.go") {
+		t.Fatalf("missing canonical Airport query owner was not detected: %#v", failures)
+	}
+	if !containsFailureDetail(failures, "airport_repository.go") {
+		t.Fatalf("retired Airport elevation source owner was not detected: %#v", failures)
+	}
+}
+
+func TestAuditRepositoryDetectsAirportOffsetPagination(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"repository",
+		"postgres",
+		"airport_read_queries.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content = append(content, []byte("// OFFSET $4\n")...)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureDetail(failures, "OFFSET") {
+		t.Fatalf("Airport offset pagination was not detected: %#v", failures)
+	}
+}
+
 func TestRunReturnsFailureForMissingDocument(t *testing.T) {
 	root := createCompleteFixture(t)
 	missing := filepath.Join(root, "docs", stage14Documents[len(stage14Documents)-1])
@@ -378,6 +437,7 @@ func createCompleteFixture(t *testing.T) string {
 			"docker run",
 			"git diff --check",
 			"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
+			"STAGE_14_32_AIRPORT_PAGINATION=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 		}, "\n")+"\n",
 	)
@@ -549,6 +609,54 @@ func createCompleteFixture(t *testing.T) string {
 		root,
 		"apps/api/internal/repository/postgres/stage14_correctness_constraints_integration_test.go",
 		"package postgres\n// migrator.NewRunner\n// runner.ApplyPending\n// assertStage14CorrectnessPostgresCode(t, err, \"23514\")\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/domain/airport/pagination.go",
+		"package airport\n// DefaultListPageSize\n// MaximumListPageSize\n// type ListCursor struct\n// type ListRequest struct\n// type ListPage struct\n// func NormalizeListRequest(\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_repository.go",
+		"package postgres\n// airport.MaximumListPageSize\n// repository.ListPage(ctx, request)\n// scanAirportRecord(\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_read_queries.go",
+		"package postgres\n// ORDER BY a.name ASC, a.id ASC\n// a.name > $1\n// a.name = $1\n// a.id > $2::uuid\n// LIMIT $1\n// LIMIT $3\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_pagination_read.go",
+		"package postgres\n// func (repository *AirportRepository) ListPage(\n// normalized.Limit + 1\n// scanAirportRecord(rows)\n// buildAirportPage(records, normalized.Limit)\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_row_scan.go",
+		"package postgres\n// func scanAirportRecord(\n// applyAirportElevationDatabaseValue(\n// elevationFeet pgtype.Int4\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_elevation_semantics_test.go",
+		"package postgres\n// airport_read_queries.go\n// canonical Airport select columns must own nullable elevation exactly once\n// all Airport read queries must share the canonical select columns\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_pagination_contract_test.go",
+		"package postgres\n// TestAirportPaginationContractRemainsKeysetBounded\n// TestAirportReadPathsShareOneRowScanner\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/airport_pagination_integration_test.go",
+		"package postgres\n// TestAirportListPageUsesStableDuplicateNameCursor\n// TestAirportListLegacyAdapterCollectsBoundedPages\n// Alpha Airport\n",
 	)
 	writeFixtureFile(
 		t,

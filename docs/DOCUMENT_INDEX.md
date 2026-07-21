@@ -645,3 +645,13 @@ Defines responsibility-based decomposition of Airport Import and Flight State Po
 write paths, preserved public and transactional behavior, dedicated SQL and preparation
 owners, parser-backed anti-monolith gates, acceptance evidence, and the separate pagination
 contract boundary.
+
+<!-- STAGE-14-32-AIRPORT-KEYSET-PAGINATION:DOCUMENT-INDEX -->
+
+## Document 74
+
+`74_STAGE_14_32_AIRPORT_KEYSET_PAGINATION.md`
+
+Defines the bounded Airport page contract, stable `(name, id)` keyset cursor, legacy
+complete-list adapter, canonical row scanner, duplicate-name PostgreSQL integration,
+anti-offset regression gates, acceptance evidence, and remaining reopened scope.

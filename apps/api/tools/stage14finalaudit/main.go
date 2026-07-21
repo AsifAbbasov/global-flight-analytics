@@ -59,6 +59,7 @@ var stage14Documents = []string{
 	"71_STAGE_14_29_MIGRATION_CATALOG_INTEGRITY.md",
 	"72_STAGE_14_30_POSTGRES_CORRECTNESS_HARDENING.md",
 	"73_STAGE_14_31_POSTGRES_WRITE_REPOSITORY_DECOMPOSITION.md",
+	"74_STAGE_14_32_AIRPORT_KEYSET_PAGINATION.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -435,6 +436,7 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"docker run",
 				"git diff --check",
 				"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
+				"STAGE_14_32_AIRPORT_PAGINATION=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			},
 			MaxLines: 320,
@@ -719,6 +721,92 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 				"migrator.NewRunner",
 				"runner.ApplyPending",
 				"assertStage14CorrectnessPostgresCode(t, err, \"23514\")",
+			},
+		},
+		{
+			Name: "Airport domain exposes a bounded page contract",
+			Path: "apps/api/internal/domain/airport/pagination.go",
+			Required: []string{
+				"DefaultListPageSize",
+				"MaximumListPageSize",
+				"type ListCursor struct",
+				"type ListRequest struct",
+				"type ListPage struct",
+				"func NormalizeListRequest(",
+			},
+		},
+		{
+			Name: "Airport legacy list delegates to bounded pages",
+			Path: "apps/api/internal/repository/postgres/airport_repository.go",
+			Required: []string{
+				"airport.MaximumListPageSize",
+				"repository.ListPage(ctx, request)",
+				"scanAirportRecord(",
+			},
+			Forbidden: []string{
+				"ORDER BY a.name ASC;",
+				"rows.Scan(",
+				"FROM airports",
+			},
+			MaxLines: 100,
+		},
+		{
+			Name: "Airport keyset queries remain stable and bounded",
+			Path: "apps/api/internal/repository/postgres/airport_read_queries.go",
+			Required: []string{
+				"ORDER BY a.name ASC, a.id ASC",
+				"a.name > $1",
+				"a.name = $1",
+				"a.id > $2::uuid",
+				"LIMIT $1",
+				"LIMIT $3",
+			},
+			Forbidden: []string{"OFFSET"},
+		},
+		{
+			Name: "Airport page reader owns lookahead pagination",
+			Path: "apps/api/internal/repository/postgres/airport_pagination_read.go",
+			Required: []string{
+				"func (repository *AirportRepository) ListPage(",
+				"normalized.Limit + 1",
+				"scanAirportRecord(rows)",
+				"buildAirportPage(records, normalized.Limit)",
+			},
+		},
+		{
+			Name: "Airport row scanning has one dedicated owner",
+			Path: "apps/api/internal/repository/postgres/airport_row_scan.go",
+			Required: []string{
+				"func scanAirportRecord(",
+				"applyAirportElevationDatabaseValue(",
+				"elevationFeet pgtype.Int4",
+			},
+		},
+		{
+			Name: "Airport elevation source test follows canonical query ownership",
+			Path: "apps/api/internal/repository/postgres/airport_elevation_semantics_test.go",
+			Required: []string{
+				"airport_read_queries.go",
+				"canonical Airport select columns must own nullable elevation exactly once",
+				"all Airport read queries must share the canonical select columns",
+			},
+			Forbidden: []string{"airport_repository.go"},
+		},
+		{
+			Name: "Airport pagination contract tests remain permanent",
+			Path: "apps/api/internal/repository/postgres/airport_pagination_contract_test.go",
+			Required: []string{
+				"TestAirportPaginationContractRemainsKeysetBounded",
+				"TestAirportReadPathsShareOneRowScanner",
+			},
+		},
+		{
+			Name: "Airport duplicate-name pagination integration remains permanent",
+			Path: "apps/api/internal/repository/postgres/airport_pagination_integration_test.go",
+			Required: []string{
+				"TestAirportListPageUsesStableDuplicateNameCursor",
+				"TestAirportListLegacyAdapterCollectsBoundedPages",
+				"Alpha Airport",
 			},
 		},
 		{

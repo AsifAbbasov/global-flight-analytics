@@ -284,3 +284,11 @@ Airport Import and Flight State PostgreSQL write paths now keep transaction coor
 separate from staging, merge, validation, mapping, and insert ownership. Permanent Go parser
 and Stage 14 audit gates prevent the coordinator methods from becoming monoliths again.
 Stage 14 remains reopened for the separate Airport pagination contract.
+
+<!-- STAGE-14-32-AIRPORT-KEYSET-PAGINATION:README -->
+
+## Stage 14 Airport Keyset Pagination
+
+Airport reads now expose bounded keyset pages ordered by the complete `(name, id)` key.
+The legacy complete-list method delegates to those pages, and `ListPage` plus `GetByICAO`
+share one canonical row scanner. Stage 14 remains reopened for the remaining recorded scope.

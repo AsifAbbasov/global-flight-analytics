@@ -31,15 +31,18 @@ func TestAirportRepositoryDoesNotCoalesceUnknownElevationToZero(t *testing.T) {
 		t.Fatal("resolve test file path")
 	}
 
-	content, err := os.ReadFile(filepath.Join(filepath.Dir(currentFile), "airport_repository.go"))
+	content, err := os.ReadFile(filepath.Join(filepath.Dir(currentFile), "airport_read_queries.go"))
 	if err != nil {
-		t.Fatalf("read airport repository source: %v", err)
+		t.Fatalf("read airport query owner source: %v", err)
 	}
 	text := string(content)
 	if strings.Contains(text, "COALESCE(a.elevation_ft, 0)") {
-		t.Fatal("airport repository still collapses NULL elevation to zero")
+		t.Fatal("airport queries still collapse NULL elevation to zero")
 	}
-	if strings.Count(text, "a.elevation_ft,") != 2 {
-		t.Fatal("both airport queries must select nullable elevation directly")
+	if strings.Count(text, "a.elevation_ft,") != 1 {
+		t.Fatal("canonical Airport select columns must own nullable elevation exactly once")
+	}
+	if strings.Count(text, "SELECT ` + airportSelectColumns") != 3 {
+		t.Fatal("all Airport read queries must share the canonical select columns")
 	}
 }

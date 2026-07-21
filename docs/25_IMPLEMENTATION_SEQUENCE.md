@@ -777,3 +777,11 @@ Stage 14 remains reopened for the separate maintainability and Clean Code regist
 Completed: Airport Import staging and merge ownership, Flight State preparation and insert
 ownership, narrow transaction coordinators, permanent architecture tests, and strict source
 audit coverage. Stage 14 remains reopened for Stage 14.32 Airport pagination contract work.
+
+<!-- STAGE-14-32-AIRPORT-KEYSET-PAGINATION:IMPLEMENTATION -->
+
+## Stage 14.32 — Airport Keyset Pagination
+
+Completed: bounded `(name, id)` keyset pages, a backward-compatible complete-list adapter,
+one canonical Airport row scanner, duplicate-name PostgreSQL integration evidence, and
+permanent anti-offset audit gates. Stage 14 remains reopened.

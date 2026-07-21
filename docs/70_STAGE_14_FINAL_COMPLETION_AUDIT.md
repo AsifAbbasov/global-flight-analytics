@@ -288,3 +288,12 @@ The Airport Import and Flight State write coordinators no longer own embedded SQ
 preparation workflows. Dedicated owner files and parser-backed architecture tests are part
 of the current-scope gate. The Stage 14 overall status remains reopened because Airport
 catalog pagination requires a separate domain contract migration.
+
+<!-- STAGE-14-32-AIRPORT-KEYSET-PAGINATION:FINAL-AUDIT -->
+
+## Reopened Scope Update: Airport Pagination
+
+Stage 14.32 removes the unbounded Airport catalog query by introducing keyset `ListPage`
+reads ordered by `(name, id)`. The legacy `List` contract is preserved as a bounded-page
+adapter, and all Airport read paths use one scanner. The overall Stage 14 status remains
+reopened for the remaining explicitly recorded backlog.
