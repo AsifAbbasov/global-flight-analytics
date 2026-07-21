@@ -268,35 +268,37 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Verify production migration catalog status
+      - name: Inspect production migration catalog before apply
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/global_flight_analytics_test?sslmode=disable
           DATABASE_CONNECT_TIMEOUT: 5s
           MIGRATIONS_DIR: ${{ github.workspace }}/database/migrations
           MIGRATION_TIMEOUT: 2m
-        shell: bash
-        run: |
-          migration_status="$(go run ./cmd/migrate -status)"
-          printf '%s\n' "$migration_status"
-          if printf '%s\n' "$migration_status" | grep -Eq ' pending$'; then
-            printf '%s\n' 'Production migration catalog contains pending migrations'
-            exit 1
-          fi
+        run: go run ./cmd/migrate -status
 
-      - name: Apply production migration catalog
+      - name: Apply and verify production migration catalog
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/global_flight_analytics_test?sslmode=disable
           DATABASE_CONNECT_TIMEOUT: 10s
           MIGRATIONS_DIR: ${{ github.workspace }}/database/migrations
           MIGRATION_TIMEOUT: 2m
+        shell: bash
         run: |
           go run ./cmd/migrate
           go run ./cmd/migrate
+          migration_status="$(go run ./cmd/migrate -status)"
+          printf '%s\n' "$migration_status"
+          if printf '%s\n' "$migration_status" | grep -Eq ' pending$'; then
+            printf '%s\n' 'Production migration catalog still contains pending migrations'
+            exit 1
+          fi
 
-      - name: Run PostgreSQL repository and Flight Feature integration tests
+      - name: Run PostgreSQL correctness integration tests
         run: |
           go test -count=1 \
             ./internal/repository/postgres \
-            ./internal/features/featurestore
+            ./internal/features/featurestore \
+            ./internal/routeintelligence/routestore \
+            ./internal/historicalintelligence/historicalaggregate
 
 # STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1

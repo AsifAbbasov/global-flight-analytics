@@ -58,9 +58,7 @@ func (r *FlightStateRepository) SaveFlightStates(
 
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(
-				ctx,
-			)
+			rollbackRepositoryTransaction(tx)
 		}
 	}()
 

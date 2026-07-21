@@ -624,3 +624,13 @@ Records the confirmed duplicate migration-version blocker, canonical renumbering
 Quality Parent Integrity to version 019, real repository-catalog validation through the
 production migrator, retirement of the false completion marker, and the explicit
 reopening of Stage 14.
+
+<!-- STAGE-14-30-POSTGRES-CORRECTNESS-HARDENING:DOCUMENT-INDEX -->
+
+## Document 72
+
+`72_STAGE_14_30_POSTGRES_CORRECTNESS_HARDENING.md`
+
+Defines Ingestion Run processed-count and error-evidence invariants, Route and Historical
+timestamp mirror integrity, independent bounded repository rollback contexts, migration
+020, isolated production-catalog integration evidence, and the remaining reopened scope.

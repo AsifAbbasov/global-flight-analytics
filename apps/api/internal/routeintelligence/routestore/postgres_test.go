@@ -138,7 +138,7 @@ func TestScanRecordRejectsCorruptStatus(t *testing.T) {
 	result := validRouteResult()
 	storedAt := result.GeneratedAt.Add(time.Second)
 	row := rowForResult(t, result, storedAt)
-	row.values[5] = string(routecontract.RouteStatusPartial)
+	row.values[6] = string(routecontract.RouteStatusPartial)
 
 	_, err := scanRecord(row)
 	if !errors.Is(err, ErrCorruptResult) {
@@ -180,12 +180,14 @@ func rowForResult(
 		),
 		normalized.TrajectoryID,
 		string(normalized.SchemaVersion),
+		normalized.Window.AsOfTime,
 		normalized.Window.AsOfTime.UnixNano(),
 		normalized.Provenance.InputFingerprint,
 		string(normalized.Status),
 		string(normalized.Confidence.Level),
 		report.WarningCount,
 		payload,
+		storedAt,
 		storedAt.UnixNano(),
 	}}
 }
@@ -283,6 +285,12 @@ func assign(destination any, value any) error {
 		typed, ok := value.(int64)
 		if !ok {
 			return errors.New("expected int64")
+		}
+		*target = typed
+	case *time.Time:
+		typed, ok := value.(time.Time)
+		if !ok {
+			return errors.New("expected time.Time")
 		}
 		*target = typed
 	case *[]byte:

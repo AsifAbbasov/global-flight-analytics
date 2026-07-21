@@ -115,7 +115,6 @@ func TestPostgresStorePutReturnsInsertedRecord(
 		aggregateTestTime().Add(-time.Hour),
 		aggregateTestTime(),
 	)
-	payload := aggregatePayload(t, result)
 	key := resultKey(result)
 	encoded, err := encodeResultKey(key)
 	if err != nil {
@@ -131,12 +130,7 @@ func TestPostgresStorePutReturnsInsertedRecord(
 	client := &fakePostgresClient{
 		queryRows: []rowScanner{
 			fakeScanner{
-				values: []any{
-					recordID,
-					result.Provenance.InputFingerprint,
-					payload,
-					storedAt.UnixNano(),
-				},
+				values: aggregateRowAt(t, result, storedAt),
 			},
 		},
 	}
@@ -186,22 +180,11 @@ func TestPostgresStoreRejectsConflictingReplay(
 	existing := incoming.Clone()
 	existing.Provenance.InputFingerprint =
 		"sha256:" + strings.Repeat("d", 64)
-	existingPayload := aggregatePayload(
-		t,
-		existing,
-	)
-
 	client := &fakePostgresClient{
 		queryRows: []rowScanner{
 			fakeScanner{err: pgx.ErrNoRows},
 			fakeScanner{
-				values: []any{
-					"historical-aggregate-record-" +
-						strings.Repeat("e", 64),
-					existing.Provenance.InputFingerprint,
-					existingPayload,
-					aggregateTestTime().UnixNano(),
-				},
+				values: aggregateRow(t, existing),
 			},
 		},
 	}
@@ -382,6 +365,15 @@ func aggregateRow(
 	result historicalcontract.Result,
 ) []any {
 	t.Helper()
+	return aggregateRowAt(t, result, aggregateTestTime())
+}
+
+func aggregateRowAt(
+	t *testing.T,
+	result historicalcontract.Result,
+	storedAt time.Time,
+) []any {
+	t.Helper()
 	encoded, err := encodeResultKey(
 		resultKey(result),
 	)
@@ -396,7 +388,14 @@ func aggregateRow(
 		),
 		result.Provenance.InputFingerprint,
 		aggregatePayload(t, result),
-		aggregateTestTime().UnixNano(),
+		result.Window.StartTime,
+		result.Window.StartTime.UnixNano(),
+		result.Window.EndTime,
+		result.Window.EndTime.UnixNano(),
+		result.Window.AsOfTime,
+		result.Window.AsOfTime.UnixNano(),
+		storedAt,
+		storedAt.UnixNano(),
 	}
 }
 
@@ -410,6 +409,17 @@ func assignFakeValue(
 		if !ok {
 			return fmt.Errorf(
 				"value %T is not string",
+				value,
+			)
+		}
+		*target = typed
+		return nil
+
+	case *time.Time:
+		typed, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf(
+				"value %T is not time.Time",
 				value,
 			)
 		}

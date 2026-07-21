@@ -134,3 +134,10 @@ This increment closes the known Flight Feature timestamp and Unix-nanosecond
 consistency debt. The only known PostgreSQL hardening item remaining in Document
 58 is responsibility-based decomposition of the large PostgreSQL repository
 surface.
+
+## 10. Route and Historical extension
+
+Document 72 applies the same exact-Unix-nanosecond and PostgreSQL-mirror policy to
+Flight Route Results and Historical Aggregate Results. All read queries now select both
+representations, scanners fail closed on one-microsecond drift, and migration 020 adds
+database checks for every mirror pair.

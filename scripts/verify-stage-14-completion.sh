@@ -132,6 +132,15 @@ export MIGRATIONS_DIR="$REPOSITORY_ROOT/database/migrations"
 export MIGRATION_TIMEOUT=2m
 go run ./cmd/migrate
 go run ./cmd/migrate
+migration_status="$(go run ./cmd/migrate -status)"
+printf '%s
+' "$migration_status"
+if printf '%s
+' "$migration_status" | grep -Eq ' pending$'; then
+  printf '%s
+' 'ERROR: production migration catalog still contains pending migrations' >&2
+  exit 1
+fi
 MIGRATION_FILE_COUNT="$(find "$MIGRATIONS_DIR" -maxdepth 1 -type f -name '*.sql' | wc -l | tr -d ' ')"
 APPLIED_MIGRATION_COUNT="$(
   docker exec "$POSTGRES_CONTAINER" \
@@ -148,7 +157,9 @@ echo 'STAGE_14_PRODUCTION_MIGRATOR=PASS'
 
 go test -count=1 \
   ./internal/repository/postgres \
-  ./internal/features/featurestore
+  ./internal/features/featurestore \
+  ./internal/routeintelligence/routestore \
+  ./internal/historicalintelligence/historicalaggregate
 
 echo 'STAGE_14_POSTGRES_INTEGRATION=PASS'
 

@@ -75,6 +75,13 @@ const (
 			id,
 			input_fingerprint,
 			result_json,
+			window_start,
+			window_start_unix_nano,
+			window_end,
+			window_end_unix_nano,
+			as_of_time,
+			as_of_time_unix_nano,
+			stored_at,
 			stored_at_unix_nano;
 	`
 
@@ -83,6 +90,13 @@ const (
 			id,
 			input_fingerprint,
 			result_json,
+			window_start,
+			window_start_unix_nano,
+			window_end,
+			window_end_unix_nano,
+			as_of_time,
+			as_of_time_unix_nano,
+			stored_at,
 			stored_at_unix_nano
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
@@ -99,6 +113,13 @@ const (
 			id,
 			input_fingerprint,
 			result_json,
+			window_start,
+			window_start_unix_nano,
+			window_end,
+			window_end_unix_nano,
+			as_of_time,
+			as_of_time_unix_nano,
+			stored_at,
 			stored_at_unix_nano
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
@@ -118,6 +139,13 @@ const (
 			id,
 			input_fingerprint,
 			result_json,
+			window_start,
+			window_start_unix_nano,
+			window_end,
+			window_end_unix_nano,
+			as_of_time,
+			as_of_time_unix_nano,
+			stored_at,
 			stored_at_unix_nano
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
@@ -137,6 +165,13 @@ const (
 			id,
 			input_fingerprint,
 			result_json,
+			window_start,
+			window_start_unix_nano,
+			window_end,
+			window_end_unix_nano,
+			as_of_time,
+			as_of_time_unix_nano,
+			stored_at,
 			stored_at_unix_nano
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
@@ -598,19 +633,57 @@ func scanRecord(
 	scanner rowScanner,
 ) (Record, error) {
 	var (
-		id               string
-		inputFingerprint string
-		payload          []byte
-		storedAtUnixNano int64
+		id                  string
+		inputFingerprint    string
+		payload             []byte
+		windowStartMirror   time.Time
+		windowStartUnixNano int64
+		windowEndMirror     time.Time
+		windowEndUnixNano   int64
+		asOfTimeMirror      time.Time
+		asOfTimeUnixNano    int64
+		storedAtMirror      time.Time
+		storedAtUnixNano    int64
 	)
 
 	if err := scanner.Scan(
 		&id,
 		&inputFingerprint,
 		&payload,
+		&windowStartMirror,
+		&windowStartUnixNano,
+		&windowEndMirror,
+		&windowEndUnixNano,
+		&asOfTimeMirror,
+		&asOfTimeUnixNano,
+		&storedAtMirror,
 		&storedAtUnixNano,
 	); err != nil {
 		return Record{}, err
+	}
+
+	exactWindowStart := time.Unix(0, windowStartUnixNano).UTC()
+	exactWindowEnd := time.Unix(0, windowEndUnixNano).UTC()
+	exactAsOfTime := time.Unix(0, asOfTimeUnixNano).UTC()
+	exactStoredAt := time.Unix(0, storedAtUnixNano).UTC()
+
+	for _, timestamp := range []struct {
+		field  string
+		mirror time.Time
+		exact  time.Time
+	}{
+		{field: "window_start", mirror: windowStartMirror, exact: exactWindowStart},
+		{field: "window_end", mirror: windowEndMirror, exact: exactWindowEnd},
+		{field: "as_of_time", mirror: asOfTimeMirror, exact: exactAsOfTime},
+		{field: "stored_at", mirror: storedAtMirror, exact: exactStoredAt},
+	} {
+		if err := validateTimestampMirror(
+			timestamp.field,
+			timestamp.mirror,
+			timestamp.exact,
+		); err != nil {
+			return Record{}, err
+		}
 	}
 
 	var result historicalcontract.Result
@@ -626,6 +699,19 @@ func scanRecord(
 	}
 
 	result = normalizeResult(result)
+	for _, identity := range []struct {
+		field string
+		value time.Time
+		exact time.Time
+	}{
+		{field: "window_start_unix_nano", value: result.Window.StartTime, exact: exactWindowStart},
+		{field: "window_end_unix_nano", value: result.Window.EndTime, exact: exactWindowEnd},
+		{field: "as_of_time_unix_nano", value: result.Window.AsOfTime, exact: exactAsOfTime},
+	} {
+		if !identity.value.UTC().Equal(identity.exact) {
+			return Record{}, &CorruptResultError{Field: identity.field}
+		}
+	}
 	if _, err := validateStorableResult(
 		result,
 	); err != nil {
@@ -644,10 +730,7 @@ func scanRecord(
 		Key:              resultKey(result),
 		InputFingerprint: inputFingerprint,
 		Result:           result,
-		StoredAt: time.Unix(
-			0,
-			storedAtUnixNano,
-		).UTC(),
+		StoredAt:         exactStoredAt,
 	}, nil
 }
 

@@ -79,9 +79,7 @@ func (repository *TrajectoryRepository) saveTrajectory(
 
 	defer func() {
 		if !committed {
-			_ = tx.Rollback(
-				ctx,
-			)
+			rollbackRepositoryTransaction(tx)
 		}
 	}()
 

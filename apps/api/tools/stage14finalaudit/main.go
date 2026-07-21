@@ -57,6 +57,7 @@ var stage14Documents = []string{
 	"69_STAGE_14_28_POSTGRES_TRAJECTORY_REPOSITORY_DECOMPOSITION.md",
 	"70_STAGE_14_FINAL_COMPLETION_AUDIT.md",
 	"71_STAGE_14_29_MIGRATION_CATALOG_INTEGRITY.md",
+	"72_STAGE_14_30_POSTGRES_CORRECTNESS_HARDENING.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -250,6 +251,7 @@ func auditMigrationCatalog(root string) []auditFailure {
 	for _, required := range []string{
 		"016_add_flight_state_observation_metadata.sql",
 		"019_data_quality_parent_integrity.sql",
+		"020_stage14_correctness_hardening.sql",
 	} {
 		if !seenFiles[required] {
 			failures = append(failures, auditFailure{
@@ -415,6 +417,8 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"go run ./tools/stage14finalaudit -strict",
 				"./internal/repository/postgres",
 				"./internal/features/featurestore",
+				"./internal/routeintelligence/routestore",
+				"./internal/historicalintelligence/historicalaggregate",
 				"go run ./cmd/migrate",
 				"STAGE_14_PRODUCTION_MIGRATOR=PASS",
 				"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
@@ -470,6 +474,8 @@ func auditContinuousIntegration(root string) []auditFailure {
 				"go run ./tools/stage14finalaudit -strict",
 				"./internal/repository/postgres",
 				"./internal/features/featurestore",
+				"./internal/routeintelligence/routestore",
+				"./internal/historicalintelligence/historicalaggregate",
 				"go run ./cmd/migrate",
 				"MIGRATIONS_DIR",
 				"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
@@ -574,6 +580,78 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 				"func validateTimestampMirror(",
 				"delta <= -postgresTimestampMirrorTolerance",
 				"delta >= postgresTimestampMirrorTolerance",
+			},
+		},
+		{
+			Name: "Stage 14 correctness migration owns database invariants",
+			Path: "database/migrations/020_stage14_correctness_hardening.sql",
+			Required: []string{
+				"ingestion_runs_processed_counts_check",
+				"ingestion_runs_error_message_status_check",
+				"flight_route_results_as_of_time_mirror_check",
+				"flight_route_results_stored_at_mirror_check",
+				"historical_aggregate_results_window_start_mirror_check",
+				"historical_aggregate_results_window_end_mirror_check",
+				"historical_aggregate_results_as_of_time_mirror_check",
+				"historical_aggregate_results_stored_at_mirror_check",
+			},
+		},
+		{
+			Name: "Ingestion Run completion validation remains fail-fast",
+			Path: "apps/api/internal/repository/postgres/ingestionrun_completion_validation.go",
+			Required: []string{
+				"recordsUpdated > recordsReceived-recordsInserted",
+				"ingestionrun.StatusSuccess",
+				"ingestionrun.StatusFailed, ingestionrun.StatusPartial",
+			},
+		},
+		{
+			Name: "Route timestamp mirrors remain fail-closed",
+			Path: "apps/api/internal/routeintelligence/routestore/timestamp_consistency.go",
+			Required: []string{
+				"postgresTimestampMirrorTolerance = time.Microsecond",
+				"func validateTimestampMirror(",
+			},
+		},
+		{
+			Name: "Historical timestamp mirrors remain fail-closed",
+			Path: "apps/api/internal/historicalintelligence/historicalaggregate/timestamp_consistency.go",
+			Required: []string{
+				"postgresTimestampMirrorTolerance = time.Microsecond",
+				"func validateTimestampMirror(",
+			},
+		},
+		{
+			Name: "Repository rollback uses an independent bounded context",
+			Path: "apps/api/internal/repository/postgres/transaction_rollback.go",
+			Required: []string{
+				"context.WithTimeout(",
+				"context.Background()",
+				"repositoryRollbackTimeout",
+			},
+		},
+		{
+			Name:     "Airport import delegates rollback ownership",
+			Path:     "apps/api/internal/repository/postgres/airport_import_repository.go",
+			Required: []string{"rollbackRepositoryTransaction(tx)"},
+		},
+		{
+			Name:     "Flight State write delegates rollback ownership",
+			Path:     "apps/api/internal/repository/postgres/flightstate_repository.go",
+			Required: []string{"rollbackRepositoryTransaction(tx)"},
+		},
+		{
+			Name:     "Trajectory write delegates rollback ownership",
+			Path:     "apps/api/internal/repository/postgres/trajectory_write_repository.go",
+			Required: []string{"rollbackRepositoryTransaction(tx)"},
+		},
+		{
+			Name: "Correctness constraints use the production migration catalog",
+			Path: "apps/api/internal/repository/postgres/stage14_correctness_constraints_integration_test.go",
+			Required: []string{
+				"migrator.NewRunner",
+				"runner.ApplyPending",
+				"assertStage14CorrectnessPostgresCode(t, err, \"23514\")",
 			},
 		},
 		{

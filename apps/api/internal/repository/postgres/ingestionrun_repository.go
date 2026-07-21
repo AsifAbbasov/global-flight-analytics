@@ -154,6 +154,17 @@ func (r *IngestionRunRepository) markFinished(
 		ctx = context.Background()
 	}
 
+	normalizedErrorMessage, validationErr := validateIngestionRunCompletion(
+		status,
+		recordsReceived,
+		recordsInserted,
+		recordsUpdated,
+		errorMessage,
+	)
+	if validationErr != nil {
+		return validationErr
+	}
+
 	const query = `
 		WITH updated AS (
 			UPDATE ingestion_runs
@@ -192,7 +203,7 @@ func (r *IngestionRunRepository) markFinished(
 		recordsReceived,
 		recordsInserted,
 		recordsUpdated,
-		nullableText(errorMessage),
+		nullableText(normalizedErrorMessage),
 		string(ingestionrun.StatusRunning),
 	).Scan(
 		&outcome,

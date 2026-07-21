@@ -31,6 +31,9 @@ var (
 			ErrScopeInvalid
 	ErrWindowRequired = historicalaggregatecontract.
 				ErrWindowRequired
+	ErrCorruptResult = errors.New(
+		"stored historical aggregate result is internally inconsistent",
+	)
 )
 
 type ValidationError = historicalaggregatecontract.ValidationError
@@ -57,4 +60,23 @@ func (err *DatabaseError) Unwrap() error {
 		return nil
 	}
 	return err.Err
+}
+
+type CorruptResultError struct {
+	Field string
+}
+
+func (err *CorruptResultError) Error() string {
+	if err == nil {
+		return ErrCorruptResult.Error()
+	}
+	return fmt.Sprintf(
+		"%s: field=%s",
+		ErrCorruptResult,
+		err.Field,
+	)
+}
+
+func (err *CorruptResultError) Unwrap() error {
+	return ErrCorruptResult
 }

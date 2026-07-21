@@ -54,12 +54,14 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			route_status,
 			confidence_level,
 			validation_warning_count,
 			route_json,
+			stored_at,
 			stored_at_unix_nano;
 	`
 
@@ -68,12 +70,14 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			route_status,
 			confidence_level,
 			validation_warning_count,
 			route_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_route_results
 		WHERE trajectory_id = $1::uuid
@@ -86,12 +90,14 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			route_status,
 			confidence_level,
 			validation_warning_count,
 			route_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_route_results
 		WHERE trajectory_id = $1::uuid
@@ -107,12 +113,14 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			route_status,
 			confidence_level,
 			validation_warning_count,
 			route_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_route_results
 		WHERE trajectory_id = $1::uuid
@@ -128,12 +136,14 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
 			route_status,
 			confidence_level,
 			validation_warning_count,
 			route_json,
+			stored_at,
 			stored_at_unix_nano
 		FROM flight_route_results
 		WHERE trajectory_id = $1::uuid
@@ -505,12 +515,14 @@ func scanRecord(
 		id                     string
 		trajectoryID           string
 		schemaVersion          string
+		asOfTimeMirror         time.Time
 		asOfTimeUnixNano       int64
 		inputFingerprint       string
 		routeStatus            string
 		confidenceLevel        string
 		validationWarningCount int
 		payload                []byte
+		storedAtMirror         time.Time
 		storedAtUnixNano       int64
 	)
 
@@ -518,12 +530,14 @@ func scanRecord(
 		&id,
 		&trajectoryID,
 		&schemaVersion,
+		&asOfTimeMirror,
 		&asOfTimeUnixNano,
 		&inputFingerprint,
 		&routeStatus,
 		&confidenceLevel,
 		&validationWarningCount,
 		&payload,
+		&storedAtMirror,
 		&storedAtUnixNano,
 	); err != nil {
 		return Record{}, err
@@ -537,6 +551,20 @@ func scanRecord(
 		0,
 		storedAtUnixNano,
 	).UTC()
+	if err := validateTimestampMirror(
+		"as_of_time",
+		asOfTimeMirror,
+		keyAsOfTime,
+	); err != nil {
+		return Record{}, err
+	}
+	if err := validateTimestampMirror(
+		"stored_at",
+		storedAtMirror,
+		exactStoredAt,
+	); err != nil {
+		return Record{}, err
+	}
 
 	var result routecontract.Result
 	if err := json.Unmarshal(

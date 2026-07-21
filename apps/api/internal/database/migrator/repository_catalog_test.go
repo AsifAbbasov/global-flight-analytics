@@ -35,6 +35,7 @@ func TestRepositoryMigrationCatalogIsCanonicalAndUnique(t *testing.T) {
 	for _, required := range []string{
 		"016_add_flight_state_observation_metadata.sql",
 		"019_data_quality_parent_integrity.sql",
+		"020_stage14_correctness_hardening.sql",
 	} {
 		if !seenFiles[required] {
 			t.Fatalf("repository migration catalog is missing %s", required)

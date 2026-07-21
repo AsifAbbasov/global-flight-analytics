@@ -159,3 +159,11 @@ purpose-built minimal schemas used only by migration, metric, or traffic-query t
 Only fixtures that instantiate the complete repository must reproduce every current
 Flight State evidence column. This avoids both stale repository fixtures and false
 positives against intentionally narrow test tables.
+
+## 11. Stage 14.30 evidence amendment
+
+Document 72 strengthens the terminal lifecycle with processed-count and error-message
+status constraints. Repository finalization now rejects impossible counters and invalid
+error evidence before SQL, while migration 020 enforces the same contract for direct
+PostgreSQL writes. `partial` and `failed` require a non-empty explanation; `running`
+and `success` require a null error message.

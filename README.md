@@ -266,3 +266,12 @@ The duplicate PostgreSQL migration version `016` is removed by assigning Data Qu
 Parent Integrity to canonical migration `019`. The production `cmd/migrate` path is now
 part of the permanent PostgreSQL gate. Stage 14 remains reopened while the remaining
 correctness and maintainability debts are addressed through separate verified increments.
+
+<!-- STAGE-14-30-POSTGRES-CORRECTNESS-HARDENING:README -->
+
+## Stage 14 PostgreSQL Correctness Hardening
+
+Migration 020 now enforces Ingestion Run evidence consistency and exact timestamp
+mirror contracts for Route and Historical results. Transactional repository writes use
+an independent bounded rollback context. Stage 14 remains reopened for the separate
+maintainability and Clean Code backlog recorded in Document 72.

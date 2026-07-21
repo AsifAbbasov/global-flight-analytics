@@ -758,3 +758,14 @@ The duplicate migration version `016` is removed, Data Quality Parent Integrity 
 version `019`, the production migrator is executed twice against a clean PostgreSQL
 catalog, and repository-level tests reject duplicate versions. Stage 14 remains reopened
 until the remaining correctness and maintainability debt register is completed.
+
+<!-- STAGE-14-30-POSTGRES-CORRECTNESS-HARDENING:IMPLEMENTATION -->
+
+### Stage 14.30 — PostgreSQL Correctness Hardening
+
+Status: IMPLEMENTED CURRENT-SCOPE BASELINE.
+
+Migration 020, repository fail-fast validation, timestamp mirror reads, isolated-schema
+production-catalog tests, and independent rollback contexts close the confirmed
+Ingestion Run, Route/Historical timestamp, and cancelled-context rollback gaps.
+Stage 14 remains reopened for the separate maintainability and Clean Code register.

@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 31 {
-		t.Fatalf("document count = %d, want 31", len(stage14Documents))
+	if len(stage14Documents) != 32 {
+		t.Fatalf("document count = %d, want 32", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -335,6 +335,8 @@ func createCompleteFixture(t *testing.T) string {
 			"go run ./tools/stage14finalaudit -strict",
 			"./internal/repository/postgres",
 			"./internal/features/featurestore",
+			"./internal/routeintelligence/routestore",
+			"./internal/historicalintelligence/historicalaggregate",
 			"go run ./cmd/migrate",
 			"STAGE_14_PRODUCTION_MIGRATOR=PASS",
 			"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
@@ -362,6 +364,8 @@ func createCompleteFixture(t *testing.T) string {
 			"go run ./tools/stage14finalaudit -strict",
 			"./internal/repository/postgres",
 			"./internal/features/featurestore",
+			"./internal/routeintelligence/routestore",
+			"./internal/historicalintelligence/historicalaggregate",
 			"go run ./cmd/migrate",
 			"MIGRATIONS_DIR",
 			"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
@@ -420,6 +424,12 @@ func createCompleteFixture(t *testing.T) string {
 	writeFixtureFile(
 		t,
 		root,
+		"database/migrations/020_stage14_correctness_hardening.sql",
+		"ingestion_runs_processed_counts_check\ningestion_runs_error_message_status_check\nflight_route_results_as_of_time_mirror_check\nflight_route_results_stored_at_mirror_check\nhistorical_aggregate_results_window_start_mirror_check\nhistorical_aggregate_results_window_end_mirror_check\nhistorical_aggregate_results_as_of_time_mirror_check\nhistorical_aggregate_results_stored_at_mirror_check\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
 		"apps/api/internal/repository/postgres/flightstate_altitude_integration_test.go",
 		"package postgres\n// CREATE TABLE flight_states (\n// squawk_code text\n// special_purpose_indicator boolean\n// position_source text\n// aircraft_category smallint\n// aircraft_category_available boolean\n// NewFlightStateRepository(\n",
 	)
@@ -440,6 +450,43 @@ func createCompleteFixture(t *testing.T) string {
 		root,
 		"apps/api/internal/features/featurestore/timestamp_consistency.go",
 		"package featurestore\n// postgresTimestampMirrorTolerance = time.Microsecond\n// func validateTimestampMirror(\n// delta <= -postgresTimestampMirrorTolerance\n// delta >= postgresTimestampMirrorTolerance\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/ingestionrun_completion_validation.go",
+		"package postgres\n// recordsUpdated > recordsReceived-recordsInserted\n// ingestionrun.StatusSuccess\n// ingestionrun.StatusFailed, ingestionrun.StatusPartial\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/routeintelligence/routestore/timestamp_consistency.go",
+		"package routestore\n// postgresTimestampMirrorTolerance = time.Microsecond\n// func validateTimestampMirror(\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/historicalintelligence/historicalaggregate/timestamp_consistency.go",
+		"package historicalaggregate\n// postgresTimestampMirrorTolerance = time.Microsecond\n// func validateTimestampMirror(\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/transaction_rollback.go",
+		"package postgres\n// context.WithTimeout(\n// context.Background()\n// repositoryRollbackTimeout\n",
+	)
+	for _, path := range []string{
+		"apps/api/internal/repository/postgres/airport_import_repository.go",
+		"apps/api/internal/repository/postgres/flightstate_repository.go",
+		"apps/api/internal/repository/postgres/trajectory_write_repository.go",
+	} {
+		writeFixtureFile(t, root, path, "package postgres\n// rollbackRepositoryTransaction(tx)\n")
+	}
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/stage14_correctness_constraints_integration_test.go",
+		"package postgres\n// migrator.NewRunner\n// runner.ApplyPending\n// assertStage14CorrectnessPostgresCode(t, err, \"23514\")\n",
 	)
 	writeFixtureFile(
 		t,

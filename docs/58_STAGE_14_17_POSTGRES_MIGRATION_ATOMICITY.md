@@ -116,3 +116,9 @@ The authoritative status is:
 STAGE_14_CURRENT_SCOPE_AUDIT=PASS
 STAGE_14_OVERALL_STATUS=REOPENED
 ```
+
+## 11. Stage 14.30 current-scope closure
+
+Migration 020 closes the confirmed Ingestion Run evidence, Route/Historical timestamp
+mirror, and cancelled-context repository rollback correctness gaps. This does not close
+the remaining maintainability and Clean Code register; Stage 14 remains reopened.

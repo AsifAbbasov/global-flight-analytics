@@ -270,3 +270,12 @@ former completion marker is retired. The current script ends with:
 STAGE_14_CURRENT_SCOPE_AUDIT=PASS
 STAGE_14_OVERALL_STATUS=REOPENED
 ```
+
+<!-- STAGE-14-30-POSTGRES-CORRECTNESS-HARDENING:DOCUMENT-70 -->
+
+## Stage 14.30 current-scope amendment
+
+The PostgreSQL gate now applies migration 020 and runs repository, Feature Store, Route
+Store, and Historical Aggregate tests. It verifies Ingestion Run evidence constraints,
+timestamp mirrors, and independent rollback ownership. `STAGE_14_CURRENT_SCOPE_AUDIT=PASS`
+remains a current-scope marker only; `STAGE_14_OVERALL_STATUS=REOPENED` remains authoritative.
