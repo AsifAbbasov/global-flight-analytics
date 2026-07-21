@@ -88,7 +88,8 @@ func run(
 
 	verifier, err := migrationrepair.New(
 		migrationrepair.Config{
-			Inspector: inspector,
+			Inspector:     inspector,
+			MigrationsDir: cfg.MigrationsDir,
 		},
 	)
 	if err != nil {

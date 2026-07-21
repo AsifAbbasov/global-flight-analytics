@@ -9,12 +9,18 @@ import (
 
 type Verifier struct {
 	inspector Inspector
+	plan      Plan
 	now       func() time.Time
 }
 
 func New(config Config) (*Verifier, error) {
 	if config.Inspector == nil {
 		return nil, ErrInspectorRequired
+	}
+
+	plan, err := LoadPlan(config.MigrationsDir, config.AnchorFileName)
+	if err != nil {
+		return nil, err
 	}
 
 	now := config.Now
@@ -24,21 +30,20 @@ func New(config Config) (*Verifier, error) {
 
 	return &Verifier{
 		inspector: config.Inspector,
+		plan:      plan,
 		now:       now,
 	}, nil
 }
 
-func (verifier *Verifier) Verify(
-	ctx context.Context,
-) (Report, error) {
+func (verifier *Verifier) Verify(ctx context.Context) (Report, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Report{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Report{}, err
 	}
 
-	state, err := verifier.inspector.Load(ctx)
+	state, err := verifier.inspector.Load(ctx, verifier.plan)
 	if err != nil {
 		return Report{}, err
 	}
@@ -46,16 +51,13 @@ func (verifier *Verifier) Verify(
 		return Report{}, err
 	}
 
-	report := evaluateState(
-		state,
-		verifier.now().UTC(),
-	)
-
+	report := evaluateState(state, verifier.plan, verifier.now().UTC())
 	return report.Clone(), nil
 }
 
 func evaluateState(
 	state State,
+	plan Plan,
 	generatedAt time.Time,
 ) Report {
 	report := Report{
@@ -72,53 +74,51 @@ func evaluateState(
 		"The schema_migrations table is missing.",
 	)
 
-	version010 := appliedByVersion(
-		state.AppliedMigrations,
-		expectedAppliedVersion010.Version,
-	)
-	version010Exact :=
-		len(version010) == 1 &&
-			version010[0].Name ==
-				expectedAppliedVersion010.Name &&
-			version010[0].Checksum ==
-				ExpectedAppliedVersion010Checksum
+	anchorRows := appliedByVersion(state.AppliedMigrations, plan.Anchor.Version)
+	anchorExact := len(anchorRows) == 1 &&
+		anchorRows[0].Name == plan.Anchor.Name &&
+		anchorRows[0].Checksum == plan.AnchorChecksum
 	appendCheck(
 		&report,
-		CheckAppliedVersion010Exact,
-		version010Exact,
+		CheckAppliedMigrationExact,
+		anchorExact,
 		fmt.Sprintf(
-			"Applied version 010 is exactly %s with the expected checksum.",
-			expectedAppliedVersion010.Name,
+			"Applied migration %s is exactly %s with the repository checksum.",
+			plan.Anchor.Version,
+			plan.Anchor.Name,
 		),
 		fmt.Sprintf(
-			"Applied version 010 does not exactly match %s and checksum %s.",
-			expectedAppliedVersion010.Name,
-			ExpectedAppliedVersion010Checksum,
+			"Applied migration %s does not exactly match %s and repository checksum %s.",
+			plan.Anchor.Version,
+			plan.Anchor.Name,
+			plan.AnchorChecksum,
 		),
 	)
 
-	futureVersionsUnapplied :=
-		len(appliedByVersion(
-			state.AppliedMigrations,
-			"011",
-		)) == 0 &&
-			len(appliedByVersion(
-				state.AppliedMigrations,
-				"012",
-			)) == 0
+	laterMigrationsUnapplied := true
+	for _, migration := range state.AppliedMigrations {
+		if plan.IsLaterVersion(migration.Version) {
+			laterMigrationsUnapplied = false
+			break
+		}
+	}
 	appendCheck(
 		&report,
-		CheckFutureVersionsUnapplied,
-		futureVersionsUnapplied,
-		"Migration versions 011 and 012 are not recorded as applied.",
-		"Migration version 011 or 012 is already recorded as applied.",
+		CheckLaterMigrationsUnapplied,
+		laterMigrationsUnapplied,
+		fmt.Sprintf(
+			"No migration later than %s is recorded as applied.",
+			plan.Anchor.Version,
+		),
+		fmt.Sprintf(
+			"A migration later than %s is already recorded as applied.",
+			plan.Anchor.Version,
+		),
 	)
 
 	reconciliationColumnsPresent :=
-		state.
-			FlightTrajectoryReconciliationTaskIDColumnExists &&
-			state.
-				DataQualityReconciliationTaskIDColumnExists
+		state.FlightTrajectoryReconciliationTaskIDColumnExists &&
+			state.DataQualityReconciliationTaskIDColumnExists
 	appendCheck(
 		&report,
 		CheckReconciliationColumnsPresent,
@@ -128,10 +128,8 @@ func evaluateState(
 	)
 
 	reconciliationConstraintsPresent :=
-		state.
-			FlightTrajectoryReconciliationForeignKeyExists &&
-			state.
-				DataQualityReconciliationForeignKeyExists
+		state.FlightTrajectoryReconciliationForeignKeyExists &&
+			state.DataQualityReconciliationForeignKeyExists
 	appendCheck(
 		&report,
 		CheckReconciliationConstraintsPresent,
@@ -141,10 +139,8 @@ func evaluateState(
 	)
 
 	reconciliationIndexesPresent :=
-		state.
-			FlightTrajectoryReconciliationUniqueIndexExists &&
-			state.
-				DataQualityReconciliationUniqueIndexExists
+		state.FlightTrajectoryReconciliationUniqueIndexExists &&
+			state.DataQualityReconciliationUniqueIndexExists
 	appendCheck(
 		&report,
 		CheckReconciliationIndexesPresent,
@@ -161,8 +157,8 @@ func evaluateState(
 		&report,
 		CheckIdentityColumnsAbsent,
 		identityColumnsAbsent,
-		"Identity columns are absent and migration 011 can create them.",
-		"One or more identity columns already exist; migration 011 would not be safe.",
+		"Identity columns are absent and the next migration can create them.",
+		"One or more identity columns already exist; the repair sequence is not safe.",
 	)
 
 	identityConstraintsAbsent :=
@@ -189,13 +185,10 @@ func evaluateState(
 	sort.SliceStable(
 		report.Checks,
 		func(left int, right int) bool {
-			return report.Checks[left].Code <
-				report.Checks[right].Code
+			return report.Checks[left].Code < report.Checks[right].Code
 		},
 	)
-
 	report.Ready = report.BlockerCount == 0
-
 	return report
 }
 
@@ -206,11 +199,7 @@ func appendCheck(
 	successMessage string,
 	failureMessage string,
 ) {
-	check := Check{
-		Code:   code,
-		Passed: passed,
-	}
-
+	check := Check{Code: code, Passed: passed}
 	if passed {
 		check.Severity = SeverityInfo
 		check.Message = successMessage
@@ -220,29 +209,18 @@ func appendCheck(
 		check.Message = failureMessage
 		report.BlockerCount++
 	}
-
-	report.Checks = append(
-		report.Checks,
-		check,
-	)
+	report.Checks = append(report.Checks, check)
 }
 
 func appliedByVersion(
 	migrations []AppliedMigration,
 	version string,
 ) []AppliedMigration {
-	result := make(
-		[]AppliedMigration,
-		0,
-	)
+	result := make([]AppliedMigration, 0)
 	for _, migration := range migrations {
 		if migration.Version == version {
-			result = append(
-				result,
-				migration,
-			)
+			result = append(result, migration)
 		}
 	}
-
 	return result
 }

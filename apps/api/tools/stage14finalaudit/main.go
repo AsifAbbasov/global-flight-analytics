@@ -61,6 +61,7 @@ var stage14Documents = []string{
 	"73_STAGE_14_31_POSTGRES_WRITE_REPOSITORY_DECOMPOSITION.md",
 	"74_STAGE_14_32_AIRPORT_KEYSET_PAGINATION.md",
 	"75_STAGE_14_33_EXPLICIT_REPOSITORY_CONTEXT_AND_TRAJECTORY_WRITE_MODE.md",
+	"76_STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -440,6 +441,7 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
 				"STAGE_14_32_AIRPORT_PAGINATION=PASS",
 				"STAGE_14_33_EXPLICIT_CONTEXT_AND_WRITE_MODE=PASS",
+				"STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			},
 			MaxLines: 320,
@@ -880,6 +882,63 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 			Required: []string{
 				"TestRepositoryOperationsDoNotInventCallerContext",
 				"TestTrajectoryWriteCoordinatorUsesExplicitMode",
+			},
+		},
+		{
+			Name: "Repository arguments preserve nullable and required evidence semantics",
+			Path: "apps/api/internal/repository/postgres/repository_helpers.go",
+			Required: []string{
+				"type nullableUUIDArgument struct",
+				"type nullableTextArgument struct",
+				"type requiredSourceNameArgument struct",
+				"ErrRepositoryUUIDArgumentInvalid",
+				"ErrRepositorySourceNameRequired",
+				"func requiredSourceNameValue(",
+			},
+			Forbidden: []string{
+				") *string",
+				`return "unknown"`,
+				"func sourceNameOrUnknown(",
+			},
+		},
+		{
+			Name: "PostgreSQL contract consolidation tests remain permanent",
+			Path: "apps/api/internal/repository/postgres/postgres_contract_consolidation_test.go",
+			Required: []string{
+				"TestRepositoryArgumentsDoNotUsePointerNilOrArtificialSourceFallback",
+				"TestInternalPostgresQueriesDoNotCastUUIDColumnsToTextForArrayMembership",
+				"TestArtificialUnknownSourceFallbackIsAbsentFromInternalPostgresCode",
+			},
+		},
+		{
+			Name: "UUID array membership has PostgreSQL evidence",
+			Path: "apps/api/internal/repository/postgres/uuid_array_query_integration_test.go",
+			Required: []string{
+				"TestUUIDArrayMembershipUsesTypedColumnComparison",
+				"SELECT candidate::uuid",
+				"unnest($1::text[])",
+			},
+		},
+		{
+			Name: "Migration repair derives a plan from repository migration content",
+			Path: "apps/api/internal/database/migrationrepair/plan.go",
+			Required: []string{
+				"func LoadPlan(",
+				"migrationfile.Parse(fileName)",
+				"sha256.Sum256(content)",
+				"func (plan Plan) IsLaterVersion(",
+			},
+		},
+		{
+			Name: "Migration repair inspection follows the plan boundary",
+			Path: "apps/api/internal/database/migrationrepair/postgres.go",
+			Required: []string{
+				"plan Plan",
+				"WHERE version >= $1",
+				"plan.Anchor.Version",
+			},
+			Forbidden: []string{
+				"WHERE version IN ('010', '011', '012')",
 			},
 		},
 		{

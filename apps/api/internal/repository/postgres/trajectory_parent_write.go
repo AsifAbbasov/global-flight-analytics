@@ -56,7 +56,7 @@ func (repository *TrajectoryRepository) insertFlightTrajectory(
 		item.PointCount,
 		item.CoverageGapCount,
 		item.QualityScore,
-		sourceNameOrUnknown(item.SourceName),
+		requiredSourceNameValue(item.SourceName),
 	).Scan(
 		&trajectoryID,
 	)
@@ -118,7 +118,7 @@ func (repository *TrajectoryRepository) insertReconciledFlightTrajectory(
 		item.PointCount,
 		item.CoverageGapCount,
 		item.QualityScore,
-		sourceNameOrUnknown(item.SourceName),
+		requiredSourceNameValue(item.SourceName),
 		nullableUUID(reconciliationTaskID),
 	).Scan(
 		&trajectoryID,

@@ -39,10 +39,14 @@ func TestCanonicalParserOwnsMigrationFileIdentityInterpretation(t *testing.T) {
 			},
 		},
 		{
-			path: filepath.Join(packageDir, "../migrationrepair/contracts.go"),
+			path: filepath.Join(packageDir, "../migrationrepair/plan.go"),
 			required: []string{
-				"migrationfile.MustParse(",
-				"ExpectedAppliedVersion010FileName",
+				"migrationfile.Parse(fileName)",
+				"DefaultRepairAnchorFileName",
+			},
+			prohibited: []string{
+				"func parseMigrationFileName(",
+				"ExpectedAppliedVersion010Checksum",
 			},
 		},
 	}

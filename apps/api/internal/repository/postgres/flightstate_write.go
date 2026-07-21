@@ -195,7 +195,7 @@ func prepareFlightStateInsertArguments(
 		aircraftCategory,
 		item.AircraftCategoryAvailable,
 		item.ObservedAt,
-		sourceNameOrUnknown(item.SourceName),
+		requiredSourceNameValue(item.SourceName),
 		nullableUUID(item.IngestionRunID),
 	}, nil
 }

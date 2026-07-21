@@ -68,7 +68,7 @@ func (repository *TrajectoryRepository) insertTrajectorySegments(
 			segment.EndLatitude,
 			segment.EndLongitude,
 			segment.PointCount,
-			sourceNameOrUnknown(segment.SourceName),
+			requiredSourceNameValue(segment.SourceName),
 		).Scan(
 			&segmentID,
 		)

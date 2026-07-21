@@ -306,3 +306,12 @@ Stage 14.33 removes silent nil-context replacement from the selected PostgreSQL 
 boundaries and replaces the Trajectory empty-task-identifier mode sentinel with a validated
 typed request. The independent rollback background context remains intentional cleanup.
 The overall Stage 14 status remains reopened for the remaining recorded backlog.
+
+<!-- STAGE-14-34-POSTGRESQL-CONTRACT-CONSOLIDATION:FINAL-AUDIT -->
+
+## Reopened Scope Update: PostgreSQL Contract Consolidation
+
+Stage 14.34 closes the combined migration-repair, nullable-argument, source-provenance, and
+UUID membership query group. The cross-stack audit now protects these boundaries. The overall
+Stage 14 status remains reopened for evidence-backed trajectory index profiling and final
+closure.

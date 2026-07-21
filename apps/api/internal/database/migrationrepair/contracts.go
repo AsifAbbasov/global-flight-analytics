@@ -3,20 +3,11 @@ package migrationrepair
 import (
 	"context"
 	"time"
-
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database/migrationfile"
 )
 
-const Version = "migration-sequence-repair-preflight-v1"
+const Version = "migration-sequence-repair-preflight-v2"
 
-const (
-	ExpectedAppliedVersion010FileName = "010_add_reconciliation_result_identity.sql"
-	ExpectedAppliedVersion010Checksum = "5c6481b807271a856654cdb1ada298dbac43b3b3aaab0bc8dbc62354916fae91"
-)
-
-var expectedAppliedVersion010 = migrationfile.MustParse(
-	ExpectedAppliedVersion010FileName,
-)
+const DefaultRepairAnchorFileName = "010_add_reconciliation_result_identity.sql"
 
 type Severity string
 
@@ -29,8 +20,8 @@ type CheckCode string
 
 const (
 	CheckSchemaMigrationsTablePresent     CheckCode = "schema_migrations_table_present"
-	CheckAppliedVersion010Exact           CheckCode = "applied_version_010_exact"
-	CheckFutureVersionsUnapplied          CheckCode = "future_versions_011_012_unapplied"
+	CheckAppliedMigrationExact            CheckCode = "applied_migration_exact"
+	CheckLaterMigrationsUnapplied         CheckCode = "later_migrations_unapplied"
 	CheckReconciliationColumnsPresent     CheckCode = "reconciliation_columns_present"
 	CheckReconciliationConstraintsPresent CheckCode = "reconciliation_constraints_present"
 	CheckReconciliationIndexesPresent     CheckCode = "reconciliation_indexes_present"
@@ -67,12 +58,14 @@ type State struct {
 }
 
 type Inspector interface {
-	Load(ctx context.Context) (State, error)
+	Load(ctx context.Context, plan Plan) (State, error)
 }
 
 type Config struct {
-	Inspector Inspector
-	Now       func() time.Time
+	Inspector      Inspector
+	MigrationsDir  string
+	AnchorFileName string
+	Now            func() time.Time
 }
 
 type Check struct {
@@ -93,10 +86,6 @@ type Report struct {
 
 func (report Report) Clone() Report {
 	cloned := report
-	cloned.Checks = append(
-		[]Check(nil),
-		report.Checks...,
-	)
-
+	cloned.Checks = append([]Check(nil), report.Checks...)
 	return cloned
 }

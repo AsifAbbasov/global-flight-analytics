@@ -25,9 +25,13 @@ func NewPostgresInspector(
 
 func (inspector *PostgresInspector) Load(
 	ctx context.Context,
+	plan Plan,
 ) (State, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return State{}, ErrContextRequired
+	}
+	if err := plan.Validate(); err != nil {
+		return State{}, err
 	}
 	if err := ctx.Err(); err != nil {
 		return State{}, err
@@ -49,6 +53,7 @@ func (inspector *PostgresInspector) Load(
 
 	applied, err := inspector.loadAppliedMigrations(
 		ctx,
+		plan,
 	)
 	if err != nil {
 		return State{}, err
@@ -175,19 +180,21 @@ func (inspector *PostgresInspector) Load(
 
 func (inspector *PostgresInspector) loadAppliedMigrations(
 	ctx context.Context,
+	plan Plan,
 ) ([]AppliedMigration, error) {
 	rows, err := inspector.pool.Query(
 		ctx,
 		`
 			SELECT version, name, checksum
 			FROM schema_migrations
-			WHERE version IN ('010', '011', '012')
+			WHERE version >= $1
 			ORDER BY version, name;
 		`,
+		plan.Anchor.Version,
 	)
 	if err != nil {
 		return nil, &InspectionError{
-			Operation: "load migration history for versions 010 through 012",
+			Operation: "load migration history from anchor version " + plan.Anchor.Version,
 			Err:       err,
 		}
 	}
@@ -196,7 +203,7 @@ func (inspector *PostgresInspector) loadAppliedMigrations(
 	result := make(
 		[]AppliedMigration,
 		0,
-		3,
+		8,
 	)
 	for rows.Next() {
 		var migration AppliedMigration

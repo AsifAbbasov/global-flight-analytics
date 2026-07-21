@@ -301,3 +301,12 @@ Database-reaching Airport, Flight State, and Trajectory repository paths now rej
 caller context instead of silently inventing `context.Background()`. Trajectory persistence
 uses an explicit live or reconciled write request rather than an empty task identifier as a
 hidden mode switch. Stage 14 remains reopened for the remaining recorded scope.
+
+<!-- STAGE-14-34-POSTGRESQL-CONTRACT-CONSOLIDATION:README -->
+
+## Stage 14 PostgreSQL Contract Consolidation
+
+Migration repair now derives its anchor checksum and later-version boundary from a repair
+plan. Repository nullable arguments are concrete driver values, missing source evidence fails
+closed instead of becoming `unknown`, and UUID array queries keep UUID columns typed. Stage 14
+remains reopened for trajectory profiling and the final closure audit.

@@ -25,7 +25,7 @@ func TestWriteReportText(t *testing.T) {
 		InfoCount: 1,
 		Checks: []Check{
 			{
-				Code:     CheckAppliedVersion010Exact,
+				Code:     CheckAppliedMigrationExact,
 				Severity: SeverityInfo,
 				Passed:   true,
 				Message:  "exact",
@@ -46,7 +46,7 @@ func TestWriteReportText(t *testing.T) {
 	for _, expected := range []string{
 		"Migration Sequence Repair Preflight",
 		"Readiness: READY",
-		"[PASS] INFO applied_version_010_exact: exact",
+		"[PASS] INFO applied_migration_exact: exact",
 	} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf(

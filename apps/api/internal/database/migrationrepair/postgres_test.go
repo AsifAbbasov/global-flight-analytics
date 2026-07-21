@@ -18,7 +18,7 @@ func TestNewPostgresInspectorRequiresPool(t *testing.T) {
 
 func TestVersionRemainsStable(t *testing.T) {
 	if Version !=
-		"migration-sequence-repair-preflight-v1" {
+		"migration-sequence-repair-preflight-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
 }

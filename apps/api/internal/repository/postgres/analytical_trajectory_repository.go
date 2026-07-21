@@ -93,7 +93,7 @@ func (repository *TrajectoryRepository) ListTrajectoriesByIDs(
 			created_at,
 			updated_at
 		FROM flight_trajectories
-		WHERE id::text = ANY($1::text[])
+		WHERE id = ANY (SELECT candidate::uuid FROM unnest($1::text[]) AS candidates(candidate))
 		ORDER BY array_position($1::text[], id::text);
 	`
 

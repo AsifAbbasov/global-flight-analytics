@@ -665,3 +665,13 @@ anti-offset regression gates, acceptance evidence, and remaining reopened scope.
 Defines caller-owned PostgreSQL repository context semantics, the intentionally independent
 rollback context, explicit live and reconciled Trajectory write requests, invalid-mode
 validation, preserved behavior, permanent regression gates, and remaining reopened scope.
+
+<!-- STAGE-14-34-POSTGRESQL-CONTRACT-CONSOLIDATION:DOCUMENT-INDEX -->
+
+## Document 76
+
+`76_STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION.md`
+
+Defines repository-derived migration repair planning, concrete nullable database arguments,
+required source provenance, native UUID array membership, PostgreSQL integration evidence,
+permanent regression gates, and the remaining profiling and closure scope.

@@ -793,3 +793,11 @@ permanent anti-offset audit gates. Stage 14 remains reopened.
 Completed: shared nil-context rejection for database-reaching Airport, Flight State, and
 Trajectory paths; explicit live and reconciled Trajectory write requests; invalid-mode
 validation; permanent source and unit gates. Stage 14 remains reopened.
+
+<!-- STAGE-14-34-POSTGRESQL-CONTRACT-CONSOLIDATION:IMPLEMENTATION -->
+
+## Stage 14.34 — PostgreSQL Contract Consolidation
+
+Completed: repository-derived migration repair planning, concrete nullable driver values,
+required source evidence, native UUID-column array membership, PostgreSQL integration evidence,
+and permanent audit gates. Stage 14 remains reopened for profiling and final closure.

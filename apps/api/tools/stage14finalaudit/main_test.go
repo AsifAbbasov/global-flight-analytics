@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 35 {
-		t.Fatalf("document count = %d, want 35", len(stage14Documents))
+	if len(stage14Documents) != 36 {
+		t.Fatalf("document count = %d, want 36", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -393,6 +393,64 @@ func TestAuditRepositoryDetectsImplicitTrajectoryWriteMode(t *testing.T) {
 	}
 }
 
+func TestAuditRepositoryDetectsArtificialUnknownSourceFallback(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"repository",
+		"postgres",
+		"repository_helpers.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content = append(content, []byte("// return \"unknown\"\n")...)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureCheck(
+		failures,
+		"Repository arguments preserve nullable and required evidence semantics",
+	) {
+		t.Fatalf("artificial source fallback audit rule was not triggered: %#v", failures)
+	}
+}
+
+func TestAuditRepositoryDetectsHardCodedMigrationRepairSequence(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"database",
+		"migrationrepair",
+		"postgres.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content = append(content, []byte("// WHERE version IN ('010', '011', '012')\n")...)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureCheck(
+		failures,
+		"Migration repair inspection follows the plan boundary",
+	) {
+		t.Fatalf("hard-coded migration sequence audit rule was not triggered: %#v", failures)
+	}
+}
+
 func TestRunReturnsFailureForMissingDocument(t *testing.T) {
 	root := createCompleteFixture(t)
 	missing := filepath.Join(root, "docs", stage14Documents[len(stage14Documents)-1])
@@ -494,6 +552,7 @@ func createCompleteFixture(t *testing.T) string {
 			"STAGE_14_31_WRITE_REPOSITORY_DECOMPOSITION=PASS",
 			"STAGE_14_32_AIRPORT_PAGINATION=PASS",
 			"STAGE_14_33_EXPLICIT_CONTEXT_AND_WRITE_MODE=PASS",
+			"STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 		}, "\n")+"\n",
 	)
@@ -731,6 +790,36 @@ func createCompleteFixture(t *testing.T) string {
 		root,
 		"apps/api/internal/repository/postgres/repository_boundary_contract_test.go",
 		"package postgres\\n// TestRepositoryOperationsDoNotInventCallerContext\\n// TestTrajectoryWriteCoordinatorUsesExplicitMode\\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/repository_helpers.go",
+		"package postgres\\n// type nullableUUIDArgument struct\\n// type nullableTextArgument struct\\n// type requiredSourceNameArgument struct\\n// ErrRepositoryUUIDArgumentInvalid\\n// ErrRepositorySourceNameRequired\\n// func requiredSourceNameValue(\\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/postgres_contract_consolidation_test.go",
+		"package postgres\\n// TestRepositoryArgumentsDoNotUsePointerNilOrArtificialSourceFallback\\n// TestInternalPostgresQueriesDoNotCastUUIDColumnsToTextForArrayMembership\\n// TestArtificialUnknownSourceFallbackIsAbsentFromInternalPostgresCode\\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/uuid_array_query_integration_test.go",
+		"package postgres\\n// TestUUIDArrayMembershipUsesTypedColumnComparison\\n// SELECT candidate::uuid\\n// unnest($1::text[])\\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/database/migrationrepair/plan.go",
+		"package migrationrepair\\n// func LoadPlan(\\n// migrationfile.Parse(fileName)\\n// sha256.Sum256(content)\\n// func (plan Plan) IsLaterVersion(\\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/database/migrationrepair/postgres.go",
+		"package migrationrepair\\n// plan Plan\\n// WHERE version >= $1\\n// plan.Anchor.Version\\n",
 	)
 	writeFixtureFile(
 		t,

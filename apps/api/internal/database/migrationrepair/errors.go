@@ -12,6 +12,15 @@ var (
 	ErrPostgresPoolRequired = errors.New(
 		"migration sequence repair postgres pool is required",
 	)
+	ErrContextRequired = errors.New(
+		"migration sequence repair context is required",
+	)
+	ErrMigrationsDirectoryRequired = errors.New(
+		"migration sequence repair migrations directory is required",
+	)
+	ErrRepairPlanInvalid = errors.New(
+		"migration sequence repair plan is invalid",
+	)
 )
 
 type InspectionError struct {
@@ -35,6 +44,5 @@ func (err *InspectionError) Unwrap() error {
 	if err == nil {
 		return nil
 	}
-
 	return err.Err
 }
