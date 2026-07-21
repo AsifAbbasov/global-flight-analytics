@@ -1,6 +1,6 @@
 # Document 79 — Post-Closure Migrator Context Hardening
 
-Status: Implemented v1.0
+Status: Implemented v1.1
 Project: Global Flight Analytics
 Scope: remove remaining nil caller-context substitution from the PostgreSQL migrator without reopening Stage 14
 
@@ -37,9 +37,25 @@ may already be cancelled; they do not replace an input context for normal databa
 
 ## 4. Permanent protection
 
-The repository now includes unit and source-contract tests plus a Stage 14 source-audit rule that
-rejects any return of `ctx = context.Background()` in migrator/runner.go while requiring bounded
-independent cleanup contexts.
+The permanent gate now parses every production Go file in the migrator package with the standard
+`go/parser` and `go/ast` packages. It does not depend on comments, whitespace, formatting, or one
+exact assignment string.
+
+The syntax-tree policy:
+
+- rejects `context.Background()` outside the three named cleanup functions;
+- rejects `context.TODO()` everywhere in production migrator code;
+- rejects `context.WithoutCancel()` so database work cannot silently detach from caller cancellation;
+- recognizes renamed and dot-imported `context` packages;
+- rejects storing `context.Background` or `context.TODO` as function values;
+- rejects reassignment of caller-owned `context.Context` parameters;
+- scans helper functions and additional production files in the migrator package;
+- requires every database-reaching migrator boundary to call `requireMigrationContext` directly;
+- permits cleanup contexts only as the exact bounded expression
+  `context.WithTimeout(context.Background(), migrationLockReleaseTimeout)`.
+
+Behavioral nil-context tests remain in place. The syntax-tree audit adds structural regression
+protection without changing runtime migration behavior.
 
 ## 5. Status decision
 
@@ -50,6 +66,7 @@ behavior, or analytical formulas.
 Successful verification emits:
 
 ```text
+MIGRATOR_CONTEXT_AST_AUDIT=PASS
 POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS
 STAGE_14_OVERALL_STATUS=CLOSED
 ```

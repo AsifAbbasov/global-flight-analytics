@@ -185,6 +185,7 @@ func auditRepository(root string, output io.Writer) []auditFailure {
 		{name: "Go toolchain security", check: auditGoToolchainSecurity},
 		{name: "Unified verification reachability", check: auditUnifiedVerification},
 		{name: "Continuous integration coverage", check: auditContinuousIntegration},
+		{name: "Migrator context syntax policy", check: auditMigratorContextSyntax},
 		{name: "PostgreSQL closure surface", check: auditPostgresClosureSurface},
 	}
 
@@ -455,6 +456,7 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
 				"STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS",
 				"POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS",
+				"MIGRATOR_CONTEXT_AST_AUDIT=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 				"STAGE_14_OVERALL_STATUS=CLOSED",
 			},
@@ -747,9 +749,6 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 				"context.Background()",
 				"migrationLockReleaseTimeout",
 			},
-			Forbidden: []string{
-				"ctx = context.Background()",
-			},
 		},
 		{
 			Name: "Migrator context contract tests remain permanent",
@@ -757,8 +756,16 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 			Required: []string{
 				"TestMigratorPublicOperationsRejectNilContext",
 				"TestWithMigrationLockRejectsNilContextBeforePoolAccess",
-				"TestMigratorContextSourceContract",
-				"TestMigratorCleanupContextsRemainIndependentAndBounded",
+			},
+		},
+
+		{
+			Name: "Migrator syntax-tree contract test remains permanent",
+			Path: "apps/api/internal/database/migrator/context_ast_contract_test.go",
+			Required: []string{
+				"TestMigratorContextASTContract",
+				"contextaudit.AuditDirectory(",
+				"contextaudit.MigratorPolicy()",
 			},
 		},
 		{
@@ -767,6 +774,7 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 			Required: []string{
 				"Stage 14 remains closed",
 				"ErrMigrationContextRequired",
+				"MIGRATOR_CONTEXT_AST_AUDIT=PASS",
 				"POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS",
 			},
 		},

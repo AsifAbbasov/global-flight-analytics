@@ -2,8 +2,6 @@ package migrator
 
 import (
 	"errors"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -49,48 +47,5 @@ func TestWithMigrationLockRejectsNilContextBeforePoolAccess(t *testing.T) {
 	}
 	if operationCalled {
 		t.Fatal("operation must not run for a nil context")
-	}
-}
-
-func TestMigratorContextSourceContract(t *testing.T) {
-	sourceBytes, err := os.ReadFile("runner.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-	source := string(sourceBytes)
-	for _, required := range []string{
-		"ErrMigrationContextRequired",
-		"func requireMigrationContext(",
-		"func (runner *Runner) EnsureSchemaMigrations(",
-		"func (runner *Runner) Status(",
-		"func (runner *Runner) ApplyPending(",
-		"withMigrationLock(",
-	} {
-		if !strings.Contains(source, required) {
-			t.Fatalf("runner.go is missing %q", required)
-		}
-	}
-	if strings.Contains(source, "ctx = context.Background()") {
-		t.Fatal("runner.go must not replace a nil caller context")
-	}
-}
-
-func TestMigratorCleanupContextsRemainIndependentAndBounded(t *testing.T) {
-	sourceBytes, err := os.ReadFile("runner.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-	source := string(sourceBytes)
-	for _, required := range []string{
-		"func releaseMigrationLock(",
-		"func destroyLockedConnection(",
-		"func rollbackMigrationTransaction(",
-		"context.WithTimeout(",
-		"context.Background()",
-		"migrationLockReleaseTimeout",
-	} {
-		if !strings.Contains(source, required) {
-			t.Fatalf("cleanup contract is missing %q", required)
-		}
 	}
 }

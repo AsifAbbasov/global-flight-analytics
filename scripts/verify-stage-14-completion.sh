@@ -72,6 +72,7 @@ cd "$API_ROOT"
 go test ./tools/stage14finalaudit -count=1
 go run ./tools/stage14finalaudit -strict
 echo 'STAGE_14_SOURCE_AUDIT=PASS'
+echo 'MIGRATOR_CONTEXT_AST_AUDIT=PASS'
 
 echo '=== Established backend final correctness audit ==='
 cd "$REPOSITORY_ROOT"

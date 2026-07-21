@@ -472,21 +472,21 @@ func TestAuditRepositoryDetectsMissingTrajectoryQueryProfileMigration(t *testing
 	}
 }
 
-func TestAuditRepositoryDetectsMigratorNilContextFallback(t *testing.T) {
+func TestAuditRepositoryDetectsMigratorContextHelperFallback(t *testing.T) {
 	root := createCompleteFixture(t)
-	path := filepath.Join(root, "apps", "api", "internal", "database", "migrator", "runner.go")
-	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	content = append(content, []byte("// ctx = context.Background()\n")...)
-	if err := os.WriteFile(path, content, 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/database/migrator/context_fallback.go",
+		"package migrator\nimport ctxpkg \"context\"\nfunc inventedMigrationContext() ctxpkg.Context { return ctxpkg.Background() }\n",
+	)
 
 	failures := auditRepository(root, &bytes.Buffer{})
-	if !containsFailureCheck(failures, "Migrator operations reject nil caller context") {
-		t.Fatalf("migrator nil-context fallback was not detected: %#v", failures)
+	if !containsFailureCheck(failures, "Migrator context syntax policy") {
+		t.Fatalf("migrator context helper fallback was not detected: %#v", failures)
+	}
+	if !containsFailureDetail(failures, "context.Background()") {
+		t.Fatalf("migrator context helper detail was not reported: %#v", failures)
 	}
 }
 
@@ -588,19 +588,46 @@ func createCompleteFixture(t *testing.T) string {
 		t,
 		root,
 		"docs/79_POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING.md",
-		"Stage 14 remains closed\nErrMigrationContextRequired\nPOST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS\n",
+		"Stage 14 remains closed\nErrMigrationContextRequired\nMIGRATOR_CONTEXT_AST_AUDIT=PASS\nPOST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS\n",
 	)
 	writeFixtureFile(
 		t,
 		root,
 		"apps/api/internal/database/migrator/runner.go",
-		"package migrator\n// ErrMigrationContextRequired\n// func requireMigrationContext(\n// func (runner *Runner) EnsureSchemaMigrations(\n// func (runner *Runner) Status(\n// func (runner *Runner) ApplyPending(\n// func (runner *Runner) withMigrationLock(\n// context.WithTimeout(\n// context.Background()\n// migrationLockReleaseTimeout\n",
+		`package migrator
+import (
+	"context"
+	"time"
+)
+var ErrMigrationContextRequired = error(nil)
+const migrationLockReleaseTimeout = time.Second
+type Runner struct{}
+func requireMigrationContext(ctx context.Context) error { return nil }
+func (runner *Runner) EnsureSchemaMigrations(ctx context.Context) error { return requireMigrationContext(ctx) }
+func (runner *Runner) ensureSchemaMigrations(ctx context.Context) error { return requireMigrationContext(ctx) }
+func (runner *Runner) Status(ctx context.Context) ([]int, error) { if err := requireMigrationContext(ctx); err != nil { return nil, err }; return nil, nil }
+func (runner *Runner) ApplyPending(ctx context.Context) ([]int, error) { if err := requireMigrationContext(ctx); err != nil { return nil, err }; return nil, nil }
+func (runner *Runner) applyMigrationAtomically(ctx context.Context) error { return requireMigrationContext(ctx) }
+func (runner *Runner) withMigrationLock(ctx context.Context) error { return requireMigrationContext(ctx) }
+func (runner *Runner) appliedMigrations(ctx context.Context) error { return requireMigrationContext(ctx) }
+func (runner *Runner) appliedMigrationsWith(ctx context.Context) error { return requireMigrationContext(ctx) }
+func releaseMigrationLock() { ctx, cancel := context.WithTimeout(context.Background(), migrationLockReleaseTimeout); defer cancel(); _ = ctx }
+func destroyLockedConnection() { ctx, cancel := context.WithTimeout(context.Background(), migrationLockReleaseTimeout); defer cancel(); _ = ctx }
+func rollbackMigrationTransaction() { ctx, cancel := context.WithTimeout(context.Background(), migrationLockReleaseTimeout); defer cancel(); _ = ctx }
+`,
 	)
 	writeFixtureFile(
 		t,
 		root,
 		"apps/api/internal/database/migrator/context_contract_test.go",
-		"package migrator\n// TestMigratorPublicOperationsRejectNilContext\n// TestWithMigrationLockRejectsNilContextBeforePoolAccess\n// TestMigratorContextSourceContract\n// TestMigratorCleanupContextsRemainIndependentAndBounded\n",
+		"package migrator\n// TestMigratorPublicOperationsRejectNilContext\n// TestWithMigrationLockRejectsNilContextBeforePoolAccess\n",
+	)
+
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/database/migrator/context_ast_contract_test.go",
+		"package migrator\n// TestMigratorContextASTContract\n// contextaudit.AuditDirectory(\n// contextaudit.MigratorPolicy()\n",
 	)
 
 	writeFixtureFile(
@@ -640,6 +667,7 @@ func createCompleteFixture(t *testing.T) string {
 			"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
 			"STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS",
 			"POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING=PASS",
+			"MIGRATOR_CONTEXT_AST_AUDIT=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			"STAGE_14_OVERALL_STATUS=CLOSED",
 		}, "\n")+"\n",
