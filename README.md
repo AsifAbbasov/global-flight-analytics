@@ -316,3 +316,12 @@ remains reopened for trajectory profiling and the final closure audit.
 ## Stage 14 Trajectory Query Consolidation and Profiling
 
 Trajectory parent, analytical, segment, and coverage-gap reads now share canonical SQL and dedicated row scanners. Every Trajectory read boundary preserves caller-owned context. Migration 021 adds order-aligned parent indexes, retires one duplicate segment index, and a permanent EXPLAIN ANALYZE gate verifies index eligibility. Stage 14 remains reopened only for the independent final closure audit.
+
+<!-- STAGE-14-36-FINAL-CLOSURE:README -->
+
+## Stage 14 Final Closure
+
+Stage 14 is closed. The independent closure increment reruns the complete source, backend,
+race, security, PostgreSQL, Trajectory profiling, frontend production, Docker image, and
+container health gates after Stage 14.35 is already committed. The authoritative machine
+status is `STAGE_14_OVERALL_STATUS=CLOSED`.

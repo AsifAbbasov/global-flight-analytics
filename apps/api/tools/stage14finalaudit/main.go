@@ -63,6 +63,7 @@ var stage14Documents = []string{
 	"75_STAGE_14_33_EXPLICIT_REPOSITORY_CONTEXT_AND_TRAJECTORY_WRITE_MODE.md",
 	"76_STAGE_14_34_POSTGRESQL_CONTRACT_CONSOLIDATION.md",
 	"77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md",
+	"78_STAGE_14_36_FINAL_CLOSURE_AUDIT.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -311,19 +312,21 @@ func auditMigrationCatalog(root string) []auditFailure {
 			},
 		},
 		{
-			Name: "Repository status surfaces keep Stage 14 reopened",
+			Name: "Repository status surface closes Stage 14",
 			Path: "README.md",
 			Required: []string{
-				"STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:README",
-				"Stage 14 remains reopened",
+				"STAGE-14-36-FINAL-CLOSURE:README",
+				"Stage 14 is closed",
+				"STAGE_14_OVERALL_STATUS=CLOSED",
 			},
 		},
 		{
-			Name: "Implementation sequence keeps Stage 14 reopened",
+			Name: "Implementation sequence closes Stage 14",
 			Path: "docs/25_IMPLEMENTATION_SEQUENCE.md",
 			Required: []string{
-				"STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:IMPLEMENTATION",
-				"Stage 14 remains reopened",
+				"STAGE-14-36-FINAL-CLOSURE:IMPLEMENTATION",
+				"Stage 14 is closed",
+				"STAGE_14_OVERALL_STATUS=CLOSED",
 			},
 		},
 	})...)
@@ -450,7 +453,12 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"scripts/profile-stage-14-trajectory-queries.sh",
 				"STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS",
 				"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
+				"STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
+				"STAGE_14_OVERALL_STATUS=CLOSED",
+			},
+			Forbidden: []string{
+				"STAGE_14_OVERALL_STATUS=REOPENED",
 			},
 			MaxLines: 320,
 		},
@@ -470,13 +478,25 @@ func auditUnifiedVerification(root string) []auditFailure {
 			},
 		},
 		{
-			Name: "Reopened Stage 14 document defines the current-scope marker",
+			Name: "Stage 14 final audit document records closure",
 			Path: "docs/70_STAGE_14_FINAL_COMPLETION_AUDIT.md",
 			Required: []string{
+				"STAGE-14-36-FINAL-CLOSURE:DOCUMENT-70",
 				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
+				"STAGE_14_OVERALL_STATUS=CLOSED",
 				"Flight Feature timestamp integration",
 				"backend container",
 				"frontend production build",
+			},
+		},
+		{
+			Name: "Stage 14 closure document owns the final decision",
+			Path: "docs/78_STAGE_14_36_FINAL_CLOSURE_AUDIT.md",
+			Required: []string{
+				"Stage 14 is closed",
+				"scripts/verify-stage-14-completion.sh",
+				"STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS",
+				"STAGE_14_OVERALL_STATUS=CLOSED",
 			},
 		},
 	})

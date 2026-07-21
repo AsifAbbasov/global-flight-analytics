@@ -809,3 +809,14 @@ and permanent audit gates. Stage 14 remains reopened for profiling and final clo
 Status: completed current scope.
 
 The Trajectory read layer now has one SQL owner, dedicated row scanners, caller-owned context, two order-aligned parent indexes, removal of the redundant non-unique segment-order index, and permanent PostgreSQL EXPLAIN ANALYZE evidence. Stage 14 remains reopened for Stage 14.36 final closure only.
+
+<!-- STAGE-14-36-FINAL-CLOSURE:IMPLEMENTATION -->
+
+## Stage 14.36 — Final Closure Audit
+
+Status: COMPLETED.
+
+Stage 14 is closed after the independent cross-stack gate passes on the committed Stage 14.35
+baseline. Documents 41 through 78 form the contiguous evidence register. The authoritative
+machine status is `STAGE_14_OVERALL_STATUS=CLOSED`. Future work belongs to a later stage and
+must not silently reopen Stage 14 without a new documented blocker and explicit status change.

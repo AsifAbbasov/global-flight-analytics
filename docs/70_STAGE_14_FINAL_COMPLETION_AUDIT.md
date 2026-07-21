@@ -1,8 +1,8 @@
 # Document 70 — Stage 14 Final Completion Audit
 
-Status: Reopened v1.5
+Status: Closed v2.0
 Project: Global Flight Analytics
-Scope: retain the cross-stack gate without claiming that the complete Stage 14 debt register is closed
+Scope: own the cross-stack gate and the independently verified final Stage 14 closure decision
 
 ## 1. Audit reason
 
@@ -321,3 +321,27 @@ closure.
 ## Stage 14.35 current-scope evidence
 
 Trajectory query ownership, row mapping, caller context, index migration, and EXPLAIN ANALYZE evidence are now enforced by permanent source and PostgreSQL integration gates. A successful current run emits `STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS`. This is not the Stage 14 closure statement; Stage 14 remains reopened until the independent final closure audit.
+
+<!-- STAGE-14-36-FINAL-CLOSURE:DOCUMENT-70 -->
+
+## 20. Final closure amendment
+
+Stage 14.35 completed the final recorded technical backlog: Trajectory query ownership,
+row-scanner consolidation, caller-context consistency, migration 021, duplicate-index removal,
+and permanent `EXPLAIN ANALYZE` evidence.
+
+Stage 14.36 changes no application behavior. It independently reruns the complete authoritative
+command after Stage 14.35 is committed, adds Document 78 to the contiguous register, and makes
+the current status declaration machine-readable.
+
+A successful run now ends with:
+
+```text
+STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS
+STAGE_14_CURRENT_SCOPE_AUDIT=PASS
+STAGE_14_OVERALL_STATUS=CLOSED
+```
+
+Historical reopening sections above remain evidence of prior invalid closure attempts. They do
+not override the final marker. Stage 14 is closed; later feature development belongs to a new
+stage.

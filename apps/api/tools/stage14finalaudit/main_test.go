@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 37 {
-		t.Fatalf("document count = %d, want 37", len(stage14Documents))
+	if len(stage14Documents) != 38 {
+		t.Fatalf("document count = %d, want 38", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -199,7 +199,7 @@ func TestAuditRepositoryDetectsRetiredDataQualityMigrationReference(t *testing.T
 	}
 }
 
-func TestAuditRepositoryDetectsMissingReopenedStatusSurface(t *testing.T) {
+func TestAuditRepositoryDetectsMissingClosedStatusSurface(t *testing.T) {
 	root := createCompleteFixture(t)
 	path := filepath.Join(root, "README.md")
 	content, err := os.ReadFile(path)
@@ -208,16 +208,16 @@ func TestAuditRepositoryDetectsMissingReopenedStatusSurface(t *testing.T) {
 	}
 	updated := strings.ReplaceAll(
 		string(content),
-		"Stage 14 remains reopened",
 		"Stage 14 is closed",
+		"Stage 14 closure is missing",
 	)
 	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	failures := auditRepository(root, &bytes.Buffer{})
-	if !containsFailureDetail(failures, "Stage 14 remains reopened") {
-		t.Fatalf("missing reopened status was not detected: %#v", failures)
+	if !containsFailureDetail(failures, "Stage 14 is closed") {
+		t.Fatalf("missing closed status was not detected: %#v", failures)
 	}
 }
 
@@ -472,6 +472,28 @@ func TestAuditRepositoryDetectsMissingTrajectoryQueryProfileMigration(t *testing
 	}
 }
 
+func TestAuditRepositoryRejectsReopenedOverallStatus(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(root, "scripts", "verify-stage-14-completion.sh")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := strings.ReplaceAll(
+		string(content),
+		"STAGE_14_OVERALL_STATUS=CLOSED",
+		"STAGE_14_OVERALL_STATUS=REOPENED",
+	)
+	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureDetail(failures, "STAGE_14_OVERALL_STATUS=REOPENED") {
+		t.Fatalf("reopened overall status was not rejected: %#v", failures)
+	}
+}
+
 func TestRunReturnsFailureForMissingDocument(t *testing.T) {
 	root := createCompleteFixture(t)
 	missing := filepath.Join(root, "docs", stage14Documents[len(stage14Documents)-1])
@@ -504,13 +526,13 @@ func createCompleteFixture(t *testing.T) string {
 		t,
 		root,
 		"README.md",
-		"<!-- STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:README -->\nStage 14 remains reopened\n",
+		"<!-- STAGE-14-36-FINAL-CLOSURE:README -->\nStage 14 is closed\nSTAGE_14_OVERALL_STATUS=CLOSED\n",
 	)
 	writeFixtureFile(
 		t,
 		root,
 		"docs/25_IMPLEMENTATION_SEQUENCE.md",
-		"<!-- STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:IMPLEMENTATION -->\nStage 14 remains reopened\n",
+		"<!-- STAGE-14-36-FINAL-CLOSURE:IMPLEMENTATION -->\nStage 14 is closed\nSTAGE_14_OVERALL_STATUS=CLOSED\n",
 	)
 	writeFixtureFile(
 		t,
@@ -534,7 +556,9 @@ func createCompleteFixture(t *testing.T) string {
 		case "60_STAGE_14_19_DATA_QUALITY_PARENT_INTEGRITY.md":
 			content += "Migration 019\n019_data_quality_parent_integrity.sql\n"
 		case "70_STAGE_14_FINAL_COMPLETION_AUDIT.md":
-			content += "STAGE_14_CURRENT_SCOPE_AUDIT=PASS\nFlight Feature timestamp integration\nbackend container\nfrontend production build\n"
+			content += "STAGE-14-36-FINAL-CLOSURE:DOCUMENT-70\nSTAGE_14_CURRENT_SCOPE_AUDIT=PASS\nSTAGE_14_OVERALL_STATUS=CLOSED\nFlight Feature timestamp integration\nbackend container\nfrontend production build\n"
+		case "78_STAGE_14_36_FINAL_CLOSURE_AUDIT.md":
+			content += "Stage 14 is closed\nscripts/verify-stage-14-completion.sh\nSTAGE_14_36_FINAL_CLOSURE_AUDIT=PASS\nSTAGE_14_OVERALL_STATUS=CLOSED\n"
 		}
 		writeFixtureFile(t, root, filepath.Join("docs", fileName), content)
 		index.WriteString(fileName)
@@ -577,7 +601,9 @@ func createCompleteFixture(t *testing.T) string {
 			"scripts/profile-stage-14-trajectory-queries.sh",
 			"STAGE_14_TRAJECTORY_QUERY_PROFILING=PASS",
 			"STAGE_14_35_TRAJECTORY_QUERY_PROFILING=PASS",
+			"STAGE_14_36_FINAL_CLOSURE_AUDIT=PASS",
 			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
+			"STAGE_14_OVERALL_STATUS=CLOSED",
 		}, "\n")+"\n",
 	)
 	writeFixtureFile(t, root, "package.json", `{\n  "scripts": {\n    "verify:stage14": "bash scripts/verify-stage-14-completion.sh"\n  }\n}`+"\n")

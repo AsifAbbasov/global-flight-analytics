@@ -676,3 +676,13 @@ Defines repository-derived migration repair planning, concrete nullable database
 required source provenance, native UUID array membership, PostgreSQL integration evidence,
 permanent regression gates, and the remaining profiling and closure scope.
 77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md
+
+<!-- STAGE-14-36-FINAL-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 78
+
+`78_STAGE_14_36_FINAL_CLOSURE_AUDIT.md`
+
+Defines the committed Stage 14.35 closure baseline, complete Documents 41–78 evidence register,
+authoritative cross-stack command, mandatory final markers, anti-reopening regression gate,
+preserved boundaries, evidence limitations, and formal Stage 14 closed decision.
