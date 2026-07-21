@@ -160,6 +160,8 @@ The backend now preserves transponder and OpenSky observation metadata in the ca
 
 Stage 14 establishes one shared confidence vocabulary, checks Go and TypeScript trajectory contracts, audits analytical package reachability from real runtime roots, and adds supply-chain quality gates. Packages are not deleted until the reachability report distinguishes production, operational, verification, offline research, and genuinely obsolete code.
 
+The Stage 14 migration closure also executes the complete production catalog against clean PostgreSQL. Migration identities must be canonical, unique, and contiguous; Data Quality parent integrity owns version 019 while the earlier Flight State observation metadata migration retains version 016.
+
 <!-- STAGE-14-2-DEAD-CODE-CLASSIFICATION:README -->
 
 ## Dead Code Classification
@@ -255,3 +257,12 @@ The repository now includes a permanent backend correctness gate for Projection 
 ## End-to-End Telemetry Availability
 
 Flight State now preserves velocity, heading, vertical-rate, and on-ground availability from provider mapping through PostgreSQL persistence and downstream analytical reads. Missing provider telemetry remains `NULL`; real zero values remain valid observations.
+
+<!-- STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:README -->
+
+## Stage 14 Migration Catalog Integrity
+
+The duplicate PostgreSQL migration version `016` is removed by assigning Data Quality
+Parent Integrity to canonical migration `019`. The production `cmd/migrate` path is now
+part of the permanent PostgreSQL gate. Stage 14 remains reopened while the remaining
+correctness and maintainability debts are addressed through separate verified increments.

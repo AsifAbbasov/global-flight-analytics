@@ -56,6 +56,7 @@ var stage14Documents = []string{
 	"68_STAGE_14_27_FLIGHT_FEATURE_TIMESTAMP_CONSISTENCY.md",
 	"69_STAGE_14_28_POSTGRES_TRAJECTORY_REPOSITORY_DECOMPOSITION.md",
 	"70_STAGE_14_FINAL_COMPLETION_AUDIT.md",
+	"71_STAGE_14_29_MIGRATION_CATALOG_INTEGRITY.md",
 }
 
 var trajectoryOwnerFiles = []string{
@@ -101,11 +102,11 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	failures := auditRepository(root, stdout)
 	if len(failures) == 0 {
-		fmt.Fprintln(stdout, "Stage 14 final completion source audit: PASS")
+		fmt.Fprintln(stdout, "Stage 14 current-scope source audit: PASS")
 		return 0
 	}
 
-	fmt.Fprintln(stderr, "Stage 14 final completion source audit: FAIL")
+	fmt.Fprintln(stderr, "Stage 14 current-scope source audit: FAIL")
 	for _, failure := range failures {
 		fmt.Fprintf(stderr, "- %s: %s\n", failure.Check, failure.Detail)
 	}
@@ -168,6 +169,7 @@ func auditRepository(root string, output io.Writer) []auditFailure {
 		check func(string) []auditFailure
 	}{
 		{name: "Stage 14 document register", check: auditDocumentRegister},
+		{name: "Migration catalog integrity", check: auditMigrationCatalog},
 		{name: "Go toolchain security", check: auditGoToolchainSecurity},
 		{name: "Unified verification reachability", check: auditUnifiedVerification},
 		{name: "Continuous integration coverage", check: auditContinuousIntegration},
@@ -190,6 +192,130 @@ func auditRepository(root string, output io.Writer) []auditFailure {
 		}
 		return failures[left].Check < failures[right].Check
 	})
+	return failures
+}
+
+func auditMigrationCatalog(root string) []auditFailure {
+	directory := filepath.Join(root, "database", "migrations")
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		return []auditFailure{{
+			Check:  "Migration catalog integrity",
+			Detail: fmt.Sprintf("read database/migrations: %v", err),
+		}}
+	}
+
+	seenVersions := make(map[string]string)
+	seenFiles := make(map[string]bool)
+	failures := make([]auditFailure, 0)
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+
+		fileName := entry.Name()
+		seenFiles[fileName] = true
+		parts := strings.SplitN(strings.TrimSuffix(fileName, ".sql"), "_", 2)
+		if len(parts) != 2 || len(parts[0]) != 3 || parts[1] == "" {
+			failures = append(failures, auditFailure{
+				Check:  "Migration catalog canonical names",
+				Detail: fmt.Sprintf("%s is not a canonical NNN_name.sql file", fileName),
+			})
+			continue
+		}
+		if _, parseErr := strconv.Atoi(parts[0]); parseErr != nil {
+			failures = append(failures, auditFailure{
+				Check:  "Migration catalog canonical names",
+				Detail: fmt.Sprintf("%s has a non-numeric version", fileName),
+			})
+			continue
+		}
+
+		if previous, exists := seenVersions[parts[0]]; exists {
+			failures = append(failures, auditFailure{
+				Check: "Migration catalog unique versions",
+				Detail: fmt.Sprintf(
+					"version %s is owned by both %s and %s",
+					parts[0],
+					previous,
+					fileName,
+				),
+			})
+			continue
+		}
+		seenVersions[parts[0]] = fileName
+	}
+
+	for _, required := range []string{
+		"016_add_flight_state_observation_metadata.sql",
+		"019_data_quality_parent_integrity.sql",
+	} {
+		if !seenFiles[required] {
+			failures = append(failures, auditFailure{
+				Check:  "Migration catalog required ownership",
+				Detail: fmt.Sprintf("missing database/migrations/%s", required),
+			})
+		}
+	}
+	if seenFiles["016_data_quality_parent_integrity.sql"] {
+		failures = append(failures, auditFailure{
+			Check:  "Migration catalog retired duplicate",
+			Detail: "database/migrations/016_data_quality_parent_integrity.sql must not exist",
+		})
+	}
+
+	failures = append(failures, auditRules(root, []fileRule{
+		{
+			Name: "Data Quality source test follows canonical migration ownership",
+			Path: "apps/api/internal/repository/postgres/data_quality_parent_integrity_test.go",
+			Required: []string{
+				"database/migrations/019_data_quality_parent_integrity.sql",
+				"migration 019",
+			},
+			Forbidden: []string{
+				"database/migrations/016_data_quality_parent_integrity.sql",
+			},
+		},
+		{
+			Name: "Data Quality integration test follows canonical migration ownership",
+			Path: "apps/api/internal/repository/postgres/data_quality_parent_integrity_integration_test.go",
+			Required: []string{
+				"database/migrations/019_data_quality_parent_integrity.sql",
+			},
+			Forbidden: []string{
+				"database/migrations/016_data_quality_parent_integrity.sql",
+			},
+		},
+		{
+			Name: "Data Quality document follows canonical migration ownership",
+			Path: "docs/60_STAGE_14_19_DATA_QUALITY_PARENT_INTEGRITY.md",
+			Required: []string{
+				"Migration 019",
+				"019_data_quality_parent_integrity.sql",
+			},
+			Forbidden: []string{
+				"016_data_quality_parent_integrity.sql",
+			},
+		},
+		{
+			Name: "Repository status surfaces keep Stage 14 reopened",
+			Path: "README.md",
+			Required: []string{
+				"STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:README",
+				"Stage 14 remains reopened",
+			},
+		},
+		{
+			Name: "Implementation sequence keeps Stage 14 reopened",
+			Path: "docs/25_IMPLEMENTATION_SEQUENCE.md",
+			Required: []string{
+				"STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:IMPLEMENTATION",
+				"Stage 14 remains reopened",
+			},
+		},
+	})...)
+
 	return failures
 }
 
@@ -280,7 +406,7 @@ func auditGoToolchainSecurity(root string) []auditFailure {
 func auditUnifiedVerification(root string) []auditFailure {
 	return auditRules(root, []fileRule{
 		{
-			Name: "Stage 14 completion script covers every quality boundary",
+			Name: "Stage 14 current-scope script covers every enforced boundary",
 			Path: "scripts/verify-stage-14-completion.sh",
 			Required: []string{
 				"GOTOOLCHAIN=go1.26.5+auto",
@@ -289,6 +415,8 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"go run ./tools/stage14finalaudit -strict",
 				"./internal/repository/postgres",
 				"./internal/features/featurestore",
+				"go run ./cmd/migrate",
+				"STAGE_14_PRODUCTION_MIGRATOR=PASS",
 				"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
 				"pnpm run test:web-dependency-policy",
 				"pnpm run verify:web-dependencies",
@@ -301,37 +429,30 @@ func auditUnifiedVerification(root string) []auditFailure {
 				"docker image inspect",
 				"docker run",
 				"git diff --check",
-				"STAGE_14_COMPLETION_AUDIT=PASS",
+				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			},
 			MaxLines: 320,
 		},
 		{
-			Name: "Root package exposes the final Stage 14 audit",
+			Name: "Root package exposes the Stage 14 current-scope audit",
 			Path: "package.json",
 			Required: []string{
 				`"verify:stage14": "bash scripts/verify-stage-14-completion.sh"`,
 			},
 		},
 		{
-			Name: "Backend audit document points to the cross-stack closure gate",
+			Name: "Backend audit document points to the cross-stack current-scope gate",
 			Path: "docs/56_BACKEND_FINAL_CORRECTNESS_AUDIT.md",
 			Required: []string{
 				"scripts/verify-stage-14-completion.sh",
-				"STAGE_14_COMPLETION_AUDIT=PASS",
+				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 			},
 		},
 		{
-			Name: "PostgreSQL debt register is closed explicitly",
-			Path: "docs/58_STAGE_14_17_POSTGRES_MIGRATION_ATOMICITY.md",
-			Required: []string{
-				"No known PostgreSQL correctness or repository-decomposition debt remains",
-			},
-		},
-		{
-			Name: "Final completion document defines the acceptance marker",
+			Name: "Reopened Stage 14 document defines the current-scope marker",
 			Path: "docs/70_STAGE_14_FINAL_COMPLETION_AUDIT.md",
 			Required: []string{
-				"STAGE_14_COMPLETION_AUDIT=PASS",
+				"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 				"Flight Feature timestamp integration",
 				"backend container",
 				"frontend production build",
@@ -349,6 +470,8 @@ func auditContinuousIntegration(root string) []auditFailure {
 				"go run ./tools/stage14finalaudit -strict",
 				"./internal/repository/postgres",
 				"./internal/features/featurestore",
+				"go run ./cmd/migrate",
+				"MIGRATIONS_DIR",
 				"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
 				"docker build",
 				"Run container health smoke test",

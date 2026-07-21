@@ -9,8 +9,8 @@ import (
 )
 
 func TestStage14DocumentRegisterIsContiguous(t *testing.T) {
-	if len(stage14Documents) != 30 {
-		t.Fatalf("document count = %d, want 30", len(stage14Documents))
+	if len(stage14Documents) != 31 {
+		t.Fatalf("document count = %d, want 31", len(stage14Documents))
 	}
 	for index, fileName := range stage14Documents {
 		expected := index + 41
@@ -169,6 +169,73 @@ func TestAuditRepositoryAllowsPurposeBuiltMinimalFlightStateFixture(t *testing.T
 	}
 }
 
+func TestAuditRepositoryDetectsRetiredDataQualityMigrationReference(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(
+		root,
+		"apps",
+		"api",
+		"internal",
+		"repository",
+		"postgres",
+		"data_quality_parent_integrity_test.go",
+	)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := strings.ReplaceAll(
+		string(content),
+		"019_data_quality_parent_integrity.sql",
+		"016_data_quality_parent_integrity.sql",
+	)
+	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureDetail(failures, "016_data_quality_parent_integrity.sql") {
+		t.Fatalf("retired migration reference was not detected: %#v", failures)
+	}
+}
+
+func TestAuditRepositoryDetectsMissingReopenedStatusSurface(t *testing.T) {
+	root := createCompleteFixture(t)
+	path := filepath.Join(root, "README.md")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := strings.ReplaceAll(
+		string(content),
+		"Stage 14 remains reopened",
+		"Stage 14 is closed",
+	)
+	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureDetail(failures, "Stage 14 remains reopened") {
+		t.Fatalf("missing reopened status was not detected: %#v", failures)
+	}
+}
+
+func TestAuditRepositoryDetectsDuplicateMigrationVersion(t *testing.T) {
+	root := createCompleteFixture(t)
+	writeFixtureFile(
+		t,
+		root,
+		"database/migrations/016_duplicate.sql",
+		"BEGIN;\nSELECT 1;\nCOMMIT;\n",
+	)
+
+	failures := auditRepository(root, &bytes.Buffer{})
+	if !containsFailureCheck(failures, "Migration catalog unique versions") {
+		t.Fatalf("duplicate migration version was not detected: %#v", failures)
+	}
+}
+
 func TestAuditRepositoryDetectsOutdatedGoToolchain(t *testing.T) {
 	root := createCompleteFixture(t)
 	goModPath := filepath.Join(root, "apps", "api", "go.mod")
@@ -214,17 +281,41 @@ func createCompleteFixture(t *testing.T) string {
 	writeFixtureFile(t, root, "apps/api/go.mod", "module example.com/stage14\n\ngo 1.26.5\n")
 	writeFixtureFile(t, root, "apps/api/Dockerfile", "ARG GO_IMAGE=golang:1.26.5-alpine3.24\n")
 	writeFixtureFile(t, root, "apps/web/package.json", "{}\n")
+	writeFixtureFile(
+		t,
+		root,
+		"README.md",
+		"<!-- STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:README -->\nStage 14 remains reopened\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"docs/25_IMPLEMENTATION_SEQUENCE.md",
+		"<!-- STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:IMPLEMENTATION -->\nStage 14 remains reopened\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/data_quality_parent_integrity_test.go",
+		"package postgres\n// database/migrations/019_data_quality_parent_integrity.sql\n// migration 019\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"apps/api/internal/repository/postgres/data_quality_parent_integrity_integration_test.go",
+		"package postgres\n// database/migrations/019_data_quality_parent_integrity.sql\n",
+	)
 
 	var index strings.Builder
 	for _, fileName := range stage14Documents {
 		content := "Stage 14 document\n"
 		switch fileName {
 		case "56_BACKEND_FINAL_CORRECTNESS_AUDIT.md":
-			content += "scripts/verify-stage-14-completion.sh\nSTAGE_14_COMPLETION_AUDIT=PASS\n"
-		case "58_STAGE_14_17_POSTGRES_MIGRATION_ATOMICITY.md":
-			content += "No known PostgreSQL correctness or repository-decomposition debt remains\n"
+			content += "scripts/verify-stage-14-completion.sh\nSTAGE_14_CURRENT_SCOPE_AUDIT=PASS\n"
+		case "60_STAGE_14_19_DATA_QUALITY_PARENT_INTEGRITY.md":
+			content += "Migration 019\n019_data_quality_parent_integrity.sql\n"
 		case "70_STAGE_14_FINAL_COMPLETION_AUDIT.md":
-			content += "STAGE_14_COMPLETION_AUDIT=PASS\nFlight Feature timestamp integration\nbackend container\nfrontend production build\n"
+			content += "STAGE_14_CURRENT_SCOPE_AUDIT=PASS\nFlight Feature timestamp integration\nbackend container\nfrontend production build\n"
 		}
 		writeFixtureFile(t, root, filepath.Join("docs", fileName), content)
 		index.WriteString(fileName)
@@ -244,6 +335,8 @@ func createCompleteFixture(t *testing.T) string {
 			"go run ./tools/stage14finalaudit -strict",
 			"./internal/repository/postgres",
 			"./internal/features/featurestore",
+			"go run ./cmd/migrate",
+			"STAGE_14_PRODUCTION_MIGRATOR=PASS",
 			"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
 			"pnpm run test:web-dependency-policy",
 			"pnpm run verify:web-dependencies",
@@ -256,7 +349,7 @@ func createCompleteFixture(t *testing.T) string {
 			"docker image inspect",
 			"docker run",
 			"git diff --check",
-			"STAGE_14_COMPLETION_AUDIT=PASS",
+			"STAGE_14_CURRENT_SCOPE_AUDIT=PASS",
 		}, "\n")+"\n",
 	)
 	writeFixtureFile(t, root, "package.json", `{\n  "scripts": {\n    "verify:stage14": "bash scripts/verify-stage-14-completion.sh"\n  }\n}`+"\n")
@@ -269,6 +362,8 @@ func createCompleteFixture(t *testing.T) string {
 			"go run ./tools/stage14finalaudit -strict",
 			"./internal/repository/postgres",
 			"./internal/features/featurestore",
+			"go run ./cmd/migrate",
+			"MIGRATIONS_DIR",
 			"go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...",
 			"docker build",
 			"Run container health smoke test",
@@ -309,6 +404,18 @@ func createCompleteFixture(t *testing.T) string {
 		root,
 		"database/migrations/018_trajectory_relational_integrity.sql",
 		"SUM(segment.point_count)\nMIN(segment.sequence_number)\nMAX(segment.sequence_number)\nFROM trajectory_segments AS segment\nWHERE segment.trajectory_id = target_trajectory_id\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"database/migrations/016_add_flight_state_observation_metadata.sql",
+		"BEGIN;\nSELECT 16;\nCOMMIT;\n",
+	)
+	writeFixtureFile(
+		t,
+		root,
+		"database/migrations/019_data_quality_parent_integrity.sql",
+		"BEGIN;\nSELECT 19;\nCOMMIT;\n",
 	)
 	writeFixtureFile(
 		t,

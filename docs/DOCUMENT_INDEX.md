@@ -613,3 +613,14 @@ Defines responsibility-based decomposition of the PostgreSQL Trajectory Reposito
 `70_STAGE_14_FINAL_COMPLETION_AUDIT.md`
 
 Defines the unified cross-stack Stage 14 acceptance gate, patched Go 1.26.5 toolchain ownership, continuous integration reachability, isolated PostgreSQL integration for repository and Flight Feature timestamp semantics, dependency security, frontend production validation, backend container health evidence, final source governance, and the formal completion marker.
+
+<!-- STAGE-14-29-MIGRATION-CATALOG-INTEGRITY:DOCUMENT-INDEX -->
+
+## Document 71
+
+`71_STAGE_14_29_MIGRATION_CATALOG_INTEGRITY.md`
+
+Records the confirmed duplicate migration-version blocker, canonical renumbering of Data
+Quality Parent Integrity to version 019, real repository-catalog validation through the
+production migrator, retirement of the false completion marker, and the explicit
+reopening of Stage 14.

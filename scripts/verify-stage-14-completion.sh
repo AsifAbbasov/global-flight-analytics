@@ -124,6 +124,28 @@ TEST_DATABASE_URL="postgres://postgres:postgres@127.0.0.1:${POSTGRES_PORT}/globa
 export TEST_DATABASE_URL
 
 cd "$API_ROOT"
+
+echo '=== Production migration catalog ==='
+export DATABASE_URL="$TEST_DATABASE_URL"
+export DATABASE_CONNECT_TIMEOUT=10s
+export MIGRATIONS_DIR="$REPOSITORY_ROOT/database/migrations"
+export MIGRATION_TIMEOUT=2m
+go run ./cmd/migrate
+go run ./cmd/migrate
+MIGRATION_FILE_COUNT="$(find "$MIGRATIONS_DIR" -maxdepth 1 -type f -name '*.sql' | wc -l | tr -d ' ')"
+APPLIED_MIGRATION_COUNT="$(
+  docker exec "$POSTGRES_CONTAINER" \
+    psql \
+    -U postgres \
+    -d global_flight_analytics_stage14 \
+    -Atc 'SELECT COUNT(*) FROM schema_migrations;'
+)"
+if [ "$APPLIED_MIGRATION_COUNT" != "$MIGRATION_FILE_COUNT" ]; then
+  printf '%s\n' "ERROR: applied migration count $APPLIED_MIGRATION_COUNT does not match catalog count $MIGRATION_FILE_COUNT" >&2
+  exit 1
+fi
+echo 'STAGE_14_PRODUCTION_MIGRATOR=PASS'
+
 go test -count=1 \
   ./internal/repository/postgres \
   ./internal/features/featurestore
@@ -227,4 +249,5 @@ git diff --check
 cd "$API_ROOT"
 go run ./tools/stage14finalaudit -root "$REPOSITORY_ROOT" -strict
 
-echo 'STAGE_14_COMPLETION_AUDIT=PASS'
+echo 'STAGE_14_CURRENT_SCOPE_AUDIT=PASS'
+echo 'STAGE_14_OVERALL_STATUS=REOPENED'

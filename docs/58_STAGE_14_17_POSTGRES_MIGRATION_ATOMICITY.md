@@ -1,6 +1,6 @@
 # Document 58 — Stage 14.17 PostgreSQL Migration Atomicity
 
-Status: Implementation Baseline v1.3
+Status: Reopened Amendment v1.5
 Project: Global Flight Analytics
 Scope: make schema mutation and migration history recording one atomic operation
 
@@ -92,24 +92,27 @@ git diff --check
 git status --short
 ```
 
-## 8. PostgreSQL debt closure
+## 8. PostgreSQL debt status correction
 
-Documents 59 through 69 close the PostgreSQL correctness and maintainability
-findings recorded after migration atomicity. Document 69 decomposes the final
-known monolithic Trajectory Repository sources without changing their public
-contract, transaction semantics, or SQL behavior.
+The former closure statement was incorrect. The repository still contained duplicate
+migration version `016`, so the production migrator could not list or apply the complete
+catalog. Document 71 reopens Stage 14, assigns Data Quality Parent Integrity to version
+`019`, and adds a real production-migrator gate.
 
-No known PostgreSQL correctness or repository-decomposition debt remains in the
-Stage 14 register. Any future finding must be recorded as a new evidence-backed
-increment rather than being treated as part of this closed list.
+Migration atomicity, advisory locking, and baseline removal remain valid. They do not by
+themselves prove catalog deployability or closure of the remaining PostgreSQL correctness
+and maintainability findings.
 
-## 9. Final closure verification
+## 9. Current verification boundary
 
-Document 70 makes this closure reproducible rather than documentary only. Its unified
-Stage 14 gate runs the PostgreSQL integration packages that own Documents 60 through 69,
-including `internal/features/featurestore`, whose timestamp mirror integration test
-requires `TEST_DATABASE_URL`.
+The current cross-stack script runs production `cmd/migrate` twice against a clean
+PostgreSQL database and verifies that every SQL file has exactly one
+`schema_migrations` row. A successful current-scope marker is evidence for the checks
+actually executed, not proof that the full Stage 14 debt register is closed.
 
-The closed PostgreSQL register remains closed only while the final source audit, package
-tests, isolated PostgreSQL integration, and continuous integration reachability checks
-continue to pass.
+The authoritative status is:
+
+```text
+STAGE_14_CURRENT_SCOPE_AUDIT=PASS
+STAGE_14_OVERALL_STATUS=REOPENED
+```

@@ -1,8 +1,8 @@
 # Document 70 — Stage 14 Final Completion Audit
 
-Status: Implementation Baseline v1.4
+Status: Reopened v1.5
 Project: Global Flight Analytics
-Scope: establish one reproducible cross-stack acceptance gate for Stage 14
+Scope: retain the cross-stack gate without claiming that the complete Stage 14 debt register is closed
 
 ## 1. Audit reason
 
@@ -102,7 +102,7 @@ final source audit and diff validation
 Successful completion ends with:
 
 ```text
-STAGE_14_COMPLETION_AUDIT=PASS
+STAGE_14_CURRENT_SCOPE_AUDIT=PASS
 ```
 
 ## 4. Go standard-library security correction
@@ -229,7 +229,7 @@ No new PostgreSQL migration number is required. The previously unapplyable migra
 Stage 14 is accepted only when the unified command completes and prints:
 
 ```text
-STAGE_14_COMPLETION_AUDIT=PASS
+STAGE_14_CURRENT_SCOPE_AUDIT=PASS
 ```
 
 A passing marker proves the repository state passed the source, backend, PostgreSQL,
@@ -237,9 +237,10 @@ security, frontend, and backend container gates defined in this document. It doe
 claim deployed Render or Neon availability, production traffic load evidence, browser
 end-to-end coverage, or completion of Stage 15 frontend visual design.
 
-After the passing marker is committed with this document, the known Stage 14 correction
-and hardening register is closed. Any later defect is a new evidence-backed finding and
-must not be silently added to the closed Stage 14 debt list.
+The marker proves only the checks implemented by this script. It does not prove that the
+complete Stage 14 debt register is closed. Stage 14 is reopened until the remaining
+evidence-backed correctness and maintainability findings are either fixed or explicitly
+accepted as documented non-blocking design decisions.
 
 ## 18. Scoped PostgreSQL fixture classification
 
@@ -253,3 +254,19 @@ both creates `flight_states` and instantiates `NewFlightStateRepository`. The
 `flightstate_reconciliation_repository_integration_test.go` fixture is upgraded because
 it exercises that complete repository. Purpose-built minimal schemas remain narrow and
 are not padded with unrelated columns.
+
+## 19. Reopening decision
+
+The committed `eb37e03` state contained two SQL files with migration version `016`.
+`migrator.Runner.ListMigrations` rejects duplicate versions, but the former unified gate
+never executed the production migration runner against the full repository catalog.
+Therefore its completion marker was not valid evidence of deployability.
+
+Document 71 introduces a repository-catalog test, moves Data Quality Parent Integrity to
+version `019`, and runs `cmd/migrate` twice against a clean PostgreSQL database. The
+former completion marker is retired. The current script ends with:
+
+```text
+STAGE_14_CURRENT_SCOPE_AUDIT=PASS
+STAGE_14_OVERALL_STATUS=REOPENED
+```

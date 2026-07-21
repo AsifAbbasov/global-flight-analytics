@@ -1,6 +1,6 @@
 # Document 60 — Stage 14.19 Data Quality Parent Integrity
 
-Status: Implementation Baseline v1.0
+Status: Implementation Baseline v1.2
 Project: Global Flight Analytics
 Scope: eliminate accidental orphan Data Quality Reports without losing rejected-observation evidence
 
@@ -69,9 +69,9 @@ the referenced Flight State still exists
 The method preserves the existing task-transition rejection error and returns the
 new parent-integrity error when the task is valid but the Flight State is absent.
 
-## 4. Migration 016
+## 4. Migration 019
 
-`016_data_quality_parent_integrity.sql` performs the transition atomically:
+`019_data_quality_parent_integrity.sql` performs the transition atomically:
 
 ```text
 validate existing state identities
@@ -84,7 +84,7 @@ restore the identity-equality constraint
 create rejected-evidence query indexes
 ```
 
-Rows without any `state_id` are not silently discarded. Migration 016 stops with
+Rows without any `state_id` are not silently discarded. Migration 019 stops with
 an explicit repair error so an operator can inspect them.
 
 ## 5. Deletion policy
@@ -106,7 +106,7 @@ The permanent tests protect:
 canonical repository inserts select an existing parent
 missing parents return the explicit integrity error
 invalid observations use the rejected-evidence table
-migration 016 moves legacy null-parent rows
+migration 019 moves legacy null-parent rows
 canonical identity columns become not null
 canonical parent deletion uses cascade semantics
 PostgreSQL rejects null and unknown canonical parents

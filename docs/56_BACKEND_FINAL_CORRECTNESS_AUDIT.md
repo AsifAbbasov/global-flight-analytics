@@ -1,6 +1,6 @@
 # Document 56 — Backend Final Correctness Audit
 
-Status: Implementation Baseline v1.1
+Status: Reopened Amendment v1.3
 Project: Global Flight Analytics
 Scope: final reproducible backend correctness gate before Stage 15
 
@@ -244,29 +244,23 @@ Layout.
 
 The original nullable telemetry section protected the Projection PostgreSQL read boundary. Stage 14.16 expands the permanent audit to the full production chain: provider mapping, Flight State availability, PostgreSQL writes, general and reconciliation reads, Traffic, Airspace, validator behavior, and Projection eligibility.
 
-## 13. Stage 14 final completion amendment
+## 13. Stage 14 current-scope amendment
 
 The command in this document remains the permanent backend-specific correctness gate.
-Documents 57 through 69 added further data semantics, PostgreSQL correctness, and
-repository-maintainability invariants after the original gate was introduced.
-
-Document 70 adds the cross-stack completion command:
+Document 70 composes it with PostgreSQL, security, frontend, and container checks through:
 
 ```bash
 scripts/verify-stage-14-completion.sh
 ```
 
-That command composes this backend audit with the Stage 14 source register, the exact
-patched Go 1.26.5 toolchain, isolated PostgreSQL integration for both the repository
-package and Flight Feature timestamp store, dependency security, frontend lint and
-TypeScript validation, frontend production build, backend container construction,
-non-root inspection, and container health smoke testing.
-
-The complete Stage 14 closure marker is:
+Document 71 proves that the former completion claim was too broad because the production
+migration catalog had not been exercised through `cmd/migrate`. The former completion
+marker is retired. The cross-stack script now ends with:
 
 ```text
-STAGE_14_COMPLETION_AUDIT=PASS
+STAGE_14_CURRENT_SCOPE_AUDIT=PASS
+STAGE_14_OVERALL_STATUS=REOPENED
 ```
 
-`BACKEND_FINAL_CORRECTNESS_AUDIT=PASS` remains necessary but is no longer sufficient by
-itself to claim complete Stage 14 acceptance.
+`BACKEND_FINAL_CORRECTNESS_AUDIT=PASS` remains necessary evidence for its defined backend
+boundaries, but it is not proof that all Stage 14 debt is closed.

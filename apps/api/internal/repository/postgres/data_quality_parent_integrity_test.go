@@ -70,7 +70,7 @@ func TestDataQualityParentIntegrityMigrationClosesOrphanPath(
 
 	for _, token := range requiredTokens {
 		if !strings.Contains(migration, token) {
-			t.Fatalf("migration 016 is missing parent-integrity token %q", token)
+			t.Fatalf("migration 019 is missing parent-integrity token %q", token)
 		}
 	}
 }
@@ -97,13 +97,13 @@ func readDataQualityParentIntegrityMigration(t *testing.T) string {
 	migrationPath := filepath.Clean(
 		filepath.Join(
 			filepath.Dir(currentFile),
-			"../../../../../database/migrations/016_data_quality_parent_integrity.sql",
+			"../../../../../database/migrations/019_data_quality_parent_integrity.sql",
 		),
 	)
 
 	content, err := os.ReadFile(migrationPath)
 	if err != nil {
-		t.Fatalf("read migration 016: %v", err)
+		t.Fatalf("read migration 019: %v", err)
 	}
 
 	return string(content)

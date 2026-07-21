@@ -8,7 +8,7 @@ BEGIN
         WHERE state_id IS NULL
     ) THEN
         RAISE EXCEPTION
-            'data_quality_reports rows without state_id must be repaired before migration 016';
+            'data_quality_reports rows without state_id must be repaired before migration 019';
     END IF;
 
     IF EXISTS (

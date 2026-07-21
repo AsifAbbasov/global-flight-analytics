@@ -157,7 +157,7 @@ func applyDataQualityParentIntegrityMigration(
 	migrationPath := filepath.Clean(
 		filepath.Join(
 			filepath.Dir(currentFile),
-			"../../../../../database/migrations/016_data_quality_parent_integrity.sql",
+			"../../../../../database/migrations/019_data_quality_parent_integrity.sql",
 		),
 	)
 	sqlBytes, err := os.ReadFile(migrationPath)
