@@ -17,7 +17,7 @@ type regionalRepositoryStub struct {
 	regionalCalls int
 }
 
-func (stub *regionalRepositoryStub) ListTrajectoriesByEndTimeAndBounds(
+func (stub *regionalRepositoryStub) ListTrajectoriesWithinBounds(
 	ctx context.Context,
 	from time.Time,
 	to time.Time,

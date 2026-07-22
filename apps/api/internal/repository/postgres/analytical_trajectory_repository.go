@@ -47,10 +47,15 @@ func (repository *TrajectoryRepository) ListTrajectoriesByIDs(
 		return nil, err
 	}
 
+	uuidArguments, err := trajectoryUUIDArguments(trajectoryIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := repository.trajectoryReadExecutor().Query(
 		ctx,
 		trajectoriesByIDsQuery,
-		trajectoryIDs,
+		uuidArguments,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(

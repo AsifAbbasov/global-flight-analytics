@@ -53,9 +53,9 @@ const trajectoriesByEndTimeQuery = `
 
 const trajectoriesByIDsQuery = `
 	SELECT ` + flightTrajectorySelectColumns + `
-	FROM unnest($1::text[]) WITH ORDINALITY AS requested(id_text, requested_position)
+	FROM unnest($1::uuid[]) WITH ORDINALITY AS requested(id, requested_position)
 	INNER JOIN flight_trajectories AS trajectory
-		ON trajectory.id = requested.id_text::uuid
+		ON trajectory.id = requested.id
 	ORDER BY requested.requested_position;
 `
 

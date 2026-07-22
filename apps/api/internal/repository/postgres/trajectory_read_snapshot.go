@@ -82,11 +82,11 @@ func (
 }
 
 func rollbackTrajectoryReadSnapshot(tx pgx.Tx) {
-	ctx, cancel := context.WithTimeout(
+	rollbackCtx, cancel := context.WithTimeout(
 		context.Background(),
 		trajectoryReadRollbackTimeout,
 	)
 	defer cancel()
 
-	_ = tx.Rollback(ctx)
+	_ = tx.Rollback(rollbackCtx)
 }

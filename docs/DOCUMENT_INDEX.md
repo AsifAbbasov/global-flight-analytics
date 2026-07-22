@@ -700,3 +700,21 @@ records that Stage 14 remains closed.
 ## Domain Layer Review Final Closure
 
 - `80_DOMAIN_LAYER_REVIEW_FINAL_CLOSURE.md` — final accepted-finding closure, value-object boundaries, constructor contracts, and explicitly rejected mechanical recommendations.
+
+---
+
+### Document 81 — PostgreSQL Layer Full Audit Closure
+
+Path:
+
+```text
+docs/81_POSTGRESQL_LAYER_FULL_AUDIT_CLOSURE.md
+```
+
+Purpose:
+
+```text
+Classifies and closes every finding from the original PostgreSQL Layer audit,
+records fixed, not-applicable and deliberately rejected recommendations, and
+binds the closure to executable source, integration, query-plan and runtime-isolation checks.
+```

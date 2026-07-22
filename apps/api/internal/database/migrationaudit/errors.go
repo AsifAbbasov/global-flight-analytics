@@ -15,6 +15,9 @@ var (
 	ErrPostgresPoolRequired = errors.New(
 		"migration audit postgres pool is required",
 	)
+	ErrContextRequired = errors.New(
+		"migration audit context is required",
+	)
 )
 
 type LocalScanError struct {

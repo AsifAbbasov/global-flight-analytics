@@ -63,8 +63,7 @@ type ActiveAircraftRequest struct {
 type ActiveAircraftQuery struct {
 	ObservedFrom time.Time
 	ObservedTo   time.Time
-	UseBounds    bool
-	Bounds       Bounds
+	Scope        ActiveAircraftQueryScope
 }
 
 type ActiveAircraftObservationSummary struct {

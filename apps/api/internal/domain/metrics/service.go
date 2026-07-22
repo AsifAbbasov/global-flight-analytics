@@ -99,6 +99,7 @@ func (
 	query := ActiveAircraftQuery{
 		ObservedFrom: calculatedAt.Add(-window),
 		ObservedTo:   calculatedAt,
+		Scope:        NewGlobalActiveAircraftQueryScope(),
 	}
 
 	scope := MetricScope{
@@ -120,12 +121,16 @@ func (
 				err
 		}
 
-		query.UseBounds = true
-		query.Bounds = Bounds{
-			MinLatitude:  selectedRegion.Bounds.MinLatitude,
-			MaxLatitude:  selectedRegion.Bounds.MaxLatitude,
-			MinLongitude: selectedRegion.Bounds.MinLongitude,
-			MaxLongitude: selectedRegion.Bounds.MaxLongitude,
+		query.Scope, err = NewBoundedActiveAircraftQueryScope(
+			Bounds{
+				MinLatitude:  selectedRegion.Bounds.MinLatitude,
+				MaxLatitude:  selectedRegion.Bounds.MaxLatitude,
+				MinLongitude: selectedRegion.Bounds.MinLongitude,
+				MaxLongitude: selectedRegion.Bounds.MaxLongitude,
+			},
+		)
+		if err != nil {
+			return ActiveAircraftMetric{}, err
 		}
 
 		scope = MetricScope{

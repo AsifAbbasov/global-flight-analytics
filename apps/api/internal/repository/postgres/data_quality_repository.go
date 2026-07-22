@@ -36,10 +36,7 @@ func (repository *DataQualityRepository) SaveFlightStateQuality(
 ) error {
 	return repository.saveFlightStateQuality(
 		ctx,
-		"",
-		0,
-		state,
-		quality,
+		newLiveDataQualityWriteRequest(state, quality),
 	)
 }
 
@@ -50,40 +47,30 @@ func (repository *DataQualityRepository) SaveReconciledFlightStateQuality(
 	state flightstate.FlightState,
 	quality dataquality.DataQuality,
 ) error {
-	normalizedTaskID := reconciliation.NormalizeTaskID(
+	request, err := newReconciledDataQualityWriteRequest(
 		taskID,
-	)
-	if normalizedTaskID == "" {
-		return reconciliation.ErrTaskIDRequired
-	}
-
-	if attemptCount <= 0 {
-		return reconciliation.ErrAttemptCountInvalid
-	}
-
-	return repository.saveFlightStateQuality(
-		ctx,
-		normalizedTaskID,
 		attemptCount,
 		state,
 		quality,
 	)
+	if err != nil {
+		return err
+	}
+	return repository.saveFlightStateQuality(ctx, request)
 }
 
 func (repository *DataQualityRepository) saveFlightStateQuality(
 	ctx context.Context,
-	reconciliationTaskID string,
-	attemptCount int,
-	state flightstate.FlightState,
-	quality dataquality.DataQuality,
+	request dataQualityWriteRequest,
 ) error {
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return err
+	}
+	if err := request.validate(); err != nil {
+		return err
 	}
 
-	warningsJSON, err := json.Marshal(
-		quality.Warnings,
-	)
+	warningsJSON, err := json.Marshal(request.quality.Warnings)
 	if err != nil {
 		return fmt.Errorf(
 			"marshal data quality warnings: %w",
@@ -91,33 +78,40 @@ func (repository *DataQualityRepository) saveFlightStateQuality(
 		)
 	}
 
-	if reconciliationTaskID == "" &&
-		quality.ValidationStatus == dataquality.ValidationStatusInvalid {
-		return repository.insertRejectedFlightStateQuality(
-			ctx,
-			state,
-			quality,
-			string(warningsJSON),
-		)
-	}
-
-	if reconciliationTaskID == "" {
+	switch request.mode {
+	case dataQualityWriteModeLive:
+		if request.quality.ValidationStatus == dataquality.ValidationStatusInvalid {
+			return repository.insertRejectedFlightStateQuality(
+				ctx,
+				request.state,
+				request.quality,
+				string(warningsJSON),
+			)
+		}
 		return repository.insertFlightStateQuality(
 			ctx,
-			state,
-			quality,
+			request.state,
+			request.quality,
 			string(warningsJSON),
 		)
-	}
 
-	return repository.upsertReconciledFlightStateQuality(
-		ctx,
-		reconciliationTaskID,
-		attemptCount,
-		state,
-		quality,
-		string(warningsJSON),
-	)
+	case dataQualityWriteModeReconciled:
+		return repository.upsertReconciledFlightStateQuality(
+			ctx,
+			request.reconciliationTaskID,
+			request.attemptCount,
+			request.state,
+			request.quality,
+			string(warningsJSON),
+		)
+
+	default:
+		return fmt.Errorf(
+			"%w: %d",
+			ErrDataQualityWriteModeInvalid,
+			request.mode,
+		)
+	}
 }
 
 func (repository *DataQualityRepository) insertFlightStateQuality(

@@ -45,8 +45,8 @@ func (r *IngestionRunRepository) CreateRunning(
 			ErrIngestionRunRepositoryPoolRequired
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return ingestionrun.Run{}, err
 	}
 
 	const query = `
@@ -150,8 +150,8 @@ func (r *IngestionRunRepository) markFinished(
 		return ErrIngestionRunRepositoryPoolRequired
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return err
 	}
 
 	normalizedErrorMessage, validationErr := validateIngestionRunCompletion(

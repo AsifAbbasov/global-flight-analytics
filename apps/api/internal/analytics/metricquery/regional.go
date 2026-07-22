@@ -29,7 +29,7 @@ type Bounds struct {
 }
 
 type RegionalRepository interface {
-	ListTrajectoriesByEndTimeAndBounds(
+	ListTrajectoriesWithinBounds(
 		ctx context.Context,
 		observedFrom time.Time,
 		observedTo time.Time,
@@ -138,7 +138,7 @@ func (service *Service) RecentWithinBounds(
 		ctx = context.Background()
 	}
 
-	items, err := repository.ListTrajectoriesByEndTimeAndBounds(
+	items, err := repository.ListTrajectoriesWithinBounds(
 		ctx,
 		window.ObservedFrom,
 		window.ObservedTo,

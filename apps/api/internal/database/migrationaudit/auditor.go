@@ -54,7 +54,7 @@ func (auditor *Auditor) Audit(
 	ctx context.Context,
 ) (Report, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Report{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Report{}, err

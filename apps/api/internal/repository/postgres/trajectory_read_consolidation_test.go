@@ -23,7 +23,8 @@ func TestTrajectoryReadQueriesHaveOneCanonicalOwner(t *testing.T) {
 		"const trajectorySegmentsByTrajectoryIDQuery",
 		"const coverageGapsByTrajectoryIDQuery",
 		"WITH ORDINALITY",
-		"requested.id_text::uuid",
+		"FROM unnest($1::uuid[])",
+		"ON trajectory.id = requested.id",
 	} {
 		if !strings.Contains(querySource, required) {
 			t.Fatalf("canonical trajectory query owner is missing %q", required)

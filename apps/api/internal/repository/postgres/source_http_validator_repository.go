@@ -37,8 +37,8 @@ func (repository *SourceHTTPValidatorRepository) Get(
 			ErrSourceHTTPValidatorRepositoryPoolRequired
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return sourcehttp.Validator{}, false, err
 	}
 
 	const query = `
@@ -98,8 +98,8 @@ func (repository *SourceHTTPValidatorRepository) Upsert(
 		return ErrSourceHTTPValidatorRepositoryPoolRequired
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return err
 	}
 
 	const query = `

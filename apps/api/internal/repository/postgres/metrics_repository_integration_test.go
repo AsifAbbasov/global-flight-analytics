@@ -155,12 +155,14 @@ func TestMetricsRepositoryAppliesActiveAircraftBounds(
 		metrics.ActiveAircraftQuery{
 			ObservedFrom: now.Add(-15 * time.Minute),
 			ObservedTo:   now,
-			UseBounds:    true,
-			Bounds: metrics.Bounds{
-				MinLatitude:  38,
-				MaxLatitude:  44,
-				MinLongitude: 38,
-				MaxLongitude: 51,
+			Scope: metrics.ActiveAircraftQueryScope{
+				Type: metrics.ActiveAircraftQueryScopeBounds,
+				Bounds: metrics.Bounds{
+					MinLatitude:  38,
+					MaxLatitude:  44,
+					MinLongitude: 38,
+					MaxLongitude: 51,
+				},
 			},
 		},
 	)

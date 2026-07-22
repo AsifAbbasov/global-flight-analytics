@@ -49,8 +49,8 @@ func (repository *FlightStateRepository) ListByReconciliationScope(
 		)
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return nil, err
 	}
 
 	const query = `

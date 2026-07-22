@@ -38,8 +38,8 @@ func (repository *ReconciliationRepository) MarkPendingDerivation(
 		return err
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return err
 	}
 
 	normalized := task.Normalize()
@@ -135,8 +135,8 @@ func (repository *ReconciliationRepository) ClaimNextAvailable(
 		return reconciliation.Task{}, err
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return reconciliation.Task{}, err
 	}
 
 	const query = `
@@ -223,8 +223,8 @@ func (repository *ReconciliationRepository) MarkCompleted(
 		return "", reconciliation.ErrAttemptCountInvalid
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return "", err
 	}
 
 	const query = `
@@ -306,8 +306,8 @@ func (repository *ReconciliationRepository) MarkRetry(
 		return reconciliation.ErrNextAttemptAtRequired
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return err
 	}
 
 	const query = `
@@ -376,8 +376,8 @@ func (repository *ReconciliationRepository) MarkFailed(
 		return "", reconciliation.ErrAttemptCountInvalid
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return "", err
 	}
 
 	const query = `
@@ -447,8 +447,8 @@ func (repository *ReconciliationRepository) RequeueStaleProcessing(
 		return 0, reconciliation.ErrStaleBeforeRequired
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := requireRepositoryContext(ctx); err != nil {
+		return 0, err
 	}
 
 	const query = `

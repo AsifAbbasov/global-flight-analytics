@@ -9,7 +9,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
-func (repository *TrajectoryRepository) ListTrajectoriesByEndTimeAndBounds(
+func (repository *TrajectoryRepository) ListTrajectoriesWithinBounds(
 	ctx context.Context,
 	observedFrom time.Time,
 	observedTo time.Time,

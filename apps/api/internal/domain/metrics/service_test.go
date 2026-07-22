@@ -99,7 +99,7 @@ func TestCalculateActiveAircraftBuildsExplainableHighConfidenceMetric(
 		)
 	}
 
-	if !repository.query.UseBounds {
+	if !repository.query.Scope.IsBounded() {
 		t.Fatal(
 			"expected bounded repository query for region metric",
 		)
@@ -187,7 +187,7 @@ func TestCalculateActiveAircraftDefaultsToGlobalFifteenMinuteWindow(
 		)
 	}
 
-	if repository.query.UseBounds {
+	if repository.query.Scope.IsBounded() {
 		t.Fatal(
 			"expected unbounded repository query for global metric",
 		)

@@ -74,6 +74,11 @@ go run ./tools/stage14finalaudit -strict
 echo 'STAGE_14_SOURCE_AUDIT=PASS'
 echo 'MIGRATOR_CONTEXT_AST_AUDIT=PASS'
 
+echo '=== PostgreSQL layer full audit closure ==='
+go test ./tools/postgreslayeraudit -count=1
+go run ./tools/postgreslayeraudit -strict
+echo 'POSTGRESQL_LAYER_FULL_AUDIT=PASS'
+
 echo '=== Established backend final correctness audit ==='
 cd "$REPOSITORY_ROOT"
 bash scripts/verify-backend-final-correctness.sh
