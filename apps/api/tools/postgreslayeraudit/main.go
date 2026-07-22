@@ -107,14 +107,14 @@ func auditPostgreSQLLayer(root string) auditResult {
 		&result,
 	)
 	check(
-		"Trajectory naming contract",
+		"Trajectory intent-oriented naming",
 		!productionGoIdentifierExists(
 			root,
 			[]string{"apps/api/cmd", "apps/api/internal"},
 			"ListTrajectoriesByEndTimeAndBounds",
 			&result,
 		),
-		"legacy trajectory method identifier with an overloaded And contract remains",
+		"legacy ambiguous trajectory method identifier remains after the intent-oriented rename",
 	)
 	trajectoryQueries := readText(root, "apps/api/internal/repository/postgres/trajectory_read_queries.go", &result)
 	trajectoryRepository := readText(root, "apps/api/internal/repository/postgres/analytical_trajectory_repository.go", &result)

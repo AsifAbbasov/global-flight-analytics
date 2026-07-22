@@ -82,6 +82,9 @@ jobs:
       - name: Run architecture and contract audit
         run: go run ./tools/projectaudit -mode all -strict
 
+      - name: Run code review policy audit
+        run: go run ./tools/codereviewaudit -strict
+
       - name: Run Stage 14 completion source audit
         run: go run ./tools/stage14finalaudit -strict
 

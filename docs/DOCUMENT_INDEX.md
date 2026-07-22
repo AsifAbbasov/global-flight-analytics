@@ -718,3 +718,19 @@ Classifies and closes every finding from the original PostgreSQL Layer audit,
 records fixed, not-applicable and deliberately rejected recommendations, and
 binds the closure to executable source, integration, query-plan and runtime-isolation checks.
 ```
+
+<!-- CODE-REVIEW-STANDARD-V1:DOCUMENT-INDEX -->
+
+### Document 82 — Code Review Standard
+
+Path:
+
+```text
+docs/82_CODE_REVIEW_STANDARD.md
+```
+
+Purpose:
+
+```text
+Defines evidence-based finding severity, mandatory review evidence, explicit non-mechanical interpretation of function length, naming, nullability and engineering principles, pull request review requirements, rejection and deferral rules, and merge closure criteria.
+```

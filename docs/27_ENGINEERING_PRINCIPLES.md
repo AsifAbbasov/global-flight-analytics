@@ -395,6 +395,21 @@ as strict as necessary,
 as explainable as the analytics require.
 ```
 
+<!-- CODE-REVIEW-STANDARD-V1 -->
+## 17. Code Review Interpretation Rule
+
+Code review findings must follow the authoritative classification and evidence contract in:
+
+```text
+docs/82_CODE_REVIEW_STANDARD.md
+```
+
+Function length, words such as `And` or `With`, `nil`, and principle names are review signals only. They are not standalone defects. Blocking findings must identify a concrete failure mode, risk, required change, and verification evidence.
+
+When this document and a review prompt differ, Document 82 controls finding severity and closure classification.
+
+---
+
 <!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
 ## Evidence Before Capability
 
