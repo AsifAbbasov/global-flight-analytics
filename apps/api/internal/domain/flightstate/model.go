@@ -1,6 +1,9 @@
 package flightstate
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 type AltitudeStatus string
 
@@ -17,7 +20,20 @@ func ResolveAltitudeStatus(
 	status AltitudeStatus,
 ) AltitudeStatus {
 	if status != "" {
+		if !IsKnownAltitudeStatus(status) {
+			return AltitudeStatusInvalid
+		}
+
+		if status == AltitudeStatusObserved &&
+			(math.IsNaN(value) || math.IsInf(value, 0)) {
+			return AltitudeStatusInvalid
+		}
+
 		return status
+	}
+
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return AltitudeStatusInvalid
 	}
 
 	if value != 0 {

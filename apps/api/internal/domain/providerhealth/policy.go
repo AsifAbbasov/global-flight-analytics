@@ -172,8 +172,44 @@ func validateInput(input EvaluationInput) error {
 	if input.RequestsSuccessful > 0 && input.LastSuccessAt == nil {
 		return errors.New("last provider success timestamp is required when successful requests exist")
 	}
-	if input.FirstRequestAt != nil && input.LastRequestAt != nil && input.FirstRequestAt.After(*input.LastRequestAt) {
+	if err := validateTemporalEvidence(input); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validateTemporalEvidence(input EvaluationInput) error {
+	evaluatedAt := input.EvaluatedAt.UTC()
+
+	for _, timestamp := range []struct {
+		name  string
+		value *time.Time
+	}{
+		{name: "first provider request timestamp", value: input.FirstRequestAt},
+		{name: "last provider request timestamp", value: input.LastRequestAt},
+		{name: "last provider success timestamp", value: input.LastSuccessAt},
+		{name: "last provider failure timestamp", value: input.LastFailureAt},
+	} {
+		if timestamp.value != nil && timestamp.value.After(evaluatedAt) {
+			return fmt.Errorf("%s cannot be after evaluation timestamp", timestamp.name)
+		}
+	}
+
+	if input.FirstRequestAt != nil &&
+		input.LastRequestAt != nil &&
+		input.FirstRequestAt.After(*input.LastRequestAt) {
 		return errors.New("first provider request timestamp cannot be after last request timestamp")
+	}
+	if input.LastSuccessAt != nil &&
+		input.LastRequestAt != nil &&
+		input.LastSuccessAt.After(*input.LastRequestAt) {
+		return errors.New("last provider success timestamp cannot be after last request timestamp")
+	}
+	if input.LastFailureAt != nil &&
+		input.LastRequestAt != nil &&
+		input.LastFailureAt.After(*input.LastRequestAt) {
+		return errors.New("last provider failure timestamp cannot be after last request timestamp")
 	}
 
 	return nil
@@ -183,7 +219,8 @@ func validateObservationEvidence(evidence ObservationEvidence) error {
 	if evidence.Received < 0 || evidence.Accepted < 0 || evidence.Rejected < 0 {
 		return errors.New("provider observation counters must be non-negative")
 	}
-	if evidence.Accepted+evidence.Rejected > evidence.Received {
+	if evidence.Rejected > evidence.Received ||
+		evidence.Accepted > evidence.Received-evidence.Rejected {
 		return errors.New("accepted and rejected observations cannot exceed received observations")
 	}
 
@@ -247,7 +284,11 @@ func (policy Policy) degradedReasons(
 	if lastSuccessAt != nil && evaluatedAt.Sub(*lastSuccessAt) > policy.StaleAfter {
 		reasons = append(reasons, "provider_last_success_is_stale")
 	}
-	if successRatio < policy.MinimumHealthySuccessRatio {
+	if !ratioAtLeastBasisPoints(
+		input.RequestsSuccessful,
+		input.RequestsTotal,
+		ratioToBasisPoints(policy.MinimumHealthySuccessRatio),
+	) {
 		reasons = append(reasons, "provider_success_ratio_below_healthy_threshold")
 	}
 	if input.AverageLatency > policy.MaximumHealthyAverageLatency {
@@ -262,7 +303,11 @@ func (policy Policy) degradedReasons(
 	if input.Budget.State == BudgetStateConstrained {
 		reasons = append(reasons, "provider_budget_is_constrained")
 	}
-	if input.Observations.Received > 0 && rejectionRatio > policy.MaximumHealthyRejectionRatio {
+	if input.Observations.Received > 0 && ratioExceedsBasisPoints(
+		input.Observations.Rejected,
+		input.Observations.Received,
+		ratioToBasisPoints(policy.MaximumHealthyRejectionRatio),
+	) {
 		reasons = append(reasons, "provider_observation_rejection_ratio_above_healthy_threshold")
 	}
 
@@ -321,10 +366,6 @@ func ageSeconds(reference time.Time, value *time.Time) *int64 {
 	}
 
 	age := reference.Sub(*value)
-	if age < 0 {
-		age = 0
-	}
-
 	seconds := int64(age / time.Second)
 	return &seconds
 }

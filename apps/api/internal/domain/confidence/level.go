@@ -72,6 +72,10 @@ func Minimum(
 	left Level,
 	right Level,
 ) Level {
+	if left.Validate() != nil || right.Validate() != nil {
+		return LevelNone
+	}
+
 	if left.Rank() <= right.Rank() {
 		return left
 	}

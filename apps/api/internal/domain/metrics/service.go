@@ -7,37 +7,46 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dependency"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/region"
 )
 
 var ErrInvalidWindowMinutes = errors.New("invalid active aircraft window minutes")
 
+type RegionResolver interface {
+	GetByCode(string) (region.Region, error)
+}
+
 type Service struct {
-	repository    Repository
-	regionService *region.Service
-	now           func() time.Time
+	repository     Repository
+	regionResolver RegionResolver
+	now            func() time.Time
 }
 
 func NewService(
 	repository Repository,
-	regionService *region.Service,
+	regionResolver RegionResolver,
 ) *Service {
 	return newServiceWithClock(
 		repository,
-		regionService,
+		regionResolver,
 		time.Now,
 	)
 }
 
 func newServiceWithClock(
 	repository Repository,
-	regionService *region.Service,
+	regionResolver RegionResolver,
 	now func() time.Time,
 ) *Service {
+	dependency.Must("metrics repository", repository)
+	dependency.Must("metrics region resolver", regionResolver)
+	dependency.Must("metrics clock", now)
+
 	return &Service{
-		repository:    repository,
-		regionService: regionService,
-		now:           now,
+		repository:     repository,
+		regionResolver: regionResolver,
+		now:            now,
 	}
 }
 
@@ -74,7 +83,7 @@ func (
 		),
 	)
 	if regionCode != "" {
-		selectedRegion, err := s.regionService.GetByCode(
+		selectedRegion, err := s.regionResolver.GetByCode(
 			regionCode,
 		)
 		if err != nil {
@@ -160,12 +169,21 @@ func calculateActiveAircraftConfidence(
 		}
 	}
 
+	if summary.LatestObservedAt.After(calculatedAt) {
+		return MetricConfidence{
+			Level: ConfidenceLevelNone,
+			Score: 0,
+			Reasons: []string{
+				"latest_observation_is_in_future",
+				"temporal_evidence_is_invalid",
+				"not_official_air_traffic_control_data",
+			},
+		}
+	}
+
 	latestAge := calculatedAt.Sub(
 		summary.LatestObservedAt,
 	)
-	if latestAge < 0 {
-		latestAge = 0
-	}
 
 	confidence := MetricConfidence{
 		Level: ConfidenceLevelLow,

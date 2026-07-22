@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const maximumLastErrorLength = 4000
@@ -35,6 +36,7 @@ var (
 	ErrStaleBeforeRequired    = errors.New("reconciliation stale-before time is required")
 	ErrNoTaskAvailable        = errors.New("no reconciliation task is available")
 	ErrTaskTransitionRejected = errors.New("reconciliation task transition was rejected")
+	ErrIngestionRunIDInvalid  = errors.New("reconciliation ingestion run identifier is invalid")
 )
 
 type PendingDerivation struct {
@@ -91,6 +93,10 @@ func (task PendingDerivation) Validate() error {
 	if normalized.ICAO24 == "" {
 		return ErrICAO24Required
 	}
+	if strings.Contains(normalized.IngestionRunID, "|") ||
+		!utf8.ValidString(normalized.IngestionRunID) {
+		return ErrIngestionRunIDInvalid
+	}
 
 	if !IsKnownDerivationType(normalized.DerivationType) {
 		return ErrDerivationTypeInvalid
@@ -145,11 +151,17 @@ func NormalizeLastError(
 ) string {
 	normalized := strings.TrimSpace(value)
 
-	if len(normalized) > maximumLastErrorLength {
-		return normalized[:maximumLastErrorLength]
+	normalized = strings.ToValidUTF8(normalized, "\uFFFD")
+	if len(normalized) <= maximumLastErrorLength {
+		return normalized
 	}
 
-	return normalized
+	cut := maximumLastErrorLength
+	for cut > 0 && !utf8.RuneStart(normalized[cut]) {
+		cut--
+	}
+
+	return normalized[:cut]
 }
 
 func normalizeTime(

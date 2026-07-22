@@ -1,6 +1,9 @@
 package region
 
-import "errors"
+import (
+	"errors"
+	"slices"
+)
 
 var ErrRegionNotFound = errors.New("region not found")
 
@@ -82,7 +85,7 @@ func NewService() *Service {
 }
 
 func (s *Service) List() []Region {
-	return s.regions
+	return slices.Clone(s.regions)
 }
 
 func (s *Service) GetByCode(code string) (Region, error) {
