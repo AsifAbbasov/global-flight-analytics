@@ -1,17 +1,23 @@
 package ourairports
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
+	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
 
-const AirportsCSVURL = "https://davidmegginson.github.io/ourairports-data/airports.csv"
+const (
+	AirportsCSVURL              = "https://davidmegginson.github.io/ourairports-data/airports.csv"
+	maxAirportsCSVResponseBytes = 32 << 20
+)
 
 var ErrClientTimeoutRequired = errors.New(
 	"OurAirports client timeout must be greater than zero",
@@ -183,6 +189,21 @@ func (client *Client) LoadAirportsConditional(
 			response.Status,
 		)
 	}
+
+	responseBody, err := integrationcommon.ReadHTTPResponseBody(
+		response,
+		SourceName,
+		maxAirportsCSVResponseBytes,
+	)
+	if err != nil {
+		return LoadResult{}, fmt.Errorf(
+			"read OurAirports airports CSV response: %w",
+			err,
+		)
+	}
+	response.Body = io.NopCloser(
+		bytes.NewReader(responseBody),
+	)
 
 	items, err := client.parseAirports(
 		response,

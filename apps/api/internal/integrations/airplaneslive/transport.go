@@ -1,7 +1,6 @@
 package airplaneslive
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,6 +8,8 @@ import (
 
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
+
+const maxStateResponseBytes int64 = 8 << 20
 
 func (c *Client) doStateRequest(
 	request *http.Request,
@@ -45,29 +46,42 @@ func (c *Client) doStateRequest(
 
 	if response.StatusCode < http.StatusOK ||
 		response.StatusCode >= http.StatusMultipleChoices {
-		if err := c.observeResponse(
+		statusErr := integrationcommon.ProviderStatusError(
+			response.StatusCode,
+		)
+		if statusErr == nil {
+			statusErr = fmt.Errorf(
+				"unexpected provider status %d",
+				response.StatusCode,
+			)
+		}
+		requestErr := fmt.Errorf(
+			"airplanes live request failed: %w",
+			statusErr,
+		)
+
+		if observeErr := c.observeResponse(
 			response,
 			latency,
-		); err != nil {
-			return nil, fmt.Errorf(
-				"observe airplanes live response: %w",
-				err,
+		); observeErr != nil {
+			return nil, errors.Join(
+				requestErr,
+				fmt.Errorf(
+					"observe airplanes live response: %w",
+					observeErr,
+				),
 			)
 		}
 
-		return nil, fmt.Errorf(
-			"airplanes live request failed: %w",
-			integrationcommon.ProviderStatusError(
-				response.StatusCode,
-			),
-		)
+		return nil, requestErr
 	}
 
 	var result StateResponse
 
-	if err := json.NewDecoder(
-		response.Body,
-	).Decode(
+	if err := integrationcommon.DecodeJSONHTTPResponse(
+		response,
+		sourceName,
+		maxStateResponseBytes,
 		&result,
 	); err != nil {
 		decodeErr := fmt.Errorf(
@@ -91,15 +105,10 @@ func (c *Client) doStateRequest(
 		return nil, decodeErr
 	}
 
-	if err := c.observeResponse(
+	_ = c.observeResponse(
 		response,
 		latency,
-	); err != nil {
-		return nil, fmt.Errorf(
-			"observe airplanes live response: %w",
-			err,
-		)
-	}
+	)
 
 	return &result, nil
 }

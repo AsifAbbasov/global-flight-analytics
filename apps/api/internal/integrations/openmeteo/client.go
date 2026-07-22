@@ -2,7 +2,6 @@ package openmeteo
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,7 +14,10 @@ import (
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
 
-const defaultBaseURL = "https://api.open-meteo.com"
+const (
+	defaultBaseURL          = "https://api.open-meteo.com"
+	maxWeatherResponseBytes = 1 << 20
+)
 
 var (
 	ErrInvalidCoordinates = errors.New(
@@ -198,27 +200,42 @@ func (client *Client) GetCurrentWeather(
 
 	if response.StatusCode < http.StatusOK ||
 		response.StatusCode >= http.StatusMultipleChoices {
-		if err := client.observeProviderResponse(
+		statusErr := integrationcommon.ProviderStatusError(
+			response.StatusCode,
+		)
+		if statusErr == nil {
+			statusErr = fmt.Errorf(
+				"unexpected provider status %d",
+				response.StatusCode,
+			)
+		}
+		requestErr := fmt.Errorf(
+			"open-meteo request failed: %w",
+			statusErr,
+		)
+
+		if observeErr := client.observeProviderResponse(
 			response,
 			latency,
-		); err != nil {
-			return weather.CurrentSnapshot{}, fmt.Errorf(
-				"observe open-meteo response: %w",
-				err,
+		); observeErr != nil {
+			return weather.CurrentSnapshot{}, errors.Join(
+				requestErr,
+				fmt.Errorf(
+					"observe open-meteo response: %w",
+					observeErr,
+				),
 			)
 		}
 
-		return weather.CurrentSnapshot{}, fmt.Errorf(
-			"open-meteo unexpected status: %d",
-			response.StatusCode,
-		)
+		return weather.CurrentSnapshot{}, requestErr
 	}
 
 	var payload forecastResponse
 
-	if err := json.NewDecoder(
-		response.Body,
-	).Decode(
+	if err := integrationcommon.DecodeJSONHTTPResponse(
+		response,
+		weather.ProviderOpenMeteo,
+		maxWeatherResponseBytes,
 		&payload,
 	); err != nil {
 		decodeErr := fmt.Errorf(
@@ -285,15 +302,10 @@ func (client *Client) GetCurrentWeather(
 		RetrievedAt:              time.Now().UTC(),
 	}
 
-	if err := client.observeProviderResponse(
+	_ = client.observeProviderResponse(
 		response,
 		latency,
-	); err != nil {
-		return weather.CurrentSnapshot{}, fmt.Errorf(
-			"observe open-meteo response: %w",
-			err,
-		)
-	}
+	)
 
 	return snapshot, nil
 }

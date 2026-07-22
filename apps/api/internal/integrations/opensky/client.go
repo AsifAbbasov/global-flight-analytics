@@ -2,7 +2,6 @@ package opensky
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
+
+const maxStatesResponseBytes int64 = 16 << 20
 
 var (
 	ErrPollingTooSoon          = errors.New("OpenSky state request is earlier than the configured polling interval")
@@ -121,7 +122,12 @@ func (client *Client) GetStates(
 	}
 
 	var payload StateResponse
-	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+	if err := integrationcommon.DecodeJSONHTTPResponse(
+		response,
+		sourceName,
+		maxStatesResponseBytes,
+		&payload,
+	); err != nil {
 		return StatesResult{}, fmt.Errorf("decode OpenSky states response: %w", err)
 	}
 	states, err := payload.ParseStates()
@@ -233,18 +239,12 @@ func (client *Client) do(
 	}
 
 	if client.responseObserver != nil {
-		if err := client.responseObserver.ObserveProviderResponse(
+		_ = client.responseObserver.ObserveProviderResponse(
 			sourceName,
 			response.StatusCode,
-			response.Header,
+			response.Header.Clone(),
 			latency,
-		); err != nil {
-			_ = response.Body.Close()
-			return nil, fmt.Errorf(
-				"observe OpenSky provider response: %w",
-				err,
-			)
-		}
+		)
 	}
 
 	return response, nil

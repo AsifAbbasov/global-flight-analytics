@@ -341,3 +341,57 @@ func mustTrafficFallbackProvider(
 	}
 	return provider
 }
+
+func TestTrafficFallbackProviderUsesOpenSkyWhenPrimaryErrorIncludesObserverFailure(
+	t *testing.T,
+) {
+	observerErr := errors.New("provider observer unavailable")
+	primaryProvider := &fallbackTrafficProviderStub{
+		sourceName: "airplanes.live",
+		err: errors.Join(
+			fmt.Errorf(
+				"primary request: %w",
+				integrationcommon.ErrProviderServer,
+			),
+			observerErr,
+		),
+	}
+	secondaryProvider := &fallbackTrafficProviderStub{
+		sourceName: "opensky",
+		states: []flightstate.FlightState{
+			{ICAO24: "JOIN01"},
+		},
+	}
+	recorder := &fallbackDecisionRecorderStub{}
+
+	provider := mustTrafficFallbackProvider(
+		t,
+		primaryProvider,
+		secondaryProvider,
+		recorder,
+	)
+
+	result, err := provider.LoadByPointWithSource(
+		context.Background(),
+		40.4093,
+		49.8671,
+		100,
+	)
+	if err != nil {
+		t.Fatalf("load fallback after joined error: %v", err)
+	}
+	if result.SourceName != "opensky" {
+		t.Fatalf("source = %q, want opensky", result.SourceName)
+	}
+	if primaryProvider.calls != 1 || secondaryProvider.calls != 1 {
+		t.Fatalf(
+			"calls primary=%d secondary=%d, want 1 and 1",
+			primaryProvider.calls,
+			secondaryProvider.calls,
+		)
+	}
+	if len(recorder.decisions) != 1 ||
+		recorder.decisions[0].Outcome != providerfallback.OutcomeFallbackSelected {
+		t.Fatalf("unexpected fallback decisions: %+v", recorder.decisions)
+	}
+}

@@ -742,3 +742,9 @@ Defines evidence-based finding severity, mandatory review evidence, explicit non
 `83_INGESTION_RUN_LIFECYCLE_HARDENING.md` records bounded terminal status
 contexts, stale `running` recovery, startup ownership, configuration, concurrency
 safety, verification, and remaining ingestion-layer follow-up boundaries.
+
+
+<!-- PROVIDER-HTTP-RESILIENCE-HARDENING-V1:DOCUMENT-INDEX -->
+## Document 84 — Provider HTTP Resilience Hardening
+
+`84_PROVIDER_HTTP_RESILIENCE_HARDENING.md` defines provider status error preservation, non-destructive successful response observation, bounded JSON and CSV response bodies, typed oversized-response errors, and fallback compatibility with joined errors.
