@@ -3,7 +3,6 @@ package providerbudget
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -48,6 +47,8 @@ const (
 	DecisionReasonProviderCooldown DecisionReason = "provider-cooldown"
 
 	DecisionReasonPublicationAlreadyProcessed DecisionReason = "publication-already-processed"
+
+	DecisionReasonPublicationInProgress DecisionReason = "publication-in-progress"
 )
 
 type Decision struct {
@@ -68,7 +69,8 @@ type Manager struct {
 
 	providerReportedStates map[providerpolicy.Provider]providerReportedState
 
-	processedPublications map[providerpolicy.Provider]string
+	publicationStates    map[publicationKey]publicationState
+	nextPublicationToken uint64
 }
 
 type fixedWindowKey struct {
@@ -136,7 +138,7 @@ func NewWithPolicies(
 		policies:               policyIndex,
 		fixedWindowCounters:    make(map[fixedWindowKey]fixedWindowCounter),
 		providerReportedStates: make(map[providerpolicy.Provider]providerReportedState),
-		processedPublications:  make(map[providerpolicy.Provider]string),
+		publicationStates:      make(map[publicationKey]publicationState),
 	}, nil
 }
 
@@ -222,50 +224,6 @@ func (manager *Manager) ObserveProviderReportedBudget(
 	manager.providerReportedStates[provider] = state
 
 	return nil
-}
-
-func (manager *Manager) AcquirePublication(
-	provider providerpolicy.Provider,
-	publicationID string,
-) (Decision, error) {
-	normalizedPublicationID := strings.TrimSpace(
-		publicationID,
-	)
-
-	if normalizedPublicationID == "" {
-		return Decision{}, ErrPublicationIDRequired
-	}
-
-	manager.mu.Lock()
-	defer manager.mu.Unlock()
-
-	policy, err := manager.policy(provider)
-	if err != nil {
-		return Decision{}, err
-	}
-
-	if policy.BudgetMode != providerpolicy.BudgetModePublicationDriven {
-		return Decision{}, fmt.Errorf(
-			"provider %s is not publication-driven",
-			provider,
-		)
-	}
-
-	if manager.processedPublications[provider] == normalizedPublicationID {
-		return Decision{
-			Provider: provider,
-			Allowed:  false,
-			Reason:   DecisionReasonPublicationAlreadyProcessed,
-		}, nil
-	}
-
-	manager.processedPublications[provider] = normalizedPublicationID
-
-	return Decision{
-		Provider: provider,
-		Allowed:  true,
-		Reason:   DecisionReasonAllowed,
-	}, nil
 }
 
 func (manager *Manager) acquireFixedWindow(

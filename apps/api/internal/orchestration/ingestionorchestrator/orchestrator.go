@@ -32,6 +32,10 @@ var (
 	ErrPublicationIDRequired = errors.New(
 		"publication identifier is required",
 	)
+
+	ErrPublicationManagerRequired = errors.New(
+		"publication lifecycle manager is required",
+	)
 )
 
 type Function[T requestcoalescing.Value] func(
@@ -51,11 +55,24 @@ type BudgetManager interface {
 	Acquire(
 		provider providerpolicy.Provider,
 	) (providerbudget.Decision, error)
+}
 
-	AcquirePublication(
+type PublicationManager interface {
+	ReservePublication(
+		ctx context.Context,
 		provider providerpolicy.Provider,
 		publicationID string,
-	) (providerbudget.Decision, error)
+	) (providerbudget.PublicationReservation, error)
+
+	CommitPublication(
+		ctx context.Context,
+		reservation providerbudget.PublicationReservation,
+	) error
+
+	ReleasePublication(
+		ctx context.Context,
+		reservation providerbudget.PublicationReservation,
+	) error
 }
 
 type Coalescer[T requestcoalescing.Value] interface {
@@ -67,15 +84,17 @@ type Coalescer[T requestcoalescing.Value] interface {
 }
 
 type Config[T requestcoalescing.Value] struct {
-	BudgetManager    BudgetManager
-	Coalescer        Coalescer[T]
-	DecisionRecorder DecisionRecorder
+	BudgetManager      BudgetManager
+	PublicationManager PublicationManager
+	Coalescer          Coalescer[T]
+	DecisionRecorder   DecisionRecorder
 }
 
 type Orchestrator[T requestcoalescing.Value] struct {
-	budgetManager    BudgetManager
-	coalescer        Coalescer[T]
-	decisionRecorder DecisionRecorder
+	budgetManager      BudgetManager
+	publicationManager PublicationManager
+	coalescer          Coalescer[T]
+	decisionRecorder   DecisionRecorder
 }
 
 type ExecuteResult[T requestcoalescing.Value] struct {
@@ -125,10 +144,16 @@ func New[T requestcoalescing.Value](
 		return nil, ErrCoalescerRequired
 	}
 
+	publicationManager := config.PublicationManager
+	if publicationManager == nil {
+		publicationManager, _ = config.BudgetManager.(PublicationManager)
+	}
+
 	return &Orchestrator[T]{
-		budgetManager:    config.BudgetManager,
-		coalescer:        config.Coalescer,
-		decisionRecorder: config.DecisionRecorder,
+		budgetManager:      config.BudgetManager,
+		publicationManager: publicationManager,
+		coalescer:          config.Coalescer,
+		decisionRecorder:   config.DecisionRecorder,
 	}, nil
 }
 
@@ -156,6 +181,23 @@ func NewDefaultWithDecisionRecorder[
 	)
 }
 
+func NewPublicationOnly[
+	T requestcoalescing.Value,
+](
+	publicationManager PublicationManager,
+	decisionRecorder DecisionRecorder,
+) (*Orchestrator[T], error) {
+	if publicationManager == nil {
+		return nil, ErrPublicationManagerRequired
+	}
+
+	return &Orchestrator[T]{
+		publicationManager: publicationManager,
+		coalescer:          requestcoalescing.New[T](),
+		decisionRecorder:   decisionRecorder,
+	}, nil
+}
+
 func (
 	orchestrator *Orchestrator[T],
 ) Execute(
@@ -164,6 +206,10 @@ func (
 	requestKey string,
 	function Function[T],
 ) (ExecuteResult[T], error) {
+	if orchestrator == nil || orchestrator.budgetManager == nil {
+		return ExecuteResult[T]{}, ErrBudgetManagerRequired
+	}
+
 	normalizedRequestKey := strings.TrimSpace(
 		requestKey,
 	)
@@ -247,29 +293,26 @@ func (
 	publicationID string,
 	function Function[T],
 ) (ExecuteResult[T], error) {
+	if orchestrator == nil || orchestrator.publicationManager == nil {
+		return ExecuteResult[T]{}, ErrPublicationManagerRequired
+	}
+
 	normalizedRequestKey := strings.TrimSpace(
 		requestKey,
 	)
-
 	if normalizedRequestKey == "" {
-		return ExecuteResult[T]{},
-			ErrRequestKeyRequired
+		return ExecuteResult[T]{}, ErrRequestKeyRequired
 	}
 
 	normalizedPublicationID := strings.TrimSpace(
 		publicationID,
 	)
-
 	if normalizedPublicationID == "" {
-		return ExecuteResult[T]{},
-			ErrPublicationIDRequired
+		return ExecuteResult[T]{}, ErrPublicationIDRequired
 	}
-
 	if function == nil {
-		return ExecuteResult[T]{},
-			ErrFunctionRequired
+		return ExecuteResult[T]{}, ErrFunctionRequired
 	}
-
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -281,19 +324,17 @@ func (
 			normalizedRequestKey,
 			normalizedPublicationID,
 		),
-		func(
-			operationContext context.Context,
-		) (T, error) {
-			decision, err := orchestrator.budgetManager.AcquirePublication(
+		func(operationContext context.Context) (T, error) {
+			reservation, reserveErr := orchestrator.publicationManager.ReservePublication(
+				operationContext,
 				provider,
 				normalizedPublicationID,
 			)
-			if err != nil {
+			if reserveErr != nil {
 				var zero T
-
 				return zero, fmt.Errorf(
-					"acquire publication provider budget: %w",
-					err,
+					"reserve publication provider budget: %w",
+					reserveErr,
 				)
 			}
 
@@ -301,27 +342,55 @@ func (
 				provider,
 				normalizedRequestKey,
 				normalizedPublicationID,
-				decision,
+				reservation.Decision,
 			)
 
-			if !decision.Allowed {
+			if !reservation.Decision.Allowed {
 				var zero T
-
 				return zero, &AccessDeniedError{
-					Provider: decision.Provider,
-					Reason:   decision.Reason,
-					RetryAt:  decision.RetryAt,
+					Provider: reservation.Decision.Provider,
+					Reason:   reservation.Decision.Reason,
+					RetryAt:  reservation.Decision.RetryAt,
 				}
 			}
 
-			return function(
-				operationContext,
+			value, operationErr := function(operationContext)
+			if operationErr != nil {
+				terminalContext, cancel := publicationTerminalContext(operationContext)
+				releaseErr := orchestrator.publicationManager.ReleasePublication(
+					terminalContext,
+					reservation,
+				)
+				cancel()
+				if releaseErr != nil {
+					releaseErr = fmt.Errorf(
+						"release failed publication reservation: %w",
+						releaseErr,
+					)
+				}
+				var zero T
+				return zero, errors.Join(operationErr, releaseErr)
+			}
+
+			terminalContext, cancel := publicationTerminalContext(operationContext)
+			commitErr := orchestrator.publicationManager.CommitPublication(
+				terminalContext,
+				reservation,
 			)
+			cancel()
+			if commitErr != nil {
+				var zero T
+				return zero, fmt.Errorf(
+					"commit successful publication: %w",
+					commitErr,
+				)
+			}
+
+			return value, nil
 		},
 	)
 	if err != nil {
-		return ExecuteResult[T]{},
-			err
+		return ExecuteResult[T]{}, err
 	}
 
 	return ExecuteResult[T]{
@@ -330,6 +399,16 @@ func (
 		Value:      result.Value,
 		Shared:     result.Shared,
 	}, nil
+}
+
+func publicationTerminalContext(
+	ctx context.Context,
+) (context.Context, context.CancelFunc) {
+	baseContext := context.Background()
+	if ctx != nil {
+		baseContext = context.WithoutCancel(ctx)
+	}
+	return context.WithTimeout(baseContext, 15*time.Second)
 }
 
 func (

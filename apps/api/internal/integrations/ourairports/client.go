@@ -43,7 +43,8 @@ type ConditionalRequest struct {
 }
 
 type LoadResult struct {
-	Airports []airport.ImportRecord
+	Airports      []airport.ImportRecord
+	PublicationID string
 
 	RetrievedAt time.Time
 	CheckedAt   time.Time
@@ -201,6 +202,8 @@ func (client *Client) LoadAirportsConditional(
 			err,
 		)
 	}
+	publicationID := publicationIDForResponseBody(responseBody)
+
 	response.Body = io.NopCloser(
 		bytes.NewReader(responseBody),
 	)
@@ -217,12 +220,13 @@ func (client *Client) LoadAirportsConditional(
 	}
 
 	return LoadResult{
-		Airports:     items,
-		RetrievedAt:  checkedAt,
-		CheckedAt:    checkedAt,
-		ETag:         responseETag,
-		LastModified: responseLastModified,
-		NotModified:  false,
+		Airports:      items,
+		PublicationID: publicationID,
+		RetrievedAt:   checkedAt,
+		CheckedAt:     checkedAt,
+		ETag:          responseETag,
+		LastModified:  responseLastModified,
+		NotModified:   false,
 	}, nil
 }
 

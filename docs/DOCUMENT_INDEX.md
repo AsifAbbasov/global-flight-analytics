@@ -753,3 +753,11 @@ safety, verification, and remaining ingestion-layer follow-up boundaries.
 ## Document 85
 
 `85_INGESTION_RETRY_AND_FALLBACK_EVIDENCE_HARDENING.md` records provider-directed retry scheduling, bounded exponential backoff, local-denial ingestion-run semantics, ordered fallback attempt evidence, terminal fallback recording, and OpenSky polling reservation ownership.
+
+<!-- OURAIRPORTS-PUBLICATION-LIFECYCLE-V1:DOCUMENT-INDEX -->
+## Document 86 — OurAirports Publication Lifecycle Hardening
+
+`86_OURAIRPORTS_PUBLICATION_LIFECYCLE_HARDENING.md` records deterministic
+content publication identity, durable PostgreSQL reservation ownership, lease
+recovery, commit and release semantics, validator ordering, production import
+wiring, concurrency protection, and retry evidence.

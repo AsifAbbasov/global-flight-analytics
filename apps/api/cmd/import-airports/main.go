@@ -10,9 +10,12 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/ourairports"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/joho/godotenv"
 )
+
+const ourAirportsPublicationLeaseDuration = 30 * time.Minute
 
 func main() {
 	totalStartedAt := time.Now()
@@ -127,23 +130,36 @@ func main() {
 	airportRepository := postgres.NewAirportRepository(
 		dbPool,
 	)
-
-	databaseImportStartedAt := time.Now()
-
-	reconciledCount, err := airportRepository.UpsertImported(
-		ctx,
-		result.Airports,
+	publicationRepository := postgres.NewProviderPublicationRepository(
+		dbPool,
+		ourAirportsPublicationLeaseDuration,
+		nil,
+	)
+	publicationOrchestrator, err := ingestionorchestrator.NewPublicationOnly[airportImportExecutionValue](
+		publicationRepository,
+		nil,
 	)
 	if err != nil {
 		log.Fatalf(
-			"reconcile OurAirports airports: %v",
+			"create OurAirports publication orchestrator: %v",
 			err,
 		)
 	}
 
-	databaseImportDuration := time.Since(
-		databaseImportStartedAt,
+	databaseImportStartedAt := time.Now()
+	publicationOutcome, err := executeAirportPublication(
+		ctx,
+		publicationOrchestrator,
+		airportRepository,
+		result,
 	)
+	if err != nil {
+		log.Fatalf(
+			"execute OurAirports publication import: %v",
+			err,
+		)
+	}
+	databaseImportDuration := time.Since(databaseImportStartedAt)
 
 	if err := persistHTTPValidator(
 		ctx,
@@ -153,19 +169,27 @@ func main() {
 		log.Fatal(err)
 	}
 
+	retrievalStatus := "downloaded"
+	if publicationOutcome.AlreadyProcessed {
+		retrievalStatus = "already_processed"
+	}
+
 	totalDuration := time.Since(
 		totalStartedAt,
 	)
 
 	fmt.Printf(
-		"source=%s countries=%s retrieval_status=downloaded received=%d reconciled=%d retrieved_at=%s source_load_duration=%s database_reconciliation_duration=%s total_duration=%s\n",
+		"source=%s countries=%s retrieval_status=%s publication_id=%s received=%d reconciled=%d shared=%t retrieved_at=%s source_load_duration=%s database_reconciliation_duration=%s total_duration=%s\n",
 		ourairports.SourceName,
 		strings.Join(
 			countryCodes,
 			",",
 		),
+		retrievalStatus,
+		result.PublicationID,
 		len(result.Airports),
-		reconciledCount,
+		publicationOutcome.ReconciledCount,
+		publicationOutcome.Shared,
 		result.RetrievedAt.Format(
 			time.RFC3339,
 		),
@@ -173,4 +197,5 @@ func main() {
 		databaseImportDuration,
 		totalDuration,
 	)
+
 }

@@ -71,6 +71,46 @@ func (
 	}, nil
 }
 
+func (
+	stub *budgetManagerStub,
+) ReservePublication(
+	_ context.Context,
+	provider providerpolicy.Provider,
+	publicationID string,
+) (providerbudget.PublicationReservation, error) {
+	decision, err := stub.AcquirePublication(provider, publicationID)
+	if err != nil {
+		return providerbudget.PublicationReservation{}, err
+	}
+	reservation := providerbudget.PublicationReservation{
+		Provider:      provider,
+		PublicationID: publicationID,
+		Decision:      decision,
+	}
+	if decision.Allowed {
+		reservation.Token = "budget-manager-stub-token"
+	}
+	return reservation, nil
+}
+
+func (
+	stub *budgetManagerStub,
+) CommitPublication(
+	context.Context,
+	providerbudget.PublicationReservation,
+) error {
+	return nil
+}
+
+func (
+	stub *budgetManagerStub,
+) ReleasePublication(
+	context.Context,
+	providerbudget.PublicationReservation,
+) error {
+	return nil
+}
+
 type coalescerStub struct {
 	callCount int
 	lastKey   string
