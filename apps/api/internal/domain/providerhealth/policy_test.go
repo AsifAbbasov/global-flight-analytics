@@ -241,10 +241,10 @@ func testPolicy() Policy {
 		StaleAfter:                        time.Minute,
 		UnavailableAfter:                  10 * time.Minute,
 		MinimumHealthyRequestSamples:      5,
-		MinimumHealthySuccessRatio:        0.95,
+		MinimumHealthySuccessRatio:        MustBasisPointsFromRatio(0.95),
 		MaximumHealthyAverageLatency:      3 * time.Second,
 		MaximumHealthyConsecutiveFailures: 0,
 		UnavailableConsecutiveFailures:    3,
-		MaximumHealthyRejectionRatio:      0.20,
+		MaximumHealthyRejectionRatio:      MustBasisPointsFromRatio(0.20),
 	}
 }

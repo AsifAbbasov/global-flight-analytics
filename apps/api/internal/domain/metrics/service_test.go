@@ -54,7 +54,7 @@ func TestCalculateActiveAircraftBuildsExplainableHighConfidenceMetric(
 		},
 	}
 
-	service := newServiceWithClock(
+	service := mustNewServiceWithClock(
 		repository,
 		region.NewService(),
 		func() time.Time {
@@ -152,7 +152,7 @@ func TestCalculateActiveAircraftDefaultsToGlobalFifteenMinuteWindow(
 		summary: ActiveAircraftObservationSummary{},
 	}
 
-	service := newServiceWithClock(
+	service := mustNewServiceWithClock(
 		repository,
 		region.NewService(),
 		func() time.Time {
@@ -217,7 +217,7 @@ func TestCalculateActiveAircraftDefaultsToGlobalFifteenMinuteWindow(
 func TestCalculateActiveAircraftRejectsInvalidWindow(
 	t *testing.T,
 ) {
-	service := newServiceWithClock(
+	service := mustNewServiceWithClock(
 		&activeAircraftRepositoryStub{},
 		region.NewService(),
 		time.Now,

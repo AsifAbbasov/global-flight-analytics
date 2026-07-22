@@ -647,7 +647,7 @@ func auditPostgresClosureSurface(root string) []auditFailure {
 			Forbidden: []string{
 				"INSERT INTO flight_states",
 				"flightstate.NormalizeSquawkCode(",
-				"flightstate.ValidateAircraftCategory(",
+				"ResolveAircraftCategory(",
 			},
 		},
 		{

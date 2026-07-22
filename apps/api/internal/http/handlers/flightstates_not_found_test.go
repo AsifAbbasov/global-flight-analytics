@@ -16,7 +16,7 @@ func TestFlightStateHandlerGetLatestByICAO24ReturnsNotFound(
 	t *testing.T,
 ) {
 	handler := NewFlightStateHandler(
-		flightstate.NewService(
+		flightstate.MustNewService(
 			&flightStateNotFoundRepository{},
 		),
 	)

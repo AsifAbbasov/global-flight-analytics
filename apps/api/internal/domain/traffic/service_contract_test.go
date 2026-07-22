@@ -2,8 +2,10 @@ package traffic
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dependency"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/region"
 )
 
@@ -16,29 +18,20 @@ func (trafficServiceRepositoryStub) GetCurrentByBounds(context.Context, Bounds) 
 	return nil, nil
 }
 
-type trafficRegionResolverStub struct{}
+func TestNewServiceReturnsDependencyErrors(t *testing.T) {
+	service, err := NewService(nil, region.NewService())
+	if service != nil || !errors.Is(err, dependency.ErrRequired) {
+		t.Fatalf("NewService(nil, resolver) = %#v, %v", service, err)
+	}
 
-func (trafficRegionResolverStub) GetByCode(string) (region.Region, error) {
-	return region.Region{}, nil
+	service, err = NewService(trafficServiceRepositoryStub{}, nil)
+	if service != nil || !errors.Is(err, dependency.ErrRequired) {
+		t.Fatalf("NewService(repository, nil) = %#v, %v", service, err)
+	}
 }
 
-func TestTrafficServiceRejectsNilDependenciesAndNormalizesNilSlices(t *testing.T) {
-	tests := []func(){
-		func() { NewService(nil, trafficRegionResolverStub{}) },
-		func() { NewService(trafficServiceRepositoryStub{}, nil) },
-	}
-	for _, run := range tests {
-		func() {
-			defer func() {
-				if recover() == nil {
-					t.Fatal("constructor did not panic")
-				}
-			}()
-			run()
-		}()
-	}
-
-	service := NewService(trafficServiceRepositoryStub{}, trafficRegionResolverStub{})
+func TestServiceKeepsCollectionsNonNil(t *testing.T) {
+	service := MustNewService(trafficServiceRepositoryStub{}, region.NewService())
 	items, err := service.GetCurrent(context.Background())
 	if err != nil || items == nil {
 		t.Fatalf("GetCurrent() = %#v, %v", items, err)

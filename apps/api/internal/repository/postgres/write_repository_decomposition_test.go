@@ -37,7 +37,7 @@ func TestWriteRepositoryCoordinatorsRemainNarrow(t *testing.T) {
 				"INSERT INTO flight_states",
 				"NormalizeSquawkCode(",
 				"NormalizePositionSource(",
-				"ValidateAircraftCategory(",
+				"ResolveAircraftCategory(",
 				"altitudeDatabaseValue(",
 			},
 		},
@@ -113,7 +113,7 @@ func TestWriteRepositoryResponsibilitiesHaveDedicatedOwners(t *testing.T) {
 				"func saveFlightStateBatch(",
 				"func prepareFlightStateInsertArguments(",
 				"flightstate.NormalizeSquawkCode(",
-				"flightstate.ValidateAircraftCategory(",
+				"item.ResolveAircraftCategory()",
 			},
 		},
 	} {

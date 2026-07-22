@@ -101,31 +101,6 @@ func NormalizePositionSource(
 	}
 }
 
-func ValidateAircraftCategory(
-	value int,
-	available bool,
-) error {
-	if !available {
-		if value != 0 {
-			return fmt.Errorf(
-				"%w: unavailable category must use zero value, got %d",
-				ErrAircraftCategoryInvalid,
-				value,
-			)
-		}
-		return nil
-	}
-	if value < MinimumAircraftCategory ||
-		value > MaximumAircraftCategory {
-		return fmt.Errorf(
-			"%w: got %d",
-			ErrAircraftCategoryInvalid,
-			value,
-		)
-	}
-	return nil
-}
-
 func ValidateObservationMetadata(
 	state FlightState,
 ) error {
@@ -139,8 +114,6 @@ func ValidateObservationMetadata(
 	); err != nil {
 		return err
 	}
-	return ValidateAircraftCategory(
-		state.AircraftCategory,
-		state.AircraftCategoryAvailable,
-	)
+	_, err := state.ResolveAircraftCategory()
+	return err
 }

@@ -2,7 +2,6 @@ package traffic
 
 import (
 	"context"
-
 	"errors"
 	"strings"
 
@@ -21,13 +20,31 @@ type Service struct {
 
 var ErrServiceRegionCodeRequired = errors.New("traffic service region code is required")
 
-func NewService(repository Repository, regionResolver RegionResolver) *Service {
-	dependency.Must("traffic repository", repository)
-	dependency.Must("traffic region resolver", regionResolver)
+func NewService(
+	repository Repository,
+	regionResolver RegionResolver,
+) (*Service, error) {
+	if err := dependency.Require("traffic repository", repository); err != nil {
+		return nil, err
+	}
+	if err := dependency.Require("traffic region resolver", regionResolver); err != nil {
+		return nil, err
+	}
 	return &Service{
 		repository:     repository,
 		regionResolver: regionResolver,
+	}, nil
+}
+
+func MustNewService(
+	repository Repository,
+	regionResolver RegionResolver,
+) *Service {
+	service, err := NewService(repository, regionResolver)
+	if err != nil {
+		panic(err)
 	}
+	return service
 }
 
 func (s *Service) GetCurrent(ctx context.Context) ([]CurrentTrafficItem, error) {

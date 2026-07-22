@@ -3,23 +3,35 @@ package flightstate
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dependency"
 )
 
 var (
-	ErrServiceFlightIDRequired = errors.New("flight state service flight identifier is required")
-	ErrServiceICAO24Required   = errors.New("flight state service ICAO24 is required")
+	ErrServiceFlightIDRequired        = errors.New("flight state service flight identifier is required")
+	ErrServiceICAO24Required          = errors.New("flight state service ICAO24 is required")
+	ErrServiceRepositoryResultInvalid = errors.New("flight state service repository result is invalid")
 )
 
 type Service struct {
 	repository Repository
 }
 
-func NewService(repository Repository) *Service {
-	dependency.Must("flight state repository", repository)
-	return &Service{repository: repository}
+func NewService(repository Repository) (*Service, error) {
+	if err := dependency.Require("flight state repository", repository); err != nil {
+		return nil, err
+	}
+	return &Service{repository: repository}, nil
+}
+
+func MustNewService(repository Repository) *Service {
+	service, err := NewService(repository)
+	if err != nil {
+		panic(err)
+	}
+	return service
 }
 
 func (s *Service) ListByFlightID(ctx context.Context, flightID string) ([]FlightState, error) {
@@ -35,6 +47,16 @@ func (s *Service) ListByFlightID(ctx context.Context, flightID string) ([]Flight
 	if items == nil {
 		return make([]FlightState, 0), nil
 	}
+	for index, item := range items {
+		if err := item.Validate(); err != nil {
+			return nil, fmt.Errorf(
+				"%w: index=%d: %w",
+				ErrServiceRepositoryResultInvalid,
+				index,
+				err,
+			)
+		}
+	}
 	return items, nil
 }
 
@@ -43,5 +65,16 @@ func (s *Service) GetLatestByICAO24(ctx context.Context, icao24 string) (FlightS
 	if normalized == "" {
 		return FlightState{}, ErrServiceICAO24Required
 	}
-	return s.repository.GetLatestByICAO24(ctx, normalized)
+	item, err := s.repository.GetLatestByICAO24(ctx, normalized)
+	if err != nil {
+		return FlightState{}, err
+	}
+	if err := item.Validate(); err != nil {
+		return FlightState{}, fmt.Errorf(
+			"%w: %w",
+			ErrServiceRepositoryResultInvalid,
+			err,
+		)
+	}
+	return item, nil
 }

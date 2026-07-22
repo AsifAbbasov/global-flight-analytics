@@ -46,7 +46,7 @@ func TestMetricsHandlerReturnsActiveAircraftMetric(
 	}
 
 	app := fiber.New()
-	service := metrics.NewService(
+	service := metrics.MustNewService(
 		repository,
 		region.NewService(),
 	)
@@ -137,7 +137,7 @@ func TestMetricsHandlerRejectsInvalidWindowMinutes(
 	t *testing.T,
 ) {
 	app := fiber.New()
-	service := metrics.NewService(
+	service := metrics.MustNewService(
 		&metricsHandlerRepositoryStub{},
 		region.NewService(),
 	)
@@ -196,7 +196,7 @@ func TestMetricsHandlerReturnsRegionNotFound(
 	t *testing.T,
 ) {
 	app := fiber.New()
-	service := metrics.NewService(
+	service := metrics.MustNewService(
 		&metricsHandlerRepositoryStub{},
 		region.NewService(),
 	)

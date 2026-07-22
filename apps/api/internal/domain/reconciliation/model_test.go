@@ -29,7 +29,10 @@ func TestPendingDerivationBuildsStableDeduplicationKey(
 		ObservedTo:     observedAt.Add(time.Minute),
 	}
 
-	key := task.DeduplicationKey()
+	key, err := task.DeduplicationKey()
+	if err != nil {
+		t.Fatalf("build deduplication key: %v", err)
+	}
 
 	if key != "trajectory|abc123|550e8400-e29b-41d4-a716-446655440000|2026-07-11T10:00:00Z|2026-07-11T10:01:00Z" {
 		t.Fatalf(

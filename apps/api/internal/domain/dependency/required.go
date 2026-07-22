@@ -9,9 +9,9 @@ import (
 
 var ErrRequired = errors.New("domain dependency is required")
 
-func Must(name string, value any) {
+func Require(name string, value any) error {
 	if !IsNil(value) {
-		return
+		return nil
 	}
 
 	normalizedName := strings.TrimSpace(name)
@@ -19,7 +19,13 @@ func Must(name string, value any) {
 		normalizedName = "unnamed dependency"
 	}
 
-	panic(fmt.Errorf("%w: %s", ErrRequired, normalizedName))
+	return fmt.Errorf("%w: %s", ErrRequired, normalizedName)
+}
+
+func Must(name string, value any) {
+	if err := Require(name, value); err != nil {
+		panic(err)
+	}
 }
 
 func IsNil(value any) bool {

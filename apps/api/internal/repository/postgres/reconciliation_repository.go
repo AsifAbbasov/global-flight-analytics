@@ -47,6 +47,11 @@ func (repository *ReconciliationRepository) MarkPendingDerivation(
 		return err
 	}
 
+	deduplicationKey, err := normalized.DeduplicationKey()
+	if err != nil {
+		return err
+	}
+
 	const query = `
 		INSERT INTO derived_reconciliation_tasks AS existing (
 			deduplication_key,
@@ -102,10 +107,10 @@ func (repository *ReconciliationRepository) MarkPendingDerivation(
 			completed_at = NULL;
 	`
 
-	_, err := repository.db.Exec(
+	_, err = repository.db.Exec(
 		ctx,
 		query,
-		normalized.DeduplicationKey(),
+		deduplicationKey,
 		nullableUUID(normalized.IngestionRunID),
 		normalized.ICAO24,
 		string(normalized.DerivationType),

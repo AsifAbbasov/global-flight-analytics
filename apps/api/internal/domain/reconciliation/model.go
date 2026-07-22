@@ -113,8 +113,11 @@ func (task PendingDerivation) Validate() error {
 	return nil
 }
 
-func (task PendingDerivation) DeduplicationKey() string {
+func (task PendingDerivation) DeduplicationKey() (string, error) {
 	normalized := task.Normalize()
+	if err := normalized.Validate(); err != nil {
+		return "", err
+	}
 
 	return strings.Join(
 		[]string{
@@ -125,7 +128,7 @@ func (task PendingDerivation) DeduplicationKey() string {
 			formatTimeKey(normalized.ObservedTo),
 		},
 		"|",
-	)
+	), nil
 }
 
 func IsKnownDerivationType(

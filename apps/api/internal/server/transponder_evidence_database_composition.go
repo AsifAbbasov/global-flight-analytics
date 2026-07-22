@@ -39,7 +39,7 @@ func composeTransponderEvidenceDatabaseRuntime(
 	transponderEvidenceDatabaseRuntime,
 	error,
 ) {
-	flightStateService := flightstate.NewService(
+	flightStateService := flightstate.MustNewService(
 		postgres.NewFlightStateRepository(
 			dbPool,
 		),

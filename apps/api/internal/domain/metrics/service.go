@@ -26,7 +26,7 @@ type Service struct {
 func NewService(
 	repository Repository,
 	regionResolver RegionResolver,
-) *Service {
+) (*Service, error) {
 	return newServiceWithClock(
 		repository,
 		regionResolver,
@@ -34,20 +34,49 @@ func NewService(
 	)
 }
 
+func MustNewService(
+	repository Repository,
+	regionResolver RegionResolver,
+) *Service {
+	service, err := NewService(repository, regionResolver)
+	if err != nil {
+		panic(err)
+	}
+	return service
+}
+
 func newServiceWithClock(
 	repository Repository,
 	regionResolver RegionResolver,
 	now func() time.Time,
-) *Service {
-	dependency.Must("metrics repository", repository)
-	dependency.Must("metrics region resolver", regionResolver)
-	dependency.Must("metrics clock", now)
+) (*Service, error) {
+	if err := dependency.Require("metrics repository", repository); err != nil {
+		return nil, err
+	}
+	if err := dependency.Require("metrics region resolver", regionResolver); err != nil {
+		return nil, err
+	}
+	if err := dependency.Require("metrics clock", now); err != nil {
+		return nil, err
+	}
 
 	return &Service{
 		repository:     repository,
 		regionResolver: regionResolver,
 		now:            now,
+	}, nil
+}
+
+func mustNewServiceWithClock(
+	repository Repository,
+	regionResolver RegionResolver,
+	now func() time.Time,
+) *Service {
+	service, err := newServiceWithClock(repository, regionResolver, now)
+	if err != nil {
+		panic(err)
 	}
+	return service
 }
 
 func (
@@ -169,7 +198,10 @@ func calculateActiveAircraftConfidence(
 		}
 	}
 
-	if summary.LatestObservedAt.After(calculatedAt) {
+	latestAge := calculatedAt.Sub(
+		summary.LatestObservedAt,
+	)
+	if latestAge < 0 {
 		return MetricConfidence{
 			Level: ConfidenceLevelNone,
 			Score: 0,
@@ -180,10 +212,6 @@ func calculateActiveAircraftConfidence(
 			},
 		}
 	}
-
-	latestAge := calculatedAt.Sub(
-		summary.LatestObservedAt,
-	)
 
 	confidence := MetricConfidence{
 		Level: ConfidenceLevelLow,

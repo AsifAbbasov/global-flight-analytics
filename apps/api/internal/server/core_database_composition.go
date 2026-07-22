@@ -41,7 +41,7 @@ func composeCoreDatabaseRuntime(
 	dbPool *pgxpool.Pool,
 ) coreDatabaseRuntime {
 	regionService := region.NewService()
-	airportService := airport.NewService(
+	airportService := airport.MustNewService(
 		postgres.NewAirportRepository(dbPool),
 	)
 	trajectoryService := trafficquery.New(
@@ -94,7 +94,7 @@ func composeCoreAircraftDatabaseHandler(
 	dbPool *pgxpool.Pool,
 ) *handlers.AircraftHandler {
 	return handlers.NewAircraftHandler(
-		aircraft.NewService(
+		aircraft.MustNewService(
 			postgres.NewAircraftRepository(
 				dbPool,
 			),
@@ -106,7 +106,7 @@ func composeCoreFlightDatabaseHandler(
 	dbPool *pgxpool.Pool,
 ) *handlers.FlightHandler {
 	return handlers.NewFlightHandler(
-		flight.NewService(
+		flight.MustNewService(
 			postgres.NewFlightRepository(
 				dbPool,
 			),
@@ -118,7 +118,7 @@ func composeCoreFlightStateDatabaseHandler(
 	dbPool *pgxpool.Pool,
 ) *handlers.FlightStateHandler {
 	return handlers.NewFlightStateHandler(
-		flightstate.NewService(
+		flightstate.MustNewService(
 			postgres.NewFlightStateRepository(
 				dbPool,
 			),
@@ -131,7 +131,7 @@ func composeCoreMetricsDatabaseHandler(
 	regionService *region.Service,
 ) *handlers.MetricsHandler {
 	return handlers.NewMetricsHandler(
-		metrics.NewService(
+		metrics.MustNewService(
 			postgres.NewMetricsRepository(
 				dbPool,
 			),
@@ -145,7 +145,7 @@ func composeCoreTrafficDatabaseHandler(
 	regionService *region.Service,
 ) *handlers.TrafficHandler {
 	return handlers.NewTrafficHandler(
-		traffic.NewService(
+		traffic.MustNewService(
 			postgres.NewTrafficRepository(
 				dbPool,
 			),

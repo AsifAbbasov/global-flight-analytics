@@ -31,10 +31,16 @@ func (value FlightState) Validate() error {
 	if strings.TrimSpace(value.SourceName) == "" {
 		return ErrFlightStateSourceRequired
 	}
-	if ResolveAltitudeStatus(value.BarometricAltitudeM, value.BarometricAltitudeStatus) == AltitudeStatusInvalid ||
-		ResolveAltitudeStatus(value.GeometricAltitudeM, value.GeometricAltitudeStatus) == AltitudeStatusInvalid {
+
+	barometricAltitude, err := value.BarometricAltitude()
+	if err != nil || barometricAltitude.Validate() != nil {
 		return ErrFlightStateAltitudeInvalid
 	}
+	geometricAltitude, err := value.GeometricAltitude()
+	if err != nil || geometricAltitude.Validate() != nil {
+		return ErrFlightStateAltitudeInvalid
+	}
+
 	if value.VelocityAvailable && (!finiteTelemetry(value.VelocityMPS) || value.VelocityMPS < 0) {
 		return ErrFlightStateVelocityInvalid
 	}
@@ -43,6 +49,9 @@ func (value FlightState) Validate() error {
 	}
 	if value.VerticalRateAvailable && !finiteTelemetry(value.VerticalRateMPS) {
 		return ErrFlightStateVerticalRateInvalid
+	}
+	if err := ValidateObservationMetadata(value); err != nil {
+		return err
 	}
 	return nil
 }

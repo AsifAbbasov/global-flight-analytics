@@ -72,11 +72,11 @@ func DefaultPolicy() providerhealthdomain.Policy {
 		StaleAfter:                        2 * time.Minute,
 		UnavailableAfter:                  10 * time.Minute,
 		MinimumHealthyRequestSamples:      5,
-		MinimumHealthySuccessRatio:        0.90,
+		MinimumHealthySuccessRatio:        providerhealthdomain.MustBasisPointsFromRatio(0.90),
 		MaximumHealthyAverageLatency:      5 * time.Second,
 		MaximumHealthyConsecutiveFailures: 1,
 		UnavailableConsecutiveFailures:    3,
-		MaximumHealthyRejectionRatio:      0.20,
+		MaximumHealthyRejectionRatio:      providerhealthdomain.MustBasisPointsFromRatio(0.20),
 	}
 }
 

@@ -244,7 +244,11 @@ func TestProcessAndStoreMarksEveryFailedQualityDerivation(
 		len(reconciliationRepository.tasks),
 	)
 	for _, task := range reconciliationRepository.tasks {
-		keys[task.DeduplicationKey()] = struct{}{}
+		key, err := task.DeduplicationKey()
+		if err != nil {
+			t.Fatalf("build reconciliation deduplication key: %v", err)
+		}
+		keys[key] = struct{}{}
 	}
 
 	if len(keys) != 2 {

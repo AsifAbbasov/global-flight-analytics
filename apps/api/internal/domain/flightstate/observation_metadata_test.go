@@ -22,18 +22,22 @@ func TestNormalizeSquawkCodeRejectsNonOctalValue(t *testing.T) {
 	}
 }
 
-func TestValidateAircraftCategoryPreservesAvailabilityMeaning(t *testing.T) {
-	if err := ValidateAircraftCategory(0, true); err != nil {
+func TestAircraftCategoryValueObjectPreservesAvailabilityMeaning(t *testing.T) {
+	if _, err := NewAircraftCategory(0); err != nil {
 		t.Fatalf("category zero can be observed: %v", err)
 	}
-	if err := ValidateAircraftCategory(0, false); err != nil {
+	if err := UnavailableAircraftCategory().Validate(); err != nil {
 		t.Fatalf("unavailable category zero: %v", err)
 	}
-	if err := ValidateAircraftCategory(6, true); err != nil {
+	if _, err := NewAircraftCategory(6); err != nil {
 		t.Fatalf("observed heavy category: %v", err)
 	}
-	if !errors.Is(
-		ValidateAircraftCategory(6, false),
+	state := FlightState{
+		AircraftCategory:          6,
+		AircraftCategoryAvailable: false,
+	}
+	if _, err := state.ResolveAircraftCategory(); !errors.Is(
+		err,
 		ErrAircraftCategoryInvalid,
 	) {
 		t.Fatal("expected unavailable non-zero category to be rejected")

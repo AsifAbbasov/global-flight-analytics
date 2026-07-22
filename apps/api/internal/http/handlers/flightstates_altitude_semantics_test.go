@@ -268,7 +268,7 @@ func TestFlightStateHandlerLatestPublishesExplicitAltitudeJSONSemantics(
 	app := fiber.New()
 
 	handler := NewFlightStateHandler(
-		flightstate.NewService(
+		flightstate.MustNewService(
 			repository,
 		),
 	)
@@ -383,7 +383,7 @@ func TestFlightStateHandlerListPublishesDistinctAltitudeJSONSemantics(
 	app := fiber.New()
 
 	handler := NewFlightStateHandler(
-		flightstate.NewService(
+		flightstate.MustNewService(
 			repository,
 		),
 	)

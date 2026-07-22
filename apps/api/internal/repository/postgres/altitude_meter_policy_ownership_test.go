@@ -42,7 +42,9 @@ func TestFlightStateRepositoryDoesNotDelegateAltitudeRoundingToSQL(
 	}
 
 	for _, required := range []string{
-		"altitudeMetersToPostgresInteger(value)",
+		"flightstate.NewAltitude(",
+		"altitudeMetersToPostgresInteger(",
+		"altitude.Meters()",
 		"pgtype.Int4",
 	} {
 		if !strings.Contains(source, required) {

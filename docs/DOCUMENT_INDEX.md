@@ -696,3 +696,7 @@ preserved boundaries, evidence limitations, and formal Stage 14 closed decision.
 Defines explicit nil-context rejection for PostgreSQL migration execution and advisory locking,
 preserves bounded independent cleanup contexts, adds permanent regression protection, and
 records that Stage 14 remains closed.
+
+## Domain Layer Review Final Closure
+
+- `80_DOMAIN_LAYER_REVIEW_FINAL_CLOSURE.md` — final accepted-finding closure, value-object boundaries, constructor contracts, and explicitly rejected mechanical recommendations.

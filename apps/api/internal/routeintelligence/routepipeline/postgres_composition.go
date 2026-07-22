@@ -81,7 +81,7 @@ func NewPostgres(
 		postgres.NewAirportRepository(
 			config.Pool,
 		)
-	airportService := airport.NewService(
+	airportService := airport.MustNewService(
 		airportRepository,
 	)
 

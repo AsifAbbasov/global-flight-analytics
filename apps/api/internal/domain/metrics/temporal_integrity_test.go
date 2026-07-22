@@ -20,7 +20,7 @@ func TestCalculateActiveAircraftFailsClosedForFutureObservation(t *testing.T) {
 			HasObservations:  true,
 		},
 	}
-	service := newServiceWithClock(repository, region.NewService(), func() time.Time { return now })
+	service := mustNewServiceWithClock(repository, region.NewService(), func() time.Time { return now })
 
 	metric, err := service.CalculateActiveAircraft(context.Background(), ActiveAircraftRequest{})
 	if err != nil {

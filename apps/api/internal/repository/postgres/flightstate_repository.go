@@ -336,25 +336,48 @@ func altitudeDatabaseValue(
 	string,
 	error,
 ) {
-	effectiveStatus := flightstate.ResolveAltitudeStatus(
+	altitude, err := flightstate.NewAltitude(
 		value,
 		status,
 	)
+	if err != nil {
+		switch {
+		case status == flightstate.AltitudeStatusObserved:
+			_, conversionErr := altitudeMetersToPostgresInteger(value)
+			if conversionErr != nil {
+				return pgtype.Int4{}, "", conversionErr
+			}
+			return pgtype.Int4{}, "", err
 
-	if !flightstate.IsKnownAltitudeStatus(
-		effectiveStatus,
-	) {
-		return pgtype.Int4{},
-			"",
-			fmt.Errorf(
-				"unsupported altitude status %q",
-				effectiveStatus,
-			)
+		case errors.Is(err, flightstate.ErrAltitudeStatusInvalid):
+			return pgtype.Int4{},
+				"",
+				fmt.Errorf(
+					"unsupported altitude status %q: %w",
+					status,
+					err,
+				)
+
+		case status == flightstate.AltitudeStatusInvalid,
+			status == "":
+			return pgtype.Int4{
+					Valid: false,
+				},
+				string(flightstate.AltitudeStatusInvalid),
+				nil
+
+		default:
+			return pgtype.Int4{}, "", err
+		}
 	}
+
+	effectiveStatus := altitude.Status()
 
 	switch effectiveStatus {
 	case flightstate.AltitudeStatusObserved:
-		integerValue, err := altitudeMetersToPostgresInteger(value)
+		integerValue, err := altitudeMetersToPostgresInteger(
+			altitude.Meters(),
+		)
 		if err != nil {
 			return pgtype.Int4{}, "", err
 		}

@@ -1,38 +1,38 @@
 package providerhealth
 
 import (
-	"slices"
+	"errors"
+	"math"
 	"testing"
-	"time"
 )
 
-func TestPolicyUsesExactIntegerRatioForLargeCounters(t *testing.T) {
-	const denominator int64 = 9_007_199_254_740_993
-	const numerator int64 = 9_007_199_254_740_992
-	now := time.Now().UTC()
-	request := now
-	policy := testPolicy()
-	policy.MinimumHealthySuccessRatio = 1
-	snapshot, err := policy.Evaluate(EvaluationInput{
-		ProviderName: "large-counter-provider", EvaluatedAt: now,
-		FirstRequestAt: &request, LastRequestAt: &request, LastSuccessAt: &request,
-		RequestsTotal: denominator, RequestsSuccessful: numerator,
-		LatestOutcome: RequestOutcomeSuccess,
-		Budget:        BudgetEvidence{State: BudgetStateUnknown},
-	})
+func TestBasisPointsFromRatioBuildsTypedThreshold(t *testing.T) {
+	value, err := BasisPointsFromRatio(0.95)
 	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
+		t.Fatalf("BasisPointsFromRatio() error = %v", err)
 	}
-	if !slices.Contains(snapshot.Reasons, "provider_success_ratio_below_healthy_threshold") {
-		t.Fatalf("reasons = %v", snapshot.Reasons)
+	if value != 9_500 || value.Ratio() != 0.95 {
+		t.Fatalf("basis points = %d ratio=%v", value, value.Ratio())
 	}
 }
 
-func TestRatioToBasisPointsUsesPolicyScale(t *testing.T) {
-	if got := ratioToBasisPoints(0.95); got != 9_500 {
-		t.Fatalf("threshold = %d, want 9500", got)
+func TestBasisPointsRejectInvalidRatio(t *testing.T) {
+	for _, value := range []float64{-0.01, 1.01, math.NaN(), math.Inf(1)} {
+		_, err := BasisPointsFromRatio(value)
+		if !errors.Is(err, ErrBasisPointsInvalid) {
+			t.Fatalf("value %v error = %v", value, err)
+		}
 	}
-	if !ratioAtLeastBasisPoints(19, 20, 9_500) {
-		t.Fatal("19/20 must satisfy 9500 basis points")
+}
+
+func TestBasisPointComparisonPreservesLargeCounterPrecision(t *testing.T) {
+	const denominator int64 = 9_007_199_254_740_993
+	numerator := denominator - 1
+	if !ratioAtLeastBasisPoints(
+		numerator,
+		denominator,
+		MustBasisPointsFromRatio(0.9999),
+	) {
+		t.Fatal("large exact ratio should satisfy 99.99 percent threshold")
 	}
 }

@@ -13,11 +13,11 @@ type Policy struct {
 	StaleAfter                        time.Duration
 	UnavailableAfter                  time.Duration
 	MinimumHealthyRequestSamples      int64
-	MinimumHealthySuccessRatio        float64
+	MinimumHealthySuccessRatio        BasisPoints
 	MaximumHealthyAverageLatency      time.Duration
 	MaximumHealthyConsecutiveFailures int
 	UnavailableConsecutiveFailures    int
-	MaximumHealthyRejectionRatio      float64
+	MaximumHealthyRejectionRatio      BasisPoints
 }
 
 func (policy Policy) Evaluate(input EvaluationInput) (Snapshot, error) {
@@ -114,8 +114,8 @@ func (policy Policy) validate() error {
 	if policy.MinimumHealthyRequestSamples <= 0 {
 		return errors.New("minimum healthy request samples must be positive")
 	}
-	if !isRatio(policy.MinimumHealthySuccessRatio) {
-		return errors.New("minimum healthy success ratio must be between zero and one")
+	if err := policy.MinimumHealthySuccessRatio.Validate(); err != nil {
+		return fmt.Errorf("minimum healthy success ratio: %w", err)
 	}
 	if policy.MaximumHealthyAverageLatency <= 0 {
 		return errors.New("maximum healthy average latency must be positive")
@@ -126,8 +126,8 @@ func (policy Policy) validate() error {
 	if policy.UnavailableConsecutiveFailures <= policy.MaximumHealthyConsecutiveFailures {
 		return errors.New("unavailable consecutive failures must be greater than maximum healthy consecutive failures")
 	}
-	if !isRatio(policy.MaximumHealthyRejectionRatio) {
-		return errors.New("maximum healthy rejection ratio must be between zero and one")
+	if err := policy.MaximumHealthyRejectionRatio.Validate(); err != nil {
+		return fmt.Errorf("maximum healthy rejection ratio: %w", err)
 	}
 
 	return nil
@@ -287,7 +287,7 @@ func (policy Policy) degradedReasons(
 	if !ratioAtLeastBasisPoints(
 		input.RequestsSuccessful,
 		input.RequestsTotal,
-		ratioToBasisPoints(policy.MinimumHealthySuccessRatio),
+		policy.MinimumHealthySuccessRatio,
 	) {
 		reasons = append(reasons, "provider_success_ratio_below_healthy_threshold")
 	}
@@ -306,7 +306,7 @@ func (policy Policy) degradedReasons(
 	if input.Observations.Received > 0 && ratioExceedsBasisPoints(
 		input.Observations.Rejected,
 		input.Observations.Received,
-		ratioToBasisPoints(policy.MaximumHealthyRejectionRatio),
+		policy.MaximumHealthyRejectionRatio,
 	) {
 		reasons = append(reasons, "provider_observation_rejection_ratio_above_healthy_threshold")
 	}

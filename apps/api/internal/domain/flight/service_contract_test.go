@@ -4,38 +4,53 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/dependency"
 )
 
-type flightServiceRepositoryStub struct{ requested string }
+type flightServiceRepositoryStub struct {
+	list      []Flight
+	item      Flight
+	requested string
+}
 
-func (s *flightServiceRepositoryStub) List(context.Context) ([]Flight, error) { return nil, nil }
+func (s *flightServiceRepositoryStub) List(context.Context) ([]Flight, error) {
+	return s.list, nil
+}
 func (s *flightServiceRepositoryStub) GetByID(_ context.Context, value string) (Flight, error) {
 	s.requested = value
-	return Flight{}, nil
+	return s.item, nil
 }
 
-func TestNewServiceRejectsNilRepository(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatal("NewService(nil) did not panic")
-		}
-	}()
-	NewService(nil)
+func TestNewServiceReturnsDependencyError(t *testing.T) {
+	service, err := NewService(nil)
+	if service != nil || !errors.Is(err, dependency.ErrRequired) {
+		t.Fatalf("NewService(nil) = %#v, %v", service, err)
+	}
 }
 
-func TestServiceBoundaryContract(t *testing.T) {
-	repository := &flightServiceRepositoryStub{}
-	service := NewService(repository)
+func TestServiceNormalizesAndValidatesRepositoryResults(t *testing.T) {
+	now := time.Now().UTC()
+	valid := Flight{FirstSeenAt: now, LastSeenAt: now}
+	repository := &flightServiceRepositoryStub{
+		list: []Flight{valid},
+		item: valid,
+	}
+	service := MustNewService(repository)
+
 	items, err := service.List(context.Background())
-	if err != nil || items == nil {
+	if err != nil || len(items) != 1 {
 		t.Fatalf("List() = %#v, %v", items, err)
 	}
-	_, err = service.GetByID(context.Background(), " id ")
-	if err != nil || repository.requested != "id" {
+	_, err = service.GetByID(context.Background(), " flight-id ")
+	if err != nil || repository.requested != "flight-id" {
 		t.Fatalf("requested = %q, err = %v", repository.requested, err)
 	}
-	_, err = service.GetByID(context.Background(), " ")
-	if !errors.Is(err, ErrServiceFlightIDRequired) {
-		t.Fatalf("blank error = %v", err)
+
+	repository.item = Flight{}
+	_, err = service.GetByID(context.Background(), "flight-id")
+	if !errors.Is(err, ErrServiceRepositoryResultInvalid) {
+		t.Fatalf("invalid result error = %v", err)
 	}
 }

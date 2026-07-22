@@ -144,10 +144,8 @@ func prepareFlightStateInsertArguments(
 		)
 	}
 
-	if err := flightstate.ValidateAircraftCategory(
-		item.AircraftCategory,
-		item.AircraftCategoryAvailable,
-	); err != nil {
+	aircraftCategoryValue, err := item.ResolveAircraftCategory()
+	if err != nil {
 		return nil, fmt.Errorf(
 			"prepare aircraft category at index %d for icao24 %s: %w",
 			index,
@@ -157,8 +155,8 @@ func prepareFlightStateInsertArguments(
 	}
 
 	var aircraftCategory any
-	if item.AircraftCategoryAvailable {
-		aircraftCategory = item.AircraftCategory
+	if aircraftCategoryValue.Available() {
+		aircraftCategory = aircraftCategoryValue.Value()
 	}
 
 	return []any{

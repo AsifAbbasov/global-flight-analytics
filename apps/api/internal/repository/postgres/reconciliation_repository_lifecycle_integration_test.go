@@ -962,14 +962,19 @@ func TestReconciliationRepositoryRejectsInvalidLifecycleTransitions(
 
 	var taskID string
 
-	err := fixture.pool.QueryRow(
+	pendingDeduplicationKey, err := pending.DeduplicationKey()
+	if err != nil {
+		t.Fatalf("build reconciliation deduplication key: %v", err)
+	}
+
+	err = fixture.pool.QueryRow(
 		context.Background(),
 		`
 			SELECT id::text
 			FROM derived_reconciliation_tasks
 			WHERE deduplication_key = $1;
 		`,
-		pending.DeduplicationKey(),
+		pendingDeduplicationKey,
 	).Scan(
 		&taskID,
 	)
