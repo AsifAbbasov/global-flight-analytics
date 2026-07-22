@@ -734,3 +734,11 @@ Purpose:
 ```text
 Defines evidence-based finding severity, mandatory review evidence, explicit non-mechanical interpretation of function length, naming, nullability and engineering principles, pull request review requirements, rejection and deferral rules, and merge closure criteria.
 ```
+
+
+<!-- INGESTION-RUN-LIFECYCLE-HARDENING-V1:DOCUMENT-INDEX -->
+## Document 83
+
+`83_INGESTION_RUN_LIFECYCLE_HARDENING.md` records bounded terminal status
+contexts, stale `running` recovery, startup ownership, configuration, concurrency
+safety, verification, and remaining ingestion-layer follow-up boundaries.

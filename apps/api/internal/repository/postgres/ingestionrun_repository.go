@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
@@ -19,6 +20,12 @@ var (
 	)
 	ErrIngestionRunRepositoryPoolRequired = errors.New(
 		"ingestion run repository pool is required",
+	)
+	ErrIngestionRunRecoveryTimeInvalid = errors.New(
+		"ingestion run recovery times are invalid",
+	)
+	ErrIngestionRunRecoveryMessageRequired = errors.New(
+		"ingestion run recovery error message is required",
 	)
 )
 
@@ -93,6 +100,62 @@ func (r *IngestionRunRepository) CreateRunning(
 	}
 
 	return item, nil
+}
+
+func (r *IngestionRunRepository) RecoverStaleRunning(
+	ctx context.Context,
+	staleBefore time.Time,
+	recoveredAt time.Time,
+	errorMessage string,
+) (int64, error) {
+	if r == nil || r.db == nil {
+		return 0, ErrIngestionRunRepositoryPoolRequired
+	}
+	if err := requireRepositoryContext(ctx); err != nil {
+		return 0, err
+	}
+
+	staleBefore = staleBefore.UTC()
+	recoveredAt = recoveredAt.UTC()
+	if staleBefore.IsZero() ||
+		recoveredAt.IsZero() ||
+		recoveredAt.Before(staleBefore) {
+		return 0, ErrIngestionRunRecoveryTimeInvalid
+	}
+
+	normalizedErrorMessage := strings.TrimSpace(errorMessage)
+	if normalizedErrorMessage == "" {
+		return 0, ErrIngestionRunRecoveryMessageRequired
+	}
+
+	const query = `
+		UPDATE ingestion_runs
+		SET
+			finished_at = $2,
+			status = $3,
+			error_message = $4
+		WHERE status = $5
+			AND finished_at IS NULL
+			AND started_at < $1;
+	`
+
+	commandTag, err := r.db.Exec(
+		ctx,
+		query,
+		staleBefore,
+		recoveredAt,
+		string(ingestionrun.StatusFailed),
+		normalizedErrorMessage,
+		string(ingestionrun.StatusRunning),
+	)
+	if err != nil {
+		return 0, fmt.Errorf(
+			"recover stale ingestion runs: %w",
+			err,
+		)
+	}
+
+	return commandTag.RowsAffected(), nil
 }
 
 func (r *IngestionRunRepository) MarkSuccess(

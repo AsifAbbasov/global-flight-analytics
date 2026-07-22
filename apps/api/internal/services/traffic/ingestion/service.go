@@ -77,6 +77,7 @@ type Config struct {
 	ProcessingService      ProcessingService
 	IngestionRunRepository IngestionRunRepository
 	RegionID               string
+	TerminalTimeout        time.Duration
 	Now                    func() time.Time
 }
 
@@ -85,6 +86,7 @@ type Service struct {
 	processingService      ProcessingService
 	ingestionRunRepository IngestionRunRepository
 	regionID               string
+	terminalTimeout        time.Duration
 	now                    func() time.Time
 }
 
@@ -101,11 +103,17 @@ func New(config Config) *Service {
 		now = time.Now
 	}
 
+	terminalTimeout := config.TerminalTimeout
+	if terminalTimeout <= 0 {
+		terminalTimeout = 15 * time.Second
+	}
+
 	return &Service{
 		provider:               config.Provider,
 		processingService:      config.ProcessingService,
 		ingestionRunRepository: config.IngestionRunRepository,
 		regionID:               config.RegionID,
+		terminalTimeout:        terminalTimeout,
 		now:                    now,
 	}
 }
@@ -200,10 +208,9 @@ func (service *Service) LoadAndProcessByPoint(
 			err,
 		)
 
-		markErr := service.ingestionRunRepository.MarkFailed(
+		markErr := service.markRunFailed(
 			ctx,
 			run.ID,
-			service.now().UTC(),
 			len(states),
 			processingResult.StoredFlightStateCount,
 			0,
@@ -218,10 +225,9 @@ func (service *Service) LoadAndProcessByPoint(
 		}, errors.Join(operationErr, markErr)
 	}
 
-	err = service.ingestionRunRepository.MarkSuccess(
+	err = service.markRunSuccess(
 		ctx,
 		run.ID,
-		service.now().UTC(),
 		len(states),
 		processingResult.StoredFlightStateCount,
 		0,
@@ -296,12 +302,14 @@ func (service *Service) recordProviderFailure(
 		}, errors.Join(operationErr, sourceErr)
 	}
 
+	createContext, cancel := service.newTerminalContext(ctx)
 	run, createErr := service.ingestionRunRepository.CreateRunning(
-		ctx,
+		createContext,
 		sourceName,
 		service.regionID,
 		startedAt,
 	)
+	cancel()
 	if createErr != nil {
 		return LoadAndProcessResult{
 				SourceName:       sourceName,
@@ -315,10 +323,9 @@ func (service *Service) recordProviderFailure(
 			)
 	}
 
-	markErr := service.ingestionRunRepository.MarkFailed(
+	markErr := service.markRunFailed(
 		ctx,
 		run.ID,
-		service.now().UTC(),
 		len(loadResult.States),
 		0,
 		0,
@@ -330,6 +337,62 @@ func (service *Service) recordProviderFailure(
 		SourceName:       sourceName,
 		LoadedStateCount: len(loadResult.States),
 	}, errors.Join(operationErr, markErr)
+}
+
+func (service *Service) markRunSuccess(
+	ctx context.Context,
+	runID string,
+	recordsReceived int,
+	recordsInserted int,
+	recordsUpdated int,
+) error {
+	terminalContext, cancel := service.newTerminalContext(ctx)
+	defer cancel()
+
+	return service.ingestionRunRepository.MarkSuccess(
+		terminalContext,
+		runID,
+		service.now().UTC(),
+		recordsReceived,
+		recordsInserted,
+		recordsUpdated,
+	)
+}
+
+func (service *Service) markRunFailed(
+	ctx context.Context,
+	runID string,
+	recordsReceived int,
+	recordsInserted int,
+	recordsUpdated int,
+	errorMessage string,
+) error {
+	terminalContext, cancel := service.newTerminalContext(ctx)
+	defer cancel()
+
+	return service.ingestionRunRepository.MarkFailed(
+		terminalContext,
+		runID,
+		service.now().UTC(),
+		recordsReceived,
+		recordsInserted,
+		recordsUpdated,
+		errorMessage,
+	)
+}
+
+func (service *Service) newTerminalContext(
+	ctx context.Context,
+) (context.Context, context.CancelFunc) {
+	baseContext := context.Background()
+	if ctx != nil {
+		baseContext = context.WithoutCancel(ctx)
+	}
+
+	return context.WithTimeout(
+		baseContext,
+		service.terminalTimeout,
+	)
 }
 
 func normalizedSourceName(

@@ -160,6 +160,26 @@ func run() error {
 		dbPool,
 	)
 
+	recoveredRunCount, err := recoverStaleIngestionRuns(
+		operationContext,
+		ingestionRunRepository,
+		time.Now().UTC(),
+		daemonConfig.StaleRunAfter,
+		daemonConfig.TerminalTimeout,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"recover stale ingestion runs: %w",
+			err,
+		)
+	}
+	fmt.Printf(
+		"ingestion_run_recovery recovered=%d stale_after=%s terminal_timeout=%s\n",
+		recoveredRunCount,
+		daemonConfig.StaleRunAfter,
+		daemonConfig.TerminalTimeout,
+	)
+
 	trafficProcessor, err := processor.New(
 		processor.Config{
 			TrackBuilderConfig: trackbuilder.Config{
@@ -201,6 +221,7 @@ func run() error {
 			ProcessingService:      processingService,
 			IngestionRunRepository: ingestionRunRepository,
 			ObservationRecorder:    providerHealthCollector,
+			TerminalTimeout:        daemonConfig.TerminalTimeout,
 			Latitude:               cfg.TrafficIngestionLatitude,
 			Longitude:              cfg.TrafficIngestionLongitude,
 			Radius:                 cfg.TrafficIngestionRadius,
@@ -261,11 +282,13 @@ func run() error {
 	}
 
 	fmt.Printf(
-		"traffic_ingest_daemon_started mode=%s primary_provider=%s providers=%v interval=%s latitude=%f longitude=%f radius_nm=%d\n",
+		"traffic_ingest_daemon_started mode=%s primary_provider=%s providers=%v interval=%s terminal_timeout=%s stale_run_after=%s latitude=%f longitude=%f radius_nm=%d\n",
 		trafficSelection.Mode,
 		trafficSelection.ProviderID,
 		trafficSelection.ProviderIDs,
 		daemonConfig.Interval,
+		daemonConfig.TerminalTimeout,
+		daemonConfig.StaleRunAfter,
 		cfg.TrafficIngestionLatitude,
 		cfg.TrafficIngestionLongitude,
 		cfg.TrafficIngestionRadius,

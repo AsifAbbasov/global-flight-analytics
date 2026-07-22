@@ -40,6 +40,7 @@ type ingestionCycleConfig struct {
 	ProcessingService      trafficingestion.ProcessingService
 	IngestionRunRepository trafficingestion.IngestionRunRepository
 	ObservationRecorder    providerObservationRecorder
+	TerminalTimeout        time.Duration
 
 	Latitude  float64
 	Longitude float64
@@ -93,6 +94,7 @@ func newIngestionCycle(
 				Provider:               config.TrafficProvider,
 				ProcessingService:      config.ProcessingService,
 				IngestionRunRepository: config.IngestionRunRepository,
+				TerminalTimeout:        config.TerminalTimeout,
 			},
 		),
 		providerID:          providerID,
