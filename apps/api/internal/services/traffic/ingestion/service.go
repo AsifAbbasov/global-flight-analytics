@@ -302,6 +302,13 @@ func (service *Service) recordProviderFailure(
 		}, errors.Join(operationErr, sourceErr)
 	}
 
+	if !externalRequestAttempted(loadErr) {
+		return LoadAndProcessResult{
+			SourceName:       sourceName,
+			LoadedStateCount: len(loadResult.States),
+		}, operationErr
+	}
+
 	createContext, cancel := service.newTerminalContext(ctx)
 	run, createErr := service.ingestionRunRepository.CreateRunning(
 		createContext,
@@ -393,6 +400,22 @@ func (service *Service) newTerminalContext(
 		baseContext,
 		service.terminalTimeout,
 	)
+}
+
+func externalRequestAttempted(
+	err error,
+) bool {
+	var evidence interface {
+		ExternalRequestAttempted() bool
+	}
+	if errors.As(
+		err,
+		&evidence,
+	) {
+		return evidence.ExternalRequestAttempted()
+	}
+
+	return true
 }
 
 func normalizedSourceName(

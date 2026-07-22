@@ -748,3 +748,8 @@ safety, verification, and remaining ingestion-layer follow-up boundaries.
 ## Document 84 — Provider HTTP Resilience Hardening
 
 `84_PROVIDER_HTTP_RESILIENCE_HARDENING.md` defines provider status error preservation, non-destructive successful response observation, bounded JSON and CSV response bodies, typed oversized-response errors, and fallback compatibility with joined errors.
+
+<!-- INGESTION-RETRY-FALLBACK-EVIDENCE-V1:DOCUMENT-INDEX -->
+## Document 85
+
+`85_INGESTION_RETRY_AND_FALLBACK_EVIDENCE_HARDENING.md` records provider-directed retry scheduling, bounded exponential backoff, local-denial ingestion-run semantics, ordered fallback attempt evidence, terminal fallback recording, and OpenSky polling reservation ownership.

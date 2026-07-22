@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
@@ -135,12 +136,14 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 			candidates = append(
 				candidates,
 				providerfallback.Candidate{
-					Provider: selection.ProviderID,
-					Allowed:  true,
+					Provider:         selection.ProviderID,
+					Allowed:          true,
+					Outcome:          providerfallback.AttemptOutcomeSuccess,
+					RequestAttempted: true,
 				},
 			)
 
-			decision, selectErr := provider.selector.Select(
+			decision, selectErr := provider.selectAndRecord(
 				candidates,
 			)
 			if selectErr != nil {
@@ -150,10 +153,6 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 						selectErr,
 					)
 			}
-
-			provider.recorder.RecordFallbackDecision(
-				decision,
-			)
 
 			sourceName := string(
 				decision.SelectedProvider,
@@ -170,6 +169,34 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 		}
 
 		if ctx.Err() != nil {
+			if len(candidates) > 0 {
+				candidates = append(
+					candidates,
+					terminalTrafficFallbackCandidate(
+						selection.ProviderID,
+						ctx.Err(),
+						providerfallback.AttemptErrorClassCancelled,
+						true,
+					),
+				)
+				if _, selectErr := provider.selectAndRecord(
+					candidates,
+				); selectErr != nil {
+					return trafficingestion.LoadResult{
+							SourceName: string(selection.ProviderID),
+						}, errors.Join(
+							fmt.Errorf(
+								"traffic provider operation context ended: %w",
+								ctx.Err(),
+							),
+							fmt.Errorf(
+								"record cancelled fallback chain: %w",
+								selectErr,
+							),
+						)
+				}
+			}
+
 			return trafficingestion.LoadResult{
 					SourceName: string(selection.ProviderID),
 				}, fmt.Errorf(
@@ -182,22 +209,49 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 			selection.ProviderID,
 			err,
 		)
-		if !recoverable {
-			return trafficingestion.LoadResult{
-					SourceName: string(selection.ProviderID),
-				}, fmt.Errorf(
-					"execute traffic provider %s: %w",
-					selection.ProviderID,
-					err,
-				)
+		if recoverable {
+			candidates = append(
+				candidates,
+				candidate,
+			)
+			continue
 		}
+
 		candidates = append(
 			candidates,
-			candidate,
+			terminalTrafficFallbackCandidate(
+				selection.ProviderID,
+				err,
+				classifyTerminalTrafficError(err),
+				externalRequestAttemptedByError(err),
+			),
 		)
+		_, selectErr := provider.selectAndRecord(
+			candidates,
+		)
+		operationErr := fmt.Errorf(
+			"execute traffic provider %s: %w",
+			selection.ProviderID,
+			err,
+		)
+		if selectErr != nil {
+			return trafficingestion.LoadResult{
+					SourceName: string(selection.ProviderID),
+				}, errors.Join(
+					operationErr,
+					fmt.Errorf(
+						"record terminal fallback chain: %w",
+						selectErr,
+					),
+				)
+		}
+
+		return trafficingestion.LoadResult{
+			SourceName: string(selection.ProviderID),
+		}, operationErr
 	}
 
-	decision, err := provider.selector.Select(
+	decision, err := provider.selectAndRecord(
 		candidates,
 	)
 	if err != nil {
@@ -208,10 +262,6 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 			)
 	}
 
-	provider.recorder.RecordFallbackDecision(
-		decision,
-	)
-
 	return trafficingestion.LoadResult{
 			SourceName: string(
 				decision.PrimaryProvider,
@@ -219,6 +269,25 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 		}, &providerfallback.NoProviderAvailableError{
 			Decision: decision,
 		}
+}
+
+func (
+	provider *trafficFallbackProvider,
+) selectAndRecord(
+	candidates []providerfallback.Candidate,
+) (providerfallback.Decision, error) {
+	decision, err := provider.selector.Select(
+		candidates,
+	)
+	if err != nil {
+		return providerfallback.Decision{}, err
+	}
+
+	provider.recorder.RecordFallbackDecision(
+		decision,
+	)
+
+	return decision, nil
 }
 
 func trafficFallbackCandidate(
@@ -234,10 +303,13 @@ func trafficFallbackCandidate(
 			return providerfallback.Candidate{}, false
 		}
 		return providerfallback.Candidate{
-			Provider:     providerID,
-			Allowed:      false,
-			DenialReason: accessDeniedError.Reason,
-			RetryAt:      accessDeniedError.RetryAt,
+			Provider:         providerID,
+			Allowed:          false,
+			DenialReason:     accessDeniedError.Reason,
+			RetryAt:          accessDeniedError.RetryAt,
+			Outcome:          providerfallback.AttemptOutcomeDenied,
+			ErrorClass:       providerfallback.AttemptErrorClassAccessDenied,
+			RequestAttempted: false,
 		}, true
 	}
 
@@ -247,10 +319,12 @@ func trafficFallbackCandidate(
 		integrationcommon.ErrProviderRateLimited,
 	):
 		return providerfallback.Candidate{
-			Provider: providerID,
-			Allowed:  false,
-			DenialReason: providerbudget.
-				DecisionReasonProviderBudgetExhausted,
+			Provider:         providerID,
+			Allowed:          false,
+			DenialReason:     providerbudget.DecisionReasonProviderBudgetExhausted,
+			Outcome:          providerfallback.AttemptOutcomeFailed,
+			ErrorClass:       providerfallback.AttemptErrorClassRateLimited,
+			RequestAttempted: true,
 		}, true
 
 	case errors.Is(
@@ -258,10 +332,13 @@ func trafficFallbackCandidate(
 		opensky.ErrPollingTooSoon,
 	):
 		return providerfallback.Candidate{
-			Provider: providerID,
-			Allowed:  false,
-			DenialReason: providerbudget.
-				DecisionReasonProviderCooldown,
+			Provider:         providerID,
+			Allowed:          false,
+			DenialReason:     providerbudget.DecisionReasonProviderCooldown,
+			RetryAt:          retryAtFromError(requestErr),
+			Outcome:          providerfallback.AttemptOutcomeDenied,
+			ErrorClass:       providerfallback.AttemptErrorClassPollingCooldown,
+			RequestAttempted: false,
 		}, true
 
 	case errors.Is(
@@ -270,6 +347,7 @@ func trafficFallbackCandidate(
 	):
 		return unavailableTrafficProviderCandidate(
 			providerID,
+			providerfallback.AttemptErrorClassProviderServer,
 		), true
 
 	case errors.Is(
@@ -284,8 +362,13 @@ func trafficFallbackCandidate(
 		requestErr,
 		&networkError,
 	) {
+		errorClass := providerfallback.AttemptErrorClassNetwork
+		if networkError.Timeout() {
+			errorClass = providerfallback.AttemptErrorClassTimeout
+		}
 		return unavailableTrafficProviderCandidate(
 			providerID,
+			errorClass,
 		), true
 	}
 
@@ -294,13 +377,88 @@ func trafficFallbackCandidate(
 
 func unavailableTrafficProviderCandidate(
 	providerID providerpolicy.Provider,
+	errorClass providerfallback.AttemptErrorClass,
 ) providerfallback.Candidate {
 	return providerfallback.Candidate{
-		Provider: providerID,
-		Allowed:  false,
-		DenialReason: providerbudget.
-			DecisionReasonProviderUnavailable,
+		Provider:         providerID,
+		Allowed:          false,
+		DenialReason:     providerbudget.DecisionReasonProviderUnavailable,
+		Outcome:          providerfallback.AttemptOutcomeFailed,
+		ErrorClass:       errorClass,
+		RequestAttempted: true,
 	}
+}
+
+func terminalTrafficFallbackCandidate(
+	providerID providerpolicy.Provider,
+	requestErr error,
+	errorClass providerfallback.AttemptErrorClass,
+	requestAttempted bool,
+) providerfallback.Candidate {
+	return providerfallback.Candidate{
+		Provider:         providerID,
+		Allowed:          false,
+		DenialReason:     providerbudget.DecisionReasonProviderUnavailable,
+		RetryAt:          retryAtFromError(requestErr),
+		Outcome:          providerfallback.AttemptOutcomeTerminalFailure,
+		ErrorClass:       errorClass,
+		RequestAttempted: requestAttempted,
+	}
+}
+
+func classifyTerminalTrafficError(
+	requestErr error,
+) providerfallback.AttemptErrorClass {
+	switch {
+	case errors.Is(
+		requestErr,
+		integrationcommon.ErrProviderUnauthorized,
+	):
+		return providerfallback.AttemptErrorClassUnauthorized
+	case errors.Is(
+		requestErr,
+		integrationcommon.ErrProviderResponseTooLarge,
+	):
+		return providerfallback.AttemptErrorClassResponseTooLarge
+	case errors.Is(
+		requestErr,
+		context.DeadlineExceeded,
+	):
+		return providerfallback.AttemptErrorClassTimeout
+	case errors.Is(
+		requestErr,
+		context.Canceled,
+	):
+		return providerfallback.AttemptErrorClassCancelled
+	default:
+		return providerfallback.AttemptErrorClassUnknown
+	}
+}
+
+func retryAtFromError(
+	err error,
+) time.Time {
+	var evidence interface {
+		RetryAtTime() time.Time
+	}
+	if errors.As(err, &evidence) {
+		return evidence.RetryAtTime().UTC()
+	}
+
+	return time.Time{}
+}
+
+func externalRequestAttemptedByError(
+	err error,
+) bool {
+	var evidence interface {
+		ExternalRequestAttempted() bool
+	}
+	if errors.As(err, &evidence) {
+		return evidence.ExternalRequestAttempted()
+	}
+
+	return true
 }
 
 func normalizeTrafficStateSources(

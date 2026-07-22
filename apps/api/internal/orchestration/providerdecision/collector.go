@@ -49,6 +49,7 @@ type Snapshot struct {
 	PrimarySelectedTotal     int64
 	FallbackSelectedTotal    int64
 	NoProviderAvailableTotal int64
+	TerminalFailureTotal     int64
 	LatestFallback           providerfallback.Decision
 
 	Limitations []string
@@ -83,6 +84,7 @@ type providerState struct {
 	primarySelectedTotal     int64
 	fallbackSelectedTotal    int64
 	noProviderAvailableTotal int64
+	terminalFailureTotal     int64
 	latestFallback           providerfallback.Decision
 }
 
@@ -167,6 +169,9 @@ func (
 		[]providerpolicy.Provider(nil),
 		decision.ConsideredProviders...,
 	)
+	normalizedDecision.Attempts = cloneFallbackAttempts(
+		decision.Attempts,
+	)
 
 	collector.mu.Lock()
 	defer collector.mu.Unlock()
@@ -186,6 +191,8 @@ func (
 		state.fallbackSelectedTotal++
 	case providerfallback.OutcomeNoProviderAvailable:
 		state.noProviderAvailableTotal++
+	case providerfallback.OutcomeTerminalFailure:
+		state.terminalFailureTotal++
 	}
 }
 
@@ -223,6 +230,9 @@ func (
 		[]providerpolicy.Provider(nil),
 		state.latestFallback.ConsideredProviders...,
 	)
+	latestFallback.Attempts = cloneFallbackAttempts(
+		state.latestFallback.Attempts,
+	)
 
 	limitations := []string{
 		LimitationProcessLocal,
@@ -246,9 +256,19 @@ func (
 		PrimarySelectedTotal:     state.primarySelectedTotal,
 		FallbackSelectedTotal:    state.fallbackSelectedTotal,
 		NoProviderAvailableTotal: state.noProviderAvailableTotal,
+		TerminalFailureTotal:     state.terminalFailureTotal,
 		LatestFallback:           latestFallback,
 		Limitations:              limitations,
 	}, nil
+}
+
+func cloneFallbackAttempts(
+	attempts []providerfallback.AttemptEvidence,
+) []providerfallback.AttemptEvidence {
+	return append(
+		[]providerfallback.AttemptEvidence(nil),
+		attempts...,
+	)
 }
 
 func (

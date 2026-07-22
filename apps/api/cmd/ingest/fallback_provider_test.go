@@ -256,10 +256,17 @@ func TestTrafficFallbackProviderDoesNotHideUnauthorizedConfiguration(
 			secondaryProvider.calls,
 		)
 	}
-	if len(recorder.decisions) != 0 {
+	if len(recorder.decisions) != 1 {
 		t.Fatalf(
-			"decisions = %d, want 0",
+			"decisions = %d, want 1",
 			len(recorder.decisions),
+		)
+	}
+	if recorder.decisions[0].Outcome !=
+		providerfallback.OutcomeTerminalFailure {
+		t.Fatalf(
+			"outcome = %s, want terminal_failure",
+			recorder.decisions[0].Outcome,
 		)
 	}
 }

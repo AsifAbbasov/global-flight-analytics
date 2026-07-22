@@ -33,13 +33,50 @@ const (
 	OutcomePrimarySelected     Outcome = "primary_selected"
 	OutcomeFallbackSelected    Outcome = "fallback_selected"
 	OutcomeNoProviderAvailable Outcome = "no_provider_available"
+	OutcomeTerminalFailure     Outcome = "terminal_failure"
 )
 
+type AttemptOutcome string
+
+const (
+	AttemptOutcomeSuccess         AttemptOutcome = "success"
+	AttemptOutcomeDenied          AttemptOutcome = "denied"
+	AttemptOutcomeFailed          AttemptOutcome = "failed"
+	AttemptOutcomeTerminalFailure AttemptOutcome = "terminal_failure"
+)
+
+type AttemptErrorClass string
+
+const (
+	AttemptErrorClassAccessDenied     AttemptErrorClass = "access_denied"
+	AttemptErrorClassRateLimited      AttemptErrorClass = "rate_limited"
+	AttemptErrorClassPollingCooldown  AttemptErrorClass = "polling_cooldown"
+	AttemptErrorClassProviderServer   AttemptErrorClass = "provider_server"
+	AttemptErrorClassNetwork          AttemptErrorClass = "network"
+	AttemptErrorClassTimeout          AttemptErrorClass = "timeout"
+	AttemptErrorClassUnauthorized     AttemptErrorClass = "unauthorized"
+	AttemptErrorClassResponseTooLarge AttemptErrorClass = "response_too_large"
+	AttemptErrorClassCancelled        AttemptErrorClass = "cancelled"
+	AttemptErrorClassUnknown          AttemptErrorClass = "unknown"
+)
+
+type AttemptEvidence struct {
+	Provider         providerpolicy.Provider
+	Outcome          AttemptOutcome
+	Reason           providerbudget.DecisionReason
+	RetryAt          time.Time
+	ErrorClass       AttemptErrorClass
+	RequestAttempted bool
+}
+
 type Candidate struct {
-	Provider     providerpolicy.Provider
-	Allowed      bool
-	DenialReason providerbudget.DecisionReason
-	RetryAt      time.Time
+	Provider         providerpolicy.Provider
+	Allowed          bool
+	DenialReason     providerbudget.DecisionReason
+	RetryAt          time.Time
+	Outcome          AttemptOutcome
+	ErrorClass       AttemptErrorClass
+	RequestAttempted bool
 }
 
 type Decision struct {
@@ -49,6 +86,7 @@ type Decision struct {
 	Outcome             Outcome
 	TriggerReason       providerbudget.DecisionReason
 	ConsideredProviders []providerpolicy.Provider
+	Attempts            []AttemptEvidence
 	RetryAt             time.Time
 	DecidedAt           time.Time
 }
@@ -93,6 +131,11 @@ func (
 		0,
 		len(candidates),
 	)
+	attempts := make(
+		[]AttemptEvidence,
+		0,
+		len(candidates),
+	)
 
 	primaryCandidate := candidates[0]
 
@@ -100,6 +143,10 @@ func (
 		consideredProviders = append(
 			consideredProviders,
 			candidate.Provider,
+		)
+		attempts = append(
+			attempts,
+			attemptEvidenceFromCandidate(candidate),
 		)
 
 		if !candidate.Allowed {
@@ -123,16 +170,24 @@ func (
 			Outcome:             outcome,
 			TriggerReason:       triggerReason,
 			ConsideredProviders: consideredProviders,
+			Attempts:            attempts,
 			RetryAt:             primaryCandidate.RetryAt.UTC(),
 			DecidedAt:           selector.now().UTC(),
 		}, nil
 	}
 
+	outcome := OutcomeNoProviderAvailable
+	if containsTerminalFailure(attempts) {
+		outcome = OutcomeTerminalFailure
+	}
+
 	return Decision{
 		PrimaryProvider:     primaryCandidate.Provider,
-		Outcome:             OutcomeNoProviderAvailable,
+		UsedFallback:        len(candidates) > 1,
+		Outcome:             outcome,
 		TriggerReason:       primaryCandidate.DenialReason,
 		ConsideredProviders: consideredProviders,
+		Attempts:            attempts,
 		RetryAt:             earliestRetryAt(candidates),
 		DecidedAt:           selector.now().UTC(),
 	}, nil
@@ -176,6 +231,15 @@ func validateCandidates(
 					candidate.DenialReason,
 				)
 			}
+			if candidate.Outcome != "" &&
+				candidate.Outcome != AttemptOutcomeSuccess {
+				return fmt.Errorf(
+					"%w: provider=%s allowed=true outcome=%s",
+					ErrInconsistentCandidateDecision,
+					candidate.Provider,
+					candidate.Outcome,
+				)
+			}
 
 			continue
 		}
@@ -190,9 +254,54 @@ func validateCandidates(
 				candidate.DenialReason,
 			)
 		}
+		if candidate.Outcome == AttemptOutcomeSuccess {
+			return fmt.Errorf(
+				"%w: provider=%s allowed=false outcome=%s",
+				ErrInconsistentCandidateDecision,
+				candidate.Provider,
+				candidate.Outcome,
+			)
+		}
 	}
 
 	return nil
+}
+
+func attemptEvidenceFromCandidate(
+	candidate Candidate,
+) AttemptEvidence {
+	outcome := candidate.Outcome
+	requestAttempted := candidate.RequestAttempted
+
+	if outcome == "" {
+		if candidate.Allowed {
+			outcome = AttemptOutcomeSuccess
+			requestAttempted = true
+		} else {
+			outcome = AttemptOutcomeDenied
+		}
+	}
+
+	return AttemptEvidence{
+		Provider:         candidate.Provider,
+		Outcome:          outcome,
+		Reason:           candidate.DenialReason,
+		RetryAt:          candidate.RetryAt.UTC(),
+		ErrorClass:       candidate.ErrorClass,
+		RequestAttempted: requestAttempted,
+	}
+}
+
+func containsTerminalFailure(
+	attempts []AttemptEvidence,
+) bool {
+	for _, attempt := range attempts {
+		if attempt.Outcome == AttemptOutcomeTerminalFailure {
+			return true
+		}
+	}
+
+	return false
 }
 
 func earliestRetryAt(

@@ -88,29 +88,47 @@ func (client *Client) GetStates(
 	if err := client.validateStatesRequest(input); err != nil {
 		return StatesResult{}, err
 	}
-	if err := client.acquirePollSlot(); err != nil {
-		return StatesResult{}, err
-	}
 
 	requestURL, err := client.statesURL(input)
 	if err != nil {
 		return StatesResult{}, err
 	}
-	response, err := client.do(ctx, http.MethodGet, requestURL)
+
+	reservedAt, err := client.reservePollSlot()
 	if err != nil {
 		return StatesResult{}, err
 	}
-	defer response.Body.Close()
 
-	if response.StatusCode == http.StatusUnauthorized && client.tokenManager != nil {
+	response, requestAttempted, err := client.doWithAttemptEvidence(
+		ctx,
+		http.MethodGet,
+		requestURL,
+	)
+	if err != nil {
+		if !requestAttempted {
+			client.releasePollSlot(reservedAt)
+		}
+		return StatesResult{}, err
+	}
+
+	if response.StatusCode == http.StatusUnauthorized &&
+		client.tokenManager != nil {
+		_ = response.Body.Close()
 		client.tokenManager.Invalidate()
-		response, err = client.do(ctx, http.MethodGet, requestURL)
+
+		response, _, err = client.doWithAttemptEvidence(
+			ctx,
+			http.MethodGet,
+			requestURL,
+		)
 		if err != nil {
 			return StatesResult{}, err
 		}
-		defer response.Body.Close()
 	}
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+	defer response.Body.Close()
+
+	if response.StatusCode < http.StatusOK ||
+		response.StatusCode >= http.StatusMultipleChoices {
 		statusErr := integrationcommon.ProviderStatusError(response.StatusCode)
 		if statusErr == nil {
 			statusErr = fmt.Errorf("unexpected provider status %d", response.StatusCode)
@@ -165,15 +183,44 @@ func (client *Client) validateStatesRequest(input StatesRequest) error {
 }
 
 func (client *Client) acquirePollSlot() error {
+	_, err := client.reservePollSlot()
+	return err
+}
+
+func (client *Client) reservePollSlot() (time.Time, error) {
 	client.pollMu.Lock()
 	defer client.pollMu.Unlock()
+
 	now := time.Now().UTC()
 	if !client.lastStatesRequest.IsZero() &&
-		now.Sub(client.lastStatesRequest) < client.config.PollingInterval {
-		return ErrPollingTooSoon
+		now.Sub(client.lastStatesRequest) <
+			client.config.PollingInterval {
+		return time.Time{}, &PollingTooSoonError{
+			RetryAt: client.lastStatesRequest.Add(
+				client.config.PollingInterval,
+			),
+		}
 	}
+
 	client.lastStatesRequest = now
-	return nil
+	return now, nil
+}
+
+func (client *Client) releasePollSlot(
+	reservedAt time.Time,
+) {
+	if reservedAt.IsZero() {
+		return
+	}
+
+	client.pollMu.Lock()
+	defer client.pollMu.Unlock()
+
+	if client.lastStatesRequest.Equal(
+		reservedAt,
+	) {
+		client.lastStatesRequest = time.Time{}
+	}
 }
 
 func (client *Client) statesURL(input StatesRequest) (string, error) {
@@ -208,9 +255,22 @@ func (client *Client) do(
 	method string,
 	requestURL string,
 ) (*http.Response, error) {
+	response, _, err := client.doWithAttemptEvidence(
+		ctx,
+		method,
+		requestURL,
+	)
+	return response, err
+}
+
+func (client *Client) doWithAttemptEvidence(
+	ctx context.Context,
+	method string,
+	requestURL string,
+) (*http.Response, bool, error) {
 	request, err := http.NewRequestWithContext(ctx, method, requestURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("build OpenSky request: %w", err)
+		return nil, false, fmt.Errorf("build OpenSky request: %w", err)
 	}
 	if strings.TrimSpace(client.config.UserAgent) != "" {
 		request.Header.Set("User-Agent", client.config.UserAgent)
@@ -218,7 +278,7 @@ func (client *Client) do(
 	if client.tokenManager != nil {
 		token, err := client.tokenManager.Token(ctx)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		request.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -235,7 +295,7 @@ func (client *Client) do(
 				latency,
 			)
 		}
-		return nil, fmt.Errorf("execute OpenSky request: %w", err)
+		return nil, true, fmt.Errorf("execute OpenSky request: %w", err)
 	}
 
 	if client.responseObserver != nil {
@@ -247,7 +307,7 @@ func (client *Client) do(
 		)
 	}
 
-	return response, nil
+	return response, true, nil
 }
 
 func parseRateLimit(headers http.Header) RateLimit {

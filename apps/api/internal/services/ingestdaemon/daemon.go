@@ -14,6 +14,9 @@ var (
 	ErrIntervalInvalid = errors.New(
 		"ingest daemon interval must be greater than zero",
 	)
+	ErrMaxFailureBackoffInvalid = errors.New(
+		"ingest daemon maximum failure backoff must be at least the interval",
+	)
 )
 
 type Clock func() time.Time
@@ -32,26 +35,31 @@ type Observer func(
 )
 
 type Config struct {
-	RunCycle CycleRunner
-	Interval time.Duration
-	Now      Clock
-	Wait     WaitFunction
-	Observe  Observer
+	RunCycle          CycleRunner
+	Interval          time.Duration
+	MaxFailureBackoff time.Duration
+	Now               Clock
+	Wait              WaitFunction
+	Observe           Observer
 }
 
 type Daemon struct {
-	runCycle CycleRunner
-	interval time.Duration
-	now      Clock
-	wait     WaitFunction
-	observe  Observer
+	runCycle          CycleRunner
+	interval          time.Duration
+	maxFailureBackoff time.Duration
+	now               Clock
+	wait              WaitFunction
+	observe           Observer
 }
 
 type CycleResult struct {
-	Number     int
-	StartedAt  time.Time
-	FinishedAt time.Time
-	Err        error
+	Number              int
+	StartedAt           time.Time
+	FinishedAt          time.Time
+	Err                 error
+	ConsecutiveFailures int
+	RetryAt             time.Time
+	NextDelay           time.Duration
 }
 
 func New(
@@ -63,6 +71,14 @@ func New(
 
 	if config.Interval <= 0 {
 		return nil, ErrIntervalInvalid
+	}
+
+	maxFailureBackoff := config.MaxFailureBackoff
+	if maxFailureBackoff <= 0 {
+		maxFailureBackoff = config.Interval
+	}
+	if maxFailureBackoff < config.Interval {
+		return nil, ErrMaxFailureBackoffInvalid
 	}
 
 	now := config.Now
@@ -78,11 +94,12 @@ func New(
 	}
 
 	return &Daemon{
-		runCycle: config.RunCycle,
-		interval: config.Interval,
-		now:      now,
-		wait:     wait,
-		observe:  config.Observe,
+		runCycle:          config.RunCycle,
+		interval:          config.Interval,
+		maxFailureBackoff: maxFailureBackoff,
+		now:               now,
+		wait:              wait,
+		observe:           config.Observe,
 	}, nil
 }
 
@@ -96,6 +113,7 @@ func (
 	}
 
 	cycleNumber := 0
+	consecutiveFailures := 0
 
 	for {
 		if ctx.Err() != nil {
@@ -114,13 +132,32 @@ func (
 		finishedAt := daemon.now().
 			UTC()
 
+		if cycleErr == nil {
+			consecutiveFailures = 0
+		} else {
+			consecutiveFailures++
+		}
+
+		retryAt := retryAtFromError(
+			cycleErr,
+		)
+		nextDelay := daemon.nextDelay(
+			finishedAt,
+			cycleErr,
+			consecutiveFailures,
+			retryAt,
+		)
+
 		if daemon.observe != nil {
 			daemon.observe(
 				CycleResult{
-					Number:     cycleNumber,
-					StartedAt:  startedAt,
-					FinishedAt: finishedAt,
-					Err:        cycleErr,
+					Number:              cycleNumber,
+					StartedAt:           startedAt,
+					FinishedAt:          finishedAt,
+					Err:                 cycleErr,
+					ConsecutiveFailures: consecutiveFailures,
+					RetryAt:             retryAt,
+					NextDelay:           nextDelay,
 				},
 			)
 		}
@@ -131,7 +168,7 @@ func (
 
 		if err := daemon.wait(
 			ctx,
-			daemon.interval,
+			nextDelay,
 		); err != nil {
 			if ctx.Err() != nil ||
 				errors.Is(
@@ -151,6 +188,84 @@ func (
 			)
 		}
 	}
+}
+
+func (
+	daemon *Daemon,
+) nextDelay(
+	finishedAt time.Time,
+	cycleErr error,
+	consecutiveFailures int,
+	retryAt time.Time,
+) time.Duration {
+	delay := daemon.interval
+	if cycleErr != nil {
+		delay = exponentialBackoff(
+			daemon.interval,
+			daemon.maxFailureBackoff,
+			consecutiveFailures,
+		)
+	}
+
+	if !retryAt.IsZero() &&
+		retryAt.After(finishedAt) {
+		providerDelay := retryAt.Sub(
+			finishedAt,
+		)
+		if providerDelay > delay {
+			delay = providerDelay
+		}
+	}
+
+	return delay
+}
+
+func exponentialBackoff(
+	base time.Duration,
+	maximum time.Duration,
+	consecutiveFailures int,
+) time.Duration {
+	if consecutiveFailures <= 1 {
+		return base
+	}
+
+	delay := base
+	for step := 1; step < consecutiveFailures; step++ {
+		if delay >= maximum {
+			return maximum
+		}
+		if delay > maximum/2 {
+			return maximum
+		}
+		delay *= 2
+	}
+
+	if delay > maximum {
+		return maximum
+	}
+
+	return delay
+}
+
+func retryAtFromError(
+	err error,
+) time.Time {
+	if err == nil {
+		return time.Time{}
+	}
+
+	var evidence interface {
+		RetryAtTime() time.Time
+	}
+	if errors.As(
+		err,
+		&evidence,
+	) {
+		return evidence.RetryAtTime().
+			UTC()
+	}
+
+	return time.Time{}
 }
 
 func waitForDuration(

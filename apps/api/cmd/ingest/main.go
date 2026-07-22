@@ -236,8 +236,9 @@ func run() error {
 
 	daemon, err := ingestdaemon.New(
 		ingestdaemon.Config{
-			RunCycle: cycle.Run,
-			Interval: daemonConfig.Interval,
+			RunCycle:          cycle.Run,
+			Interval:          daemonConfig.Interval,
+			MaxFailureBackoff: daemonConfig.MaxBackoff,
 			Observe: func(
 				result ingestdaemon.CycleResult,
 			) {
@@ -250,7 +251,7 @@ func run() error {
 				}
 
 				fmt.Printf(
-					"ingest_cycle=%d status=%s started_at=%s finished_at=%s duration=%s next_interval=%s error=%q\n",
+					"ingest_cycle=%d status=%s started_at=%s finished_at=%s duration=%s consecutive_failures=%d retry_at=%s next_delay=%s error=%q\n",
 					result.Number,
 					status,
 					result.StartedAt.Format(
@@ -262,7 +263,11 @@ func run() error {
 					result.FinishedAt.Sub(
 						result.StartedAt,
 					),
-					daemonConfig.Interval,
+					result.ConsecutiveFailures,
+					result.RetryAt.Format(
+						time.RFC3339Nano,
+					),
+					result.NextDelay,
 					lastError,
 				)
 
@@ -282,11 +287,12 @@ func run() error {
 	}
 
 	fmt.Printf(
-		"traffic_ingest_daemon_started mode=%s primary_provider=%s providers=%v interval=%s terminal_timeout=%s stale_run_after=%s latitude=%f longitude=%f radius_nm=%d\n",
+		"traffic_ingest_daemon_started mode=%s primary_provider=%s providers=%v interval=%s max_backoff=%s terminal_timeout=%s stale_run_after=%s latitude=%f longitude=%f radius_nm=%d\n",
 		trafficSelection.Mode,
 		trafficSelection.ProviderID,
 		trafficSelection.ProviderIDs,
 		daemonConfig.Interval,
+		daemonConfig.MaxBackoff,
 		daemonConfig.TerminalTimeout,
 		daemonConfig.StaleRunAfter,
 		cfg.TrafficIngestionLatitude,
@@ -355,7 +361,7 @@ func printTrafficProviderEvidence(
 		}
 
 		fmt.Printf(
-			"provider_decision provider=%s decisions_total=%d allowed_total=%d denied_total=%d latest_allowed=%t latest_reason=%s latest_request_key=%q retry_at=%s fallback_observed=%t fallback_total=%d primary_selected=%d fallback_selected=%d no_provider_available=%d latest_fallback_outcome=%s latest_selected_provider=%s reason_counts=%v limitations=%v\n",
+			"provider_decision provider=%s decisions_total=%d allowed_total=%d denied_total=%d latest_allowed=%t latest_reason=%s latest_request_key=%q retry_at=%s fallback_observed=%t fallback_total=%d primary_selected=%d fallback_selected=%d no_provider_available=%d terminal_failure=%d latest_fallback_outcome=%s latest_selected_provider=%s latest_attempts=%v reason_counts=%v limitations=%v\n",
 			decisionSnapshot.Provider,
 			decisionSnapshot.DecisionsTotal,
 			decisionSnapshot.AllowedTotal,
@@ -371,8 +377,10 @@ func printTrafficProviderEvidence(
 			decisionSnapshot.PrimarySelectedTotal,
 			decisionSnapshot.FallbackSelectedTotal,
 			decisionSnapshot.NoProviderAvailableTotal,
+			decisionSnapshot.TerminalFailureTotal,
 			decisionSnapshot.LatestFallback.Outcome,
 			decisionSnapshot.LatestFallback.SelectedProvider,
+			decisionSnapshot.LatestFallback.Attempts,
 			decisionSnapshot.ReasonCounts,
 			decisionSnapshot.Limitations,
 		)
