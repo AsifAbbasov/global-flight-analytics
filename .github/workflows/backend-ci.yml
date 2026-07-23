@@ -132,20 +132,79 @@ jobs:
         run: |
           set -euo pipefail
 
-          container_id="$(
-            docker run \
-              --detach \
-              --publish 127.0.0.1:18080:8080 \
-              --env API_PORT=8080 \
-              global-flight-analytics-api:ci
-          )"
+          network_name="gfa-backend-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          database_name="gfa-postgres-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          database_url="postgres://postgres:postgres@${database_name}:5432/global_flight_analytics_container?sslmode=disable"
+          mutation_key_sha256="78fd029a7217aaf71651a747b370be0a76fccebac79bfa02457be3448b636f26"
+          container_id=""
+          database_id=""
 
           cleanup() {
-            docker logs "$container_id" || true
-            docker rm --force "$container_id" > /dev/null 2>&1 || true
+            if [ -n "$container_id" ]; then
+              docker logs "$container_id" || true
+              docker rm --force "$container_id" > /dev/null 2>&1 || true
+            fi
+            if [ -n "$database_id" ]; then
+              docker logs "$database_id" || true
+              docker rm --force "$database_id" > /dev/null 2>&1 || true
+            fi
+            docker network rm "$network_name" > /dev/null 2>&1 || true
           }
 
           trap cleanup EXIT
+
+          docker network create "$network_name" > /dev/null
+
+          database_id="$(
+            docker run \
+              --detach \
+              --name "$database_name" \
+              --network "$network_name" \
+              --env POSTGRES_USER=postgres \
+              --env POSTGRES_PASSWORD=postgres \
+              --env POSTGRES_DB=global_flight_analytics_container \
+              postgres:16.14-alpine3.24
+          )"
+
+          for attempt in $(seq 1 30); do
+            if docker exec "$database_id" \
+              pg_isready \
+              --username postgres \
+              --dbname global_flight_analytics_container \
+              > /dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          docker exec "$database_id" \
+            pg_isready \
+            --username postgres \
+            --dbname global_flight_analytics_container \
+            > /dev/null
+
+          docker run \
+            --rm \
+            --network "$network_name" \
+            --env DATABASE_URL="$database_url" \
+            --env DATABASE_CONNECT_TIMEOUT=5s \
+            --env MIGRATIONS_DIR=/app/migrations \
+            --env MIGRATION_TIMEOUT=2m \
+            global-flight-analytics-api:ci \
+            /app/migrate
+
+          container_id="$(
+            docker run \
+              --detach \
+              --network "$network_name" \
+              --publish 127.0.0.1:18080:8080 \
+              --env API_PORT=8080 \
+              --env DATABASE_URL="$database_url" \
+              --env DATABASE_CONNECT_TIMEOUT=5s \
+              --env OPEN_METEO_TIMEOUT=5s \
+              --env API_MUTATION_KEY_SHA256="$mutation_key_sha256" \
+              global-flight-analytics-api:ci
+          )"
 
           for attempt in $(seq 1 30); do
             health_status="$(
@@ -183,6 +242,27 @@ jobs:
             --show-error \
             http://127.0.0.1:18080/api/v1/health \
             > /dev/null
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            http://127.0.0.1:18080/api/v1/ready \
+            > /dev/null
+
+          mutation_status="$(
+            curl \
+              --silent \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              --request POST \
+              http://127.0.0.1:18080/api/v1/trajectories/00000000-0000-0000-0000-000000000000/route-intelligence
+          )"
+
+          if [ "$mutation_status" != "401" ]; then
+            printf '%s\n' "Expected unauthorized mutation status 401, got $mutation_status"
+            exit 1
+          fi
 
   backend-race:
     name: Backend Race Safety

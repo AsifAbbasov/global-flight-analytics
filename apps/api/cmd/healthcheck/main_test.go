@@ -34,7 +34,7 @@ func TestLoadHealthcheckConfigUsesDefaults(
 		)
 	}
 
-	if config.URL != "http://127.0.0.1:8080/api/v1/health" {
+	if config.URL != "http://127.0.0.1:8080/api/v1/ready" {
 		t.Fatalf(
 			"unexpected default URL: %q",
 			config.URL,
@@ -112,7 +112,7 @@ func TestLoadHealthcheckConfigUsesConfiguredAPIPort(
 		)
 	}
 
-	if config.URL != "http://127.0.0.1:9090/api/v1/health" {
+	if config.URL != "http://127.0.0.1:9090/api/v1/ready" {
 		t.Fatalf(
 			"unexpected URL for configured API port: %q",
 			config.URL,

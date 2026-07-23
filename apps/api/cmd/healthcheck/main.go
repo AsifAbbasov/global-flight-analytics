@@ -15,7 +15,7 @@ import (
 
 const (
 	defaultAPIPort            = 8080
-	defaultHealthcheckPath    = "/api/v1/health"
+	defaultHealthcheckPath    = "/api/v1/ready"
 	defaultHealthcheckTimeout = 2 * time.Second
 )
 

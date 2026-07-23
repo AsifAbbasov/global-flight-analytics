@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func New(cfg Config) (*fiber.App, error) {
@@ -19,7 +20,10 @@ func New(cfg Config) (*fiber.App, error) {
 		return nil, err
 	}
 	v1 := app.Group("/api").Group("/v1")
-	registerSystemRoutes(v1)
+	registerSystemRoutes(
+		v1,
+		normalizedConfig.DatabasePool,
+	)
 	if normalizedConfig.DatabasePool != nil {
 		mutationAuthorization, err :=
 			internalmiddleware.NewMutationAuthorization(
@@ -59,8 +63,22 @@ func registerMiddleware(app *fiber.App, cfg Config) error {
 	app.Use(limiter)
 	return nil
 }
-func registerSystemRoutes(v1 fiber.Router) {
+func registerSystemRoutes(
+	v1 fiber.Router,
+	databasePool *pgxpool.Pool,
+) {
+	var readinessProbe handlers.ReadinessProbe
+	if databasePool != nil {
+		readinessProbe = databasePool.Ping
+	}
+
 	v1.Get("/health", handlers.Health)
+	v1.Get(
+		"/ready",
+		handlers.Readiness(
+			readinessProbe,
+		),
+	)
 	v1.Get("/version", handlers.Version)
 }
 

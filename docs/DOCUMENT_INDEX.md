@@ -810,3 +810,13 @@ propagation, verification and conditional review closure.
 Open-Meteo missing-value preservation, PostgreSQL NULL persistence, the typed
 OurAirports atomic publication policy, isolated PostgreSQL fixture alignment,
 and the exact Continuous Integration gates required for formal review closure.
+
+<!-- SERVER-HTTP-PROTECTION-REVIEW-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 93
+
+`93_SERVER_AND_HTTP_PROTECTION_REVIEW_CLOSURE.md`
+
+Records the authenticated mutation boundary, explicit liveness and PostgreSQL
+readiness contracts, migration-backed container health verification, and final
+closure gates for the Server and HTTP Protection review.
