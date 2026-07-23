@@ -31,16 +31,22 @@ func (r *FlightStateRepository) SaveFlightStates(
 	ctx context.Context,
 	items []flightstate.FlightState,
 ) error {
+	_, err := r.SaveFlightStatesCounted(ctx, items)
+	return err
+}
+
+func (r *FlightStateRepository) SaveFlightStatesCounted(
+	ctx context.Context,
+	items []flightstate.FlightState,
+) (int, error) {
 	if len(items) == 0 {
-		return nil
+		return 0, nil
 	}
-
 	if r == nil || r.db == nil {
-		return ErrFlightStateRepositoryPoolRequired
+		return 0, ErrFlightStateRepositoryPoolRequired
 	}
-
 	if err := requireRepositoryContext(ctx); err != nil {
-		return err
+		return 0, err
 	}
 
 	tx, err := r.db.BeginTx(
@@ -48,7 +54,7 @@ func (r *FlightStateRepository) SaveFlightStates(
 		pgx.TxOptions{},
 	)
 	if err != nil {
-		return fmt.Errorf(
+		return 0, fmt.Errorf(
 			"begin flight states transaction: %w",
 			err,
 		)
@@ -61,19 +67,24 @@ func (r *FlightStateRepository) SaveFlightStates(
 		}
 	}()
 
-	if err := saveFlightStateBatch(ctx, tx, items); err != nil {
-		return err
+	insertedCount, err := saveFlightStateBatch(
+		ctx,
+		tx,
+		items,
+	)
+	if err != nil {
+		return 0, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf(
+		return 0, fmt.Errorf(
 			"commit flight states transaction: %w",
 			err,
 		)
 	}
 	committed = true
 
-	return nil
+	return insertedCount, nil
 }
 
 func (r *FlightStateRepository) ListByFlightID(

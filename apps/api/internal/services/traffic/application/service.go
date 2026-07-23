@@ -21,6 +21,13 @@ type FlightStateRepository interface {
 	) error
 }
 
+type CountedFlightStateRepository interface {
+	SaveFlightStatesCounted(
+		ctx context.Context,
+		items []flightstate.FlightState,
+	) (int, error)
+}
+
 type TrajectoryRepository interface {
 	SaveTrajectory(
 		ctx context.Context,
@@ -207,6 +214,21 @@ func (service *Service) saveUsableFlightStates(
 
 	for _, item := range result.UsableStates {
 		states = append(states, item.State)
+	}
+
+	countedRepository, supported := service.flightStateRepository.(CountedFlightStateRepository)
+	if supported {
+		storedCount, err := countedRepository.SaveFlightStatesCounted(
+			ctx,
+			states,
+		)
+		if err != nil {
+			return 0, fmt.Errorf(
+				"save usable flight states: %w",
+				err,
+			)
+		}
+		return storedCount, nil
 	}
 
 	if err := service.flightStateRepository.SaveFlightStates(

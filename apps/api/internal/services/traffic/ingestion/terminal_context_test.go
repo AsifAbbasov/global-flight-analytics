@@ -189,6 +189,21 @@ func (repository *terminalContextRunRepository) CreateRunning(
 	return repository.run, nil
 }
 
+func (repository *terminalContextRunRepository) UpdateRunningSource(
+	context.Context,
+	string,
+	string,
+) error {
+	return nil
+}
+
+func (repository *terminalContextRunRepository) DeleteRunning(
+	context.Context,
+	string,
+) error {
+	return nil
+}
+
 func (repository *terminalContextRunRepository) MarkSuccess(
 	ctx context.Context,
 	_ string,
@@ -199,6 +214,18 @@ func (repository *terminalContextRunRepository) MarkSuccess(
 ) error {
 	repository.successCalls++
 	repository.successContextErr = ctx.Err()
+	return nil
+}
+
+func (repository *terminalContextRunRepository) MarkPartial(
+	context.Context,
+	string,
+	time.Time,
+	int,
+	int,
+	int,
+	string,
+) error {
 	return nil
 }
 

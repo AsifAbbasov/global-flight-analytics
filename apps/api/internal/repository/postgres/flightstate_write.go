@@ -58,38 +58,45 @@ const insertFlightStateQuery = `
 		$21,
 		$22,
 		$23
-	);
+	)
+	ON CONFLICT (source_name, icao24, observed_at)
+	DO NOTHING;
 `
 
 func saveFlightStateBatch(
 	ctx context.Context,
 	tx pgx.Tx,
 	items []flightstate.FlightState,
-) error {
+) (int, error) {
+	insertedCount := 0
+
 	for index, item := range items {
 		arguments, err := prepareFlightStateInsertArguments(
 			index,
 			item,
 		)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
-		if _, err := tx.Exec(
+		commandTag, err := tx.Exec(
 			ctx,
 			insertFlightStateQuery,
 			arguments...,
-		); err != nil {
-			return fmt.Errorf(
+		)
+		if err != nil {
+			return 0, fmt.Errorf(
 				"insert flight state at index %d for icao24 %s: %w",
 				index,
 				item.ICAO24,
 				err,
 			)
 		}
+
+		insertedCount += int(commandTag.RowsAffected())
 	}
 
-	return nil
+	return insertedCount, nil
 }
 
 func prepareFlightStateInsertArguments(

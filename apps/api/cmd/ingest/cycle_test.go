@@ -85,6 +85,25 @@ func (
 
 func (
 	repository *cycleTestRunRepository,
+) UpdateRunningSource(
+	context.Context,
+	string,
+	string,
+) error {
+	return nil
+}
+
+func (
+	repository *cycleTestRunRepository,
+) DeleteRunning(
+	context.Context,
+	string,
+) error {
+	return nil
+}
+
+func (
+	repository *cycleTestRunRepository,
 ) MarkSuccess(
 	context.Context,
 	string,
@@ -95,6 +114,20 @@ func (
 ) error {
 	repository.markSuccessCalled = true
 
+	return nil
+}
+
+func (
+	repository *cycleTestRunRepository,
+) MarkPartial(
+	context.Context,
+	string,
+	time.Time,
+	int,
+	int,
+	int,
+	string,
+) error {
 	return nil
 }
 

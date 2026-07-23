@@ -761,3 +761,12 @@ safety, verification, and remaining ingestion-layer follow-up boundaries.
 content publication identity, durable PostgreSQL reservation ownership, lease
 recovery, commit and release semantics, validator ordering, production import
 wiring, concurrency protection, and retry evidence.
+
+<!-- INGESTION-DURABILITY-REPLAY-PARTIAL-V1:DOCUMENT-INDEX -->
+## Document 87 — Ingestion Durability, Replay and Partial Status Hardening
+
+`87_INGESTION_DURABILITY_REPLAY_PARTIAL_HARDENING.md` records durable
+pre-request ingestion runs, provisional-run deletion for local denials,
+selected-source correction, replay-safe Flight State identity, actual insert
+counts, explicit partial terminal status, migration catalog repair, verification,
+and the remaining open ingestion review boundaries.

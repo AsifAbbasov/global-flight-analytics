@@ -135,16 +135,19 @@ func TestWriteRepositoryCoordinatorsPreserveTransactionBoundary(t *testing.T) {
 
 	for _, check := range []struct {
 		path       string
+		function   string
 		delegate   string
 		commitCall string
 	}{
 		{
 			path:       "airport_import_repository.go",
+			function:   "UpsertImported",
 			delegate:   "executeAirportImport(",
 			commitCall: "tx.Commit(",
 		},
 		{
 			path:       "flightstate_repository.go",
+			function:   "SaveFlightStatesCounted",
 			delegate:   "saveFlightStateBatch(",
 			commitCall: "tx.Commit(",
 		},
@@ -152,10 +155,7 @@ func TestWriteRepositoryCoordinatorsPreserveTransactionBoundary(t *testing.T) {
 		functionSource, _ := goFunctionSource(
 			t,
 			check.path,
-			map[string]string{
-				"airport_import_repository.go": "UpsertImported",
-				"flightstate_repository.go":    "SaveFlightStates",
-			}[check.path],
+			check.function,
 		)
 		for _, required := range []string{
 			"BeginTx(",
@@ -165,8 +165,9 @@ func TestWriteRepositoryCoordinatorsPreserveTransactionBoundary(t *testing.T) {
 		} {
 			if !strings.Contains(functionSource, required) {
 				t.Fatalf(
-					"%s is missing transaction token %q",
+					"%s.%s is missing transaction token %q",
 					check.path,
+					check.function,
 					required,
 				)
 			}
@@ -175,10 +176,31 @@ func TestWriteRepositoryCoordinatorsPreserveTransactionBoundary(t *testing.T) {
 		if strings.Index(functionSource, check.delegate) >
 			strings.Index(functionSource, check.commitCall) {
 			t.Fatalf(
-				"%s commits before delegated write completion",
+				"%s.%s commits before delegated write completion",
 				check.path,
+				check.function,
 			)
 		}
+	}
+}
+
+func TestFlightStateLegacySaveDelegatesToCountedTransactionOwner(
+	t *testing.T,
+) {
+	t.Parallel()
+
+	functionSource, _ := goFunctionSource(
+		t,
+		"flightstate_repository.go",
+		"SaveFlightStates",
+	)
+	if !strings.Contains(
+		functionSource,
+		"SaveFlightStatesCounted(",
+	) {
+		t.Fatal(
+			"SaveFlightStates must delegate to SaveFlightStatesCounted",
+		)
 	}
 }
 

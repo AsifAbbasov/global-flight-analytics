@@ -59,10 +59,10 @@ func TestLocalProviderDenialDoesNotCreateFailedIngestionRun(
 			result.IngestionRunID,
 		)
 	}
-	if runRepository.createCount != 0 ||
+	if runRepository.createCount != 1 ||
 		runRepository.failedCount != 0 {
 		t.Fatalf(
-			"repository writes create=%d failed=%d, want 0 and 0",
+			"repository writes create=%d failed=%d, want 1 and 0",
 			runRepository.createCount,
 			runRepository.failedCount,
 		)

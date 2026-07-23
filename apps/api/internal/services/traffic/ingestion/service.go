@@ -52,6 +52,17 @@ type IngestionRunRepository interface {
 		startedAt time.Time,
 	) (ingestionrun.Run, error)
 
+	UpdateRunningSource(
+		ctx context.Context,
+		id string,
+		sourceName string,
+	) error
+
+	DeleteRunning(
+		ctx context.Context,
+		id string,
+	) error
+
 	MarkSuccess(
 		ctx context.Context,
 		id string,
@@ -59,6 +70,16 @@ type IngestionRunRepository interface {
 		recordsReceived int,
 		recordsInserted int,
 		recordsUpdated int,
+	) error
+
+	MarkPartial(
+		ctx context.Context,
+		id string,
+		finishedAt time.Time,
+		recordsReceived int,
+		recordsInserted int,
+		recordsUpdated int,
+		errorMessage string,
 	) error
 
 	MarkFailed(
@@ -133,13 +154,11 @@ func (service *Service) LoadAndProcessByPoint(
 			"regional traffic provider is required",
 		)
 	}
-
 	if service.processingService == nil {
 		return LoadAndProcessResult{}, fmt.Errorf(
 			"traffic processing service is required",
 		)
 	}
-
 	if service.ingestionRunRepository == nil {
 		return LoadAndProcessResult{}, fmt.Errorf(
 			"ingestion run repository is required",
@@ -147,6 +166,31 @@ func (service *Service) LoadAndProcessByPoint(
 	}
 
 	startedAt := service.now().UTC()
+	initialSourceName, err := normalizedSourceName(
+		service.provider.SourceName(),
+		"",
+	)
+	if err != nil {
+		return LoadAndProcessResult{}, err
+	}
+
+	// The running row is committed before any provider call. A process crash,
+	// container termination, or panic during transport therefore leaves durable
+	// evidence that startup stale-run recovery can finalize.
+	run, err := service.ingestionRunRepository.CreateRunning(
+		ctx,
+		initialSourceName,
+		service.regionID,
+		startedAt,
+	)
+	if err != nil {
+		return LoadAndProcessResult{
+				SourceName: initialSourceName,
+			}, fmt.Errorf(
+				"create traffic ingestion run before provider request: %w",
+				err,
+			)
+	}
 
 	loadResult, loadErr := service.loadByPoint(
 		ctx,
@@ -157,7 +201,7 @@ func (service *Service) LoadAndProcessByPoint(
 	if loadErr != nil {
 		return service.recordProviderFailure(
 			ctx,
-			startedAt,
+			run,
 			loadResult,
 			loadErr,
 		)
@@ -165,26 +209,50 @@ func (service *Service) LoadAndProcessByPoint(
 
 	sourceName, err := normalizedSourceName(
 		loadResult.SourceName,
-		service.provider.SourceName(),
+		initialSourceName,
 	)
 	if err != nil {
-		return LoadAndProcessResult{}, err
+		operationErr := fmt.Errorf(
+			"resolve selected regional traffic provider: %w",
+			err,
+		)
+		markErr := service.markRunFailed(
+			ctx,
+			run.ID,
+			len(loadResult.States),
+			0,
+			0,
+			operationErr.Error(),
+		)
+		return LoadAndProcessResult{
+			IngestionRunID:   run.ID,
+			LoadedStateCount: len(loadResult.States),
+		}, errors.Join(operationErr, markErr)
 	}
 
-	run, err := service.ingestionRunRepository.CreateRunning(
+	if err := service.updateRunningSource(
 		ctx,
+		run.ID,
+		run.SourceName,
 		sourceName,
-		service.regionID,
-		startedAt,
-	)
-	if err != nil {
+	); err != nil {
+		operationErr := fmt.Errorf(
+			"update traffic ingestion run selected source: %w",
+			err,
+		)
+		markErr := service.markRunFailed(
+			ctx,
+			run.ID,
+			len(loadResult.States),
+			0,
+			0,
+			operationErr.Error(),
+		)
 		return LoadAndProcessResult{
-				SourceName:       sourceName,
-				LoadedStateCount: len(loadResult.States),
-			}, fmt.Errorf(
-				"create traffic ingestion run: %w",
-				err,
-			)
+			IngestionRunID:   run.ID,
+			SourceName:       sourceName,
+			LoadedStateCount: len(loadResult.States),
+		}, errors.Join(operationErr, markErr)
 	}
 
 	states := append(
@@ -208,14 +276,26 @@ func (service *Service) LoadAndProcessByPoint(
 			err,
 		)
 
-		markErr := service.markRunFailed(
-			ctx,
-			run.ID,
-			len(states),
-			processingResult.StoredFlightStateCount,
-			0,
-			operationErr.Error(),
-		)
+		var markErr error
+		if processingResult.StoredFlightStateCount > 0 {
+			markErr = service.markRunPartial(
+				ctx,
+				run.ID,
+				len(states),
+				processingResult.StoredFlightStateCount,
+				0,
+				operationErr.Error(),
+			)
+		} else {
+			markErr = service.markRunFailed(
+				ctx,
+				run.ID,
+				len(states),
+				0,
+				0,
+				operationErr.Error(),
+			)
+		}
 
 		return LoadAndProcessResult{
 			IngestionRunID:   run.ID,
@@ -283,7 +363,7 @@ func (service *Service) loadByPoint(
 
 func (service *Service) recordProviderFailure(
 	ctx context.Context,
-	startedAt time.Time,
+	run ingestionrun.Run,
 	loadResult LoadResult,
 	loadErr error,
 ) (LoadAndProcessResult, error) {
@@ -294,40 +374,44 @@ func (service *Service) recordProviderFailure(
 
 	sourceName, sourceErr := normalizedSourceName(
 		loadResult.SourceName,
-		service.provider.SourceName(),
+		run.SourceName,
 	)
 	if sourceErr != nil {
-		return LoadAndProcessResult{
-			LoadedStateCount: len(loadResult.States),
-		}, errors.Join(operationErr, sourceErr)
+		sourceName = strings.TrimSpace(run.SourceName)
 	}
 
+	// A local budget or polling denial did not execute provider transport. The
+	// provisional row is removed instead of being retained as a false failed run.
 	if !externalRequestAttempted(loadErr) {
-		return LoadAndProcessResult{
+		deleteErr := service.deleteRunningRun(
+			ctx,
+			run.ID,
+		)
+		result := LoadAndProcessResult{
 			SourceName:       sourceName,
 			LoadedStateCount: len(loadResult.States),
-		}, operationErr
+		}
+		if deleteErr != nil {
+			result.IngestionRunID = run.ID
+			deleteErr = fmt.Errorf(
+				"delete ingestion run without external request: %w",
+				deleteErr,
+			)
+		}
+		return result, errors.Join(operationErr, sourceErr, deleteErr)
 	}
 
-	createContext, cancel := service.newTerminalContext(ctx)
-	run, createErr := service.ingestionRunRepository.CreateRunning(
-		createContext,
+	updateErr := service.updateRunningSource(
+		ctx,
+		run.ID,
+		run.SourceName,
 		sourceName,
-		service.regionID,
-		startedAt,
 	)
-	cancel()
-	if createErr != nil {
-		return LoadAndProcessResult{
-				SourceName:       sourceName,
-				LoadedStateCount: len(loadResult.States),
-			}, errors.Join(
-				operationErr,
-				fmt.Errorf(
-					"create failed traffic ingestion run: %w",
-					createErr,
-				),
-			)
+	if updateErr != nil {
+		updateErr = fmt.Errorf(
+			"update failed provider source evidence: %w",
+			updateErr,
+		)
 	}
 
 	markErr := service.markRunFailed(
@@ -343,7 +427,7 @@ func (service *Service) recordProviderFailure(
 		IngestionRunID:   run.ID,
 		SourceName:       sourceName,
 		LoadedStateCount: len(loadResult.States),
-	}, errors.Join(operationErr, markErr)
+	}, errors.Join(operationErr, sourceErr, updateErr, markErr)
 }
 
 func (service *Service) markRunSuccess(
@@ -366,6 +450,28 @@ func (service *Service) markRunSuccess(
 	)
 }
 
+func (service *Service) markRunPartial(
+	ctx context.Context,
+	runID string,
+	recordsReceived int,
+	recordsInserted int,
+	recordsUpdated int,
+	errorMessage string,
+) error {
+	terminalContext, cancel := service.newTerminalContext(ctx)
+	defer cancel()
+
+	return service.ingestionRunRepository.MarkPartial(
+		terminalContext,
+		runID,
+		service.now().UTC(),
+		recordsReceived,
+		recordsInserted,
+		recordsUpdated,
+		errorMessage,
+	)
+}
+
 func (service *Service) markRunFailed(
 	ctx context.Context,
 	runID string,
@@ -385,6 +491,40 @@ func (service *Service) markRunFailed(
 		recordsInserted,
 		recordsUpdated,
 		errorMessage,
+	)
+}
+
+func (service *Service) updateRunningSource(
+	ctx context.Context,
+	runID string,
+	currentSourceName string,
+	selectedSourceName string,
+) error {
+	if strings.TrimSpace(currentSourceName) ==
+		strings.TrimSpace(selectedSourceName) {
+		return nil
+	}
+
+	terminalContext, cancel := service.newTerminalContext(ctx)
+	defer cancel()
+
+	return service.ingestionRunRepository.UpdateRunningSource(
+		terminalContext,
+		runID,
+		selectedSourceName,
+	)
+}
+
+func (service *Service) deleteRunningRun(
+	ctx context.Context,
+	runID string,
+) error {
+	terminalContext, cancel := service.newTerminalContext(ctx)
+	defer cancel()
+
+	return service.ingestionRunRepository.DeleteRunning(
+		terminalContext,
+		runID,
 	)
 }
 
