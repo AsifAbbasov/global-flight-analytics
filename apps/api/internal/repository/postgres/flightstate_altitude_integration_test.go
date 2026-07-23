@@ -706,32 +706,26 @@ func applyFlightStateAltitudeMigration(
 		)
 	}
 
-	migrationPath := filepath.Clean(
-		filepath.Join(
-			filepath.Dir(currentFile),
-			"../../../../../database/migrations/006_flight_state_altitude_semantics.sql",
-		),
-	)
-
-	sqlBytes, err := os.ReadFile(
-		migrationPath,
-	)
-	if err != nil {
-		t.Fatalf(
-			"read altitude semantics migration %s: %v",
-			migrationPath,
-			err,
-		)
+	migrationFilenames := []string{
+		"006_flight_state_altitude_semantics.sql",
+		"023_ingestion_durability_replay_partial.sql",
 	}
 
-	if _, err := pool.Exec(
-		ctx,
-		string(sqlBytes),
-	); err != nil {
-		t.Fatalf(
-			"apply altitude semantics migration: %v",
-			err,
+	for _, migrationFilename := range migrationFilenames {
+		migrationPath := filepath.Clean(
+			filepath.Join(
+				filepath.Dir(currentFile),
+				"../../../../../database/migrations",
+				migrationFilename,
+			),
 		)
+		sqlBytes, err := os.ReadFile(migrationPath)
+		if err != nil {
+			t.Fatalf("read flight state migration %s: %v", migrationPath, err)
+		}
+		if _, err := pool.Exec(ctx, string(sqlBytes)); err != nil {
+			t.Fatalf("apply flight state migration %s: %v", migrationFilename, err)
+		}
 	}
 }
 

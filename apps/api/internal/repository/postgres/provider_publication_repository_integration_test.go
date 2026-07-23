@@ -280,7 +280,7 @@ func applyProviderPublicationMigration(t *testing.T, pool *pgxpool.Pool) {
 	}
 	migrationPath := filepath.Clean(filepath.Join(
 		filepath.Dir(currentFile),
-		"../../../../../database/migrations/019_provider_publication_lifecycle.sql",
+		"../../../../../database/migrations/022_provider_publication_lifecycle.sql",
 	))
 	migrationBytes, err := os.ReadFile(migrationPath)
 	if err != nil {

@@ -284,21 +284,36 @@ func (client *Client) GetCurrentWeather(
 		return weather.CurrentSnapshot{}, parseErr
 	}
 
+	metricAvailability := weather.CurrentMetricAvailability{
+		TemperatureCelsius:       payload.Current.Temperature2M != nil,
+		RelativeHumidityPercent:  payload.Current.RelativeHumidity2M != nil,
+		PrecipitationMillimeters: payload.Current.Precipitation != nil,
+		RainMillimeters:          payload.Current.Rain != nil,
+		WeatherCode:              payload.Current.WeatherCode != nil,
+		CloudCoverPercent:        payload.Current.CloudCover != nil,
+		SurfacePressureHPA:       payload.Current.SurfacePressure != nil,
+		WindSpeedMetersPerSecond: payload.Current.WindSpeed10M != nil,
+		WindDirectionDegrees:     payload.Current.WindDirection10M != nil,
+		WindGustsMetersPerSecond: payload.Current.WindGusts10M != nil,
+	}
+
 	snapshot := weather.CurrentSnapshot{
 		Provider:                 weather.ProviderOpenMeteo,
 		Latitude:                 payload.Latitude,
 		Longitude:                payload.Longitude,
 		ObservedAt:               observedAt,
-		TemperatureCelsius:       payload.Current.Temperature2M,
-		RelativeHumidityPercent:  payload.Current.RelativeHumidity2M,
-		PrecipitationMillimeters: payload.Current.Precipitation,
-		RainMillimeters:          payload.Current.Rain,
-		WeatherCode:              payload.Current.WeatherCode,
-		CloudCoverPercent:        payload.Current.CloudCover,
-		SurfacePressureHPA:       payload.Current.SurfacePressure,
-		WindSpeedMetersPerSecond: payload.Current.WindSpeed10M,
-		WindDirectionDegrees:     payload.Current.WindDirection10M,
-		WindGustsMetersPerSecond: payload.Current.WindGusts10M,
+		TemperatureCelsius:       openMeteoFloat64Value(payload.Current.Temperature2M),
+		RelativeHumidityPercent:  openMeteoIntValue(payload.Current.RelativeHumidity2M),
+		PrecipitationMillimeters: openMeteoFloat64Value(payload.Current.Precipitation),
+		RainMillimeters:          openMeteoFloat64Value(payload.Current.Rain),
+		WeatherCode:              openMeteoIntValue(payload.Current.WeatherCode),
+		CloudCoverPercent:        openMeteoIntValue(payload.Current.CloudCover),
+		SurfacePressureHPA:       openMeteoFloat64Value(payload.Current.SurfacePressure),
+		WindSpeedMetersPerSecond: openMeteoFloat64Value(payload.Current.WindSpeed10M),
+		WindDirectionDegrees:     openMeteoIntValue(payload.Current.WindDirection10M),
+		WindGustsMetersPerSecond: openMeteoFloat64Value(payload.Current.WindGusts10M),
+		MetricAvailabilityKnown:  true,
+		MetricAvailability:       metricAvailability,
 		RetrievedAt:              time.Now().UTC(),
 	}
 
@@ -425,6 +440,22 @@ func parseOpenMeteoTime(
 	return time.Time{}, err
 }
 
+func openMeteoFloat64Value(value *float64) float64 {
+	if value == nil {
+		return 0
+	}
+
+	return *value
+}
+
+func openMeteoIntValue(value *int) int {
+	if value == nil {
+		return 0
+	}
+
+	return *value
+}
+
 type forecastResponse struct {
 	Latitude  float64        `json:"latitude"`
 	Longitude float64        `json:"longitude"`
@@ -432,15 +463,15 @@ type forecastResponse struct {
 }
 
 type currentWeather struct {
-	Time               string  `json:"time"`
-	Temperature2M      float64 `json:"temperature_2m"`
-	RelativeHumidity2M int     `json:"relative_humidity_2m"`
-	Precipitation      float64 `json:"precipitation"`
-	Rain               float64 `json:"rain"`
-	WeatherCode        int     `json:"weather_code"`
-	CloudCover         int     `json:"cloud_cover"`
-	SurfacePressure    float64 `json:"surface_pressure"`
-	WindSpeed10M       float64 `json:"wind_speed_10m"`
-	WindDirection10M   int     `json:"wind_direction_10m"`
-	WindGusts10M       float64 `json:"wind_gusts_10m"`
+	Time               string   `json:"time"`
+	Temperature2M      *float64 `json:"temperature_2m"`
+	RelativeHumidity2M *int     `json:"relative_humidity_2m"`
+	Precipitation      *float64 `json:"precipitation"`
+	Rain               *float64 `json:"rain"`
+	WeatherCode        *int     `json:"weather_code"`
+	CloudCover         *int     `json:"cloud_cover"`
+	SurfacePressure    *float64 `json:"surface_pressure"`
+	WindSpeed10M       *float64 `json:"wind_speed_10m"`
+	WindDirection10M   *int     `json:"wind_direction_10m"`
+	WindGusts10M       *float64 `json:"wind_gusts_10m"`
 }

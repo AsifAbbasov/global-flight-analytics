@@ -13,6 +13,8 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 )
 
+const maxRetryAfterSeconds = int64(^uint64(0)>>1) / int64(time.Second)
+
 var (
 	ErrBudgetManagerRequired = errors.New(
 		"provider response budget manager is required",
@@ -372,7 +374,7 @@ func parseRetryAfterSeconds(
 		return 0, err
 	}
 
-	if seconds < 0 {
+	if seconds < 0 || seconds > maxRetryAfterSeconds {
 		return 0, ErrInvalidRetryAfterHeader
 	}
 
@@ -393,7 +395,7 @@ func parseStandardRetryAfter(
 		64,
 	)
 	if err == nil {
-		if seconds < 0 {
+		if seconds < 0 || seconds > maxRetryAfterSeconds {
 			return 0, ErrInvalidRetryAfterHeader
 		}
 

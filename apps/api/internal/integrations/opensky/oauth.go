@@ -16,7 +16,11 @@ var (
 	ErrTokenResponseInvalid = errors.New("OpenSky OAuth2 token response is invalid")
 )
 
-const tokenRefreshMargin = 30 * time.Second
+const (
+	tokenRefreshMargin          = 30 * time.Second
+	defaultTokenLifetimeSeconds = int64(1800)
+	maxTokenLifetimeSeconds     = int64(^uint64(0)>>1) / int64(time.Second)
+)
 
 type tokenResponse struct {
 	AccessToken string `json:"access_token"`
@@ -111,7 +115,10 @@ func (manager *TokenManager) refresh(ctx context.Context) (string, error) {
 		return "", ErrTokenResponseInvalid
 	}
 	if payload.ExpiresIn <= 0 {
-		payload.ExpiresIn = 1800
+		payload.ExpiresIn = defaultTokenLifetimeSeconds
+	}
+	if payload.ExpiresIn > maxTokenLifetimeSeconds {
+		return "", ErrTokenResponseInvalid
 	}
 
 	lifetime := time.Duration(payload.ExpiresIn) * time.Second

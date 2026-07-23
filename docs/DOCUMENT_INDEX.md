@@ -802,3 +802,11 @@ verification, and the remaining malformed-provider-batch review boundary.
 `91_MALFORMED_PROVIDER_BATCH_POLICY.md` records item-level provider rejection,
 mixed-batch partial ingestion, fully rejected batch fallback, evidence
 propagation, verification and conditional review closure.
+
+<!-- INGESTION-REVIEW-CLOSURE-REPAIR-V1:DOCUMENT-INDEX -->
+## Document 92 — Ingestion Review Closure Repair
+
+`92_INGESTION_REVIEW_CLOSURE_REPAIR.md` records bounded duration conversion,
+Open-Meteo missing-value preservation, PostgreSQL NULL persistence, the typed
+OurAirports atomic publication policy, isolated PostgreSQL fixture alignment,
+and the exact Continuous Integration gates required for formal review closure.

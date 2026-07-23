@@ -43,6 +43,7 @@ func (repository *WeatherRepository) SaveCurrentSnapshot(ctx context.Context, sn
 	if err != nil {
 		return "", err
 	}
+	metricAvailability := normalizedSnapshot.ResolvedMetricAvailability()
 
 	var snapshotID string
 
@@ -103,16 +104,16 @@ func (repository *WeatherRepository) SaveCurrentSnapshot(ctx context.Context, sn
 		normalizedSnapshot.Longitude,
 		normalizedSnapshot.ObservedAt,
 		normalizedSnapshot.RetrievedAt,
-		normalizedSnapshot.TemperatureCelsius,
-		normalizedSnapshot.RelativeHumidityPercent,
-		normalizedSnapshot.PrecipitationMillimeters,
-		normalizedSnapshot.RainMillimeters,
-		normalizedSnapshot.WeatherCode,
-		normalizedSnapshot.CloudCoverPercent,
-		normalizedSnapshot.SurfacePressureHPA,
-		normalizedSnapshot.WindSpeedMetersPerSecond,
-		normalizedSnapshot.WindDirectionDegrees,
-		normalizedSnapshot.WindGustsMetersPerSecond,
+		nullableWeatherFloat64(normalizedSnapshot.TemperatureCelsius, metricAvailability.TemperatureCelsius),
+		nullableWeatherInt(normalizedSnapshot.RelativeHumidityPercent, metricAvailability.RelativeHumidityPercent),
+		nullableWeatherFloat64(normalizedSnapshot.PrecipitationMillimeters, metricAvailability.PrecipitationMillimeters),
+		nullableWeatherFloat64(normalizedSnapshot.RainMillimeters, metricAvailability.RainMillimeters),
+		nullableWeatherInt(normalizedSnapshot.WeatherCode, metricAvailability.WeatherCode),
+		nullableWeatherInt(normalizedSnapshot.CloudCoverPercent, metricAvailability.CloudCoverPercent),
+		nullableWeatherFloat64(normalizedSnapshot.SurfacePressureHPA, metricAvailability.SurfacePressureHPA),
+		nullableWeatherFloat64(normalizedSnapshot.WindSpeedMetersPerSecond, metricAvailability.WindSpeedMetersPerSecond),
+		nullableWeatherInt(normalizedSnapshot.WindDirectionDegrees, metricAvailability.WindDirectionDegrees),
+		nullableWeatherFloat64(normalizedSnapshot.WindGustsMetersPerSecond, metricAvailability.WindGustsMetersPerSecond),
 	).Scan(&snapshotID)
 	if err != nil {
 		return "", fmt.Errorf("save weather snapshot: %w", err)
@@ -150,28 +151,52 @@ func normalizeCurrentWeatherSnapshot(snapshot weather.CurrentSnapshot) (weather.
 		normalizedSnapshot.RetrievedAt = normalizedSnapshot.RetrievedAt.UTC()
 	}
 
-	if !aviationconstraints.IsPercentInt(normalizedSnapshot.RelativeHumidityPercent) {
+	metricAvailability := normalizedSnapshot.ResolvedMetricAvailability()
+
+	if metricAvailability.RelativeHumidityPercent &&
+		!aviationconstraints.IsPercentInt(normalizedSnapshot.RelativeHumidityPercent) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherHumidity
 	}
 
-	if !aviationconstraints.IsPercentInt(normalizedSnapshot.CloudCoverPercent) {
+	if metricAvailability.CloudCoverPercent &&
+		!aviationconstraints.IsPercentInt(normalizedSnapshot.CloudCoverPercent) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherCloudCover
 	}
 
-	if !aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.PrecipitationMillimeters) ||
-		!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.RainMillimeters) {
+	if (metricAvailability.PrecipitationMillimeters &&
+		!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.PrecipitationMillimeters)) ||
+		(metricAvailability.RainMillimeters &&
+			!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.RainMillimeters)) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherPrecipitation
 	}
 
-	if !aviationconstraints.IsPositiveFloat64(normalizedSnapshot.SurfacePressureHPA) {
+	if metricAvailability.SurfacePressureHPA &&
+		!aviationconstraints.IsPositiveFloat64(normalizedSnapshot.SurfacePressureHPA) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherPressure
 	}
 
-	if !aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.WindSpeedMetersPerSecond) ||
-		!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.WindGustsMetersPerSecond) ||
-		!aviationconstraints.IsHeadingDegreesInclusive(normalizedSnapshot.WindDirectionDegrees) {
+	if (metricAvailability.WindSpeedMetersPerSecond &&
+		!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.WindSpeedMetersPerSecond)) ||
+		(metricAvailability.WindGustsMetersPerSecond &&
+			!aviationconstraints.IsNonNegativeFloat64(normalizedSnapshot.WindGustsMetersPerSecond)) ||
+		(metricAvailability.WindDirectionDegrees &&
+			!aviationconstraints.IsHeadingDegreesInclusive(normalizedSnapshot.WindDirectionDegrees)) {
 		return weather.CurrentSnapshot{}, ErrInvalidWeatherWind
 	}
 
 	return normalizedSnapshot, nil
+}
+
+func nullableWeatherFloat64(value float64, available bool) any {
+	if !available {
+		return nil
+	}
+	return value
+}
+
+func nullableWeatherInt(value int, available bool) any {
+	if !available {
+		return nil
+	}
+	return value
 }

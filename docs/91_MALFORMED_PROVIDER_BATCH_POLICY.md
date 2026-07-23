@@ -54,8 +54,10 @@ fully rejected batches for both providers, partial-run policy tests,
 fallback invalid-response classification, race tests, complete backend
 tests, `go vet`, policy gates and clean diff validation.
 
-## Review Closure
+## Review Closure Boundary
 
-This closes the final previously identified Ingestion, Provider Adapters
-and Orchestration review boundary. Review closure remains conditional on
-every installer acceptance gate passing in the repository baseline.
+This document closes only the malformed item-level batch policy for
+Airplanes.live and OpenSky. It does not close duration overflow protection,
+Open-Meteo metric availability, the OurAirports atomic publication policy,
+PostgreSQL isolated-fixture alignment, or independent Continuous Integration
+verification. Complete Ingestion review closure is defined by Document 92.

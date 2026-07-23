@@ -15,6 +15,41 @@ import (
 
 const SourceName = "ourairports"
 
+var ErrAtomicPublicationRejected = errors.New(
+	"OurAirports publication rejected atomically",
+)
+
+type AtomicPublicationError struct {
+	RowNumber int
+	Err       error
+}
+
+func (err *AtomicPublicationError) Error() string {
+	if err == nil {
+		return ErrAtomicPublicationRejected.Error()
+	}
+	if err.RowNumber > 0 {
+		return fmt.Sprintf(
+			"%s at row %d: %v",
+			ErrAtomicPublicationRejected,
+			err.RowNumber,
+			err.Err,
+		)
+	}
+	return fmt.Sprintf("%s: %v", ErrAtomicPublicationRejected, err.Err)
+}
+
+func (err *AtomicPublicationError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
+func (*AtomicPublicationError) Is(target error) bool {
+	return target == ErrAtomicPublicationRejected
+}
+
 var requiredHeaders = []string{
 	"ident",
 	"name",
@@ -101,11 +136,10 @@ func parseAirportsCSV(
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf(
-				"read OurAirports CSV row %d: %w",
-				rowNumber,
-				err,
-			)
+			return nil, &AtomicPublicationError{
+				RowNumber: rowNumber,
+				Err:       fmt.Errorf("read CSV row: %w", err),
+			}
 		}
 
 		if !isCountryAllowed(
@@ -122,11 +156,10 @@ func parseAirportsCSV(
 			syncedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf(
-				"parse OurAirports CSV row %d: %w",
-				rowNumber,
-				err,
-			)
+			return nil, &AtomicPublicationError{
+				RowNumber: rowNumber,
+				Err:       fmt.Errorf("parse CSV row: %w", err),
+			}
 		}
 
 		items = append(
