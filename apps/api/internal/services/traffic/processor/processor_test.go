@@ -317,16 +317,15 @@ func TestProcessRemovesExactDuplicatesBeforeValidationAndTrajectoryBuilding(
 	duplicate := makeProcessorFlightState(
 		"state-duplicate",
 		"ABC123",
-		"DIFFERENT-CALLSIGN",
+		" ahy101 ",
 		40.4100,
 		49.8700,
 		observedAt,
 	)
 	duplicate.FlightID = "different-flight"
 	duplicate.AircraftID = "different-aircraft"
-	duplicate.SourceName = "different-source"
-	duplicate.GeometricAltitudeM = 10100
-	duplicate.VerticalRateMPS = 3
+	duplicate.IngestionRunID = "different-run"
+	duplicate.SourceName = " TEST "
 
 	second := makeProcessorFlightState(
 		"state-2",

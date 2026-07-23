@@ -770,3 +770,11 @@ pre-request ingestion runs, provisional-run deletion for local denials,
 selected-source correction, replay-safe Flight State identity, actual insert
 counts, explicit partial terminal status, migration catalog repair, verification,
 and the remaining open ingestion review boundaries.
+
+<!-- EXACT-DEDUP-AIRPLANESLIVE-TELEMETRY-V1:DOCUMENT-INDEX -->
+## Document 88 — Exact Deduplication and Airplanes.live Telemetry Hardening
+
+`88_EXACT_DEDUPLICATION_AND_AIRPLANESLIVE_TELEMETRY_HARDENING.md` records
+complete canonical observation equality, persistence-identity exclusions,
+nullable Airplanes.live telemetry, explicit availability semantics, bounded
+provider time conversion, nil-client protection, and verification evidence.

@@ -33,12 +33,7 @@ func TestRemoveExactDuplicatesRemovesRepeatedMovementPoint(t *testing.T) {
 	duplicate.ID = "state-2"
 	duplicate.FlightID = "flight-2"
 	duplicate.AircraftID = "aircraft-2"
-	duplicate.Callsign = ""
-	duplicate.GeometricAltitudeM = 10100
-	duplicate.VerticalRateMPS = 3
-	duplicate.OnGround = true
-	duplicate.OriginCountry = ""
-	duplicate.SourceName = "another-source"
+	duplicate.IngestionRunID = "run-2"
 
 	result := RemoveExactDuplicates([]flightstate.FlightState{
 		first,

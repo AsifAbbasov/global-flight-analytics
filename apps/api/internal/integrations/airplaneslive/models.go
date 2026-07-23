@@ -101,6 +101,34 @@ func (value *BarometricAltitude) UnmarshalJSON(
 	return nil
 }
 
+type OptionalFloat64 struct {
+	Value     float64
+	Available bool
+}
+
+func (value *OptionalFloat64) UnmarshalJSON(
+	data []byte,
+) error {
+	*value = OptionalFloat64{}
+
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
+		return nil
+	}
+
+	var number float64
+	if err := json.Unmarshal(trimmed, &number); err != nil {
+		return nil
+	}
+	if math.IsNaN(number) || math.IsInf(number, 0) {
+		return nil
+	}
+
+	value.Value = number
+	value.Available = true
+	return nil
+}
+
 type AircraftItem struct {
 	Hex          string             `json:"hex"`
 	Flight       string             `json:"flight"`
@@ -108,10 +136,10 @@ type AircraftItem struct {
 	Longitude    float64            `json:"lon"`
 	AltBaro      BarometricAltitude `json:"alt_baro"`
 	AltGeom      *float64           `json:"alt_geom"`
-	GroundSpeed  float64            `json:"gs"`
-	Track        float64            `json:"track"`
-	BaroRate     float64            `json:"baro_rate"`
-	Seen         float64            `json:"seen"`
+	GroundSpeed  OptionalFloat64    `json:"gs"`
+	Track        OptionalFloat64    `json:"track"`
+	BaroRate     OptionalFloat64    `json:"baro_rate"`
+	Seen         OptionalFloat64    `json:"seen"`
 	Type         string             `json:"type"`
 	Registration string             `json:"r"`
 	AircraftType string             `json:"t"`

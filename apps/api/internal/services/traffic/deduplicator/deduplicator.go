@@ -12,16 +12,32 @@ type Result struct {
 }
 
 type strictPointKey struct {
-	ICAO24                   string
-	ObservedAtUnixNano       int64
-	ObservedAtIsZero         bool
-	LatitudeBits             uint64
-	LongitudeBits            uint64
-	BarometricAltitudeBits   uint64
-	BarometricAltitudeStatus flightstate.AltitudeStatus
-	GeometricAltitudeStatus  flightstate.AltitudeStatus
-	VelocityBits             uint64
-	HeadingBits              uint64
+	ICAO24                     string
+	Callsign                   string
+	ObservedAtUnixNano         int64
+	ObservedAtIsZero           bool
+	LatitudeBits               uint64
+	LongitudeBits              uint64
+	BarometricAltitudeBits     uint64
+	BarometricAltitudeStatus   flightstate.AltitudeStatus
+	GeometricAltitudeBits      uint64
+	GeometricAltitudeStatus    flightstate.AltitudeStatus
+	VelocityBits               uint64
+	VelocityAvailable          bool
+	HeadingBits                uint64
+	HeadingAvailable           bool
+	VerticalRateBits           uint64
+	VerticalRateAvailable      bool
+	OnGround                   bool
+	OnGroundAvailable          bool
+	TelemetryAvailabilityKnown bool
+	OriginCountry              string
+	SquawkCode                 string
+	SpecialPurposeIndicator    bool
+	PositionSource             flightstate.PositionSource
+	AircraftCategory           int
+	AircraftCategoryAvailable  bool
+	SourceName                 string
 }
 
 func RemoveExactDuplicates(
@@ -79,6 +95,7 @@ func makeStrictPointKey(
 
 	return strictPointKey{
 		ICAO24:             state.ICAO24,
+		Callsign:           state.Callsign,
 		ObservedAtUnixNano: observedAtUnixNano,
 		ObservedAtIsZero:   observedAtIsZero,
 		LatitudeBits: canonicalFloatBits(
@@ -94,6 +111,9 @@ func makeStrictPointKey(
 			state.BarometricAltitudeM,
 			state.BarometricAltitudeStatus,
 		),
+		GeometricAltitudeBits: canonicalFloatBits(
+			state.GeometricAltitudeM,
+		),
 		GeometricAltitudeStatus: flightstate.ResolveAltitudeStatus(
 			state.GeometricAltitudeM,
 			state.GeometricAltitudeStatus,
@@ -101,9 +121,25 @@ func makeStrictPointKey(
 		VelocityBits: canonicalFloatBits(
 			state.VelocityMPS,
 		),
+		VelocityAvailable: state.VelocityAvailable,
 		HeadingBits: canonicalFloatBits(
 			state.HeadingDegrees,
 		),
+		HeadingAvailable: state.HeadingAvailable,
+		VerticalRateBits: canonicalFloatBits(
+			state.VerticalRateMPS,
+		),
+		VerticalRateAvailable:      state.VerticalRateAvailable,
+		OnGround:                   state.OnGround,
+		OnGroundAvailable:          state.OnGroundAvailable,
+		TelemetryAvailabilityKnown: state.TelemetryAvailabilityKnown,
+		OriginCountry:              state.OriginCountry,
+		SquawkCode:                 state.SquawkCode,
+		SpecialPurposeIndicator:    state.SpecialPurposeIndicator,
+		PositionSource:             state.PositionSource,
+		AircraftCategory:           state.AircraftCategory,
+		AircraftCategoryAvailable:  state.AircraftCategoryAvailable,
+		SourceName:                 state.SourceName,
 	}
 }
 
