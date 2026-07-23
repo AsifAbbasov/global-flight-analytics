@@ -787,3 +787,11 @@ fixed-window counters and provider-reported remaining state, cross-process atomi
 acquisition, restart-safe cooldown evidence, guaranteed retry scheduling for
 exhausted budgets, production wiring, migration 024, verification, and the
 remaining health-aware fallback and malformed-batch review boundaries.
+
+<!-- HEALTH-AWARE-TRAFFIC-PROVIDER-SELECTION-V1:DOCUMENT-INDEX -->
+## Document 90 — Health-Aware Traffic Provider Selection
+
+`90_HEALTH_AWARE_TRAFFIC_PROVIDER_SELECTION.md` records stable health-ranked
+traffic provider ordering, configured-primary preservation, fail-open snapshot
+handling, explicit health decision evidence, production collector wiring,
+verification, and the remaining malformed-provider-batch review boundary.

@@ -40,10 +40,11 @@ var (
 )
 
 type trafficFallbackProvider struct {
-	primary   trafficProviderSelection
-	secondary trafficProviderSelection
-	selector  *providerfallback.Selector
-	recorder  providerfallback.DecisionRecorder
+	primary      trafficProviderSelection
+	secondary    trafficProviderSelection
+	selector     *providerfallback.Selector
+	recorder     providerfallback.DecisionRecorder
+	healthSource trafficProviderHealthSource
 }
 
 func newTrafficFallbackProvider(
@@ -51,6 +52,7 @@ func newTrafficFallbackProvider(
 	secondary trafficProviderSelection,
 	selector *providerfallback.Selector,
 	recorder providerfallback.DecisionRecorder,
+	healthSources ...trafficProviderHealthSource,
 ) (*trafficFallbackProvider, error) {
 	if primary.Provider == nil {
 		return nil, errTrafficFallbackPrimaryRequired
@@ -71,11 +73,17 @@ func newTrafficFallbackProvider(
 		return nil, errTrafficFallbackRecorderRequired
 	}
 
+	var healthSource trafficProviderHealthSource
+	if len(healthSources) > 0 {
+		healthSource = healthSources[0]
+	}
+
 	return &trafficFallbackProvider{
-		primary:   primary,
-		secondary: secondary,
-		selector:  selector,
-		recorder:  recorder,
+		primary:      primary,
+		secondary:    secondary,
+		selector:     selector,
+		recorder:     recorder,
+		healthSource: healthSource,
 	}, nil
 }
 
@@ -115,10 +123,24 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 		ctx = context.Background()
 	}
 
-	selections := []trafficProviderSelection{
+	configuredSelections := []trafficProviderSelection{
 		provider.primary,
 		provider.secondary,
 	}
+	selections, healthOrder := orderTrafficProviderSelections(
+		configuredSelections,
+		provider.healthSource,
+	)
+	healthAwareSelectAndRecord := provider.selectAndRecord
+	selectAndRecord := func(
+		candidates []providerfallback.Candidate,
+	) (providerfallback.Decision, error) {
+		return healthAwareSelectAndRecord(
+			candidates,
+			healthOrder,
+		)
+	}
+
 	candidates := make(
 		[]providerfallback.Candidate,
 		0,
@@ -143,7 +165,7 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 				},
 			)
 
-			decision, selectErr := provider.selectAndRecord(
+			decision, selectErr := selectAndRecord(
 				candidates,
 			)
 			if selectErr != nil {
@@ -179,7 +201,7 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 						true,
 					),
 				)
-				if _, selectErr := provider.selectAndRecord(
+				if _, selectErr := selectAndRecord(
 					candidates,
 				); selectErr != nil {
 					return trafficingestion.LoadResult{
@@ -226,7 +248,7 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 				externalRequestAttemptedByError(err),
 			),
 		)
-		_, selectErr := provider.selectAndRecord(
+		_, selectErr := selectAndRecord(
 			candidates,
 		)
 		operationErr := fmt.Errorf(
@@ -251,7 +273,7 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 		}, operationErr
 	}
 
-	decision, err := provider.selectAndRecord(
+	decision, err := selectAndRecord(
 		candidates,
 	)
 	if err != nil {
@@ -275,12 +297,20 @@ func (
 	provider *trafficFallbackProvider,
 ) selectAndRecord(
 	candidates []providerfallback.Candidate,
+	healthOrders ...trafficProviderHealthOrder,
 ) (providerfallback.Decision, error) {
 	decision, err := provider.selector.Select(
 		candidates,
 	)
 	if err != nil {
 		return providerfallback.Decision{}, err
+	}
+
+	if len(healthOrders) > 0 {
+		decision = decorateTrafficFallbackDecision(
+			decision,
+			healthOrders[0],
+		)
 	}
 
 	provider.recorder.RecordFallbackDecision(

@@ -28,6 +28,7 @@ func buildTrafficProvider(
 	executor regionalprovider.Executor,
 	responseObserver integrationcommon.ProviderResponseObserver,
 	fallbackRecorder providerfallback.DecisionRecorder,
+	healthSources ...trafficProviderHealthSource,
 ) (trafficProviderSelection, error) {
 	switch selection.Provider {
 	case config.TrafficProviderAirplanesLive,
@@ -79,6 +80,7 @@ func buildTrafficProvider(
 			secondary,
 			providerfallback.New(nil),
 			fallbackRecorder,
+			healthSources...,
 		)
 		if err != nil {
 			return trafficProviderSelection{}, fmt.Errorf(

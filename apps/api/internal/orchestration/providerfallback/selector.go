@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	providerhealthdomain "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerhealth"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 )
@@ -89,6 +90,12 @@ type Decision struct {
 	Attempts            []AttemptEvidence
 	RetryAt             time.Time
 	DecidedAt           time.Time
+
+	HealthAware          bool
+	HealthReordered      bool
+	HealthOrderingReason string
+	PrimaryHealthStatus  providerhealthdomain.Status
+	SelectedHealthStatus providerhealthdomain.Status
 }
 
 type Selector struct {

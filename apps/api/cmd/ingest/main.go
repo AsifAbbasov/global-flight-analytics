@@ -146,6 +146,7 @@ func run() error {
 		orchestrator,
 		responseObserver,
 		providerDecisionCollector,
+		providerHealthCollector,
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -373,7 +374,7 @@ func printTrafficProviderEvidence(
 		}
 
 		fmt.Printf(
-			"provider_decision provider=%s decisions_total=%d allowed_total=%d denied_total=%d latest_allowed=%t latest_reason=%s latest_request_key=%q retry_at=%s fallback_observed=%t fallback_total=%d primary_selected=%d fallback_selected=%d no_provider_available=%d terminal_failure=%d latest_fallback_outcome=%s latest_selected_provider=%s latest_attempts=%v reason_counts=%v limitations=%v\n",
+			"provider_decision provider=%s decisions_total=%d allowed_total=%d denied_total=%d latest_allowed=%t latest_reason=%s latest_request_key=%q retry_at=%s fallback_observed=%t fallback_total=%d primary_selected=%d fallback_selected=%d no_provider_available=%d terminal_failure=%d latest_fallback_outcome=%s latest_selected_provider=%s health_aware=%t health_reordered=%t primary_health=%s selected_health=%s health_reason=%q latest_attempts=%v reason_counts=%v limitations=%v\n",
 			decisionSnapshot.Provider,
 			decisionSnapshot.DecisionsTotal,
 			decisionSnapshot.AllowedTotal,
@@ -392,6 +393,15 @@ func printTrafficProviderEvidence(
 			decisionSnapshot.TerminalFailureTotal,
 			decisionSnapshot.LatestFallback.Outcome,
 			decisionSnapshot.LatestFallback.SelectedProvider,
+			decisionSnapshot.LatestFallback.HealthAware,
+			decisionSnapshot.LatestFallback.HealthReordered,
+			trafficProviderHealthStatusLabel(
+				decisionSnapshot.LatestFallback.PrimaryHealthStatus,
+			),
+			trafficProviderHealthStatusLabel(
+				decisionSnapshot.LatestFallback.SelectedHealthStatus,
+			),
+			decisionSnapshot.LatestFallback.HealthOrderingReason,
 			decisionSnapshot.LatestFallback.Attempts,
 			decisionSnapshot.ReasonCounts,
 			decisionSnapshot.Limitations,
