@@ -81,12 +81,24 @@ func run() error {
 	}
 	defer dbPool.Close()
 
-	budgetManager, err := providerbudget.New(
+	budgetStore, err := postgres.NewProviderBudgetStore(
+		dbPool,
+		daemonConfig.TerminalTimeout,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create PostgreSQL provider budget store: %w",
+			err,
+		)
+	}
+
+	budgetManager, err := providerbudget.NewDurable(
+		budgetStore,
 		nil,
 	)
 	if err != nil {
 		return fmt.Errorf(
-			"create provider budget manager: %w",
+			"create durable provider budget manager: %w",
 			err,
 		)
 	}

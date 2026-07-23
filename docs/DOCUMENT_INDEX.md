@@ -778,3 +778,12 @@ and the remaining open ingestion review boundaries.
 complete canonical observation equality, persistence-identity exclusions,
 nullable Airplanes.live telemetry, explicit availability semantics, bounded
 provider time conversion, nil-client protection, and verification evidence.
+
+<!-- PROVIDER-BUDGET-DURABILITY-V1:DOCUMENT-INDEX -->
+## Document 89 — Provider Budget Durability and Retry Scheduling
+
+`89_PROVIDER_BUDGET_DURABILITY_AND_RETRY_SCHEDULING.md` records PostgreSQL-owned
+fixed-window counters and provider-reported remaining state, cross-process atomic
+acquisition, restart-safe cooldown evidence, guaranteed retry scheduling for
+exhausted budgets, production wiring, migration 024, verification, and the
+remaining health-aware fallback and malformed-batch review boundaries.

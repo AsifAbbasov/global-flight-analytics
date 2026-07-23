@@ -63,6 +63,9 @@ type Manager struct {
 
 	now func() time.Time
 
+	stateStore                         StateStore
+	providerReportedFallbackRetryAfter time.Duration
+
 	policies map[providerpolicy.Provider]providerpolicy.Policy
 
 	fixedWindowCounters map[fixedWindowKey]fixedWindowCounter
@@ -134,11 +137,12 @@ func NewWithPolicies(
 	}
 
 	return &Manager{
-		now:                    now,
-		policies:               policyIndex,
-		fixedWindowCounters:    make(map[fixedWindowKey]fixedWindowCounter),
-		providerReportedStates: make(map[providerpolicy.Provider]providerReportedState),
-		publicationStates:      make(map[publicationKey]publicationState),
+		now:                                now,
+		providerReportedFallbackRetryAfter: defaultProviderReportedFallbackRetryAfter,
+		policies:                           policyIndex,
+		fixedWindowCounters:                make(map[fixedWindowKey]fixedWindowCounter),
+		providerReportedStates:             make(map[providerpolicy.Provider]providerReportedState),
+		publicationStates:                  make(map[publicationKey]publicationState),
 	}, nil
 }
 
@@ -155,11 +159,23 @@ func (manager *Manager) Acquire(
 
 	switch policy.BudgetMode {
 	case providerpolicy.BudgetModeFixedWindow:
+		if manager.stateStore != nil {
+			return manager.acquireDurableFixedWindow(
+				policy,
+			)
+		}
 		return manager.acquireFixedWindow(
 			policy,
 		)
 
 	case providerpolicy.BudgetModeProviderReported:
+		if manager.stateStore != nil {
+			return manager.stateStore.AcquireProviderReported(
+				policy.Provider,
+				manager.now().UTC(),
+				manager.providerReportedFallback(),
+			)
+		}
 		return manager.acquireProviderReported(
 			policy,
 		), nil
@@ -209,16 +225,31 @@ func (manager *Manager) ObserveProviderReportedBudget(
 	}
 
 	now := manager.now().UTC()
+	retryAt := time.Time{}
+
+	if retryAfter > 0 {
+		retryAt = now.Add(
+			retryAfter,
+		)
+	} else if remaining == 0 {
+		retryAt = now.Add(
+			manager.providerReportedFallback(),
+		)
+	}
+
+	if manager.stateStore != nil {
+		return manager.stateStore.ObserveProviderReportedBudget(
+			provider,
+			remaining,
+			retryAt,
+			now,
+		)
+	}
 
 	state := providerReportedState{
 		RemainingKnown: true,
 		Remaining:      remaining,
-	}
-
-	if retryAfter > 0 {
-		state.CooldownUntil = now.Add(
-			retryAfter,
-		)
+		CooldownUntil:  retryAt,
 	}
 
 	manager.providerReportedStates[provider] = state
@@ -325,10 +356,20 @@ func (manager *Manager) acquireProviderReported(
 	}
 
 	if state.Remaining <= 0 {
+		retryAt := state.CooldownUntil
+		if retryAt.IsZero() {
+			retryAt = now.Add(
+				manager.providerReportedFallback(),
+			)
+			state.CooldownUntil = retryAt
+			manager.providerReportedStates[policy.Provider] = state
+		}
+
 		return Decision{
 			Provider: policy.Provider,
 			Allowed:  false,
 			Reason:   DecisionReasonProviderBudgetExhausted,
+			RetryAt:  retryAt,
 		}
 	}
 
