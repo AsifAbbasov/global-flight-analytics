@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/opensky"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
@@ -148,8 +149,9 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 	)
 
 	for _, selection := range selections {
-		states, err := selection.Provider.LoadByPoint(
+		loadResult, err := loadTrafficProviderSelection(
 			ctx,
+			selection,
 			latitude,
 			longitude,
 			radius,
@@ -180,14 +182,13 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 				decision.SelectedProvider,
 			)
 			normalizedStates := normalizeTrafficStateSources(
-				states,
+				loadResult.States,
 				sourceName,
 			)
+			loadResult.SourceName = sourceName
+			loadResult.States = normalizedStates
 
-			return trafficingestion.LoadResult{
-				SourceName: sourceName,
-				States:     normalizedStates,
-			}, nil
+			return loadResult, nil
 		}
 
 		if ctx.Err() != nil {
@@ -373,6 +374,15 @@ func trafficFallbackCandidate(
 
 	case errors.Is(
 		requestErr,
+		providerbatch.ErrAllItemsRejected,
+	):
+		return unavailableTrafficProviderCandidate(
+			providerID,
+			providerfallback.AttemptErrorClassInvalidResponse,
+		), true
+
+	case errors.Is(
+		requestErr,
 		integrationcommon.ErrProviderServer,
 	):
 		return unavailableTrafficProviderCandidate(
@@ -489,6 +499,43 @@ func externalRequestAttemptedByError(
 	}
 
 	return true
+}
+
+func loadTrafficProviderSelection(
+	ctx context.Context,
+	selection trafficProviderSelection,
+	latitude float64,
+	longitude float64,
+	radius int,
+) (trafficingestion.LoadResult, error) {
+	evidenceProvider, supported :=
+		selection.Provider.(trafficingestion.BatchEvidenceRegionalProvider)
+	if supported {
+		states, evidence, err :=
+			evidenceProvider.LoadByPointWithBatchEvidence(
+				ctx,
+				latitude,
+				longitude,
+				radius,
+			)
+		return trafficingestion.LoadResult{
+			SourceName:    string(selection.ProviderID),
+			States:        states,
+			BatchEvidence: evidence,
+		}, err
+	}
+
+	states, err := selection.Provider.LoadByPoint(
+		ctx,
+		latitude,
+		longitude,
+		radius,
+	)
+	return trafficingestion.LoadResult{
+		SourceName:    string(selection.ProviderID),
+		States:        states,
+		BatchEvidence: providerbatch.AcceptedOnly(len(states)),
+	}, err
 }
 
 func normalizeTrafficStateSources(

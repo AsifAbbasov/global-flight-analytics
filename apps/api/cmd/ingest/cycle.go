@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 	trafficingestion "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/ingestion"
 )
@@ -127,10 +128,12 @@ func (
 	}
 
 	fmt.Printf(
-		"ingestion_run_id=%s source=%s loaded=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
+		"ingestion_run_id=%s source=%s loaded=%d provider_received=%d provider_rejected=%d received=%d usable=%d invalid=%d stored=%d trajectories=%d stored_at=%s\n",
 		result.IngestionRunID,
 		result.SourceName,
 		result.LoadedStateCount,
+		result.ProviderBatchEvidence.Received,
+		result.ProviderBatchEvidence.RejectedCount(),
 		result.ProcessingResult.ProcessingResult.Stats.ReceivedCount,
 		result.ProcessingResult.ProcessingResult.Stats.UsableCount,
 		result.ProcessingResult.ProcessingResult.Stats.InvalidCount,
@@ -175,11 +178,21 @@ func (cycle *ingestionCycle) observeProviderEvidence(
 	}
 
 	stats := processingResult.Stats
+	batchEvidence := result.ProviderBatchEvidence
+	if batchEvidence == (providerbatch.Evidence{}) {
+		batchEvidence = providerbatch.AcceptedOnly(
+			stats.ReceivedCount,
+		)
+	}
 	err := cycle.observationRecorder.RecordObservationEvidence(
 		providerID,
-		int64(stats.ReceivedCount),
+		int64(batchEvidence.Received),
 		int64(stats.UsableCount),
-		int64(stats.InvalidCount+stats.DuplicateCount),
+		int64(
+			batchEvidence.RejectedCount()+
+				stats.InvalidCount+
+				stats.DuplicateCount,
+		),
 	)
 	if err != nil {
 		fmt.Printf(

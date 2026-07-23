@@ -57,6 +57,7 @@ const (
 	AttemptErrorClassTimeout          AttemptErrorClass = "timeout"
 	AttemptErrorClassUnauthorized     AttemptErrorClass = "unauthorized"
 	AttemptErrorClassResponseTooLarge AttemptErrorClass = "response_too_large"
+	AttemptErrorClassInvalidResponse  AttemptErrorClass = "invalid_response"
 	AttemptErrorClassCancelled        AttemptErrorClass = "cancelled"
 	AttemptErrorClassUnknown          AttemptErrorClass = "unknown"
 )

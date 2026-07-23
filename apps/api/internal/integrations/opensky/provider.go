@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 )
 
 const (
@@ -70,13 +71,32 @@ func (provider *Provider) LoadByPoint(
 	longitude float64,
 	radius int,
 ) ([]flightstate.FlightState, error) {
+	states, _, err := provider.LoadByPointWithBatchEvidence(
+		ctx,
+		latitude,
+		longitude,
+		radius,
+	)
+	return states, err
+}
+
+func (provider *Provider) LoadByPointWithBatchEvidence(
+	ctx context.Context,
+	latitude float64,
+	longitude float64,
+	radius int,
+) (
+	[]flightstate.FlightState,
+	providerbatch.Evidence,
+	error,
+) {
 	box, err := RegionalBoundingBox(
 		latitude,
 		longitude,
 		radius,
 	)
 	if err != nil {
-		return nil, err
+		return nil, providerbatch.Evidence{}, err
 	}
 
 	result, err := provider.client.GetStates(
@@ -84,12 +104,15 @@ func (provider *Provider) LoadByPoint(
 		StatesRequest{BoundingBox: &box, Extended: true},
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
+		return nil, providerbatch.Evidence{}, fmt.Errorf(
 			"load OpenSky regional states: %w",
 			err,
 		)
 	}
 
+	evidence := providerbatch.Evidence{
+		Received: len(result.States),
+	}
 	states := make(
 		[]flightstate.FlightState,
 		0,
@@ -101,20 +124,28 @@ func (provider *Provider) LoadByPoint(
 			result.States[index],
 		)
 		if mapErr != nil {
-			return nil, fmt.Errorf(
-				"map OpenSky state vector %d: %w",
-				index,
-				mapErr,
-			)
+			evidence.RejectedMalformed++
+			continue
 		}
 		if !usable {
+			evidence.RejectedUnusable++
 			continue
 		}
 
 		states = append(states, mapped)
+		evidence.Accepted++
 	}
 
-	return states, nil
+	if evidence.Received > 0 && evidence.Accepted == 0 {
+		return states,
+			evidence,
+			providerbatch.NewAllItemsRejectedError(
+				sourceName,
+				evidence,
+			)
+	}
+
+	return states, evidence, nil
 }
 
 func RegionalBoundingBox(

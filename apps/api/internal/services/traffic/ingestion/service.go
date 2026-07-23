@@ -9,6 +9,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 )
 
@@ -24,8 +25,9 @@ type RegionalProvider interface {
 }
 
 type LoadResult struct {
-	SourceName string
-	States     []flightstate.FlightState
+	SourceName    string
+	States        []flightstate.FlightState
+	BatchEvidence providerbatch.Evidence
 }
 
 type SourceAwareRegionalProvider interface {
@@ -35,6 +37,19 @@ type SourceAwareRegionalProvider interface {
 		longitude float64,
 		radius int,
 	) (LoadResult, error)
+}
+
+type BatchEvidenceRegionalProvider interface {
+	LoadByPointWithBatchEvidence(
+		ctx context.Context,
+		latitude float64,
+		longitude float64,
+		radius int,
+	) (
+		[]flightstate.FlightState,
+		providerbatch.Evidence,
+		error,
+	)
 }
 
 type ProcessingService interface {
@@ -112,10 +127,11 @@ type Service struct {
 }
 
 type LoadAndProcessResult struct {
-	IngestionRunID   string
-	SourceName       string
-	LoadedStateCount int
-	ProcessingResult trafficapplication.ProcessAndStoreResult
+	IngestionRunID        string
+	SourceName            string
+	LoadedStateCount      int
+	ProviderBatchEvidence providerbatch.Evidence
+	ProcessingResult      trafficapplication.ProcessAndStoreResult
 }
 
 func New(config Config) *Service {
@@ -255,6 +271,30 @@ func (service *Service) LoadAndProcessByPoint(
 		}, errors.Join(operationErr, markErr)
 	}
 
+	batchEvidence, err := providerbatch.Resolve(
+		loadResult.BatchEvidence,
+		len(loadResult.States),
+	)
+	if err != nil {
+		operationErr := fmt.Errorf(
+			"validate provider batch evidence: %w",
+			err,
+		)
+		markErr := service.markRunFailed(
+			ctx,
+			run.ID,
+			len(loadResult.States),
+			0,
+			0,
+			operationErr.Error(),
+		)
+		return LoadAndProcessResult{
+			IngestionRunID:   run.ID,
+			SourceName:       sourceName,
+			LoadedStateCount: len(loadResult.States),
+		}, errors.Join(operationErr, markErr)
+	}
+
 	states := append(
 		[]flightstate.FlightState(nil),
 		loadResult.States...,
@@ -281,7 +321,7 @@ func (service *Service) LoadAndProcessByPoint(
 			markErr = service.markRunPartial(
 				ctx,
 				run.ID,
-				len(states),
+				batchEvidence.Received,
 				processingResult.StoredFlightStateCount,
 				0,
 				operationErr.Error(),
@@ -290,7 +330,7 @@ func (service *Service) LoadAndProcessByPoint(
 			markErr = service.markRunFailed(
 				ctx,
 				run.ID,
-				len(states),
+				batchEvidence.Received,
 				0,
 				0,
 				operationErr.Error(),
@@ -298,26 +338,41 @@ func (service *Service) LoadAndProcessByPoint(
 		}
 
 		return LoadAndProcessResult{
-			IngestionRunID:   run.ID,
-			SourceName:       sourceName,
-			LoadedStateCount: len(states),
-			ProcessingResult: processingResult,
+			IngestionRunID:        run.ID,
+			SourceName:            sourceName,
+			LoadedStateCount:      len(states),
+			ProviderBatchEvidence: batchEvidence,
+			ProcessingResult:      processingResult,
 		}, errors.Join(operationErr, markErr)
 	}
 
-	err = service.markRunSuccess(
-		ctx,
-		run.ID,
-		len(states),
-		processingResult.StoredFlightStateCount,
-		0,
-	)
+	partialBatch, partialMessage :=
+		providerBatchPartialFailure(batchEvidence)
+	if partialBatch {
+		err = service.markRunPartial(
+			ctx,
+			run.ID,
+			batchEvidence.Received,
+			processingResult.StoredFlightStateCount,
+			0,
+			partialMessage,
+		)
+	} else {
+		err = service.markRunSuccess(
+			ctx,
+			run.ID,
+			batchEvidence.Received,
+			processingResult.StoredFlightStateCount,
+			0,
+		)
+	}
 	if err != nil {
 		return LoadAndProcessResult{
-				IngestionRunID:   run.ID,
-				SourceName:       sourceName,
-				LoadedStateCount: len(states),
-				ProcessingResult: processingResult,
+				IngestionRunID:        run.ID,
+				SourceName:            sourceName,
+				LoadedStateCount:      len(states),
+				ProviderBatchEvidence: batchEvidence,
+				ProcessingResult:      processingResult,
 			}, fmt.Errorf(
 				"mark traffic ingestion run success: %w",
 				err,
@@ -325,10 +380,11 @@ func (service *Service) LoadAndProcessByPoint(
 	}
 
 	return LoadAndProcessResult{
-		IngestionRunID:   run.ID,
-		SourceName:       sourceName,
-		LoadedStateCount: len(states),
-		ProcessingResult: processingResult,
+		IngestionRunID:        run.ID,
+		SourceName:            sourceName,
+		LoadedStateCount:      len(states),
+		ProviderBatchEvidence: batchEvidence,
+		ProcessingResult:      processingResult,
 	}, nil
 }
 
@@ -349,6 +405,23 @@ func (service *Service) loadByPoint(
 		)
 	}
 
+	evidenceProvider, supported :=
+		service.provider.(BatchEvidenceRegionalProvider)
+	if supported {
+		states, evidence, err :=
+			evidenceProvider.LoadByPointWithBatchEvidence(
+				ctx,
+				latitude,
+				longitude,
+				radius,
+			)
+		return LoadResult{
+			SourceName:    service.provider.SourceName(),
+			States:        states,
+			BatchEvidence: evidence,
+		}, err
+	}
+
 	states, err := service.provider.LoadByPoint(
 		ctx,
 		latitude,
@@ -356,8 +429,9 @@ func (service *Service) loadByPoint(
 		radius,
 	)
 	return LoadResult{
-		SourceName: service.provider.SourceName(),
-		States:     states,
+		SourceName:    service.provider.SourceName(),
+		States:        states,
+		BatchEvidence: providerbatch.AcceptedOnly(len(states)),
 	}, err
 }
 

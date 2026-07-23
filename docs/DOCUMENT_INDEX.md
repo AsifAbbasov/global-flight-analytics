@@ -795,3 +795,10 @@ remaining health-aware fallback and malformed-batch review boundaries.
 traffic provider ordering, configured-primary preservation, fail-open snapshot
 handling, explicit health decision evidence, production collector wiring,
 verification, and the remaining malformed-provider-batch review boundary.
+
+<!-- MALFORMED-PROVIDER-BATCH-POLICY-V1:DOCUMENT-INDEX -->
+## Document 91 — Malformed Provider Batch Policy
+
+`91_MALFORMED_PROVIDER_BATCH_POLICY.md` records item-level provider rejection,
+mixed-batch partial ingestion, fully rejected batch fallback, evidence
+propagation, verification and conditional review closure.

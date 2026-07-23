@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 )
 
 const (
@@ -122,11 +123,47 @@ func mapAircraft(
 	}
 }
 
-func MapStateResponse(response *StateResponse) []flightstate.FlightState {
+func aircraftItemRequiredFieldsValid(
+	item AircraftItem,
+	responseTime float64,
+) bool {
+	if _, ok := safeUnixMilliseconds(responseTime); !ok {
+		return false
+	}
+	if strings.TrimSpace(item.Hex) == "" {
+		return false
+	}
+	if math.IsNaN(item.Latitude) ||
+		math.IsInf(item.Latitude, 0) ||
+		item.Latitude < -90 ||
+		item.Latitude > 90 {
+		return false
+	}
+	if math.IsNaN(item.Longitude) ||
+		math.IsInf(item.Longitude, 0) ||
+		item.Longitude < -180 ||
+		item.Longitude > 180 {
+		return false
+	}
+	return true
+}
+
+func MapStateResponseWithEvidence(
+	response *StateResponse,
+) (
+	[]flightstate.FlightState,
+	providerbatch.Evidence,
+	error,
+) {
 	if response == nil {
-		return []flightstate.FlightState{}
+		return []flightstate.FlightState{},
+			providerbatch.Evidence{},
+			nil
 	}
 
+	evidence := providerbatch.Evidence{
+		Received: len(response.Aircraft),
+	}
 	result := make(
 		[]flightstate.FlightState,
 		0,
@@ -134,13 +171,38 @@ func MapStateResponse(response *StateResponse) []flightstate.FlightState {
 	)
 
 	for _, item := range response.Aircraft {
+		if !aircraftItemRequiredFieldsValid(
+			item,
+			response.Now,
+		) {
+			evidence.RejectedMalformed++
+			continue
+		}
+
 		result = append(
 			result,
 			mapAircraft(item, response.Now),
 		)
+		evidence.Accepted++
 	}
 
-	return result
+	if evidence.Received > 0 && evidence.Accepted == 0 {
+		return result,
+			evidence,
+			providerbatch.NewAllItemsRejectedError(
+				sourceName,
+				evidence,
+			)
+	}
+
+	return result, evidence, nil
+}
+
+func MapStateResponse(
+	response *StateResponse,
+) []flightstate.FlightState {
+	states, _, _ := MapStateResponseWithEvidence(response)
+	return states
 }
 
 // OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2

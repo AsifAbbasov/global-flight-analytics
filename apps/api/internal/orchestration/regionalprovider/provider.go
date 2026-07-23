@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 )
@@ -25,7 +26,8 @@ var (
 )
 
 type ExecutionValue struct {
-	States []flightstate.FlightState
+	States        []flightstate.FlightState
+	BatchEvidence providerbatch.Evidence
 }
 
 func (ExecutionValue) RequestCoalescingValue() {}
@@ -39,6 +41,19 @@ type Delegate interface {
 		longitude float64,
 		radius int,
 	) ([]flightstate.FlightState, error)
+}
+
+type BatchEvidenceDelegate interface {
+	LoadByPointWithBatchEvidence(
+		ctx context.Context,
+		latitude float64,
+		longitude float64,
+		radius int,
+	) (
+		[]flightstate.FlightState,
+		providerbatch.Evidence,
+		error,
+	)
 }
 
 type Executor interface {
@@ -98,6 +113,27 @@ func (
 	longitude float64,
 	radius int,
 ) ([]flightstate.FlightState, error) {
+	states, _, err := provider.LoadByPointWithBatchEvidence(
+		ctx,
+		latitude,
+		longitude,
+		radius,
+	)
+	return states, err
+}
+
+func (
+	provider *Provider,
+) LoadByPointWithBatchEvidence(
+	ctx context.Context,
+	latitude float64,
+	longitude float64,
+	radius int,
+) (
+	[]flightstate.FlightState,
+	providerbatch.Evidence,
+	error,
+) {
 	result, err := provider.executor.Execute(
 		ctx,
 		provider.providerID,
@@ -109,6 +145,22 @@ func (
 		func(
 			operationContext context.Context,
 		) (ExecutionValue, error) {
+			evidenceDelegate, supported :=
+				provider.delegate.(BatchEvidenceDelegate)
+			if supported {
+				states, evidence, err :=
+					evidenceDelegate.LoadByPointWithBatchEvidence(
+						operationContext,
+						latitude,
+						longitude,
+						radius,
+					)
+				return ExecutionValue{
+					States:        states,
+					BatchEvidence: evidence,
+				}, err
+			}
+
 			states, err := provider.delegate.LoadByPoint(
 				operationContext,
 				latitude,
@@ -116,23 +168,26 @@ func (
 				radius,
 			)
 			if err != nil {
-				return ExecutionValue{},
-					err
+				return ExecutionValue{}, err
 			}
 
 			return ExecutionValue{
-				States: states,
+				States:        states,
+				BatchEvidence: providerbatch.AcceptedOnly(len(states)),
 			}, nil
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"execute orchestrated regional provider request: %w",
-			err,
-		)
+		return nil,
+			providerbatch.Evidence{},
+			fmt.Errorf(
+				"execute orchestrated regional provider request: %w",
+				err,
+			)
 	}
 
 	return result.Value.States,
+		result.Value.BatchEvidence,
 		nil
 }
 

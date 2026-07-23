@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 )
 
 var ErrClientRequired = errors.New(
@@ -61,9 +62,28 @@ func (p *Provider) LoadByPoint(
 	longitude float64,
 	radius int,
 ) ([]flightstate.FlightState, error) {
+	states, _, err := p.LoadByPointWithBatchEvidence(
+		ctx,
+		latitude,
+		longitude,
+		radius,
+	)
+	return states, err
+}
+
+func (p *Provider) LoadByPointWithBatchEvidence(
+	ctx context.Context,
+	latitude float64,
+	longitude float64,
+	radius int,
+) (
+	[]flightstate.FlightState,
+	providerbatch.Evidence,
+	error,
+) {
 	client, err := p.requireClient()
 	if err != nil {
-		return nil, err
+		return nil, providerbatch.Evidence{}, err
 	}
 	result, err := client.GetByPoint(
 		ctx,
@@ -72,11 +92,11 @@ func (p *Provider) LoadByPoint(
 		radius,
 	)
 	if err != nil {
-		return nil, fmt.Errorf(
+		return nil, providerbatch.Evidence{}, fmt.Errorf(
 			"load airplanes live traffic by point: %w",
 			err,
 		)
 	}
 
-	return MapStateResponse(result), nil
+	return MapStateResponseWithEvidence(result)
 }
