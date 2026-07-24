@@ -13,6 +13,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricexecution"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricquery"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	"github.com/gofiber/fiber/v2"
@@ -24,6 +25,9 @@ var (
 	)
 	ErrAnalyticalQueryServiceRequired = errors.New(
 		"analytical trajectory query service is required",
+	)
+	ErrAnalyticalAirportServiceRequired = errors.New(
+		"analytical airport service is required",
 	)
 )
 
@@ -54,6 +58,13 @@ type AnalyticalMetricService interface {
 	) (metricexecution.Execution[float64], error)
 }
 
+type AnalyticalAirportService interface {
+	GetByICAO(
+		ctx context.Context,
+		icao string,
+	) (airport.Airport, error)
+}
+
 type AnalyticalTrajectoryQueryService interface {
 	Recent(
 		ctx context.Context,
@@ -67,13 +78,43 @@ type AnalyticalTrajectoryQueryService interface {
 }
 
 type AnalyticalMetricsHandler struct {
-	metrics AnalyticalMetricService
-	query   AnalyticalTrajectoryQueryService
+	metrics  AnalyticalMetricService
+	query    AnalyticalTrajectoryQueryService
+	airports AnalyticalAirportService
 }
 
 func NewAnalyticalMetricsHandler(
 	metrics AnalyticalMetricService,
 	query AnalyticalTrajectoryQueryService,
+) (*AnalyticalMetricsHandler, error) {
+	return newAnalyticalMetricsHandler(
+		metrics,
+		query,
+		nil,
+	)
+}
+
+func NewAnalyticalMetricsHandlerWithAirportService(
+	metrics AnalyticalMetricService,
+	query AnalyticalTrajectoryQueryService,
+	airports AnalyticalAirportService,
+) (*AnalyticalMetricsHandler, error) {
+	if airports == nil {
+		return nil,
+			ErrAnalyticalAirportServiceRequired
+	}
+
+	return newAnalyticalMetricsHandler(
+		metrics,
+		query,
+		airports,
+	)
+}
+
+func newAnalyticalMetricsHandler(
+	metrics AnalyticalMetricService,
+	query AnalyticalTrajectoryQueryService,
+	airports AnalyticalAirportService,
 ) (*AnalyticalMetricsHandler, error) {
 	if metrics == nil {
 		return nil, ErrAnalyticalMetricServiceRequired
@@ -83,8 +124,9 @@ func NewAnalyticalMetricsHandler(
 	}
 
 	return &AnalyticalMetricsHandler{
-		metrics: metrics,
-		query:   query,
+		metrics:  metrics,
+		query:    query,
+		airports: airports,
 	}, nil
 }
 
@@ -143,24 +185,37 @@ func (handler *AnalyticalMetricsHandler) GetTrafficDensity(
 		return analyticalBadRequest(ctx, err)
 	}
 
+	if strings.TrimSpace(
+		ctx.Query("area_square_kilometers"),
+	) != "" {
+		return response.Error(
+			ctx,
+			fiber.StatusBadRequest,
+			"AREA_PARAMETER_NOT_SUPPORTED",
+			"area_square_kilometers is derived from region and must not be supplied",
+		)
+	}
+
 	selectedRegion, err := resolveAnalyticalRegion(
 		ctx.Query("region"),
 	)
 	if err != nil {
 		return analyticalRegionError(ctx, err)
 	}
-
-	area, err := trafficDensityAreaSquareKilometers(
-		ctx.Query("area_square_kilometers"),
-		selectedRegion,
-	)
-	if err != nil {
+	if selectedRegion == nil {
 		return response.Error(
 			ctx,
 			fiber.StatusBadRequest,
-			"INVALID_AREA_SQUARE_KILOMETERS",
-			"region or a positive area_square_kilometers value is required",
+			"REGION_REQUIRED",
+			"region is required for traffic density",
 		)
+	}
+
+	area, err := trafficDensityAreaSquareKilometers(
+		selectedRegion,
+	)
+	if err != nil {
+		return analyticalRegionError(ctx, err)
 	}
 
 	items, err := handler.recentTrajectoriesForRegion(
@@ -199,82 +254,94 @@ func (handler *AnalyticalMetricsHandler) GetTrafficDensity(
 func (handler *AnalyticalMetricsHandler) GetAirportActivity(
 	ctx *fiber.Ctx,
 ) error {
-	arrivalIDs := parseCSV(ctx.Query("arrival_trajectory_ids"))
-	departureIDs := parseCSV(ctx.Query("departure_trajectory_ids"))
+	if handler.airports == nil {
+		return response.Error(
+			ctx,
+			fiber.StatusInternalServerError,
+			"ANALYTICAL_AIRPORT_SERVICE_UNAVAILABLE",
+			"Airport analytics service is unavailable",
+		)
+	}
 
-	if len(arrivalIDs) == 0 && len(departureIDs) == 0 {
+	airportICAO := strings.TrimSpace(
+		ctx.Query("airport_icao"),
+	)
+	if airportICAO == "" {
 		return response.Error(
 			ctx,
 			fiber.StatusBadRequest,
-			"TRAJECTORY_IDS_REQUIRED",
-			"arrival_trajectory_ids or departure_trajectory_ids is required",
+			"AIRPORT_ICAO_REQUIRED",
+			"airport_icao is required",
 		)
 	}
 
-	arrivals, err := handler.loadOptionalTrajectories(
+	radius, err := parseAirportActivityRadius(
+		ctx.Query("radius_kilometers"),
+	)
+	if err != nil {
+		return response.Error(
+			ctx,
+			fiber.StatusBadRequest,
+			"INVALID_AIRPORT_ACTIVITY_RADIUS",
+			"radius_kilometers must be a positive finite number not greater than 100",
+		)
+	}
+
+	recentRequest, err := parseRecentTrajectoryRequest(ctx)
+	if err != nil {
+		return analyticalBadRequest(ctx, err)
+	}
+
+	selectedAirport, err := handler.airports.GetByICAO(
 		ctx.Context(),
-		arrivalIDs,
+		airportICAO,
+	)
+	if err != nil {
+		return analyticalAirportError(ctx, err)
+	}
+
+	bounds, err := airportActivityQueryBounds(
+		selectedAirport,
+		radius,
 	)
 	if err != nil {
 		return analyticalQueryError(ctx, err)
 	}
-	if len(arrivals) != len(arrivalIDs) {
-		return response.Error(
+
+	regionalQuery, ok := handler.query.(regionalAnalyticalTrajectoryQueryService)
+	if !ok {
+		return analyticalQueryError(
 			ctx,
-			fiber.StatusNotFound,
-			"TRAJECTORY_NOT_FOUND",
-			"One or more arrival trajectories were not found",
+			metricquery.ErrRegionalRepositoryUnsupported,
 		)
 	}
 
-	departures, err := handler.loadOptionalTrajectories(
+	items, err := regionalQuery.RecentWithinBounds(
 		ctx.Context(),
-		departureIDs,
+		recentRequest,
+		bounds,
 	)
 	if err != nil {
 		return analyticalQueryError(ctx, err)
 	}
-	if len(departures) != len(departureIDs) {
-		return response.Error(
-			ctx,
-			fiber.StatusNotFound,
-			"TRAJECTORY_NOT_FOUND",
-			"One or more departure trajectories were not found",
-		)
-	}
 
-	allItems := append(
-		append(
-			[]trajectory.FlightTrajectory(nil),
-			arrivals...,
-		),
-		departures...,
-	)
+	normalizedWindow, _ := recentRequest.Normalize(time.Now())
 
 	execution, err := handler.metrics.AirportActivity(
 		ctx.Context(),
 		metricexecution.AirportActivityRequest{
-			Arrivals:   arrivals,
-			Departures: departures,
-			PublicationMetadata: trajectoryPublicationMetadata(
-				allItems,
-				0,
+			Airport:          selectedAirport,
+			Trajectories:     items,
+			RadiusKilometers: radius,
+			PublicationMetadata: airportActivityPublicationMetadata(
+				items,
+				normalizedWindow.Limit,
+				selectedAirport,
+				radius,
 			),
 		},
 	)
 	if err != nil {
-		if errors.Is(
-			err,
-			metricexecution.ErrAirportMovementConflict,
-		) {
-			return response.Error(
-				ctx,
-				fiber.StatusConflict,
-				"AIRPORT_MOVEMENT_CONFLICT",
-				"A trajectory cannot be both an arrival and a departure",
-			)
-		}
-
 		return analyticalExecutionError(ctx, err)
 	}
 

@@ -82,11 +82,10 @@ func (handler *AnalyticalMetricsHandler) recentTrajectoriesForRegion(
 }
 
 func trafficDensityAreaSquareKilometers(
-	areaParameter string,
 	selectedRegion *region.Region,
 ) (float64, error) {
 	if selectedRegion == nil {
-		return parseRequiredPositiveFloat(areaParameter)
+		return 0, region.ErrRegionNotFound
 	}
 
 	return metricQueryBounds(

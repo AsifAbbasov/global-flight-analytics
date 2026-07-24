@@ -860,3 +860,13 @@ Provider Adapters and Orchestration ownership boundaries.
 Records eligibility-before-deduplication ordering, bounded future-observation
 skew, finite Traffic Density arithmetic, regression evidence and the remaining
 Analytical Core review scope.
+
+<!-- AIRPORT-GEOGRAPHIC-METRIC-INTEGRITY:DOCUMENT-INDEX -->
+
+## Document 98
+
+`98_AIRPORT_AND_GEOGRAPHIC_METRIC_INTEGRITY.md`
+
+Records PostgreSQL-owned airport lookup, server-classified airport movement
+geofences, region-owned Traffic Density area, public parameter changes,
+regression evidence and the remaining Analytical Core review scope.

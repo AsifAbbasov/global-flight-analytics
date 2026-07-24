@@ -6,6 +6,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/executor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricexecution"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricquery"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
 	"github.com/gofiber/fiber/v2"
@@ -30,6 +31,18 @@ func registerAnalyticalMetricRoutes(
 		)
 	}
 
+	airportService, err := airport.NewService(
+		postgres.NewAirportRepository(
+			dbPool,
+		),
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create analytical airport service: %w",
+			err,
+		)
+	}
+
 	metricService, err := metricexecution.New(
 		executor.New(nil),
 	)
@@ -40,9 +53,10 @@ func registerAnalyticalMetricRoutes(
 		)
 	}
 
-	handler, err := handlers.NewAnalyticalMetricsHandler(
+	handler, err := handlers.NewAnalyticalMetricsHandlerWithAirportService(
 		metricService,
 		queryService,
+		airportService,
 	)
 	if err != nil {
 		return fmt.Errorf(

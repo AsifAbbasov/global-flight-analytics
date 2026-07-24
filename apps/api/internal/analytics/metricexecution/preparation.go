@@ -32,3 +32,29 @@ func prepareUniqueAircraftContributors(
 		}
 	}
 }
+
+func prepareUniqueTrajectoryContributors(
+	messageFormat string,
+) trajectoryMetricPreparation {
+	return func(
+		items []trajectory.FlightTrajectory,
+	) (
+		[]trajectory.FlightTrajectory,
+		[]analyticalresult.Notice,
+	) {
+		unique, removed := uniqueTrajectories(items)
+		if removed == 0 {
+			return unique, nil
+		}
+
+		return unique, []analyticalresult.Notice{
+			{
+				Code: NoticeCodeDuplicateTrajectoriesRemoved,
+				Message: fmt.Sprintf(
+					messageFormat,
+					removed,
+				),
+			},
+		}
+	}
+}

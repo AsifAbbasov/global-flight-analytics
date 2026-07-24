@@ -11,6 +11,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/analyticalresult"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricexecution"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricquery"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/gofiber/fiber/v2"
 )
@@ -37,6 +38,22 @@ func (stub *analyticalQueryStub) ByIDs(
 ) ([]trajectory.FlightTrajectory, error) {
 	stub.ids = append([]string(nil), ids...)
 	return stub.idItems, stub.err
+}
+
+type analyticalAirportStub struct {
+	item airport.Airport
+	err  error
+	icao string
+}
+
+func (
+	stub *analyticalAirportStub,
+) GetByICAO(
+	ctx context.Context,
+	icao string,
+) (airport.Airport, error) {
+	stub.icao = icao
+	return stub.item, stub.err
 }
 
 type analyticalMetricStub struct {
@@ -272,16 +289,28 @@ func TestAnalyticalTrafficDensityRequiresArea(
 	}
 }
 
-func TestAnalyticalAirportActivityLoadsSelectedTrajectories(
+func TestAnalyticalAirportActivityUsesServerAirportAndRegionalQuery(
 	t *testing.T,
 ) {
-	query := &analyticalQueryStub{
-		idItems: []trajectory.FlightTrajectory{
-			{ID: "arrival"},
+	query := &regionalAnalyticalQueryStub{
+		regionalItems: []trajectory.FlightTrajectory{
+			{ID: "movement", SourceName: "airplanes.live"},
 		},
 	}
 	metrics := &analyticalMetricStub{}
-	handler, err := NewAnalyticalMetricsHandler(metrics, query)
+	airports := &analyticalAirportStub{
+		item: airport.Airport{
+			ICAOCode:  "UBBB",
+			Latitude:  40.4675,
+			Longitude: 50.0467,
+		},
+	}
+
+	handler, err := NewAnalyticalMetricsHandlerWithAirportService(
+		metrics,
+		query,
+		airports,
+	)
 	if err != nil {
 		t.Fatalf("expected handler, got %v", err)
 	}
@@ -291,7 +320,7 @@ func TestAnalyticalAirportActivityLoadsSelectedTrajectories(
 	result, err := app.Test(
 		httptest.NewRequest(
 			fiber.MethodGet,
-			"/metric?arrival_trajectory_ids=arrival",
+			"/metric?airport_icao=ubbb&radius_kilometers=20&window_minutes=30&limit=50",
 			nil,
 		),
 	)
@@ -303,9 +332,24 @@ func TestAnalyticalAirportActivityLoadsSelectedTrajectories(
 	if result.StatusCode != fiber.StatusOK {
 		t.Fatalf("expected status 200, got %d", result.StatusCode)
 	}
-	if len(metrics.airportRequest.Arrivals) != 1 ||
-		len(metrics.airportRequest.Departures) != 0 {
-		t.Fatalf("unexpected airport request: %#v", metrics.airportRequest)
+	if airports.icao != "ubbb" {
+		t.Fatalf("unexpected airport lookup %q", airports.icao)
+	}
+	if query.regionalCalls != 1 ||
+		query.regionalRequest.WindowMinutes != 30 ||
+		query.regionalRequest.Limit != 50 {
+		t.Fatalf(
+			"unexpected airport regional query: %#v",
+			query,
+		)
+	}
+	if metrics.airportRequest.Airport.ICAOCode != "UBBB" ||
+		metrics.airportRequest.RadiusKilometers != 20 ||
+		len(metrics.airportRequest.Trajectories) != 1 {
+		t.Fatalf(
+			"unexpected airport request: %#v",
+			metrics.airportRequest,
+		)
 	}
 }
 

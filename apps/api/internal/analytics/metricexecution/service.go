@@ -16,11 +16,11 @@ var (
 	ErrAggregateDenialReasonsMissing = errors.New(
 		"aggregate metric denial reasons are missing",
 	)
-	ErrAirportMovementConflict = errors.New(
-		"trajectory cannot be classified as both arrival and departure",
+	ErrAirportActivityAirportInvalid = errors.New(
+		"airport activity airport is invalid",
 	)
-	ErrAirportMovementRoleMissing = errors.New(
-		"eligible trajectory airport movement role is missing",
+	ErrAirportActivityRadiusInvalid = errors.New(
+		"airport activity radius must be finite, positive and at most one hundred kilometers",
 	)
 )
 

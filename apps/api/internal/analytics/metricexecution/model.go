@@ -9,6 +9,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/executor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
@@ -18,10 +19,12 @@ const (
 )
 
 const (
-	NoticeCodeDuplicateTrajectoriesRemoved   = "duplicate_trajectories_removed"
-	NoticeCodeIneligibleTrajectoriesExcluded = "ineligible_trajectories_excluded"
-	NoticeCodeNoTrajectoryObservations       = "no_trajectory_observations"
-	NoticeCodeFutureObservationTime          = "future_observation_time"
+	NoticeCodeDuplicateTrajectoriesRemoved         = "duplicate_trajectories_removed"
+	NoticeCodeIneligibleTrajectoriesExcluded       = "ineligible_trajectories_excluded"
+	NoticeCodeNoTrajectoryObservations             = "no_trajectory_observations"
+	NoticeCodeFutureObservationTime                = "future_observation_time"
+	NoticeCodeUnrelatedAirportTrajectoriesExcluded = "unrelated_airport_trajectories_excluded"
+	NoticeCodeAmbiguousAirportMovementsExcluded    = "ambiguous_airport_movements_excluded"
 )
 
 type ReasonCount struct {
@@ -85,8 +88,9 @@ type TrafficDensityRequest struct {
 }
 
 type AirportActivityRequest struct {
-	Arrivals   []trajectory.FlightTrajectory
-	Departures []trajectory.FlightTrajectory
+	Airport          airport.Airport
+	Trajectories     []trajectory.FlightTrajectory
+	RadiusKilometers float64
 	PublicationMetadata
 }
 

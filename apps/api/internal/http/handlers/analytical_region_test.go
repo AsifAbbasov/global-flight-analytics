@@ -293,3 +293,36 @@ func containsPublicationLimitation(
 
 	return false
 }
+
+func TestAnalyticalTrafficDensityRejectsClientProvidedArea(
+	t *testing.T,
+) {
+	handler, err := NewAnalyticalMetricsHandler(
+		&analyticalMetricStub{},
+		&regionalAnalyticalQueryStub{},
+	)
+	if err != nil {
+		t.Fatalf("expected handler, got %v", err)
+	}
+
+	app := fiber.New()
+	app.Get("/metric", handler.GetTrafficDensity)
+	result, err := app.Test(
+		httptest.NewRequest(
+			fiber.MethodGet,
+			"/metric?region=caucasus&area_square_kilometers=100",
+			nil,
+		),
+	)
+	if err != nil {
+		t.Fatalf("expected response, got %v", err)
+	}
+	defer result.Body.Close()
+
+	if result.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf(
+			"expected status 400, got %d",
+			result.StatusCode,
+		)
+	}
+}
