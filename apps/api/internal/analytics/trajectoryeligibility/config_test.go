@@ -91,6 +91,13 @@ func TestPolicyValidationRejectsInvalidValues(
 			expected: ErrMaximumObservationAgeInvalid,
 		},
 		{
+			name: "negative maximum future observation skew",
+			policy: Policy{
+				MaximumFutureObservationSkew: -time.Second,
+			},
+			expected: ErrMaximumFutureObservationSkewInvalid,
+		},
+		{
 			name: "negative maximum recent point gap",
 			policy: Policy{
 				MaximumRecentPointGap: -time.Second,

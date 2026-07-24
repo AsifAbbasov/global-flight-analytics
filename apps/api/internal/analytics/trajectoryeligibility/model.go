@@ -40,6 +40,7 @@ const (
 	ReasonIdentityNotReliable          ReasonCode = "identity_not_reliable"
 	ReasonMissingCallsign              ReasonCode = "missing_callsign"
 	ReasonMissingAltitude              ReasonCode = "missing_altitude"
+	ReasonFutureObservation            ReasonCode = "future_observation"
 	ReasonStaleObservations            ReasonCode = "stale_observations"
 	ReasonInsufficientRecentContinuity ReasonCode = "insufficient_recent_continuity"
 )

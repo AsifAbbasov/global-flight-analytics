@@ -883,3 +883,51 @@ func deepCopyTrajectory(
 
 	return result
 }
+
+func TestEvaluateRejectsObservationBeyondFutureSkew(
+	t *testing.T,
+) {
+	now := eligibilityTestTime()
+	item := healthyTrajectory(now)
+	item.EndTime = now.Add(
+		DefaultMaximumFutureObservationSkew +
+			time.Second,
+	)
+
+	evaluation := NewDefault().Evaluate(
+		item,
+		now,
+	)
+
+	for _, capability := range Capabilities() {
+		requireDeniedWithReason(
+			t,
+			evaluation,
+			capability,
+			ReasonFutureObservation,
+		)
+	}
+}
+
+func TestEvaluateAllowsObservationAtFutureSkewBoundary(
+	t *testing.T,
+) {
+	now := eligibilityTestTime()
+	item := healthyTrajectory(now)
+	item.EndTime = now.Add(
+		DefaultMaximumFutureObservationSkew,
+	)
+
+	evaluation := NewDefault().Evaluate(
+		item,
+		now,
+	)
+
+	for _, capability := range Capabilities() {
+		requireAllowed(
+			t,
+			evaluation,
+			capability,
+		)
+	}
+}

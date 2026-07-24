@@ -256,3 +256,76 @@ func TestActiveAircraftLimitsFutureTrajectoryTimestamp(
 		)
 	}
 }
+
+func TestActiveAircraftFiltersBeforeAircraftDeduplication(
+	t *testing.T,
+) {
+	olderEligible := healthyMetricTrajectory(
+		"a",
+		"SAME",
+	)
+	newerDenied := healthyMetricTrajectory(
+		"b",
+		"SAME",
+	)
+	olderEligible.EndTime = metricTestTime().
+		Add(-2 * time.Minute)
+	newerDenied.EndTime = metricTestTime().
+		Add(-time.Minute)
+
+	service := metricTestService(
+		t,
+		func(
+			item trajectory.FlightTrajectory,
+			capability trajectoryeligibility.Capability,
+		) trajectoryeligibility.Decision {
+			allowed :=
+				item.IdentityKey ==
+					olderEligible.IdentityKey
+			reasons := []trajectoryeligibility.ReasonCode(nil)
+			if !allowed {
+				reasons = []trajectoryeligibility.ReasonCode{
+					trajectoryeligibility.ReasonLowQualityScore,
+				}
+			}
+
+			return trajectoryeligibility.Decision{
+				Capability: capability,
+				Allowed:    allowed,
+				Reasons:    reasons,
+			}
+		},
+	)
+
+	execution, err := service.ActiveAircraft(
+		context.Background(),
+		ActiveAircraftRequest{
+			Trajectories: []trajectory.FlightTrajectory{
+				olderEligible,
+				newerDenied,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected active aircraft execution, got %v",
+			err,
+		)
+	}
+
+	if execution.Result.Value != 1 {
+		t.Fatalf(
+			"expected eligible older trajectory to preserve aircraft, got %d",
+			execution.Result.Value,
+		)
+	}
+
+	if execution.Scope.InputCount != 2 ||
+		execution.Scope.AllowedCount != 1 ||
+		execution.Scope.DeniedCount != 1 {
+		t.Fatalf(
+			"unexpected contributor scope: %#v",
+			execution.Scope,
+		)
+	}
+}

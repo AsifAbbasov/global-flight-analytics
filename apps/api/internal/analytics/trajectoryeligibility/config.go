@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const DefaultMaximumFutureObservationSkew = 30 * time.Second
+
 var (
 	ErrMinimumPointCountInvalid = errors.New(
 		"minimum point count must be non-negative",
@@ -29,22 +31,26 @@ var (
 	ErrMaximumObservationAgeInvalid = errors.New(
 		"maximum observation age must be non-negative",
 	)
+	ErrMaximumFutureObservationSkewInvalid = errors.New(
+		"maximum future observation skew must be non-negative",
+	)
 	ErrMaximumRecentPointGapInvalid = errors.New(
 		"maximum recent point gap must be non-negative",
 	)
 )
 
 type Policy struct {
-	MinimumPointCount       int
-	MinimumQualityScore     float64
-	MaximumCoverageGapCount int
-	MinimumDuration         time.Duration
-	MaximumDuration         time.Duration
-	MaximumObservationAge   time.Duration
-	MaximumRecentPointGap   time.Duration
-	RequireReliableIdentity bool
-	RequireCallsign         bool
-	RequireAltitude         bool
+	MinimumPointCount            int
+	MinimumQualityScore          float64
+	MaximumCoverageGapCount      int
+	MinimumDuration              time.Duration
+	MaximumDuration              time.Duration
+	MaximumObservationAge        time.Duration
+	MaximumFutureObservationSkew time.Duration
+	MaximumRecentPointGap        time.Duration
+	RequireReliableIdentity      bool
+	RequireCallsign              bool
+	RequireAltitude              bool
 }
 
 func (
@@ -117,6 +123,14 @@ func (
 		)
 	}
 
+	if policy.MaximumFutureObservationSkew < 0 {
+		return fmt.Errorf(
+			"%w: %s",
+			ErrMaximumFutureObservationSkewInvalid,
+			policy.MaximumFutureObservationSkew,
+		)
+	}
+
 	if policy.MaximumRecentPointGap < 0 {
 		return fmt.Errorf(
 			"%w: %s",
@@ -139,44 +153,49 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		TrafficMetrics: Policy{
-			MinimumPointCount:       1,
-			MinimumQualityScore:     0.20,
-			MaximumCoverageGapCount: 5,
-			MaximumObservationAge:   5 * time.Minute,
+			MinimumPointCount:            1,
+			MinimumQualityScore:          0.20,
+			MaximumCoverageGapCount:      5,
+			MaximumObservationAge:        5 * time.Minute,
+			MaximumFutureObservationSkew: DefaultMaximumFutureObservationSkew,
 		},
 		AirportActivity: Policy{
-			MinimumPointCount:       2,
-			MinimumQualityScore:     0.40,
-			MaximumCoverageGapCount: 2,
-			MaximumObservationAge:   15 * time.Minute,
-			RequireReliableIdentity: true,
+			MinimumPointCount:            2,
+			MinimumQualityScore:          0.40,
+			MaximumCoverageGapCount:      2,
+			MaximumObservationAge:        15 * time.Minute,
+			MaximumFutureObservationSkew: DefaultMaximumFutureObservationSkew,
+			RequireReliableIdentity:      true,
 		},
 		RouteInference: Policy{
-			MinimumPointCount:       4,
-			MinimumQualityScore:     0.60,
-			MaximumCoverageGapCount: 1,
-			MinimumDuration:         2 * time.Minute,
-			MaximumDuration:         18 * time.Hour,
-			RequireReliableIdentity: true,
+			MinimumPointCount:            4,
+			MinimumQualityScore:          0.60,
+			MaximumCoverageGapCount:      1,
+			MinimumDuration:              2 * time.Minute,
+			MaximumDuration:              18 * time.Hour,
+			MaximumFutureObservationSkew: DefaultMaximumFutureObservationSkew,
+			RequireReliableIdentity:      true,
 		},
 		HistoricalAggregation: Policy{
-			MinimumPointCount:       3,
-			MinimumQualityScore:     0.50,
-			MaximumCoverageGapCount: 3,
-			MinimumDuration:         time.Minute,
-			MaximumDuration:         24 * time.Hour,
-			RequireReliableIdentity: true,
+			MinimumPointCount:            3,
+			MinimumQualityScore:          0.50,
+			MaximumCoverageGapCount:      3,
+			MinimumDuration:              time.Minute,
+			MaximumDuration:              24 * time.Hour,
+			MaximumFutureObservationSkew: DefaultMaximumFutureObservationSkew,
+			RequireReliableIdentity:      true,
 		},
 		Projection: Policy{
-			MinimumPointCount:       5,
-			MinimumQualityScore:     0.75,
-			MaximumCoverageGapCount: 0,
-			MinimumDuration:         2 * time.Minute,
-			MaximumDuration:         18 * time.Hour,
-			MaximumObservationAge:   2 * time.Minute,
-			MaximumRecentPointGap:   90 * time.Second,
-			RequireReliableIdentity: true,
-			RequireAltitude:         true,
+			MinimumPointCount:            5,
+			MinimumQualityScore:          0.75,
+			MaximumCoverageGapCount:      0,
+			MinimumDuration:              2 * time.Minute,
+			MaximumDuration:              18 * time.Hour,
+			MaximumObservationAge:        2 * time.Minute,
+			MaximumFutureObservationSkew: DefaultMaximumFutureObservationSkew,
+			MaximumRecentPointGap:        90 * time.Second,
+			RequireReliableIdentity:      true,
+			RequireAltitude:              true,
 		},
 	}
 }

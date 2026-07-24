@@ -27,6 +27,13 @@ type trajectoryMetricOperation[T any] func(
 	evaluatedAt time.Time,
 ) (metricCalculation[T], error)
 
+type trajectoryMetricPreparation func(
+	allowed []trajectory.FlightTrajectory,
+) (
+	[]trajectory.FlightTrajectory,
+	[]analyticalresult.Notice,
+)
+
 type snapshotMetricOperation[T any] func(
 	ctx context.Context,
 	evaluatedAt time.Time,
@@ -39,6 +46,7 @@ func executeTrajectoryMetric[T any](
 	capability trajectoryeligibility.Capability,
 	trajectories []trajectory.FlightTrajectory,
 	metadata PublicationMetadata,
+	preparation trajectoryMetricPreparation,
 	operation trajectoryMetricOperation[T],
 ) (Execution[T], error) {
 	if service == nil ||
@@ -65,13 +73,27 @@ func executeTrajectoryMetric[T any](
 			)
 	}
 
+	if preparation != nil {
+		prepared, preparationWarnings :=
+			preparation(filtered.Allowed)
+		filtered.Allowed = prepared
+		metadata.Warnings = mergeNotices(
+			metadata.Warnings,
+			preparationWarnings,
+		)
+	}
+
+	contributorCount :=
+		filtered.AllowedCount() +
+			filtered.DeniedCount()
+
 	scope := buildScopeSummary(
 		filtered,
 		capability,
-		len(trajectories),
+		contributorCount,
 	)
 
-	if len(trajectories) > 0 &&
+	if contributorCount > 0 &&
 		filtered.AllowedCount() == 0 {
 		decision, decisionErr :=
 			aggregateDeniedDecision(
@@ -146,7 +168,7 @@ func executeTrajectoryMetric[T any](
 	factors, automaticLimitations :=
 		buildTrajectoryConfidence(
 			filtered.Allowed,
-			len(trajectories),
+			contributorCount,
 			filtered.EvaluatedAt,
 			capability,
 		)

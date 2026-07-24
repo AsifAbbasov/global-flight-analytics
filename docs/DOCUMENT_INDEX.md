@@ -850,3 +850,13 @@ of the two deferred Server review code findings.
 
 Records permanent Backend Race Safety coverage across the critical Ingestion,
 Provider Adapters and Orchestration ownership boundaries.
+
+<!-- ANALYTICAL-CONTRIBUTOR-SEMANTICS-HARDENING:DOCUMENT-INDEX -->
+
+## Document 97
+
+`97_ANALYTICAL_CONTRIBUTOR_SEMANTICS_HARDENING.md`
+
+Records eligibility-before-deduplication ordering, bounded future-observation
+skew, finite Traffic Density arithmetic, regression evidence and the remaining
+Analytical Core review scope.

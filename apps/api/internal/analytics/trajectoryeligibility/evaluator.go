@@ -205,6 +205,19 @@ func (
 		)
 	}
 
+	if !now.IsZero() &&
+		!item.EndTime.IsZero() &&
+		item.EndTime.UTC().After(
+			now.UTC().Add(
+				policy.MaximumFutureObservationSkew,
+			),
+		) {
+		reasons = appendReason(
+			reasons,
+			ReasonFutureObservation,
+		)
+	}
+
 	if policy.MaximumObservationAge > 0 {
 		if now.IsZero() {
 			reasons = appendReason(

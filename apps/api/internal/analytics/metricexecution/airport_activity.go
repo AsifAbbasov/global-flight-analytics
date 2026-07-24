@@ -120,6 +120,7 @@ func (
 			CapabilityAirportActivity,
 		combined,
 		metadata,
+		nil,
 		func(
 			ctx context.Context,
 			allowed []trajectory.FlightTrajectory,
