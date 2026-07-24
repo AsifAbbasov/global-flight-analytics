@@ -35,20 +35,18 @@ func TestCoverageScorePreservesExistingMetricFormula(
 
 	if execution.Result.Value != 0.75 ||
 		execution.Result.Status !=
-			analyticalresult.StatusLimited ||
+			analyticalresult.StatusComplete ||
 		execution.Result.Confidence.Level !=
-			analyticalresult.ConfidenceLevelLow {
+			analyticalresult.ConfidenceLevelHigh {
 		t.Fatalf(
-			"expected limited low-confidence coverage score, got %#v",
+			"expected complete high-confidence server-owned coverage score, got %#v",
 			execution.Result,
 		)
 	}
 
-	if len(execution.Result.Limitations) != 1 ||
-		execution.Result.Limitations[0].Code !=
-			"confidence_low" {
+	if len(execution.Result.Limitations) != 0 {
 		t.Fatalf(
-			"expected confidence_low limitation, got %#v",
+			"expected no calculation limitation, got %#v",
 			execution.Result.Limitations,
 		)
 	}
@@ -95,7 +93,7 @@ func TestCoverageScoreMapsInvalidSnapshotToFailedResult(
 	}
 }
 
-func TestDataFreshnessCanBeZeroWithLowInputConfidence(
+func TestDataFreshnessCanBeZeroWithServerOwnedEvidence(
 	t *testing.T,
 ) {
 	service := metricTestService(
@@ -128,20 +126,62 @@ func TestDataFreshnessCanBeZeroWithLowInputConfidence(
 	}
 
 	if execution.Result.Status !=
-		analyticalresult.StatusLimited ||
+		analyticalresult.StatusComplete ||
 		execution.Result.Confidence.Level !=
-			analyticalresult.ConfidenceLevelLow {
+			analyticalresult.ConfidenceLevelHigh {
 		t.Fatalf(
-			"expected limited low-confidence stale result, got %#v",
+			"expected complete high-confidence stale result, got %#v",
 			execution.Result,
 		)
 	}
 
-	if len(execution.Result.Limitations) != 1 ||
-		execution.Result.Limitations[0].Code !=
-			"confidence_low" {
+	if len(execution.Result.Limitations) != 0 {
 		t.Fatalf(
-			"expected confidence_low limitation, got %#v",
+			"expected no calculation limitation, got %#v",
+			execution.Result.Limitations,
+		)
+	}
+}
+
+func TestDataFreshnessPublishesNoObservationLimitation(
+	t *testing.T,
+) {
+	service := metricTestService(
+		t,
+		allowUnlessDeniedICAO,
+	)
+
+	execution, err := service.DataFreshness(
+		context.Background(),
+		DataFreshnessRequest{
+			MaxAge: 5 * time.Minute,
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected zero-observation freshness result, got %v",
+			err,
+		)
+	}
+
+	if execution.Result.Value != 0 ||
+		execution.Result.Status !=
+			analyticalresult.StatusLimited ||
+		execution.Result.Confidence.Level !=
+			analyticalresult.ConfidenceLevelLow {
+		t.Fatalf(
+			"unexpected zero-observation freshness result: %#v",
+			execution.Result,
+		)
+	}
+
+	if len(execution.Result.Limitations) != 2 ||
+		execution.Result.Limitations[0].Code !=
+			"confidence_low" ||
+		execution.Result.Limitations[1].Code !=
+			NoticeCodeNoTrajectoryObservations {
+		t.Fatalf(
+			"expected confidence and no-observation limitations, got %#v",
 			execution.Result.Limitations,
 		)
 	}

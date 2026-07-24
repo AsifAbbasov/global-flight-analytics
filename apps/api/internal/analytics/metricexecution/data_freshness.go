@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/analyticalresult"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metrics"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
 )
@@ -30,6 +31,22 @@ func (
 					err
 			}
 
+			if request.Snapshot.Time.IsZero() {
+				return metricCalculation[float64]{
+					Value: 0,
+					Factors: serverOwnedSnapshotConfidenceFactors(
+						false,
+						"Data freshness uses the latest server-owned retained trajectory observation.",
+					),
+					Limitations: []analyticalresult.Notice{
+						{
+							Code:    NoticeCodeNoTrajectoryObservations,
+							Message: "No usable retained trajectory observation was available for freshness calculation.",
+						},
+					},
+				}, nil
+			}
+
 			value, err :=
 				(metrics.DataFreshnessMetric{
 					MaxAge: request.MaxAge,
@@ -44,8 +61,9 @@ func (
 
 			return metricCalculation[float64]{
 				Value: value,
-				Factors: requestParameterConfidenceFactors(
-					"Data freshness uses a deterministic timestamp-age calculation.",
+				Factors: serverOwnedSnapshotConfidenceFactors(
+					true,
+					"Data freshness uses the latest server-owned retained trajectory observation.",
 				),
 			}, nil
 		},

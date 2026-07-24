@@ -26,10 +26,10 @@ const analyticalMetricPath = '/api/v1/analytics/metrics'
 
 const metricNames = {
   activeAircraft: 'traffic.active_aircraft',
-  trafficDensity: 'traffic_density',
+  trafficDensity: 'traffic.traffic_density',
   airportActivity: 'traffic.airport_activity',
-  coverageScore: 'coverage_score',
-  dataFreshness: 'data_freshness',
+  coverageScore: 'traffic.coverage_score',
+  dataFreshness: 'traffic.data_freshness',
 } as const
 
 export async function getAnalyticalActiveAircraft(
@@ -48,28 +48,15 @@ export async function getAnalyticalTrafficDensity(
   parameters: TrafficDensityMetricParameters,
   options: APIRequestOptions = {}
 ): Promise<AnalyticalMetric<number>> {
-  const searchParameters = buildRecentTrajectorySearchParameters(parameters)
-  const regionCode = parameters.regionCode?.trim()
-  const areaSquareKilometers = parameters.areaSquareKilometers
-
-  if (areaSquareKilometers !== undefined) {
-    searchParameters.set(
-      'area_square_kilometers',
-      formatPositiveFiniteNumber(
-        areaSquareKilometers,
-        'areaSquareKilometers'
-      )
-    )
-  } else if (!regionCode) {
-    throw new APIRequestError(
-      'Traffic density requires regionCode or areaSquareKilometers.'
-    )
+  const regionCode = parameters.regionCode.trim()
+  if (regionCode === '') {
+    throw new APIRequestError('Traffic density requires regionCode.')
   }
 
   return requestAnalyticalMetric(
     `${analyticalMetricPath}/traffic-density`,
     metricNames.trafficDensity,
-    searchParameters,
+    buildRecentTrajectorySearchParameters(parameters),
     options
   )
 }
@@ -78,27 +65,29 @@ export async function getAnalyticalAirportActivity(
   parameters: AirportActivityMetricParameters,
   options: APIRequestOptions = {}
 ): Promise<AnalyticalMetric<number>> {
-  const arrivalIDs = normalizeIdentifierList(
-    parameters.arrivalTrajectoryIDs ?? []
-  )
-  const departureIDs = normalizeIdentifierList(
-    parameters.departureTrajectoryIDs ?? []
-  )
+  const airportICAO = parameters.airportICAO.trim()
+  if (airportICAO === '') {
+    throw new APIRequestError('Airport activity requires airportICAO.')
+  }
 
-  if (arrivalIDs.length === 0 && departureIDs.length === 0) {
-    throw new APIRequestError(
-      'At least one arrival or departure trajectory identifier is required.'
+  const searchParameters = buildRecentTrajectorySearchParameters(parameters)
+  searchParameters.set('airport_icao', airportICAO)
+
+  if (parameters.radiusKilometers !== undefined) {
+    if (
+      !Number.isFinite(parameters.radiusKilometers) ||
+      parameters.radiusKilometers <= 0 ||
+      parameters.radiusKilometers > 100
+    ) {
+      throw new APIRequestError(
+        'radiusKilometers must be a positive finite number not greater than 100.'
+      )
+    }
+
+    searchParameters.set(
+      'radius_kilometers',
+      String(parameters.radiusKilometers)
     )
-  }
-
-  const searchParameters = new URLSearchParams()
-
-  if (arrivalIDs.length > 0) {
-    searchParameters.set('arrival_trajectory_ids', arrivalIDs.join(','))
-  }
-
-  if (departureIDs.length > 0) {
-    searchParameters.set('departure_trajectory_ids', departureIDs.join(','))
   }
 
   return requestAnalyticalMetric(
@@ -110,53 +99,25 @@ export async function getAnalyticalAirportActivity(
 }
 
 export async function getAnalyticalCoverageScore(
-  parameters: CoverageScoreMetricParameters,
+  parameters: CoverageScoreMetricParameters = {},
   options: APIRequestOptions = {}
 ): Promise<AnalyticalMetric<number>> {
-  const searchParameters = new URLSearchParams({
-    observed_samples: formatInteger(
-      parameters.observedSamples,
-      'observedSamples'
-    ),
-    expected_samples: formatInteger(
-      parameters.expectedSamples,
-      'expectedSamples'
-    ),
-  })
-
   return requestAnalyticalMetric(
     `${analyticalMetricPath}/coverage-score`,
     metricNames.coverageScore,
-    searchParameters,
+    buildProductionQualitySearchParameters(parameters),
     options
   )
 }
 
 export async function getAnalyticalDataFreshness(
-  parameters: DataFreshnessMetricParameters,
+  parameters: DataFreshnessMetricParameters = {},
   options: APIRequestOptions = {}
 ): Promise<AnalyticalMetric<number>> {
-  const observedAt = normalizeTimestamp(parameters.observedAt)
-
-  if (
-    !Number.isInteger(parameters.maximumAgeSeconds) ||
-    parameters.maximumAgeSeconds < 1 ||
-    parameters.maximumAgeSeconds > 86_400
-  ) {
-    throw new APIRequestError(
-      'maximumAgeSeconds must be an integer between 1 and 86400.'
-    )
-  }
-
-  const searchParameters = new URLSearchParams({
-    observed_at: observedAt,
-    max_age_seconds: String(parameters.maximumAgeSeconds),
-  })
-
   return requestAnalyticalMetric(
     `${analyticalMetricPath}/data-freshness`,
     metricNames.dataFreshness,
-    searchParameters,
+    buildProductionQualitySearchParameters(parameters),
     options
   )
 }
@@ -206,6 +167,33 @@ function buildRecentTrajectorySearchParameters(
     }
 
     searchParameters.set('limit', String(parameters.limit))
+  }
+
+  const regionCode = parameters.regionCode?.trim()
+  if (regionCode) {
+    searchParameters.set('region', regionCode)
+  }
+
+  return searchParameters
+}
+
+function buildProductionQualitySearchParameters(
+  parameters: CoverageScoreMetricParameters | DataFreshnessMetricParameters
+): URLSearchParams {
+  const searchParameters = new URLSearchParams()
+
+  if (parameters.windowMinutes !== undefined) {
+    if (
+      !Number.isInteger(parameters.windowMinutes) ||
+      parameters.windowMinutes < 1 ||
+      parameters.windowMinutes > 180
+    ) {
+      throw new APIRequestError(
+        'windowMinutes must be an integer between 1 and 180.'
+      )
+    }
+
+    searchParameters.set('window_minutes', String(parameters.windowMinutes))
   }
 
   const regionCode = parameters.regionCode?.trim()
@@ -585,57 +573,6 @@ function assignOptionalTimestamp(
   }
 
   target[field] = requireTimestamp(value, `source.${field}`)
-}
-
-function formatInteger(value: number, fieldName: string): string {
-  if (!Number.isInteger(value)) {
-    throw new APIRequestError(`${fieldName} must be an integer.`)
-  }
-
-  return String(value)
-}
-
-function formatPositiveFiniteNumber(
-  value: number,
-  fieldName: string
-): string {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new APIRequestError(
-      `${fieldName} must be a positive finite number.`
-    )
-  }
-
-  return String(value)
-}
-
-function normalizeIdentifierList(values: string[]): string[] {
-  const result: string[] = []
-  const seen = new Set<string>()
-
-  for (const value of values) {
-    const normalized = value.trim()
-
-    if (normalized === '') {
-      continue
-    }
-
-    if (!seen.has(normalized)) {
-      seen.add(normalized)
-      result.push(normalized)
-    }
-  }
-
-  return result
-}
-
-function normalizeTimestamp(value: string): string {
-  const timestamp = value.trim()
-
-  if (timestamp === '' || Number.isNaN(Date.parse(timestamp))) {
-    throw new APIRequestError('observedAt must be a valid timestamp.')
-  }
-
-  return new Date(timestamp).toISOString()
 }
 
 function invalidPayload(message: string): APIRequestError {

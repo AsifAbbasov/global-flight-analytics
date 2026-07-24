@@ -13,7 +13,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualityintegration"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricexecution"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricquery"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
@@ -355,38 +354,20 @@ func (handler *AnalyticalMetricsHandler) GetAirportActivity(
 func (handler *AnalyticalMetricsHandler) GetCoverageScore(
 	ctx *fiber.Ctx,
 ) error {
-	observed, err := parseRequiredInteger(
-		ctx.Query("observed_samples"),
+	input, err := handler.loadProductionQualityInput(
+		ctx,
+		"observed_samples",
+		"expected_samples",
 	)
 	if err != nil {
-		return response.Error(
-			ctx,
-			fiber.StatusBadRequest,
-			"INVALID_OBSERVED_SAMPLES",
-			"observed_samples must be an integer",
-		)
-	}
-
-	expected, err := parseRequiredInteger(
-		ctx.Query("expected_samples"),
-	)
-	if err != nil {
-		return response.Error(
-			ctx,
-			fiber.StatusBadRequest,
-			"INVALID_EXPECTED_SAMPLES",
-			"expected_samples must be an integer",
-		)
+		return err
 	}
 
 	execution, err := handler.metrics.CoverageScore(
 		ctx.Context(),
 		metricexecution.CoverageScoreRequest{
-			Snapshot: snapshot.Snapshot{
-				ObservedSamples: observed,
-				ExpectedSamples: expected,
-			},
-			PublicationMetadata: requestParameterMetadata(),
+			Snapshot:            input.snapshot,
+			PublicationMetadata: input.metadata,
 		},
 	)
 	if err != nil {
@@ -402,40 +383,22 @@ func (handler *AnalyticalMetricsHandler) GetCoverageScore(
 func (handler *AnalyticalMetricsHandler) GetDataFreshness(
 	ctx *fiber.Ctx,
 ) error {
-	observedAt, err := time.Parse(
-		time.RFC3339,
-		strings.TrimSpace(ctx.Query("observed_at")),
+	input, err := handler.loadProductionQualityInput(
+		ctx,
+		"observed_at",
+		"max_age_seconds",
 	)
 	if err != nil {
-		return response.Error(
-			ctx,
-			fiber.StatusBadRequest,
-			"INVALID_OBSERVED_AT",
-			"observed_at must be an RFC3339 timestamp",
-		)
-	}
-
-	maximumAgeSeconds, err := parseRequiredInteger(
-		ctx.Query("max_age_seconds"),
-	)
-	if err != nil || maximumAgeSeconds <= 0 || maximumAgeSeconds > 86400 {
-		return response.Error(
-			ctx,
-			fiber.StatusBadRequest,
-			"INVALID_MAX_AGE_SECONDS",
-			"max_age_seconds must be an integer between 1 and 86400",
-		)
+		return err
 	}
 
 	execution, err := handler.metrics.DataFreshness(
 		ctx.Context(),
 		metricexecution.DataFreshnessRequest{
-			Snapshot: snapshot.Snapshot{
-				Time: observedAt.UTC(),
-			},
-			MaxAge: time.Duration(maximumAgeSeconds) *
-				time.Second,
-			PublicationMetadata: requestParameterMetadata(),
+			Snapshot: input.snapshot,
+			MaxAge: dataqualityintegration.
+				DefaultStaleAfter,
+			PublicationMetadata: input.metadata,
 		},
 	)
 	if err != nil {
@@ -497,17 +460,6 @@ func parseOptionalInteger(
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
 		return 0, nil
-	}
-
-	return strconv.Atoi(trimmed)
-}
-
-func parseRequiredInteger(
-	value string,
-) (int, error) {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return 0, errors.New("integer value is required")
 	}
 
 	return strconv.Atoi(trimmed)
@@ -625,26 +577,6 @@ func trajectoryPublicationMetadata(
 
 	metadata.DataQuality = report
 	return metadata
-}
-
-func requestParameterMetadata() metricexecution.PublicationMetadata {
-	retrievedAt := time.Now().UTC()
-
-	return metricexecution.PublicationMetadata{
-		Sources: []analyticalresult.Source{
-			{
-				Name:        "request_parameters",
-				Role:        analyticalresult.SourceRoleDerived,
-				RetrievedAt: retrievedAt,
-			},
-		},
-		Limitations: []analyticalresult.Notice{
-			{
-				Code:    "request_parameter_snapshot",
-				Message: "The metric is calculated from caller-supplied snapshot values that are not independently verified by the server.",
-			},
-		},
-	}
 }
 
 func analyticalSourcesFromTrajectories(

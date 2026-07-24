@@ -39,28 +39,30 @@ const analyticalMetricQueryKeys = {
       parameters.windowMinutes ?? null,
       parameters.limit ?? null,
       normalizeRegionCode(parameters.regionCode),
-      parameters.areaSquareKilometers ?? null,
     ] as const,
   airportActivity: (parameters: AirportActivityMetricParameters) =>
     [
       ...analyticalMetricQueryKeys.all,
       'airport-activity',
-      normalizeQueryIdentifiers(parameters.arrivalTrajectoryIDs),
-      normalizeQueryIdentifiers(parameters.departureTrajectoryIDs),
+      parameters.windowMinutes ?? null,
+      parameters.limit ?? null,
+      normalizeRegionCode(parameters.regionCode),
+      parameters.airportICAO.trim().toUpperCase(),
+      parameters.radiusKilometers ?? null,
     ] as const,
-  coverageScore: (parameters: CoverageScoreMetricParameters | null) =>
+  coverageScore: (parameters: CoverageScoreMetricParameters) =>
     [
       ...analyticalMetricQueryKeys.all,
       'coverage-score',
-      parameters?.observedSamples ?? null,
-      parameters?.expectedSamples ?? null,
+      parameters.windowMinutes ?? null,
+      normalizeRegionCode(parameters.regionCode),
     ] as const,
-  dataFreshness: (parameters: DataFreshnessMetricParameters | null) =>
+  dataFreshness: (parameters: DataFreshnessMetricParameters) =>
     [
       ...analyticalMetricQueryKeys.all,
       'data-freshness',
-      parameters?.observedAt ?? null,
-      parameters?.maximumAgeSeconds ?? null,
+      parameters.windowMinutes ?? null,
+      normalizeRegionCode(parameters.regionCode),
     ] as const,
 }
 
@@ -106,44 +108,29 @@ export function useAnalyticalAirportActivity(
 }
 
 export function useAnalyticalCoverageScore(
-  parameters: CoverageScoreMetricParameters | null
+  parameters: CoverageScoreMetricParameters = {}
 ): UseQueryResult<AnalyticalMetric<number>, Error> {
   return useQuery({
     queryKey: analyticalMetricQueryKeys.coverageScore(parameters),
-    queryFn: ({ signal }) => {
-      if (parameters === null) {
-        throw new APIRequestError(
-          'Coverage score parameters are not available.'
-        )
-      }
-
-      return getAnalyticalCoverageScore(parameters, {
+    queryFn: ({ signal }) =>
+      getAnalyticalCoverageScore(parameters, {
         signal,
-      })
-    },
-    enabled: parameters !== null,
+      }),
+    refetchInterval: 60_000,
     retry: shouldRetryAnalyticalQuery,
   })
 }
 
 export function useAnalyticalDataFreshness(
-  parameters: DataFreshnessMetricParameters | null
+  parameters: DataFreshnessMetricParameters = {}
 ): UseQueryResult<AnalyticalMetric<number>, Error> {
   return useQuery({
     queryKey: analyticalMetricQueryKeys.dataFreshness(parameters),
-    queryFn: ({ signal }) => {
-      if (parameters === null) {
-        throw new APIRequestError(
-          'Data freshness parameters are not available.'
-        )
-      }
-
-      return getAnalyticalDataFreshness(parameters, {
+    queryFn: ({ signal }) =>
+      getAnalyticalDataFreshness(parameters, {
         signal,
-      })
-    },
-    enabled: parameters !== null,
-    refetchInterval: parameters === null ? false : 60_000,
+      }),
+    refetchInterval: 60_000,
     retry: shouldRetryAnalyticalQuery,
   })
 }
@@ -161,18 +148,6 @@ function shouldRetryAnalyticalQuery(
   }
 
   return true
-}
-
-function normalizeQueryIdentifiers(
-  values: string[] | undefined
-): string {
-  if (!values) {
-    return ''
-  }
-
-  return [...new Set(values.map(value => value.trim()).filter(Boolean))]
-    .sort()
-    .join(',')
 }
 
 function normalizeRegionCode(value: string | undefined): string {

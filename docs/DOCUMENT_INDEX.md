@@ -892,3 +892,14 @@ Records zero reference-time rejection, canonical UUID identifiers, canonical
 Metric IDs, removal of stored legacy calculator state, hidden executor
 dependencies, narrow metric-service behavior, compatibility classification,
 regression evidence and remaining Analytical Core closure scope.
+
+<!-- SERVER-OWNED-QUALITY-METRICS:DOCUMENT-INDEX -->
+
+## Document 101
+
+`101_SERVER_OWNED_QUALITY_METRICS.md`
+
+Records removal of caller-owned production snapshots, server-fixed query limits,
+ten-second covered-interval Coverage Score evidence, server-derived latest
+observation Data Freshness, five-minute stale policy, empty-evidence behavior,
+provenance, regression protection and the remaining final closure audit.

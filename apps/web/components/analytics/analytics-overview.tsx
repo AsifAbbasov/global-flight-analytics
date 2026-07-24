@@ -8,16 +8,10 @@ import {
   useAnalyticalDataFreshness,
   useAnalyticalTrafficDensity,
 } from '@/lib/queries/analytics'
-import type {
-  AnalyticalMetric,
-  CoverageScoreMetricParameters,
-  DataFreshnessMetricParameters,
-} from '@/types/analytics'
 import type { Region } from '@/types/region'
 
 const analyticalWindowMinutes = 15
 const analyticalResultLimit = 1000
-const dataFreshnessMaximumAgeSeconds = 300
 
 interface AnalyticsOverviewProps {
   selectedRegion: Region
@@ -31,22 +25,22 @@ export function AnalyticsOverview({
     limit: analyticalResultLimit,
     regionCode: selectedRegion.code,
   }
+  const productionQualityParameters = {
+    windowMinutes: analyticalWindowMinutes,
+    regionCode: selectedRegion.code,
+  }
 
   const activeAircraftQuery =
     useAnalyticalActiveAircraft(recentParameters)
   const trafficDensityQuery = useAnalyticalTrafficDensity(
     recentParameters
   )
-
-  const coverageParameters = buildCoverageParameters(
-    activeAircraftQuery.data
+  const coverageQuery = useAnalyticalCoverageScore(
+    productionQualityParameters
   )
-  const freshnessParameters = buildFreshnessParameters(
-    activeAircraftQuery.data
+  const freshnessQuery = useAnalyticalDataFreshness(
+    productionQualityParameters
   )
-
-  const coverageQuery = useAnalyticalCoverageScore(coverageParameters)
-  const freshnessQuery = useAnalyticalDataFreshness(freshnessParameters)
 
   const regionArea = calculateRegionAreaSquareKilometers(
     selectedRegion.bounds
@@ -87,10 +81,8 @@ export function AnalyticsOverview({
             void Promise.all([
               activeAircraftQuery.refetch(),
               trafficDensityQuery.refetch(),
-              coverageParameters ? coverageQuery.refetch() : Promise.resolve(),
-              freshnessParameters
-                ? freshnessQuery.refetch()
-                : Promise.resolve(),
+              coverageQuery.refetch(),
+              freshnessQuery.refetch(),
             ])
           }}
           disabled={analyticsAreFetching}
@@ -126,97 +118,33 @@ export function AnalyticsOverview({
         />
 
         <AnalyticalMetricCard
-          title='Eligibility Coverage'
-          description='Share of regional trajectory contributors accepted by the traffic-metric policy.'
+          title='Observation Coverage'
+          description='Share of ten-second observation intervals covered by retained regional trajectory evidence.'
           metric={coverageQuery.data}
-          isPending={
-            activeAircraftQuery.isPending ||
-            (coverageParameters !== null && coverageQuery.isPending)
-          }
-          error={activeAircraftQuery.error ?? coverageQuery.error}
+          isPending={coverageQuery.isPending}
+          error={coverageQuery.error}
           onRetry={() => {
-            if (activeAircraftQuery.error) {
-              void activeAircraftQuery.refetch()
-              return
-            }
-
             void coverageQuery.refetch()
           }}
           formatValue={formatRatio}
-          emptyMessage='Eligibility coverage requires a usable Active Aircraft response.'
+          emptyMessage='No retained regional trajectory observations were available for coverage calculation.'
         />
 
         <AnalyticalMetricCard
           title='Observation Freshness'
-          description='Freshness of the newest regional source observation against a five-minute maximum age.'
+          description='Freshness of the newest retained regional observation against the server-owned five-minute stale threshold.'
           metric={freshnessQuery.data}
-          isPending={
-            activeAircraftQuery.isPending ||
-            (freshnessParameters !== null && freshnessQuery.isPending)
-          }
-          error={activeAircraftQuery.error ?? freshnessQuery.error}
+          isPending={freshnessQuery.isPending}
+          error={freshnessQuery.error}
           onRetry={() => {
-            if (activeAircraftQuery.error) {
-              void activeAircraftQuery.refetch()
-              return
-            }
-
             void freshnessQuery.refetch()
           }}
           formatValue={formatRatio}
-          emptyMessage='Freshness requires a regional source observation timestamp.'
+          emptyMessage='No retained regional observation timestamp was available.'
         />
       </div>
     </section>
   )
-}
-
-function buildCoverageParameters(
-  metric: AnalyticalMetric<number> | undefined
-): CoverageScoreMetricParameters | null {
-  if (!metric || metric.scope.input_count <= 0) {
-    return null
-  }
-
-  return {
-    observedSamples: metric.scope.allowed_count,
-    expectedSamples: metric.scope.input_count,
-  }
-}
-
-function buildFreshnessParameters(
-  metric: AnalyticalMetric<number> | undefined
-): DataFreshnessMetricParameters | null {
-  if (!metric) {
-    return null
-  }
-
-  const observedAt = metric.sources.reduce<string | null>(
-    (latestTimestamp, source) => {
-      if (!source.observed_to) {
-        return latestTimestamp
-      }
-
-      if (
-        latestTimestamp === null ||
-        Date.parse(source.observed_to) > Date.parse(latestTimestamp)
-      ) {
-        return source.observed_to
-      }
-
-      return latestTimestamp
-    },
-    null
-  )
-
-  if (observedAt === null) {
-    return null
-  }
-
-  return {
-    observedAt,
-    maximumAgeSeconds: dataFreshnessMaximumAgeSeconds,
-  }
 }
 
 function formatInteger(value: number): string {

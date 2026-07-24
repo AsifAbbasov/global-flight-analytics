@@ -96,20 +96,22 @@ export interface RecentTrajectoryMetricParameters {
 
 export interface TrafficDensityMetricParameters
   extends RecentTrajectoryMetricParameters {
-  areaSquareKilometers?: number
+  regionCode: string
 }
 
-export interface AirportActivityMetricParameters {
-  arrivalTrajectoryIDs?: string[]
-  departureTrajectoryIDs?: string[]
+export interface AirportActivityMetricParameters
+  extends RecentTrajectoryMetricParameters {
+  airportICAO: string
+  radiusKilometers?: number
 }
 
-export interface CoverageScoreMetricParameters {
-  observedSamples: number
-  expectedSamples: number
+export interface ProductionQualityMetricParameters {
+  windowMinutes?: number
+  regionCode?: string
 }
 
-export interface DataFreshnessMetricParameters {
-  observedAt: string
-  maximumAgeSeconds: number
-}
+export type CoverageScoreMetricParameters =
+  ProductionQualityMetricParameters
+
+export type DataFreshnessMetricParameters =
+  ProductionQualityMetricParameters

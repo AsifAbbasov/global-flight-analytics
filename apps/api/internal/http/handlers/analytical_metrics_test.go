@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/analyticalresult"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualityintegration"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricexecution"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metricquery"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
@@ -82,7 +83,7 @@ func (stub *analyticalMetricStub) TrafficDensity(
 ) (metricexecution.Execution[float64], error) {
 	stub.densityRequest = request
 	return successfulExecution(
-		"traffic_density",
+		metricexecution.MetricIDTrafficDensity,
 		0.02,
 	), stub.err
 }
@@ -104,7 +105,7 @@ func (stub *analyticalMetricStub) CoverageScore(
 ) (metricexecution.Execution[float64], error) {
 	stub.coverageRequest = request
 	return successfulExecution(
-		"coverage_score",
+		metricexecution.MetricIDCoverageScore,
 		0.75,
 	), stub.err
 }
@@ -115,7 +116,7 @@ func (stub *analyticalMetricStub) DataFreshness(
 ) (metricexecution.Execution[float64], error) {
 	stub.freshnessRequest = request
 	return successfulExecution(
-		"data_freshness",
+		metricexecution.MetricIDDataFreshness,
 		0.50,
 	), stub.err
 }
@@ -353,13 +354,31 @@ func TestAnalyticalAirportActivityUsesServerAirportAndRegionalQuery(
 	}
 }
 
-func TestAnalyticalCoverageScoreParsesSnapshot(
+func TestAnalyticalCoverageScoreUsesServerOwnedSnapshot(
 	t *testing.T,
 ) {
+	now := time.Now().UTC()
+	query := &analyticalQueryStub{
+		recentItems: []trajectory.FlightTrajectory{
+			{
+				SourceName: "airplanes.live",
+				Points: []trajectory.TrackPoint4D{
+					{
+						ObservedAt: now.
+							Add(-20 * time.Second),
+					},
+					{
+						ObservedAt: now.
+							Add(-10 * time.Second),
+					},
+				},
+			},
+		},
+	}
 	metrics := &analyticalMetricStub{}
 	handler, err := NewAnalyticalMetricsHandler(
 		metrics,
-		&analyticalQueryStub{},
+		query,
 	)
 	if err != nil {
 		t.Fatalf("expected handler, got %v", err)
@@ -370,7 +389,7 @@ func TestAnalyticalCoverageScoreParsesSnapshot(
 	result, err := app.Test(
 		httptest.NewRequest(
 			fiber.MethodGet,
-			"/metric?observed_samples=75&expected_samples=100",
+			"/metric?window_minutes=1",
 			nil,
 		),
 	)
@@ -382,19 +401,54 @@ func TestAnalyticalCoverageScoreParsesSnapshot(
 	if result.StatusCode != fiber.StatusOK {
 		t.Fatalf("expected status 200, got %d", result.StatusCode)
 	}
-	if metrics.coverageRequest.Snapshot.ObservedSamples != 75 ||
-		metrics.coverageRequest.Snapshot.ExpectedSamples != 100 {
-		t.Fatalf("unexpected coverage request: %#v", metrics.coverageRequest)
+
+	if query.recent.WindowMinutes != 1 ||
+		query.recent.Limit !=
+			metricquery.MaximumResultLimit {
+		t.Fatalf(
+			"unexpected production query: %#v",
+			query.recent,
+		)
+	}
+
+	if metrics.coverageRequest.Snapshot.
+		ObservedSamples != 2 ||
+		metrics.coverageRequest.Snapshot.
+			ExpectedSamples != 6 {
+		t.Fatalf(
+			"unexpected server-owned coverage snapshot: %#v",
+			metrics.coverageRequest,
+		)
+	}
+
+	if !containsAnalyticalSource(
+		metrics.coverageRequest.Sources,
+		serverTrajectoryQuerySource,
+	) {
+		t.Fatalf(
+			"expected server query provenance, got %#v",
+			metrics.coverageRequest.Sources,
+		)
 	}
 }
 
-func TestAnalyticalDataFreshnessParsesTimestampAndAge(
+func TestAnalyticalDataFreshnessUsesServerOwnedObservation(
 	t *testing.T,
 ) {
+	observedAt := time.Now().UTC().
+		Add(-30 * time.Second)
+	query := &analyticalQueryStub{
+		recentItems: []trajectory.FlightTrajectory{
+			{
+				SourceName: "airplanes.live",
+				EndTime:    observedAt,
+			},
+		},
+	}
 	metrics := &analyticalMetricStub{}
 	handler, err := NewAnalyticalMetricsHandler(
 		metrics,
-		&analyticalQueryStub{},
+		query,
 	)
 	if err != nil {
 		t.Fatalf("expected handler, got %v", err)
@@ -405,7 +459,7 @@ func TestAnalyticalDataFreshnessParsesTimestampAndAge(
 	result, err := app.Test(
 		httptest.NewRequest(
 			fiber.MethodGet,
-			"/metric?observed_at=2026-07-14T10:00:00Z&max_age_seconds=120",
+			"/metric?window_minutes=1",
 			nil,
 		),
 	)
@@ -417,10 +471,16 @@ func TestAnalyticalDataFreshnessParsesTimestampAndAge(
 	if result.StatusCode != fiber.StatusOK {
 		t.Fatalf("expected status 200, got %d", result.StatusCode)
 	}
-	if metrics.freshnessRequest.MaxAge != 120*time.Second ||
-		metrics.freshnessRequest.Snapshot.Time !=
-			time.Date(2026, time.July, 14, 10, 0, 0, 0, time.UTC) {
-		t.Fatalf("unexpected freshness request: %#v", metrics.freshnessRequest)
+
+	if metrics.freshnessRequest.MaxAge !=
+		dataqualityintegration.DefaultStaleAfter ||
+		!metrics.freshnessRequest.Snapshot.Time.Equal(
+			observedAt,
+		) {
+		t.Fatalf(
+			"unexpected server-owned freshness request: %#v",
+			metrics.freshnessRequest,
+		)
 	}
 }
 
@@ -515,15 +575,101 @@ func TestTrajectoryPublicationMetadataBuildsStrictProvenance(
 	}
 }
 
-func TestRequestParameterMetadataIncludesRetrievalTime(
+func TestProductionQualityEndpointsRejectCallerSnapshotParameters(
 	t *testing.T,
 ) {
-	metadata := requestParameterMetadata()
-	if len(metadata.Sources) != 1 ||
-		metadata.Sources[0].RetrievedAt.IsZero() {
-		t.Fatalf(
-			"expected strict request provenance, got %#v",
-			metadata.Sources,
+	testCases := []struct {
+		name string
+		path string
+	}{
+		{
+			name: "coverage observed samples",
+			path: "/coverage?observed_samples=1",
+		},
+		{
+			name: "coverage expected samples",
+			path: "/coverage?expected_samples=1",
+		},
+		{
+			name: "coverage client limit",
+			path: "/coverage?limit=10",
+		},
+		{
+			name: "freshness observed timestamp",
+			path: "/freshness?observed_at=2026-07-24T12:00:00Z",
+		},
+		{
+			name: "freshness maximum age",
+			path: "/freshness?max_age_seconds=120",
+		},
+		{
+			name: "freshness client limit",
+			path: "/freshness?limit=10",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(
+			testCase.name,
+			func(t *testing.T) {
+				query := &analyticalQueryStub{}
+				metrics := &analyticalMetricStub{}
+				handler, err :=
+					NewAnalyticalMetricsHandler(
+						metrics,
+						query,
+					)
+				if err != nil {
+					t.Fatalf(
+						"expected handler, got %v",
+						err,
+					)
+				}
+
+				app := fiber.New()
+				app.Get(
+					"/coverage",
+					handler.GetCoverageScore,
+				)
+				app.Get(
+					"/freshness",
+					handler.GetDataFreshness,
+				)
+
+				result, requestErr := app.Test(
+					httptest.NewRequest(
+						fiber.MethodGet,
+						testCase.path,
+						nil,
+					),
+				)
+				if requestErr != nil {
+					t.Fatalf(
+						"expected response for %s, got %v",
+						testCase.path,
+						requestErr,
+					)
+				}
+				defer result.Body.Close()
+
+				if result.StatusCode !=
+					fiber.StatusBadRequest {
+					t.Fatalf(
+						"expected status 400 for %s, got %d",
+						testCase.path,
+						result.StatusCode,
+					)
+				}
+
+				if query.recent.WindowMinutes != 0 ||
+					query.recent.Limit != 0 {
+					t.Fatalf(
+						"query service received rejected request %s: %#v",
+						testCase.path,
+						query.recent,
+					)
+				}
+			},
 		)
 	}
 }

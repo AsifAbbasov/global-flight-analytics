@@ -42,8 +42,9 @@ func (
 
 			return metricCalculation[float64]{
 				Value: value,
-				Factors: requestParameterConfidenceFactors(
-					"Coverage score uses a deterministic observed-to-expected sample ratio.",
+				Factors: serverOwnedSnapshotConfidenceFactors(
+					request.Snapshot.ObservedSamples > 0,
+					"Coverage score uses server-owned covered-to-expected observation intervals.",
 				),
 			}, nil
 		},

@@ -255,9 +255,20 @@ func methodConfidenceFactors(
 	}
 }
 
-func requestParameterConfidenceFactors(
+func serverOwnedSnapshotConfidenceFactors(
+	hasObservation bool,
 	message string,
 ) []confidencereport.Factor {
+	sourceCoverage := 1.0
+	sourceMessage :=
+		"Metric inputs were derived from server-owned retained trajectory evidence."
+
+	if !hasObservation {
+		sourceCoverage = 0.25
+		sourceMessage =
+			"No usable retained trajectory observations were available in the server-owned query window."
+	}
+
 	return []confidencereport.Factor{
 		confidencereport.Evidence(
 			confidencereport.
@@ -270,8 +281,8 @@ func requestParameterConfidenceFactors(
 			confidencereport.
 				FactorCodeSourceCoverage,
 			0.60,
-			0.25,
-			"Caller-supplied snapshot values are present but are not independently verified by the server.",
+			sourceCoverage,
+			sourceMessage,
 		),
 	}
 }
