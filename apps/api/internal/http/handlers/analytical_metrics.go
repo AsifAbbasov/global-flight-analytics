@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -580,15 +581,35 @@ func trajectoryPublicationMetadata(
 		)
 	}
 
+	retrievedAt := time.Now().UTC()
+	sources, unattributedCount :=
+		analyticalSourcesFromTrajectories(
+			items,
+			retrievedAt,
+		)
+
+	if unattributedCount > 0 {
+		limitations = append(
+			limitations,
+			analyticalresult.Notice{
+				Code: "unattributed_source_observations",
+				Message: fmt.Sprintf(
+					"%d trajectory observations did not provide a source name and were omitted from source provenance.",
+					unattributedCount,
+				),
+			},
+		)
+	}
+
 	metadata := metricexecution.PublicationMetadata{
-		Sources:     analyticalSourcesFromTrajectories(items),
+		Sources:     sources,
 		Limitations: limitations,
 	}
 
 	report, reportErr := dataqualityintegration.BuildTrajectoryReport(
 		dataqualityintegration.TrajectoryReportRequest{
 			Trajectories: items,
-			EvaluatedAt:  time.Now().UTC(),
+			EvaluatedAt:  retrievedAt,
 		},
 	)
 	if reportErr != nil {
@@ -607,17 +628,20 @@ func trajectoryPublicationMetadata(
 }
 
 func requestParameterMetadata() metricexecution.PublicationMetadata {
+	retrievedAt := time.Now().UTC()
+
 	return metricexecution.PublicationMetadata{
 		Sources: []analyticalresult.Source{
 			{
-				Name: "request_parameters",
-				Role: analyticalresult.SourceRoleDerived,
+				Name:        "request_parameters",
+				Role:        analyticalresult.SourceRoleDerived,
+				RetrievedAt: retrievedAt,
 			},
 		},
 		Limitations: []analyticalresult.Notice{
 			{
 				Code:    "request_parameter_snapshot",
-				Message: "The metric is calculated from snapshot values supplied in the request.",
+				Message: "The metric is calculated from caller-supplied snapshot values that are not independently verified by the server.",
 			},
 		},
 	}
@@ -625,7 +649,8 @@ func requestParameterMetadata() metricexecution.PublicationMetadata {
 
 func analyticalSourcesFromTrajectories(
 	items []trajectory.FlightTrajectory,
-) []analyticalresult.Source {
+	retrievedAt time.Time,
+) ([]analyticalresult.Source, int) {
 	type sourceWindow struct {
 		from     time.Time
 		to       time.Time
@@ -633,10 +658,13 @@ func analyticalSourcesFromTrajectories(
 	}
 
 	windows := make(map[string]sourceWindow)
+	unattributedCount := 0
+
 	for _, item := range items {
 		name := strings.TrimSpace(item.SourceName)
 		if name == "" {
-			name = "unknown"
+			unattributedCount++
+			continue
 		}
 
 		window := windows[name]
@@ -662,8 +690,9 @@ func analyticalSourcesFromTrajectories(
 	for _, name := range names {
 		window := windows[name]
 		source := analyticalresult.Source{
-			Name: name,
-			Role: analyticalresult.SourceRoleObservation,
+			Name:        name,
+			Role:        analyticalresult.SourceRoleObservation,
+			RetrievedAt: retrievedAt,
 		}
 		if window.hasRange {
 			source.ObservedFrom = window.from
@@ -672,7 +701,7 @@ func analyticalSourcesFromTrajectories(
 		sources = append(sources, source)
 	}
 
-	return sources
+	return sources, unattributedCount
 }
 
 func sortStrings(values []string) {

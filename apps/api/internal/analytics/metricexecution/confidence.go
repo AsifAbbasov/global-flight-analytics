@@ -255,6 +255,27 @@ func methodConfidenceFactors(
 	}
 }
 
+func requestParameterConfidenceFactors(
+	message string,
+) []confidencereport.Factor {
+	return []confidencereport.Factor{
+		confidencereport.Evidence(
+			confidencereport.
+				FactorCodeMethodStability,
+			0.40,
+			1,
+			message,
+		),
+		confidencereport.Evidence(
+			confidencereport.
+				FactorCodeSourceCoverage,
+			0.60,
+			0.25,
+			"Caller-supplied snapshot values are present but are not independently verified by the server.",
+		),
+	}
+}
+
 func mergeNotices(
 	collections ...[]analyticalresult.Notice,
 ) []analyticalresult.Notice {

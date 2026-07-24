@@ -35,12 +35,21 @@ func TestCoverageScorePreservesExistingMetricFormula(
 
 	if execution.Result.Value != 0.75 ||
 		execution.Result.Status !=
-			analyticalresult.StatusComplete ||
+			analyticalresult.StatusLimited ||
 		execution.Result.Confidence.Level !=
-			analyticalresult.ConfidenceLevelHigh {
+			analyticalresult.ConfidenceLevelLow {
 		t.Fatalf(
-			"unexpected coverage score result: %#v",
+			"expected limited low-confidence coverage score, got %#v",
 			execution.Result,
+		)
+	}
+
+	if len(execution.Result.Limitations) != 1 ||
+		execution.Result.Limitations[0].Code !=
+			"confidence_low" {
+		t.Fatalf(
+			"expected confidence_low limitation, got %#v",
+			execution.Result.Limitations,
 		)
 	}
 
@@ -77,9 +86,16 @@ func TestCoverageScoreMapsInvalidSnapshotToFailedResult(
 			execution.Result,
 		)
 	}
+	if execution.Result.Failure.Message !=
+		"Analytical metric calculation failed." {
+		t.Fatalf(
+			"expected sanitized public failure, got %#v",
+			execution.Result.Failure,
+		)
+	}
 }
 
-func TestDataFreshnessCanBeZeroWithHighCalculationConfidence(
+func TestDataFreshnessCanBeZeroWithLowInputConfidence(
 	t *testing.T,
 ) {
 	service := metricTestService(
@@ -112,12 +128,21 @@ func TestDataFreshnessCanBeZeroWithHighCalculationConfidence(
 	}
 
 	if execution.Result.Status !=
-		analyticalresult.StatusComplete ||
+		analyticalresult.StatusLimited ||
 		execution.Result.Confidence.Level !=
-			analyticalresult.ConfidenceLevelHigh {
+			analyticalresult.ConfidenceLevelLow {
 		t.Fatalf(
-			"expected complete high-confidence stale result, got %#v",
+			"expected limited low-confidence stale result, got %#v",
 			execution.Result,
+		)
+	}
+
+	if len(execution.Result.Limitations) != 1 ||
+		execution.Result.Limitations[0].Code !=
+			"confidence_low" {
+		t.Fatalf(
+			"expected confidence_low limitation, got %#v",
+			execution.Result.Limitations,
 		)
 	}
 }

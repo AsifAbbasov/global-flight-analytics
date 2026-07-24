@@ -81,6 +81,9 @@ var (
 	ErrSourceNameInvalid = errors.New(
 		"analytical source name is invalid",
 	)
+	ErrSourceNamePlaceholder = errors.New(
+		"analytical source name cannot be a placeholder",
+	)
 	ErrSourceRoleInvalid = errors.New(
 		"analytical source role is invalid",
 	)
@@ -89,6 +92,12 @@ var (
 	)
 	ErrSourceObservationRangeInvalid = errors.New(
 		"analytical source observation end must not precede its start",
+	)
+	ErrSourceRetrievedAtMissing = errors.New(
+		"analytical source retrieval time is required",
+	)
+	ErrSourceRetrievedAfterCalculation = errors.New(
+		"analytical source retrieval time must not follow analytical result calculation time",
 	)
 )
 
@@ -146,6 +155,24 @@ func (result Result[T]) Validate() error {
 
 	if err := validateSources(result.Sources); err != nil {
 		return err
+	}
+
+	for index, source := range result.Sources {
+		if source.RetrievedAt.After(
+			result.CalculatedAt,
+		) {
+			return fmt.Errorf(
+				"%w: index=%d retrieved_at=%s calculated_at=%s",
+				ErrSourceRetrievedAfterCalculation,
+				index,
+				source.RetrievedAt.Format(
+					time.RFC3339Nano,
+				),
+				result.CalculatedAt.Format(
+					time.RFC3339Nano,
+				),
+			)
+		}
 	}
 
 	if err := validateNotices("warnings", result.Warnings); err != nil {
@@ -330,6 +357,13 @@ func (source Source) Validate() error {
 		return ErrSourceNameInvalid
 	}
 
+	if strings.EqualFold(
+		source.Name,
+		"unknown",
+	) {
+		return ErrSourceNamePlaceholder
+	}
+
 	if !source.Role.IsKnown() {
 		return fmt.Errorf(
 			"%w: %q",
@@ -347,6 +381,10 @@ func (source Source) Validate() error {
 
 	if !fromMissing && source.ObservedTo.Before(source.ObservedFrom) {
 		return ErrSourceObservationRangeInvalid
+	}
+
+	if source.RetrievedAt.IsZero() {
+		return ErrSourceRetrievedAtMissing
 	}
 
 	return validateNotices(

@@ -280,3 +280,67 @@ func TestNoticeValidationRejectsDuplicateCodes(t *testing.T) {
 		t.Fatal("expected duplicate notice code rejection")
 	}
 }
+
+func TestSourceValidationRequiresStrictProvenance(
+	t *testing.T,
+) {
+	now := analyticalResultTestTime()
+
+	missingRetrievalTime := Source{
+		Name: "request_parameters",
+		Role: SourceRoleDerived,
+	}
+	if !errors.Is(
+		missingRetrievalTime.Validate(),
+		ErrSourceRetrievedAtMissing,
+	) {
+		t.Fatal(
+			"expected missing retrieval time rejection",
+		)
+	}
+
+	placeholder := Source{
+		Name:        "unknown",
+		Role:        SourceRoleObservation,
+		RetrievedAt: now,
+	}
+	if !errors.Is(
+		placeholder.Validate(),
+		ErrSourceNamePlaceholder,
+	) {
+		t.Fatal(
+			"expected placeholder source name rejection",
+		)
+	}
+}
+
+func TestResultValidationRejectsSourceRetrievedAfterCalculation(
+	t *testing.T,
+) {
+	calculatedAt := analyticalResultTestTime()
+	result := Result[int]{
+		Status:       StatusComplete,
+		Value:        1,
+		HasValue:     true,
+		Confidence:   highConfidence(),
+		CalculatedAt: calculatedAt,
+		Sources: []Source{
+			{
+				Name: "request_parameters",
+				Role: SourceRoleDerived,
+				RetrievedAt: calculatedAt.Add(
+					time.Second,
+				),
+			},
+		},
+	}
+
+	if !errors.Is(
+		result.Validate(),
+		ErrSourceRetrievedAfterCalculation,
+	) {
+		t.Fatal(
+			"expected source retrieval-after-calculation rejection",
+		)
+	}
+}

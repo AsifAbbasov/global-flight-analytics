@@ -870,3 +870,14 @@ Analytical Core review scope.
 Records PostgreSQL-owned airport lookup, server-classified airport movement
 geofences, region-owned Traffic Density area, public parameter changes,
 regression evidence and the remaining Analytical Core review scope.
+
+<!-- PROVENANCE-ANALYTICAL-TRUST-HARDENING:DOCUMENT-INDEX -->
+
+## Document 99
+
+`99_PROVENANCE_AND_ANALYTICAL_TRUST_HARDENING.md`
+
+Records strict source retrieval timestamps, placeholder-source rejection,
+unattributed-source disclosure, default failure sanitization, honest confidence
+for request-parameter snapshots, regression evidence and remaining Analytical
+Core review scope.

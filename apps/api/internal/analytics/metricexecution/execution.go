@@ -499,14 +499,19 @@ func buildFailedExecution[T any](
 	operationErr error,
 ) (Execution[T], error) {
 	mapper := metadata.FailureMapper
-	if mapper == nil {
-		mapper =
-			executor.DefaultFailureMapper
-	}
+	failure := analyticalresult.Failure{}
 
-	failure := mapper(
-		operationErr,
-	)
+	if mapper == nil {
+		failure = executor.DefaultFailureMapper(
+			operationErr,
+		)
+		failure.Message =
+			"Analytical metric calculation failed."
+	} else {
+		failure = mapper(
+			operationErr,
+		)
+	}
 
 	result, err :=
 		analyticalresult.NewFailed[T](

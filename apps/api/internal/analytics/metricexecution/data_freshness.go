@@ -44,7 +44,7 @@ func (
 
 			return metricCalculation[float64]{
 				Value: value,
-				Factors: methodConfidenceFactors(
+				Factors: requestParameterConfidenceFactors(
 					"Data freshness uses a deterministic timestamp-age calculation.",
 				),
 			}, nil

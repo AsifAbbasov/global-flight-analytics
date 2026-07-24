@@ -574,6 +574,7 @@ func TestExecuteTrajectoryResultDoesNotMutateInputs(
 			Name: "airplanes.live",
 			Role: analyticalresult.
 				SourceRoleObservation,
+			RetrievedAt: resultExecutionTestTime(),
 		},
 	}
 

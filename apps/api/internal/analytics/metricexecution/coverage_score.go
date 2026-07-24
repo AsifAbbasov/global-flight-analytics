@@ -42,7 +42,7 @@ func (
 
 			return metricCalculation[float64]{
 				Value: value,
-				Factors: methodConfidenceFactors(
+				Factors: requestParameterConfidenceFactors(
 					"Coverage score uses a deterministic observed-to-expected sample ratio.",
 				),
 			}, nil

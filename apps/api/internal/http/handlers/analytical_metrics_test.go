@@ -449,3 +449,94 @@ func TestAnalyticalQueryFailureReturnsServerError(
 		t.Fatalf("expected status 500, got %d", result.StatusCode)
 	}
 }
+
+func TestTrajectoryPublicationMetadataBuildsStrictProvenance(
+	t *testing.T,
+) {
+	now := time.Date(
+		2026,
+		time.July,
+		24,
+		12,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
+	metadata := trajectoryPublicationMetadata(
+		[]trajectory.FlightTrajectory{
+			{
+				SourceName: "airplanes.live",
+				StartTime:  now.Add(-time.Minute),
+				EndTime:    now,
+			},
+			{
+				SourceName: " ",
+				StartTime:  now.Add(-time.Minute),
+				EndTime:    now,
+			},
+		},
+		0,
+	)
+
+	if len(metadata.Sources) != 1 {
+		t.Fatalf(
+			"expected one attributed source, got %#v",
+			metadata.Sources,
+		)
+	}
+
+	source := metadata.Sources[0]
+	if source.Name != "airplanes.live" ||
+		source.RetrievedAt.IsZero() {
+		t.Fatalf(
+			"unexpected source provenance: %#v",
+			source,
+		)
+	}
+
+	if containsAnalyticalSource(
+		metadata.Sources,
+		"unknown",
+	) {
+		t.Fatal(
+			"placeholder source must not be published",
+		)
+	}
+
+	if !containsPublicationLimitation(
+		metadata,
+		"unattributed_source_observations",
+	) {
+		t.Fatalf(
+			"expected unattributed source limitation, got %#v",
+			metadata.Limitations,
+		)
+	}
+}
+
+func TestRequestParameterMetadataIncludesRetrievalTime(
+	t *testing.T,
+) {
+	metadata := requestParameterMetadata()
+	if len(metadata.Sources) != 1 ||
+		metadata.Sources[0].RetrievedAt.IsZero() {
+		t.Fatalf(
+			"expected strict request provenance, got %#v",
+			metadata.Sources,
+		)
+	}
+}
+
+func containsAnalyticalSource(
+	sources []analyticalresult.Source,
+	name string,
+) bool {
+	for _, source := range sources {
+		if source.Name == name {
+			return true
+		}
+	}
+
+	return false
+}
