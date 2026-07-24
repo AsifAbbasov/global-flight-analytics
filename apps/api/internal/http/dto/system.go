@@ -5,5 +5,7 @@ type HealthResponse struct {
 }
 
 type VersionResponse struct {
-	Version string `json:"version"`
+	Version  string `json:"version"`
+	Revision string `json:"revision"`
+	BuiltAt  string `json:"built_at"`
 }

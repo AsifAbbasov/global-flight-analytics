@@ -20,6 +20,9 @@ type ProtectionConfig struct {
 	RateLimitMax    int
 	RateLimitWindow time.Duration
 
+	ClientIPHeader     string
+	TrustedProxyRanges []string
+
 	MutationKeyDigest     internalapikey.Digest
 	MutationKeyConfigured bool
 }

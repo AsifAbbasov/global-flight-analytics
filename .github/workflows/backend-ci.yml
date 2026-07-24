@@ -106,9 +106,24 @@ jobs:
         run: docker compose config > /dev/null
 
       - name: Build backend container image
+        shell: bash
         run: |
+          set -euo pipefail
+
+          app_version="ci-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          build_date="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          {
+            printf 'GFA_APP_VERSION=%s\n' "$app_version"
+            printf 'GFA_VCS_REF=%s\n' "$GITHUB_SHA"
+            printf 'GFA_BUILD_DATE=%s\n' "$build_date"
+          } >> "$GITHUB_ENV"
+
           docker build \
             --pull \
+            --build-arg APP_VERSION="$app_version" \
+            --build-arg VCS_REF="$GITHUB_SHA" \
+            --build-arg BUILD_DATE="$build_date" \
             --file apps/api/Dockerfile \
             --tag global-flight-analytics-api:ci \
             .
@@ -126,6 +141,26 @@ jobs:
             printf '%s\n' "Unexpected runtime user: $runtime_user"
             exit 1
           fi
+
+          image_version="$(
+            docker image inspect \
+              global-flight-analytics-api:ci \
+              --format '{{ index .Config.Labels "org.opencontainers.image.version" }}'
+          )"
+          image_revision="$(
+            docker image inspect \
+              global-flight-analytics-api:ci \
+              --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}'
+          )"
+          image_created="$(
+            docker image inspect \
+              global-flight-analytics-api:ci \
+              --format '{{ index .Config.Labels "org.opencontainers.image.created" }}'
+          )"
+
+          test "$image_version" = "$GFA_APP_VERSION"
+          test "$image_revision" = "$GFA_VCS_REF"
+          test "$image_created" = "$GFA_BUILD_DATE"
 
       - name: Run container health smoke test
         shell: bash
@@ -248,6 +283,26 @@ jobs:
             --silent \
             --show-error \
             http://127.0.0.1:18080/api/v1/ready \
+            > /dev/null
+
+          version_payload="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              http://127.0.0.1:18080/api/v1/version
+          )"
+
+          printf '%s\n' "$version_payload" | jq -e \
+            --arg version "$GFA_APP_VERSION" \
+            --arg revision "$GFA_VCS_REF" \
+            --arg built_at "$GFA_BUILD_DATE" \
+            '
+              .success == true and
+              .data.version == $version and
+              .data.revision == $revision and
+              .data.built_at == $built_at
+            ' \
             > /dev/null
 
           mutation_status="$(

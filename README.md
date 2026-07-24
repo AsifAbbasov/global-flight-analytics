@@ -333,3 +333,18 @@ status is `STAGE_14_OVERALL_STATUS=CLOSED`.
 The PostgreSQL migrator now rejects a nil caller context at every public database-reaching
 operation and at the advisory-lock boundary. Independent bounded cleanup contexts remain for
 rollback, advisory-lock release, and forced connection close. Stage 14 remains closed.
+
+<!-- TRUSTED-PROXY-BUILD-METADATA-CLOSURE:README -->
+
+## Trusted proxy identity and build provenance
+
+The API ignores forwarded client-address headers unless
+`API_TRUSTED_PROXY_RANGES` explicitly identifies the transport proxy.
+`API_CLIENT_IP_HEADER` supports `X-Forwarded-For`, `X-Real-IP`, and
+`CF-Connecting-IP`. A trusted forwarded chain is evaluated from right to left;
+untrusted peers and malformed chains fall back to the direct transport address.
+
+Container builds accept `APP_VERSION`, `VCS_REF`, and `BUILD_DATE`. The values
+are embedded into the server binary, exposed by `/api/v1/version`, and mirrored
+in Open Container Initiative image labels. See
+`docs/95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md`.

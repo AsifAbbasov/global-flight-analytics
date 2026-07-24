@@ -2,16 +2,34 @@ package middleware
 
 import (
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
+type ClientIPResolver func(
+	c *fiber.Ctx,
+) string
+
 func RequestLogger(
 	log *slog.Logger,
+	clientIPResolvers ...ClientIPResolver,
 ) fiber.Handler {
 	if log == nil {
 		log = slog.Default()
+	}
+
+	resolveClientIP := ClientIPResolver(
+		func(
+			c *fiber.Ctx,
+		) string {
+			return c.IP()
+		},
+	)
+	if len(clientIPResolvers) > 0 &&
+		clientIPResolvers[0] != nil {
+		resolveClientIP = clientIPResolvers[0]
 	}
 
 	return func(
@@ -34,6 +52,15 @@ func RequestLogger(
 			RequestIDLocalKey,
 		).(string)
 
+		clientIP := strings.TrimSpace(
+			resolveClientIP(
+				c,
+			),
+		)
+		if clientIP == "" {
+			clientIP = c.IP()
+		}
+
 		log.Info(
 			"http request completed",
 			"request_id",
@@ -47,7 +74,7 @@ func RequestLogger(
 			"duration_ms",
 			duration.Milliseconds(),
 			"ip",
-			c.IP(),
+			clientIP,
 		)
 
 		return err

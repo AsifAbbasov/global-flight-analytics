@@ -830,3 +830,14 @@ release-blocker closure for the Server and HTTP Protection review.
 Records lifecycle correction, final-status request logging, sensitive-error log
 protection, read-interface narrowing, rate-limit classification, deferred
 deployment risks, and formal full closure of the original Server review.
+
+<!-- TRUSTED-PROXY-BUILD-METADATA-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 95
+
+`95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md`
+
+Records fail-closed trusted proxy client identity, spoofing protection,
+rate-limiter and logging integration, linker-derived version provenance,
+Open Container Initiative labels, container verification, and final resolution
+of the two deferred Server review code findings.

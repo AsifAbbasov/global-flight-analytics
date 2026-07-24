@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
 	applogger "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/logger"
@@ -120,6 +121,16 @@ func run(
 		)
 	}
 
+	trustedProxyConfig, err :=
+		config.LoadTrustedProxyConfig()
+	if err != nil {
+		return fmt.Errorf(
+			"%w: %w",
+			errServerConfigurationLoad,
+			err,
+		)
+	}
+
 	dbPool, err := openServerDatabase(
 		cfg,
 		log,
@@ -149,6 +160,8 @@ func run(
 				IdleTimeout:           cfg.APIProtection.IdleTimeout,
 				RateLimitMax:          cfg.APIProtection.RateLimitMax,
 				RateLimitWindow:       cfg.APIProtection.RateLimitWindow,
+				ClientIPHeader:        trustedProxyConfig.ClientIPHeader,
+				TrustedProxyRanges:    trustedProxyConfig.TrustedProxyRanges,
 				MutationKeyDigest:     cfg.APIProtection.MutationKeyDigest,
 				MutationKeyConfigured: cfg.APIProtection.MutationKeyConfigured,
 			},
@@ -163,10 +176,19 @@ func run(
 	}
 
 	address := ":" + cfg.Port
+	build := buildinfo.Current()
 	log.Info(
 		"api server starting",
 		"address",
 		address,
+		"version",
+		build.Version,
+		"revision",
+		build.Revision,
+		"built_at",
+		build.BuiltAt,
+		"trusted_proxy_client_identity",
+		len(trustedProxyConfig.TrustedProxyRanges) > 0,
 	)
 
 	if err := serve(

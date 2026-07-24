@@ -2,28 +2,56 @@ package server
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	internalmiddleware "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/security/clientidentity"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New(cfg Config) (*fiber.App, error) {
-	normalizedConfig, err := normalizeConfig(cfg)
+type transportPeerIPResolver func(
+	c *fiber.Ctx,
+) string
+
+func New(
+	cfg Config,
+) (
+	*fiber.App,
+	error,
+) {
+	normalizedConfig, err := normalizeConfig(
+		cfg,
+	)
 	if err != nil {
 		return nil, err
 	}
-	app := fiber.New(newFiberConfig(normalizedConfig))
-	if err := registerMiddleware(app, normalizedConfig); err != nil {
+
+	app := fiber.New(
+		newFiberConfig(
+			normalizedConfig,
+		),
+	)
+	if err := registerMiddleware(
+		app,
+		normalizedConfig,
+	); err != nil {
 		return nil, err
 	}
-	v1 := app.Group("/api").Group("/v1")
+
+	v1 := app.Group(
+		"/api",
+	).Group(
+		"/v1",
+	)
 	registerSystemRoutes(
 		v1,
 		normalizedConfig.DatabasePool,
 	)
+
 	if normalizedConfig.DatabasePool != nil {
 		mutationAuthorization, err :=
 			internalmiddleware.NewMutationAuthorization(
@@ -33,10 +61,11 @@ func New(cfg Config) (*fiber.App, error) {
 				},
 			)
 		if err != nil {
-			return nil, fmt.Errorf(
-				"create mutation authorization middleware: %w",
-				err,
-			)
+			return nil,
+				fmt.Errorf(
+					"create mutation authorization middleware: %w",
+					err,
+				)
 		}
 
 		if err := registerDatabaseRoutes(
@@ -48,21 +77,122 @@ func New(cfg Config) (*fiber.App, error) {
 			return nil, err
 		}
 	}
+
 	return app, nil
 }
-func registerMiddleware(app *fiber.App, cfg Config) error {
-	app.Use(recover.New())
-	app.Use(internalmiddleware.RequestID())
-	app.Use(internalmiddleware.RequestLogger(cfg.Logger))
-	app.Use(internalmiddleware.SecurityHeaders())
-	app.Use(cors.New(cors.Config{AllowOrigins: cfg.Protection.AllowedOrigins, AllowMethods: "GET,HEAD,POST,OPTIONS", AllowHeaders: "Accept,Content-Type,X-Request-ID", ExposeHeaders: "X-Request-ID,X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset"}))
-	limiter, err := internalmiddleware.NewRateLimiter(internalmiddleware.RateLimiterConfig{MaxRequests: cfg.Protection.RateLimitMax, Window: cfg.Protection.RateLimitWindow, Next: shouldSkipRateLimit, LimitReached: rateLimitReached})
+
+func registerMiddleware(
+	app *fiber.App,
+	cfg Config,
+) error {
+	clientIdentityPolicy, err :=
+		clientidentity.NewPolicy(
+			clientidentity.Config{
+				Header:             cfg.Protection.ClientIPHeader,
+				TrustedProxyRanges: cfg.Protection.TrustedProxyRanges,
+			},
+		)
 	if err != nil {
-		return fmt.Errorf("create api rate limiter: %w", err)
+		return fmt.Errorf(
+			"create trusted proxy client identity policy: %w",
+			err,
+		)
 	}
-	app.Use(limiter)
+
+	resolveClientIP := newClientIPResolver(
+		clientIdentityPolicy,
+		nil,
+	)
+
+	app.Use(
+		recover.New(),
+	)
+	app.Use(
+		internalmiddleware.RequestID(),
+	)
+	app.Use(
+		internalmiddleware.RequestLogger(
+			cfg.Logger,
+			resolveClientIP,
+		),
+	)
+	app.Use(
+		internalmiddleware.SecurityHeaders(),
+	)
+	app.Use(
+		cors.New(
+			cors.Config{
+				AllowOrigins:  cfg.Protection.AllowedOrigins,
+				AllowMethods:  "GET,HEAD,POST,OPTIONS",
+				AllowHeaders:  "Accept,Content-Type,X-Request-ID",
+				ExposeHeaders: "X-Request-ID,X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset",
+			},
+		),
+	)
+
+	limiter, err := internalmiddleware.NewRateLimiter(
+		internalmiddleware.RateLimiterConfig{
+			MaxRequests: cfg.Protection.RateLimitMax,
+			Window:      cfg.Protection.RateLimitWindow,
+			KeyGenerator: func(
+				c *fiber.Ctx,
+			) string {
+				return resolveClientIP(
+					c,
+				)
+			},
+			Next:         shouldSkipRateLimit,
+			LimitReached: rateLimitReached,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create api rate limiter: %w",
+			err,
+		)
+	}
+	app.Use(
+		limiter,
+	)
+
 	return nil
 }
+
+func newClientIPResolver(
+	policy clientidentity.Policy,
+	transportPeerResolver transportPeerIPResolver,
+) internalmiddleware.ClientIPResolver {
+	if transportPeerResolver == nil {
+		transportPeerResolver = func(
+			c *fiber.Ctx,
+		) string {
+			return c.Context().RemoteIP().String()
+		}
+	}
+
+	return func(
+		c *fiber.Ctx,
+	) string {
+		forwardedValue := ""
+		if header := policy.Header(); header != "" {
+			forwardedValue = c.Get(
+				header,
+			)
+		}
+
+		transportPeer := strings.TrimSpace(
+			transportPeerResolver(
+				c,
+			),
+		)
+
+		return policy.Resolve(
+			transportPeer,
+			forwardedValue,
+		)
+	}
+}
+
 func registerSystemRoutes(
 	v1 fiber.Router,
 	databasePool *pgxpool.Pool,
@@ -72,14 +202,20 @@ func registerSystemRoutes(
 		readinessProbe = databasePool.Ping
 	}
 
-	v1.Get("/health", handlers.Health)
+	v1.Get(
+		"/health",
+		handlers.Health,
+	)
 	v1.Get(
 		"/ready",
 		handlers.Readiness(
 			readinessProbe,
 		),
 	)
-	v1.Get("/version", handlers.Version)
+	v1.Get(
+		"/version",
+		handlers.Version,
+	)
 }
 
 // STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

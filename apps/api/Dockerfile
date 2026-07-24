@@ -1,6 +1,13 @@
 ARG GO_IMAGE=golang:1.26.5-alpine3.24
+ARG APP_VERSION=1.0.0
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
 
 FROM ${GO_IMAGE} AS builder
+
+ARG APP_VERSION
+ARG VCS_REF
+ARG BUILD_DATE
 
 WORKDIR /workspace/apps/api
 
@@ -23,11 +30,18 @@ RUN set -eux; \
         server \
         verify-airports; \
     do \
+        ldflags="-s -w -buildid="; \
+        if [ "$command" = "server" ]; then \
+            ldflags="$ldflags \
+                -X github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo.version=${APP_VERSION} \
+                -X github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo.revision=${VCS_REF} \
+                -X github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo.builtAt=${BUILD_DATE}"; \
+        fi; \
         CGO_ENABLED=0 go build \
             -mod=readonly \
             -buildvcs=false \
             -trimpath \
-            -ldflags="-s -w -buildid=" \
+            -ldflags="$ldflags" \
             -o "/out/${command}" \
             "./cmd/${command}"; \
     done
@@ -50,9 +64,16 @@ RUN set -eux; \
 
 FROM scratch AS runtime
 
+ARG APP_VERSION
+ARG VCS_REF
+ARG BUILD_DATE
+
 LABEL org.opencontainers.image.title="Global Flight Analytics API"
 LABEL org.opencontainers.image.description="Container image for the Global Flight Analytics Go backend"
 LABEL org.opencontainers.image.source="https://github.com/AsifAbbasov/global-flight-analytics"
+LABEL org.opencontainers.image.version="${APP_VERSION}"
+LABEL org.opencontainers.image.revision="${VCS_REF}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
 WORKDIR /app
 

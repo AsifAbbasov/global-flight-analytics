@@ -5,6 +5,10 @@ x-backend-image: &backend-image
   build:
     context: .
     dockerfile: apps/api/Dockerfile
+    args:
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      VCS_REF: ${VCS_REF:-unknown}
+      BUILD_DATE: ${BUILD_DATE:-unknown}
 
 x-database-environment: &database-environment
   DATABASE_URL: postgres://global_flight_analytics:local_password@postgres:5432/global_flight_analytics?sslmode=disable

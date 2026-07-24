@@ -218,9 +218,23 @@ Server and HTTP Protection review: CLOSED
 Open release blockers: 0
 Open required changes: 0
 Unclassified original findings: 0
-Deferred deployment findings: 2
+Deferred deployment findings at the 2573892 closure baseline: 2
 Release decision: ACCEPTABLE
 ```
 
 Deferred findings are classified debt with explicit owners and revisit
 conditions. They do not make the review unclassified or block the current MVP.
+
+## 8. Post-closure resolution
+
+Document 95 resolves both findings that were deferred at this closure baseline.
+
+```text
+Trusted proxy code debt: CLOSED
+Build-derived version debt: CLOSED
+Current deferred Server review code findings: 0
+Deployment activation inputs: verified trusted proxy ranges
+```
+
+The deployment-specific proxy range remains an environment value and is not
+guessed by application source code.
