@@ -841,3 +841,12 @@ Records fail-closed trusted proxy client identity, spoofing protection,
 rate-limiter and logging integration, linker-derived version provenance,
 Open Container Initiative labels, container verification, and final resolution
 of the two deferred Server review code findings.
+
+<!-- INGESTION-RACE-COVERAGE-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 96
+
+`96_INGESTION_RACE_COVERAGE_CLOSURE.md`
+
+Records permanent Backend Race Safety coverage across the critical Ingestion,
+Provider Adapters and Orchestration ownership boundaries.

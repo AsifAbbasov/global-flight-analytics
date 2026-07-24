@@ -340,18 +340,28 @@ jobs:
       - name: Run critical package race tests
         run: |
           go test -count=1 -race \
+            ./cmd/ingest \
             ./cmd/server \
             ./internal/config \
             ./internal/database \
             ./internal/integrations/common \
             ./internal/integrations/airplaneslive \
             ./internal/integrations/openmeteo \
+            ./internal/integrations/opensky \
             ./internal/middleware \
             ./internal/orchestration/requestcoalescing \
             ./internal/orchestration/ingestionorchestrator \
+            ./internal/orchestration/providerbudget \
+            ./internal/orchestration/providerdecision \
+            ./internal/orchestration/providerfallback \
+            ./internal/orchestration/providerpolicy \
+            ./internal/orchestration/providerresponse \
             ./internal/orchestration/regionalprovider \
             ./internal/services/ingestdaemon \
+            ./internal/services/providerhealth \
             ./internal/services/reconciliationworker \
+            ./internal/services/traffic/application \
+            ./internal/services/traffic/ingestion \
             ./internal/services/traffic/processor \
             ./internal/services/traffic/trackbuilder \
             ./internal/services/traffic/trajectoryquality \

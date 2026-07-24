@@ -131,3 +131,10 @@ Until then, the correct status remains:
 Ingestion review: CONDITIONALLY ACCEPTABLE
 Formal closure: PENDING CONTINUOUS INTEGRATION
 ```
+
+## 9. Post-closure permanent race coverage
+
+Document 96 expands the permanent Backend Race Safety matrix across OpenSky,
+provider budget, selection, response, health, traffic application, traffic
+ingestion and the ingestion composition root. This closes the remaining
+Continuous Integration coverage gap identified by the original review.
