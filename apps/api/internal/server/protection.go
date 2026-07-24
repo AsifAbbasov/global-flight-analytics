@@ -247,8 +247,11 @@ func newErrorHandler(
 				c.Path(),
 				"status",
 				status,
-				"error",
-				err,
+				"error_type",
+				fmt.Sprintf(
+					"%T",
+					err,
+				),
 			)
 		}
 
@@ -301,6 +304,7 @@ func shouldSkipRateLimit(
 
 	switch c.Path() {
 	case "/api/v1/health",
+		"/api/v1/ready",
 		"/api/v1/version":
 		return true
 	default:

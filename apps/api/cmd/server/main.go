@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
@@ -13,44 +19,121 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const serverShutdownTimeout = 10 * time.Second
+
+var (
+	errServerContextRequired = errors.New(
+		"server lifecycle context is required",
+	)
+	errServerListenRequired = errors.New(
+		"server listen function is required",
+	)
+	errServerShutdownRequired = errors.New(
+		"server shutdown function is required",
+	)
+	errServerAddressRequired = errors.New(
+		"server listen address is required",
+	)
+	errServerShutdownTimeoutInvalid = errors.New(
+		"server shutdown timeout must be greater than zero",
+	)
+	errServerStoppedUnexpectedly = errors.New(
+		"server listener stopped unexpectedly",
+	)
+	errServerListenerStopTimeout = errors.New(
+		"server listener did not stop within the shutdown timeout",
+	)
+	errServerConfigurationLoad = errors.New(
+		"server configuration load failed",
+	)
+	errServerDatabaseConnection = errors.New(
+		"server database connection failed",
+	)
+	errServerInitialization = errors.New(
+		"server initialization failed",
+	)
+	errServerListen = errors.New(
+		"server listen failed",
+	)
+	errServerShutdown = errors.New(
+		"server shutdown failed",
+	)
+)
+
+type serverLifecycle struct {
+	Listen func(
+		address string,
+	) error
+	ShutdownWithTimeout func(
+		timeout time.Duration,
+	) error
+}
+
 func main() {
 	_ = godotenv.Load()
 
 	log := applogger.New()
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+	defer stop()
 
-	cfg, err := config.LoadServerConfig()
-	if err != nil {
+	if err := run(
+		ctx,
+		log,
+	); err != nil {
 		log.Error(
-			"failed to load server configuration",
-			"error",
-			err,
+			"api server stopped with error",
+			"failure_code",
+			serverFailureCode(
+				err,
+			),
+			"error_type",
+			fmt.Sprintf(
+				"%T",
+				err,
+			),
 		)
 		os.Exit(1)
 	}
+}
 
-	var dbPool *pgxpool.Pool
+func run(
+	ctx context.Context,
+	log *slog.Logger,
+) error {
+	if ctx == nil {
+		return errServerContextRequired
+	}
+	if log == nil {
+		log = slog.Default()
+	}
 
-	if cfg.Database == nil {
-		log.Warn(
-			"database url is not set; starting api without database connection",
+	cfg, err := config.LoadServerConfig()
+	if err != nil {
+		return fmt.Errorf(
+			"%w: %w",
+			errServerConfigurationLoad,
+			err,
 		)
-	} else {
-		dbPool, err = database.NewPostgresPool(
-			cfg.Database.URL,
-			cfg.Database.ConnectTimeout,
-		)
-		if err != nil {
-			log.Error(
-				"failed to connect postgres",
-				"error",
-				err,
+	}
+
+	dbPool, err := openServerDatabase(
+		cfg,
+		log,
+	)
+	if err != nil {
+		return err
+	}
+	if dbPool != nil {
+		defer func() {
+			dbPool.Close()
+			log.Info(
+				"postgres connection closed",
 			)
-			os.Exit(1)
-		}
-
-		log.Info(
-			"postgres connection established",
-		)
+		}()
 	}
 
 	app, err := server.New(
@@ -72,77 +155,186 @@ func main() {
 		},
 	)
 	if err != nil {
-		log.Error(
-			"failed to initialize api server",
-			"error",
+		return fmt.Errorf(
+			"%w: %w",
+			errServerInitialization,
 			err,
 		)
-
-		if dbPool != nil {
-			dbPool.Close()
-		}
-
-		os.Exit(1)
 	}
 
-	go func() {
-		log.Info(
-			"api server starting",
-			"port",
-			cfg.Port,
-		)
-
-		if err := app.Listen(
-			":" + cfg.Port,
-		); err != nil {
-			log.Error(
-				"api server failed",
-				"error",
-				err,
-			)
-			os.Exit(1)
-		}
-	}()
-
-	shutdownSignal := make(
-		chan os.Signal,
-		1,
-	)
-
-	signal.Notify(
-		shutdownSignal,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-	)
-
-	sig := <-shutdownSignal
-
+	address := ":" + cfg.Port
 	log.Info(
-		"shutdown signal received",
-		"signal",
-		sig.String(),
+		"api server starting",
+		"address",
+		address,
 	)
 
-	if err := app.Shutdown(); err != nil {
-		log.Error(
-			"api server shutdown failed",
-			"error",
-			err,
-		)
-		os.Exit(1)
-	}
-
-	if dbPool != nil {
-		dbPool.Close()
-
-		log.Info(
-			"postgres connection closed",
-		)
+	if err := serve(
+		ctx,
+		serverLifecycle{
+			Listen:              app.Listen,
+			ShutdownWithTimeout: app.ShutdownWithTimeout,
+		},
+		address,
+		serverShutdownTimeout,
+	); err != nil {
+		return err
 	}
 
 	log.Info(
 		"api server stopped",
 	)
+	return nil
 }
 
-// STAGE-14-5-MUTATION-ENDPOINT-PROTECTION
+func openServerDatabase(
+	cfg config.ServerConfig,
+	log *slog.Logger,
+) (
+	*pgxpool.Pool,
+	error,
+) {
+	if cfg.Database == nil {
+		log.Warn(
+			"database url is not set; starting api without database connection",
+		)
+		return nil, nil
+	}
+
+	dbPool, err := database.NewPostgresPool(
+		cfg.Database.URL,
+		cfg.Database.ConnectTimeout,
+	)
+	if err != nil {
+		return nil,
+			fmt.Errorf(
+				"%w: %w",
+				errServerDatabaseConnection,
+				err,
+			)
+	}
+
+	log.Info(
+		"postgres connection established",
+	)
+	return dbPool, nil
+}
+
+func serve(
+	ctx context.Context,
+	lifecycle serverLifecycle,
+	address string,
+	shutdownTimeout time.Duration,
+) error {
+	if ctx == nil {
+		return errServerContextRequired
+	}
+	if lifecycle.Listen == nil {
+		return errServerListenRequired
+	}
+	if lifecycle.ShutdownWithTimeout == nil {
+		return errServerShutdownRequired
+	}
+
+	normalizedAddress := strings.TrimSpace(
+		address,
+	)
+	if normalizedAddress == "" {
+		return errServerAddressRequired
+	}
+	if shutdownTimeout <= 0 {
+		return errServerShutdownTimeoutInvalid
+	}
+
+	listenErrors := make(
+		chan error,
+		1,
+	)
+	go func() {
+		listenErrors <- lifecycle.Listen(
+			normalizedAddress,
+		)
+	}()
+
+	select {
+	case listenErr := <-listenErrors:
+		if listenErr == nil {
+			return errServerStoppedUnexpectedly
+		}
+		return fmt.Errorf(
+			"%w: %w",
+			errServerListen,
+			listenErr,
+		)
+
+	case <-ctx.Done():
+	}
+
+	if err := lifecycle.ShutdownWithTimeout(
+		shutdownTimeout,
+	); err != nil {
+		return fmt.Errorf(
+			"%w: %w",
+			errServerShutdown,
+			err,
+		)
+	}
+
+	stopTimer := time.NewTimer(
+		shutdownTimeout,
+	)
+	defer stopTimer.Stop()
+
+	select {
+	case <-listenErrors:
+		return nil
+
+	case <-stopTimer.C:
+		return errServerListenerStopTimeout
+	}
+}
+
+func serverFailureCode(
+	err error,
+) string {
+	switch {
+	case errors.Is(
+		err,
+		errServerConfigurationLoad,
+	):
+		return "SERVER_CONFIGURATION_LOAD_FAILED"
+
+	case errors.Is(
+		err,
+		errServerDatabaseConnection,
+	):
+		return "SERVER_DATABASE_CONNECTION_FAILED"
+
+	case errors.Is(
+		err,
+		errServerInitialization,
+	):
+		return "SERVER_INITIALIZATION_FAILED"
+
+	case errors.Is(
+		err,
+		errServerListen,
+	):
+		return "SERVER_LISTEN_FAILED"
+
+	case errors.Is(
+		err,
+		errServerShutdown,
+	):
+		return "SERVER_SHUTDOWN_FAILED"
+
+	case errors.Is(
+		err,
+		errServerListenerStopTimeout,
+	):
+		return "SERVER_LISTENER_STOP_TIMEOUT"
+
+	default:
+		return "SERVER_LIFECYCLE_FAILED"
+	}
+}

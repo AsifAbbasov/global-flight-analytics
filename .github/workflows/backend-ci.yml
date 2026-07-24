@@ -290,6 +290,7 @@ jobs:
       - name: Run critical package race tests
         run: |
           go test -count=1 -race \
+            ./cmd/server \
             ./internal/config \
             ./internal/database \
             ./internal/integrations/common \

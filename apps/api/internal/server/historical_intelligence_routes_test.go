@@ -2,39 +2,25 @@ package server
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type historicalRouteStoreStub struct{}
+type historicalRouteReaderStub struct{}
 
-func (historicalRouteStoreStub) Put(
-	context.Context,
-	historicalcontract.Result,
-) (historicalaggregate.Record, error) {
-	return historicalaggregate.Record{}, nil
-}
-
-func (historicalRouteStoreStub) Get(
-	context.Context,
-	historicalaggregate.ResultKey,
-) (historicalaggregate.Record, error) {
-	return historicalaggregate.Record{}, nil
-}
-
-func (historicalRouteStoreStub) GetLatest(
+func (historicalRouteReaderStub) GetLatest(
 	context.Context,
 	historicalaggregate.ListQuery,
 ) (historicalaggregate.Record, error) {
 	return historicalaggregate.Record{}, nil
 }
 
-func (historicalRouteStoreStub) List(
+func (historicalRouteReaderStub) List(
 	context.Context,
 	historicalaggregate.ListQuery,
 ) (historicalaggregate.Page, error) {
@@ -72,11 +58,11 @@ func TestRegisterHistoricalIntelligenceReadRoutes(
 
 	err := RegisterHistoricalIntelligenceReadRoutes(
 		v1,
-		historicalRouteStoreStub{},
+		historicalRouteReaderStub{},
 	)
 	if err != nil {
 		t.Fatalf(
-			"register store-backed Historical Intelligence routes: %v",
+			"register reader-backed Historical Intelligence routes: %v",
 			err,
 		)
 	}
@@ -116,17 +102,12 @@ func TestRegisterHistoricalIntelligenceRoutesRejectsNilDependencies(
 		v1,
 		nil,
 	)
-	if err == nil {
-		t.Fatal(
-			"expected nil aggregate store to be rejected",
-		)
-	}
-	if !strings.Contains(
-		err.Error(),
-		"aggregate store is required",
+	if !errors.Is(
+		err,
+		ErrHistoricalIntelligenceReaderRequired,
 	) {
 		t.Fatalf(
-			"unexpected store registration error: %v",
+			"expected reader dependency error, got %v",
 			err,
 		)
 	}

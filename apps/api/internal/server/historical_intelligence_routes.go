@@ -1,9 +1,11 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalaggregatecontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,6 +14,10 @@ import (
 const (
 	HistoricalIntelligenceLatestPath  = "/historical-intelligence/aggregates/latest"
 	HistoricalIntelligenceHistoryPath = "/historical-intelligence/aggregates/history"
+)
+
+var ErrHistoricalIntelligenceReaderRequired = errors.New(
+	"historical intelligence aggregate reader is required",
 )
 
 func registerHistoricalIntelligenceRoutes(
@@ -37,22 +43,20 @@ func registerHistoricalIntelligenceRoutes(
 }
 
 // RegisterHistoricalIntelligenceReadRoutes composes the read-only Historical
-// Intelligence endpoints with an already constructed aggregate store. The
-// production server supplies a PostgreSQL pool-backed store, while runtime
-// verification may safely supply a rollback-only transaction-backed store.
+// Intelligence endpoints with an already constructed reader. The production
+// server supplies a PostgreSQL-backed implementation, while runtime
+// verification may safely supply a rollback-only transaction-backed reader.
 func RegisterHistoricalIntelligenceReadRoutes(
 	v1 fiber.Router,
-	store historicalaggregate.Store,
+	reader historicalaggregatecontract.Reader,
 ) error {
-	if store == nil {
-		return fmt.Errorf(
-			"Historical Intelligence aggregate store is required",
-		)
+	if reader == nil {
+		return ErrHistoricalIntelligenceReaderRequired
 	}
 
 	handler :=
 		handlers.NewHistoricalIntelligenceHandler(
-			store,
+			reader,
 		)
 
 	v1.Get(

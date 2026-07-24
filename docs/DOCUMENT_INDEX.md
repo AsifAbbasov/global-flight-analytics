@@ -818,5 +818,15 @@ and the exact Continuous Integration gates required for formal review closure.
 `93_SERVER_AND_HTTP_PROTECTION_REVIEW_CLOSURE.md`
 
 Records the authenticated mutation boundary, explicit liveness and PostgreSQL
-readiness contracts, migration-backed container health verification, and final
-closure gates for the Server and HTTP Protection review.
+readiness contracts, migration-backed container health verification, and
+release-blocker closure for the Server and HTTP Protection review.
+
+<!-- SERVER-REVIEW-FULL-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 94
+
+`94_SERVER_REVIEW_FULL_CLOSURE.md`
+
+Records lifecycle correction, final-status request logging, sensitive-error log
+protection, read-interface narrowing, rate-limit classification, deferred
+deployment risks, and formal full closure of the original Server review.

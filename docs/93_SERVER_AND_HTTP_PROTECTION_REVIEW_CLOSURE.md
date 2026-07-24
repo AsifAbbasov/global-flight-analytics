@@ -1,19 +1,23 @@
-# Document 93 — Server and HTTP Protection Review Closure
+# Document 93 — Server and HTTP Protection Blocker Closure
 
-Status: Implemented Engineering Contract v1.0
+Status: Implemented Engineering Contract v1.1
 Project: Global Flight Analytics
 Baseline: `6b922cbd9df1bff3f880ad120dd883b37f658e53`
 
 ## 1. Scope
 
-This increment closes the two accepted blockers from the Server and HTTP
-Protection review:
+This increment closes the two accepted release blockers from the Server and
+HTTP Protection review:
 
 ```text
 1. state-changing Route Intelligence POST route required authentication;
 2. process liveness was incorrectly used as production readiness while
    PostgreSQL and database-backed routes could be unavailable.
 ```
+
+This document does not claim that every non-blocking observation from the
+original Server review was closed by the same increment. Complete classification
+and closure are recorded by Document 94.
 
 ## 2. Mutation endpoint protection
 
@@ -36,7 +40,7 @@ middleware.
 
 ## 3. Liveness and readiness separation
 
-The service now exposes separate contracts:
+The service exposes separate contracts:
 
 ```text
 GET /api/v1/health
@@ -67,7 +71,7 @@ connection strings, or credentials.
 
 ## 4. Container contract
 
-The compiled container healthcheck now targets `/api/v1/ready`.
+The compiled container healthcheck targets `/api/v1/ready`.
 
 The Backend Container Continuous Integration job:
 
@@ -83,33 +87,14 @@ verifies /ready;
 verifies that the mutation POST route rejects a missing key with HTTP 401.
 ```
 
-The migration step prevents a connected but empty PostgreSQL database from being
-mistaken for a production-ready database during container verification.
+## 5. Blocker closure statement
 
-## 5. Closure gates
-
-Formal closure requires one commit to pass:
+The commit containing this increment passed complete Backend Continuous
+Integration.
 
 ```text
-Go formatting
-targeted readiness tests
-targeted race tests
-complete backend tests
-Go vet
-project architecture and contract audit
-code review policy audit
-Stage 14 final audit
-Backend Container verification with PostgreSQL and migrations
-PostgreSQL 16 Integration
-```
-
-## 6. Closure statement
-
-When the new commit passes complete Backend Continuous Integration:
-
-```text
-Server and HTTP Protection review: CLOSED
-Open blockers: 0
-Unclassified findings: 0
+Server review release blockers: CLOSED
+Open release blockers: 0
+Server review full closure: tracked by Document 94
 Release decision: ACCEPTABLE
 ```
