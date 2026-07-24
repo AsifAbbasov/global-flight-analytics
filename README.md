@@ -348,3 +348,22 @@ Container builds accept `APP_VERSION`, `VCS_REF`, and `BUILD_DATE`. The values
 are embedded into the server binary, exposed by `/api/v1/version`, and mirrored
 in Open Container Initiative image labels. See
 `docs/95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md`.
+<!-- ANALYTICAL-CORE-REVIEW-CLOSURE:README -->
+
+## Analytical Core Review Closure
+
+The original Analytical Core Foundation review is closed. Documents 97 through
+102 form the evidence register. Production metrics use eligible contributors,
+server-owned geographic and quality evidence, strict provenance, canonical
+identifiers, safe failures and one canonical Metric ID namespace.
+
+```text
+ANALYTICAL_CORE_REVIEW_STATUS=CLOSED
+Original findings: 19
+Open required changes: 0
+Deferred findings: 0
+Unclassified findings: 0
+```
+
+`go run ./apps/api/tools/analyticalcorefinalaudit -strict` is the permanent
+source-level closure gate.

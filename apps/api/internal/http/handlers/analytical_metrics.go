@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -616,7 +617,7 @@ func analyticalSourcesFromTrajectories(
 	for name := range windows {
 		names = append(names, name)
 	}
-	sortStrings(names)
+	sort.Strings(names)
 
 	sources := make([]analyticalresult.Source, 0, len(names))
 	for _, name := range names {
@@ -634,16 +635,6 @@ func analyticalSourcesFromTrajectories(
 	}
 
 	return sources, unattributedCount
-}
-
-func sortStrings(values []string) {
-	for left := 0; left < len(values); left++ {
-		for right := left + 1; right < len(values); right++ {
-			if values[right] < values[left] {
-				values[left], values[right] = values[right], values[left]
-			}
-		}
-	}
 }
 
 func analyticalBadRequest(

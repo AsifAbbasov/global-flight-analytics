@@ -5,6 +5,9 @@ on:
     paths:
       - 'apps/api/**'
       - 'apps/web/types/**'
+      - 'apps/web/components/analytics/**'
+      - 'apps/web/lib/api/analytics.ts'
+      - 'apps/web/lib/queries/analytics.ts'
       - 'database/**'
       - '.dockerignore'
       - 'compose.yaml'
@@ -21,6 +24,9 @@ on:
     paths:
       - 'apps/api/**'
       - 'apps/web/types/**'
+      - 'apps/web/components/analytics/**'
+      - 'apps/web/lib/api/analytics.ts'
+      - 'apps/web/lib/queries/analytics.ts'
       - 'database/**'
       - '.dockerignore'
       - 'compose.yaml'
@@ -87,6 +93,9 @@ jobs:
 
       - name: Run Stage 14 completion source audit
         run: go run ./tools/stage14finalaudit -strict
+
+      - name: Run Analytical Core closure audit
+        run: go run ./tools/analyticalcorefinalaudit -strict
 
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
