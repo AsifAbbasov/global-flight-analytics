@@ -123,13 +123,31 @@ linker injection test;
 version endpoint test;
 Docker image label checks;
 container endpoint metadata checks;
+final PostgreSQL container process and target-database readiness verification;
 full backend tests;
 race detection;
 static analysis;
 architecture and code-review audits.
 ```
 
-## 5. Closure statement
+## 5. Container Continuous Integration database readiness
+
+The container smoke test does not use `pg_isready` as sufficient evidence during
+first-time PostgreSQL initialization. The official image temporarily starts a
+bootstrap server, creates the requested database, stops that server, and then
+executes the final PostgreSQL process.
+
+The permanent readiness contract therefore requires both:
+
+```text
+/proc/1/comm == postgres
+SELECT 1 succeeds in the requested database
+```
+
+This prevents migrations from starting in the handoff window between the
+temporary bootstrap server and the final PostgreSQL process.
+
+## 6. Closure statement
 
 After all local gates and the four Backend Continuous Integration jobs pass on
 the same commit:

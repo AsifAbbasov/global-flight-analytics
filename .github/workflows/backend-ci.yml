@@ -201,22 +201,17 @@ jobs:
               postgres:16.14-alpine3.24
           )"
 
-          for attempt in $(seq 1 30); do
-            if docker exec "$database_id" \
-              pg_isready \
-              --username postgres \
-              --dbname global_flight_analytics_container \
-              > /dev/null 2>&1; then
-              break
-            fi
-            sleep 1
-          done
-
-          docker exec "$database_id" \
-            pg_isready \
-            --username postgres \
-            --dbname global_flight_analytics_container \
-            > /dev/null
+          # The official PostgreSQL image starts a temporary bootstrap server
+          # before it creates the requested database and execs the final PID 1
+          # postgres process. pg_isready can succeed against that temporary
+          # server, so require both the final PID 1 process and SELECT 1 in the
+          # requested database before starting migrations.
+          bash scripts/wait-for-postgres-container.sh \
+            "$database_id" \
+            postgres \
+            global_flight_analytics_container \
+            60 \
+            1
 
           docker run \
             --rm \
