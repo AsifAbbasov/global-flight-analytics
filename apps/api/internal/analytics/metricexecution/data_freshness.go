@@ -17,7 +17,7 @@ func (
 	return executeSnapshotMetric(
 		ctx,
 		service,
-		metrics.DataFreshnessMetricID,
+		MetricIDDataFreshness,
 		trajectoryeligibility.
 			CapabilityTrafficMetrics,
 		request.PublicationMetadata,

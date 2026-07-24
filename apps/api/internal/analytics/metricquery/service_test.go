@@ -93,3 +93,44 @@ func TestByIDsNormalizesAndDeduplicates(t *testing.T) {
 		t.Fatalf("expected %#v, got %#v", expected, stub.ids)
 	}
 }
+
+func TestRecentRejectsZeroServiceClockBeforeRepositoryCall(
+	t *testing.T,
+) {
+	stub := &repositoryStub{}
+	service, err := NewWithClock(
+		stub,
+		func() time.Time {
+			return time.Time{}
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected service, got %v",
+			err,
+		)
+	}
+
+	_, err = service.Recent(
+		context.Background(),
+		RecentRequest{},
+	)
+	if !errors.Is(
+		err,
+		ErrReferenceTimeRequired,
+	) {
+		t.Fatalf(
+			"expected reference time requirement, got %v",
+			err,
+		)
+	}
+
+	if !stub.from.IsZero() ||
+		!stub.to.IsZero() ||
+		stub.limit != 0 {
+		t.Fatalf(
+			"repository must not be called for zero clock: %#v",
+			stub,
+		)
+	}
+}

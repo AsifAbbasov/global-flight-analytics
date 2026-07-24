@@ -17,7 +17,7 @@ func (service *Service) TrafficDensity(
 	return executeTrajectoryMetric(
 		ctx,
 		service,
-		metrics.TrafficDensityMetricID,
+		MetricIDTrafficDensity,
 		trajectoryeligibility.CapabilityTrafficMetrics,
 		request.Trajectories,
 		request.PublicationMetadata,

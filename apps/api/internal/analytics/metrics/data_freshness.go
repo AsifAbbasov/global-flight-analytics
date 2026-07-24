@@ -7,7 +7,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
 )
 
-const DataFreshnessMetricID = "data_freshness"
+const DataFreshnessMetricID = "traffic.data_freshness"
 
 type DataFreshnessMetric struct {
 	MaxAge time.Duration

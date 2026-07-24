@@ -57,3 +57,53 @@ func TestNormalizeTrajectoryIDsRejectsMissingAndBlankValues(t *testing.T) {
 		t.Fatalf("expected invalid id error, got %v", err)
 	}
 }
+
+func TestRecentRequestNormalizeRejectsZeroReferenceTime(
+	t *testing.T,
+) {
+	_, err := (RecentRequest{}).Normalize(
+		time.Time{},
+	)
+	if !errors.Is(
+		err,
+		ErrReferenceTimeRequired,
+	) {
+		t.Fatalf(
+			"expected reference time requirement, got %v",
+			err,
+		)
+	}
+}
+
+func TestNormalizeTrajectoryIDsCanonicalizesBeforeDeduplication(
+	t *testing.T,
+) {
+	ids, err := NormalizeTrajectoryIDs(
+		[]string{
+			"AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+			"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+			"BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB",
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected canonical identifiers, got %v",
+			err,
+		)
+	}
+
+	expected := []string{
+		"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+		"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+	}
+	if !reflect.DeepEqual(
+		ids,
+		expected,
+	) {
+		t.Fatalf(
+			"expected %#v, got %#v",
+			expected,
+			ids,
+		)
+	}
+}

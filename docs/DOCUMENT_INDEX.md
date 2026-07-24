@@ -881,3 +881,14 @@ Records strict source retrieval timestamps, placeholder-source rejection,
 unattributed-source disclosure, default failure sanitization, honest confidence
 for request-parameter snapshots, regression evidence and remaining Analytical
 Core review scope.
+
+<!-- QUERY-ARCHITECTURE-CONSOLIDATION:DOCUMENT-INDEX -->
+
+## Document 100
+
+`100_QUERY_AND_ARCHITECTURE_CONSOLIDATION.md`
+
+Records zero reference-time rejection, canonical UUID identifiers, canonical
+Metric IDs, removal of stored legacy calculator state, hidden executor
+dependencies, narrow metric-service behavior, compatibility classification,
+regression evidence and remaining Analytical Core closure scope.

@@ -1,6 +1,12 @@
 package metrics
 
+const AirportActivityMetricID = "traffic.airport_activity"
+
 type AirportActivity struct{}
+
+func (AirportActivity) ID() string {
+	return AirportActivityMetricID
+}
 
 func (AirportActivity) Name() string {
 	return "traffic.airport_activity"

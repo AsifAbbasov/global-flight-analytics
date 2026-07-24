@@ -11,8 +11,10 @@ func TestNewStoresDefaultConfidenceEvaluator(
 ) {
 	executor := New(nil)
 
-	if executor.ConfidenceEvaluator() == nil {
-		t.Fatal("expected default confidence evaluator")
+	if executor.confidenceEvaluator == nil {
+		t.Fatal(
+			"expected default confidence evaluator",
+		)
 	}
 }
 
@@ -24,8 +26,10 @@ func TestNewWithScopeGuardStoresDefaultConfidenceEvaluator(
 		nil,
 	)
 
-	if executor.ConfidenceEvaluator() == nil {
-		t.Fatal("expected default confidence evaluator")
+	if executor.confidenceEvaluator == nil {
+		t.Fatal(
+			"expected default confidence evaluator",
+		)
 	}
 }
 
@@ -53,8 +57,10 @@ func TestNewWithDependenciesStoresProvidedConfidenceEvaluator(
 		evaluator,
 	)
 
-	if executor.ConfidenceEvaluator() != evaluator {
-		t.Fatal("expected provided confidence evaluator")
+	if executor.confidenceEvaluator != evaluator {
+		t.Fatal(
+			"expected provided confidence evaluator",
+		)
 	}
 }
 
@@ -67,7 +73,9 @@ func TestNewWithDependenciesReplacesNilConfidenceEvaluator(
 		nil,
 	)
 
-	if executor.ConfidenceEvaluator() == nil {
-		t.Fatal("expected nil confidence evaluator replacement")
+	if executor.confidenceEvaluator == nil {
+		t.Fatal(
+			"expected nil confidence evaluator replacement",
+		)
 	}
 }

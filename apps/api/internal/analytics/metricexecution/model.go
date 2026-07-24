@@ -7,6 +7,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/confidencereport"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/dataqualitycontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/executor"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/metrics"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/airport"
@@ -14,8 +15,11 @@ import (
 )
 
 const (
-	MetricIDActiveAircraft  = "traffic.active_aircraft"
-	MetricIDAirportActivity = "traffic.airport_activity"
+	MetricIDActiveAircraft  = metrics.ActiveAircraftMetricID
+	MetricIDTrafficDensity  = metrics.TrafficDensityMetricID
+	MetricIDAirportActivity = metrics.AirportActivityMetricID
+	MetricIDCoverageScore   = metrics.CoverageScoreMetricID
+	MetricIDDataFreshness   = metrics.DataFreshnessMetricID
 )
 
 const (

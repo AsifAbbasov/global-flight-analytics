@@ -1,6 +1,12 @@
 package metrics
 
+const ActiveAircraftMetricID = "traffic.active_aircraft"
+
 type ActiveAircraft struct{}
+
+func (ActiveAircraft) ID() string {
+	return ActiveAircraftMetricID
+}
 
 func (ActiveAircraft) Name() string {
 	return "traffic.active_aircraft"

@@ -3,7 +3,10 @@ package metricexecution
 import (
 	"errors"
 
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/executor"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/confidencereport"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/scopeguard"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
 var (
@@ -24,12 +27,23 @@ var (
 	)
 )
 
+type analyticalExecutor interface {
+	FilterTrajectories(
+		items []trajectory.FlightTrajectory,
+		capability trajectoryeligibility.Capability,
+	) (scopeguard.FilterResult, error)
+
+	EvaluateConfidence(
+		request confidencereport.Request,
+	) (confidencereport.Report, error)
+}
+
 type Service struct {
-	executor *executor.Executor
+	executor analyticalExecutor
 }
 
 func New(
-	analyticsExecutor *executor.Executor,
+	analyticsExecutor analyticalExecutor,
 ) (*Service, error) {
 	if analyticsExecutor == nil {
 		return nil, ErrExecutorRequired
@@ -38,14 +52,4 @@ func New(
 	return &Service{
 		executor: analyticsExecutor,
 	}, nil
-}
-
-func (
-	service *Service,
-) Executor() *executor.Executor {
-	if service == nil {
-		return nil
-	}
-
-	return service.executor
 }

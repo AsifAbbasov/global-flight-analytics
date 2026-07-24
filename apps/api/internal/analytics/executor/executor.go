@@ -11,34 +11,33 @@ import (
 )
 
 type Executor struct {
-	calculator          *calculator.Calculator
 	scopeGuard          *scopeguard.Guard
 	confidenceEvaluator *confidencereport.Evaluator
 }
 
 func New(
-	calculator *calculator.Calculator,
+	_ *calculator.Calculator,
 ) *Executor {
 	return NewWithDependencies(
-		calculator,
+		nil,
 		scopeguard.NewDefault(),
 		confidencereport.NewDefault(),
 	)
 }
 
 func NewWithScopeGuard(
-	calculator *calculator.Calculator,
+	_ *calculator.Calculator,
 	guard *scopeguard.Guard,
 ) *Executor {
 	return NewWithDependencies(
-		calculator,
+		nil,
 		guard,
 		confidencereport.NewDefault(),
 	)
 }
 
 func NewWithDependencies(
-	calculator *calculator.Calculator,
+	_ *calculator.Calculator,
 	guard *scopeguard.Guard,
 	confidenceEvaluator *confidencereport.Evaluator,
 ) *Executor {
@@ -52,7 +51,6 @@ func NewWithDependencies(
 	}
 
 	return &Executor{
-		calculator:          calculator,
 		scopeGuard:          guard,
 		confidenceEvaluator: confidenceEvaluator,
 	}
@@ -60,20 +58,12 @@ func NewWithDependencies(
 
 func (
 	executor *Executor,
-) Calculator() *calculator.Calculator {
-	return executor.calculator
-}
-
-func (
-	executor *Executor,
-) ScopeGuard() *scopeguard.Guard {
-	return executor.scopeGuard
-}
-
-func (
-	executor *Executor,
-) ConfidenceEvaluator() *confidencereport.Evaluator {
-	return executor.confidenceEvaluator
+) EvaluateConfidence(
+	request confidencereport.Request,
+) (confidencereport.Report, error) {
+	return executor.confidenceEvaluator.Evaluate(
+		request,
+	)
 }
 
 func (

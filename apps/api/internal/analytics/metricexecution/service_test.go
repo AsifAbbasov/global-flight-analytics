@@ -25,7 +25,7 @@ func TestNewRequiresExecutor(
 	}
 }
 
-func TestServiceExposesExecutor(
+func TestServiceStoresNarrowExecutorDependency(
 	t *testing.T,
 ) {
 	service := metricTestService(
@@ -33,12 +33,9 @@ func TestServiceExposesExecutor(
 		allowUnlessDeniedICAO,
 	)
 
-	if service.Executor() == nil {
-		t.Fatal("expected analytics executor")
-	}
-
-	var nilService *Service
-	if nilService.Executor() != nil {
-		t.Fatal("expected nil executor from nil service")
+	if service.executor == nil {
+		t.Fatal(
+			"expected internal analytics executor behavior",
+		)
 	}
 }

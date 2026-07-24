@@ -7,7 +7,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
 )
 
-const TrafficDensityMetricID = "traffic_density"
+const TrafficDensityMetricID = "traffic.traffic_density"
 
 type TrafficDensityMetric struct{}
 

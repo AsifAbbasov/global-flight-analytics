@@ -312,8 +312,7 @@ func publishExecution[T any](
 ) (Execution[T], error) {
 	report, err :=
 		service.executor.
-			ConfidenceEvaluator().
-			Evaluate(
+			EvaluateConfidence(
 				confidencereport.Request{
 					Factors:  calculation.Factors,
 					Warnings: calculation.Warnings,

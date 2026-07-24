@@ -25,38 +25,68 @@ func (function executorEvaluatorFunction) Evaluate(
 	return function(item, now)
 }
 
-func TestNewStoresDefaultScopeGuard(t *testing.T) {
-	calc := calculator.New(registry.New())
-	executor := New(calc)
+func TestNewInitializesRuntimeDependenciesWithoutRetainingCalculator(
+	t *testing.T,
+) {
+	calc := calculator.New(
+		registry.New(),
+	)
+	executor := New(
+		calc,
+	)
 
-	if executor.ScopeGuard() == nil {
-		t.Fatal("expected default analytical scope guard")
-	}
-	if executor.Calculator() != calc {
-		t.Fatal("expected calculator to remain stored")
-	}
-}
-
-func TestNewWithScopeGuardStoresProvidedGuard(t *testing.T) {
-	guard := mustExecutorScopeGuard(t, executorEvaluatorFunction(func(
-		item trajectory.FlightTrajectory,
-		now time.Time,
-	) trajectoryeligibility.Evaluation {
-		return executorAllowedEvaluation(
-			trajectoryeligibility.CapabilityTrafficMetrics,
+	if executor.scopeGuard == nil {
+		t.Fatal(
+			"expected default analytical scope guard",
 		)
-	}))
-
-	executor := NewWithScopeGuard(nil, guard)
-	if executor.ScopeGuard() != guard {
-		t.Fatal("expected provided analytical scope guard")
+	}
+	if executor.confidenceEvaluator == nil {
+		t.Fatal(
+			"expected default confidence evaluator",
+		)
 	}
 }
 
-func TestNewWithScopeGuardReplacesNilGuardWithDefault(t *testing.T) {
-	executor := NewWithScopeGuard(nil, nil)
-	if executor.ScopeGuard() == nil {
-		t.Fatal("expected nil guard to be replaced with default guard")
+func TestNewWithScopeGuardUsesProvidedGuard(
+	t *testing.T,
+) {
+	guard := mustExecutorScopeGuard(
+		t,
+		executorEvaluatorFunction(
+			func(
+				item trajectory.FlightTrajectory,
+				now time.Time,
+			) trajectoryeligibility.Evaluation {
+				return executorAllowedEvaluation(
+					trajectoryeligibility.
+						CapabilityTrafficMetrics,
+				)
+			},
+		),
+	)
+
+	executor := NewWithScopeGuard(
+		nil,
+		guard,
+	)
+	if executor.scopeGuard != guard {
+		t.Fatal(
+			"expected provided analytical scope guard",
+		)
+	}
+}
+
+func TestNewWithScopeGuardReplacesNilGuardWithDefault(
+	t *testing.T,
+) {
+	executor := NewWithScopeGuard(
+		nil,
+		nil,
+	)
+	if executor.scopeGuard == nil {
+		t.Fatal(
+			"expected nil guard to be replaced with default guard",
+		)
 	}
 }
 

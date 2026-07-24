@@ -31,6 +31,9 @@ var (
 	ErrResultLimitInvalid = errors.New(
 		"analytical trajectory result limit must be between one and five thousand",
 	)
+	ErrReferenceTimeRequired = errors.New(
+		"analytical trajectory reference time is required",
+	)
 	ErrTrajectoryIDsMissing = errors.New(
 		"at least one trajectory id is required",
 	)
@@ -58,6 +61,10 @@ func (
 ) Normalize(
 	now time.Time,
 ) (Window, error) {
+	if now.IsZero() {
+		return Window{}, ErrReferenceTimeRequired
+	}
+
 	windowMinutes := request.WindowMinutes
 	if windowMinutes == 0 {
 		windowMinutes = DefaultWindowMinutes
@@ -118,7 +125,8 @@ func NormalizeTrajectoryIDs(
 			)
 		}
 
-		if _, err := uuid.Parse(trimmed); err != nil {
+		parsed, err := uuid.Parse(trimmed)
+		if err != nil {
 			return nil, fmt.Errorf(
 				"%w: index=%d",
 				ErrTrajectoryIDInvalid,
@@ -126,14 +134,15 @@ func NormalizeTrajectoryIDs(
 			)
 		}
 
-		if _, exists := seen[trimmed]; exists {
+		canonical := parsed.String()
+		if _, exists := seen[canonical]; exists {
 			continue
 		}
 
-		seen[trimmed] = struct{}{}
+		seen[canonical] = struct{}{}
 		result = append(
 			result,
-			trimmed,
+			canonical,
 		)
 	}
 

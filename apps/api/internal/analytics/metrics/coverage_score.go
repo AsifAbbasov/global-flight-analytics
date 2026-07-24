@@ -6,7 +6,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/snapshot"
 )
 
-const CoverageScoreMetricID = "coverage_score"
+const CoverageScoreMetricID = "traffic.coverage_score"
 
 type CoverageScoreMetric struct{}
 
