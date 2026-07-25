@@ -779,7 +779,7 @@ func TestProviderPreservesAlreadyCanceledContext(
 }
 
 func TestProviderContractConstantsRemainStable(t *testing.T) {
-	if Version != "aircraft-feature-provider-v1" {
+	if Version != "aircraft-feature-provider-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if AircraftFeatureFieldCount != 6 {
@@ -894,4 +894,71 @@ func hasLimitation(
 	}
 
 	return false
+}
+
+func TestProviderAppliesTemporalPolicyAfterCacheLookup(
+	t *testing.T,
+) {
+	metadataUpdatedAt := time.Date(
+		2026,
+		time.July,
+		20,
+		12,
+		0,
+		0,
+		0,
+		time.UTC,
+	)
+	lookup := &lookupStub{
+		item: aircraft.Aircraft{
+			ICAO24:            "ABC123",
+			Registration:      "4K-AZ01",
+			MetadataUpdatedAt: metadataUpdatedAt,
+		},
+	}
+	provider := newTestProvider(t, Config{
+		Lookup: lookup,
+	})
+
+	available, err := provider.Provide(
+		context.Background(),
+		extractor.AircraftReference{
+			ICAO24:   "ABC123",
+			AsOfTime: metadataUpdatedAt.Add(time.Hour),
+		},
+	)
+	if err != nil {
+		t.Fatalf("available Provide() error = %v", err)
+	}
+	if available.Evidence.Status !=
+		flightfeatures.AvailabilityStatusPartial ||
+		!available.MetadataUpdatedAt.Equal(metadataUpdatedAt) {
+		t.Fatalf("unexpected available features: %#v", available)
+	}
+
+	blocked, err := provider.Provide(
+		context.Background(),
+		extractor.AircraftReference{
+			ICAO24:   "ABC123",
+			AsOfTime: metadataUpdatedAt.Add(-time.Hour),
+		},
+	)
+	if err != nil {
+		t.Fatalf("historical Provide() error = %v", err)
+	}
+	if blocked.Evidence.Status !=
+		flightfeatures.AvailabilityStatusUnavailable ||
+		!hasLimitation(
+			blocked.Evidence.Limitations,
+			"aircraft_metadata_newer_than_feature_as_of",
+		) ||
+		!blocked.MetadataUpdatedAt.Equal(metadataUpdatedAt) {
+		t.Fatalf("unexpected temporally blocked features: %#v", blocked)
+	}
+	if lookup.callCount() != 1 {
+		t.Fatalf(
+			"lookup calls = %d, want 1 because temporal policy follows cache lookup",
+			lookup.callCount(),
+		)
+	}
 }

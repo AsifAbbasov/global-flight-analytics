@@ -7,7 +7,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractor"
 )
 
-const Version = "flight-feature-extractor-composition-v2"
+const Version = "flight-feature-extractor-composition-v3"
 
 type Component string
 

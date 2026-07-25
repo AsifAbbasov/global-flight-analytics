@@ -63,6 +63,26 @@ func main() {
 	require(
 		"apps/api/internal/features/extractor/contracts.go",
 		"FingerprintIdentity     string",
+		"AsOfTime   time.Time",
+	)
+	require(
+		"apps/api/internal/domain/aircraft/model.go",
+		"MetadataUpdatedAt time.Time",
+	)
+	require(
+		"apps/api/internal/repository/postgres/aircraft_repository.go",
+		"GREATEST(",
+		"&item.MetadataUpdatedAt",
+	)
+	require(
+		"apps/api/internal/features/aircraftprovider/provider.go",
+		"applyTemporalPolicy",
+		"aircraft_metadata_newer_than_feature_as_of",
+		"normalized.MetadataUpdatedAt.After(asOfTime.UTC())",
+	)
+	require(
+		"apps/api/internal/features/aircraftprovider/provider_test.go",
+		"TestProviderAppliesTemporalPolicyAfterCacheLookup",
 	)
 	require(
 		"apps/api/internal/features/extractor/fingerprint.go",
@@ -135,6 +155,12 @@ func main() {
 		"EXTRACTOR_COMPOSITION_PROCESSING_IDENTITY=ENFORCED",
 		"GEOGRAPHIC_PRECISION_FINGERPRINT_COLLISION=CLOSED",
 		"AIRCRAFT_METADATA_FINGERPRINT_INPUT=ENFORCED",
+	)
+	require(
+		"docs/110_AIRCRAFT_METADATA_TEMPORAL_SAFETY.md",
+		"AIRCRAFT_METADATA_TEMPORAL_GATE=ENFORCED",
+		"AIRCRAFT_CACHE_AS_OF_ISOLATION=ENFORCED",
+		"FUTURE_AIRCRAFT_METADATA_LEAKAGE=CLOSED",
 	)
 
 	migrations, globErr := filepath.Glob(

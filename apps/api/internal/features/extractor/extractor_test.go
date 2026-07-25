@@ -401,6 +401,7 @@ func TestExtractorUsesAircraftFeatureProvider(t *testing.T) {
 		AircraftID: "aircraft-one",
 		ICAO24:     "ABC123",
 		Callsign:   "TEST123",
+		AsOfTime:   validRequest().AsOfTime.UTC(),
 	}
 	if provider.calls != 1 ||
 		provider.reference != wantReference {

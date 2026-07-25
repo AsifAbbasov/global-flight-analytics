@@ -32,9 +32,10 @@ its identity evidence.
 
 ## 3. Generation boundary
 
-The extractor, extractor composition and processing pipeline generations advance
-to version 2. Version 1 snapshots remain readable through their explicit stored
-processing version and are not overwritten.
+The extractor, extractor composition and processing pipeline generations first
+advanced to version 2 in this increment. Later temporal-safety corrections use
+version 3. Version 1 and version 2 snapshots remain readable through their
+explicit stored processing versions and are not overwritten.
 
 ## 4. Permanent evidence
 

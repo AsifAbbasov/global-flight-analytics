@@ -580,7 +580,7 @@ func validFeatures() flightfeatures.FlightFeatures {
 			SupportingPointCount: 4,
 		},
 		Provenance: flightfeatures.FeatureProvenance{
-			ExtractorVersion:    "flight-feature-extractor-v2",
+			ExtractorVersion:    "flight-feature-extractor-v3",
 			InputFingerprint:    "sha256:" + strings.Repeat("a", 64),
 			TrajectoryUpdatedAt: end,
 			SourceNames: []string{

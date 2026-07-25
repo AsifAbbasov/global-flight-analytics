@@ -8,7 +8,7 @@ type ProcessingVersion string
 const SchemaVersionV1 SchemaVersion = "flight-features-v1"
 
 const (
-	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v2"
+	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v3"
 	LegacyProcessingVersion  ProcessingVersion = "flight-feature-processing-legacy-v1"
 )
 
@@ -153,13 +153,14 @@ type TrajectoryFeatures struct {
 }
 
 type AircraftFeatures struct {
-	Evidence     GroupEvidence
-	Registration string
-	Manufacturer string
-	Model        string
-	AircraftType string
-	Airline      string
-	Country      string
+	Evidence          GroupEvidence
+	Registration      string
+	Manufacturer      string
+	Model             string
+	AircraftType      string
+	Airline           string
+	Country           string
+	MetadataUpdatedAt time.Time
 }
 
 type FeatureLimitation struct {

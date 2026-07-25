@@ -428,3 +428,11 @@ Flight feature fingerprints now bind the effective extractor composition,
 geographic precision, aircraft cache and not-found policies, and resolved
 aircraft metadata. Processing generation version 2 prevents silent reuse of
 version 1 snapshots.
+
+<!-- AIRCRAFT-METADATA-TEMPORAL-SAFETY:README -->
+
+## Aircraft Metadata Temporal Safety
+
+Historical feature materialization now rejects aircraft metadata updated after
+the requested as-of time. Cache reuse remains ICAO24-based, while temporal
+acceptance is evaluated independently for every request.

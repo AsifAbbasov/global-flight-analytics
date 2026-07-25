@@ -28,7 +28,13 @@ func (r *AircraftRepository) List(ctx context.Context) ([]aircraft.Aircraft, err
 			COALESCE(am.manufacturer, ''),
 			COALESCE(am.aircraft_type, ''),
 			COALESCE(al.name, ''),
-			COALESCE(c.name, '')
+			COALESCE(c.name, ''),
+			GREATEST(
+				a.updated_at,
+				COALESCE(am.updated_at, a.updated_at),
+				COALESCE(al.updated_at, a.updated_at),
+				COALESCE(c.updated_at, a.updated_at)
+			)
 		FROM aircraft a
 		LEFT JOIN aircraft_models am ON am.id = a.model_id
 		LEFT JOIN airlines al ON al.id = a.airline_id
@@ -56,6 +62,7 @@ func (r *AircraftRepository) List(ctx context.Context) ([]aircraft.Aircraft, err
 			&item.AircraftType,
 			&item.Airline,
 			&item.Country,
+			&item.MetadataUpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -82,7 +89,13 @@ func (r *AircraftRepository) GetByICAO24(
 			COALESCE(am.manufacturer, ''),
 			COALESCE(am.aircraft_type, ''),
 			COALESCE(al.name, ''),
-			COALESCE(c.name, '')
+			COALESCE(c.name, ''),
+			GREATEST(
+				a.updated_at,
+				COALESCE(am.updated_at, a.updated_at),
+				COALESCE(al.updated_at, a.updated_at),
+				COALESCE(c.updated_at, a.updated_at)
+			)
 		FROM aircraft a
 		LEFT JOIN aircraft_models am ON am.id = a.model_id
 		LEFT JOIN airlines al ON al.id = a.airline_id
@@ -101,6 +114,7 @@ func (r *AircraftRepository) GetByICAO24(
 		&item.AircraftType,
 		&item.Airline,
 		&item.Country,
+		&item.MetadataUpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

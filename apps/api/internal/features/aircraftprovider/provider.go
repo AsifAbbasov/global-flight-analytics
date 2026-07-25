@@ -102,7 +102,10 @@ func (provider *Provider) Provide(
 	}
 
 	if cached, found := provider.cached(icao24); found {
-		return cloneFeatures(cached), nil
+		return applyTemporalPolicy(
+			cached,
+			reference.AsOfTime,
+		), nil
 	}
 
 	call, leader := provider.beginCall(icao24)
@@ -115,7 +118,10 @@ func (provider *Provider) Provide(
 				return flightfeatures.AircraftFeatures{}, call.err
 			}
 
-			return cloneFeatures(call.features), nil
+			return applyTemporalPolicy(
+				call.features,
+				reference.AsOfTime,
+			), nil
 		}
 	}
 
@@ -126,7 +132,10 @@ func (provider *Provider) Provide(
 		return flightfeatures.AircraftFeatures{}, lookupErr
 	}
 
-	return cloneFeatures(features), nil
+	return applyTemporalPolicy(
+		features,
+		reference.AsOfTime,
+	), nil
 }
 
 func (provider *Provider) resolve(
@@ -253,6 +262,9 @@ func mapAircraft(
 		AircraftType: strings.TrimSpace(item.AircraftType),
 		Airline:      strings.TrimSpace(item.Airline),
 		Country:      strings.TrimSpace(item.Country),
+		MetadataUpdatedAt: normalizedMetadataUpdatedAt(
+			item.MetadataUpdatedAt,
+		),
 	}
 
 	availableFieldCount := countAvailableFields(features)
@@ -288,6 +300,34 @@ func mapAircraft(
 	}
 
 	return features
+}
+
+func applyTemporalPolicy(
+	features flightfeatures.AircraftFeatures,
+	asOfTime time.Time,
+) flightfeatures.AircraftFeatures {
+	normalized := cloneFeatures(features)
+	if asOfTime.IsZero() ||
+		normalized.MetadataUpdatedAt.IsZero() ||
+		!normalized.MetadataUpdatedAt.After(asOfTime.UTC()) {
+		return normalized
+	}
+
+	blocked := unavailableFeatures(
+		"aircraft_metadata_newer_than_feature_as_of",
+		"Current aircraft metadata was updated after the feature as-of time and cannot be used as historical evidence.",
+	)
+	blocked.MetadataUpdatedAt = normalized.MetadataUpdatedAt
+
+	return blocked
+}
+
+func normalizedMetadataUpdatedAt(value time.Time) time.Time {
+	if value.IsZero() {
+		return time.Time{}
+	}
+
+	return value.UTC()
 }
 
 func unavailableFeatures(

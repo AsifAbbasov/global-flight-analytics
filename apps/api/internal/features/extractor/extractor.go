@@ -138,6 +138,7 @@ func (extractor *Extractor) Extract(
 	aircraftFeatures, err := extractor.buildAircraftFeatures(
 		ctx,
 		request.Trajectory,
+		request.AsOfTime,
 	)
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, err
@@ -200,6 +201,7 @@ func (extractor *Extractor) Extract(
 func (extractor *Extractor) buildAircraftFeatures(
 	ctx context.Context,
 	item trajectory.FlightTrajectory,
+	asOfTime time.Time,
 ) (flightfeatures.AircraftFeatures, error) {
 	if extractor.aircraftFeatureProvider == nil {
 		return flightfeatures.AircraftFeatures{
@@ -224,6 +226,7 @@ func (extractor *Extractor) buildAircraftFeatures(
 				strings.TrimSpace(item.ICAO24),
 			),
 			Callsign: strings.TrimSpace(item.Callsign),
+			AsOfTime: asOfTime.UTC(),
 		},
 	)
 	if err != nil {

@@ -182,7 +182,7 @@ func TestNewInMemoryBuildsProductionComponentsWithSharedClock(
 func TestCurrentVersionsRemainStable(t *testing.T) {
 	want := Versions{
 		Composition:         "flight-feature-in-memory-pipeline-composition-v1",
-		Pipeline:            "flight-feature-processing-pipeline-v2",
+		Pipeline:            "flight-feature-processing-pipeline-v3",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           "flight-feature-validator-v1",
 		Store:               "flight-feature-store-v1",

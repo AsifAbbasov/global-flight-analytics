@@ -8,7 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
-const Version = "flight-feature-extractor-v2"
+const Version = "flight-feature-extractor-v3"
 
 type Request struct {
 	Trajectory trajectory.FlightTrajectory
@@ -19,6 +19,7 @@ type AircraftReference struct {
 	AircraftID string
 	ICAO24     string
 	Callsign   string
+	AsOfTime   time.Time
 }
 
 type TemporalBuilder interface {

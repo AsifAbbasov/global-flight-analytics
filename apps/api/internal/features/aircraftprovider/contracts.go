@@ -7,7 +7,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 )
 
-const Version = "aircraft-feature-provider-v1"
+const Version = "aircraft-feature-provider-v2"
 
 const DefaultNotFoundPolicyVersion = "aircraft-not-found-pgx-no-rows-v1"
 
