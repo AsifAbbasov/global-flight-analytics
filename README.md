@@ -399,3 +399,9 @@ Processing identity remains a separate schema-level increment.
 
 Feature snapshots are keyed by trajectory, schema version, processing version
 and as-of time. Existing rows are backfilled as legacy processing output.
+<!-- FEATURE-PROCESSING-IDENTITY-POSTGRES-LIST-FIX:README -->
+
+## Feature Processing Identity PostgreSQL List Correction
+
+The non-cursor PostgreSQL feature-snapshot list query now filters by processing
+version and binds its sentinel limit through a separate placeholder.

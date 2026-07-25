@@ -59,6 +59,8 @@ func main() {
 		"apps/api/internal/features/featurestore/postgres.go",
 		"processing_version",
 		"string(key.ProcessingVersion)",
+		"AND processing_version = $3",
+		"LIMIT $4;",
 		`Field: "processing_version"`,
 	)
 	require(

@@ -122,10 +122,11 @@ const (
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
 		  AND schema_version = $2
+		  AND processing_version = $3
 		ORDER BY
 			as_of_time_unix_nano DESC,
 			id ASC
-		LIMIT $3;
+		LIMIT $4;
 	`
 
 	listSnapshotsBeforeSQL = `

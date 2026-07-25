@@ -875,3 +875,11 @@ Status: IMPLEMENTED.
 
 The snapshot key, record identifier, memory store, PostgreSQL store, uniqueness
 constraint and reads now include processing version.
+<!-- FEATURE-PROCESSING-IDENTITY-POSTGRES-LIST-FIX:IMPLEMENTATION -->
+
+## Feature Processing Identity PostgreSQL List Fix
+
+Status: IMPLEMENTED.
+
+The non-cursor feature-snapshot list query now binds processing version as
+parameter three and the sentinel limit as parameter four.
