@@ -405,3 +405,9 @@ and as-of time. Existing rows are backfilled as legacy processing output.
 
 The non-cursor PostgreSQL feature-snapshot list query now filters by processing
 version and binds its sentinel limit through a separate placeholder.
+<!-- FEATURE-PROCESSING-IDENTITY-TEST-FIXTURE:README -->
+
+## Feature Processing Identity Test Fixture Alignment
+
+The isolated PostgreSQL feature-store integration fixture now owns the same
+processing-version column and uniqueness identity as the production schema.

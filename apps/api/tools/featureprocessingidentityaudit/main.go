@@ -64,6 +64,12 @@ func main() {
 		`Field: "processing_version"`,
 	)
 	require(
+		"apps/api/internal/features/featurestore/timestamp_consistency_integration_test.go",
+		"featureTimestampSnapshotTableDDL",
+		"processing_version text NOT NULL",
+		"processing_version,",
+	)
+	require(
 		"apps/api/cmd/verify-postgres-feature-pipeline/main.go",
 		"Processing version isolation: PASS",
 		"alternateFeatures.Provenance.ProcessingVersion",

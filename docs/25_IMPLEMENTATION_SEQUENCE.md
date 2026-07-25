@@ -883,3 +883,11 @@ Status: IMPLEMENTED.
 
 The non-cursor feature-snapshot list query now binds processing version as
 parameter three and the sentinel limit as parameter four.
+<!-- FEATURE-PROCESSING-IDENTITY-TEST-FIXTURE:IMPLEMENTATION -->
+
+## Feature Processing Identity Test Fixture Alignment
+
+Status: IMPLEMENTED.
+
+The isolated feature-store PostgreSQL fixture now contains processing version
+and uses processing-aware snapshot uniqueness.

@@ -18,6 +18,26 @@ const featureTimestampDatabaseURLEnvironmentVariable = "TEST_DATABASE_URL"
 
 var featureTimestampSchemaCounter uint64
 
+const featureTimestampSnapshotTableDDL = `CREATE TABLE flight_feature_snapshots (
+	id text PRIMARY KEY,
+	trajectory_id uuid NOT NULL,
+	schema_version text NOT NULL,
+	processing_version text NOT NULL,
+	as_of_time timestamptz NOT NULL,
+	as_of_time_unix_nano bigint NOT NULL,
+	input_fingerprint text NOT NULL,
+	validation_status text NOT NULL,
+	features_json jsonb NOT NULL,
+	stored_at timestamptz NOT NULL,
+	stored_at_unix_nano bigint NOT NULL,
+	UNIQUE (
+		trajectory_id,
+		schema_version,
+		processing_version,
+		as_of_time_unix_nano
+	)
+)`
+
 func TestPostgresStorePreservesExactNanosecondsAndRejectsMirrorDrift(
 	t *testing.T,
 ) {
@@ -189,23 +209,7 @@ func newFeatureTimestampIntegrationPool(
 
 	if _, err := pool.Exec(
 		setupContext,
-		`CREATE TABLE flight_feature_snapshots (
-			id text PRIMARY KEY,
-			trajectory_id uuid NOT NULL,
-			schema_version text NOT NULL,
-			as_of_time timestamptz NOT NULL,
-			as_of_time_unix_nano bigint NOT NULL,
-			input_fingerprint text NOT NULL,
-			validation_status text NOT NULL,
-			features_json jsonb NOT NULL,
-			stored_at timestamptz NOT NULL,
-			stored_at_unix_nano bigint NOT NULL,
-			UNIQUE (
-				trajectory_id,
-				schema_version,
-				as_of_time_unix_nano
-			)
-		)`,
+		featureTimestampSnapshotTableDDL,
 	); err != nil {
 		pool.Close()
 		dropFeatureTimestampSchema(
