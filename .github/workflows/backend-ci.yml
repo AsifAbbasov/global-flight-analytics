@@ -100,6 +100,9 @@ jobs:
       - name: Run feature pipeline contract audit
         run: go run ./tools/featurepipelinecontractaudit -strict
 
+      - name: Run feature processing identity audit
+        run: go run ./tools/featureprocessingidentityaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

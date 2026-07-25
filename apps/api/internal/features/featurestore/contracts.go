@@ -15,9 +15,10 @@ const (
 )
 
 type SnapshotKey struct {
-	TrajectoryID  string
-	SchemaVersion flightfeatures.SchemaVersion
-	AsOfTime      time.Time
+	TrajectoryID      string
+	SchemaVersion     flightfeatures.SchemaVersion
+	ProcessingVersion flightfeatures.ProcessingVersion
+	AsOfTime          time.Time
 }
 
 type Record struct {
@@ -36,10 +37,11 @@ func (record Record) Clone() Record {
 }
 
 type ListQuery struct {
-	TrajectoryID   string
-	SchemaVersion  flightfeatures.SchemaVersion
-	BeforeAsOfTime time.Time
-	Limit          int
+	TrajectoryID      string
+	SchemaVersion     flightfeatures.SchemaVersion
+	ProcessingVersion flightfeatures.ProcessingVersion
+	BeforeAsOfTime    time.Time
+	Limit             int
 }
 
 type Page struct {
@@ -75,6 +77,7 @@ type Store interface {
 		ctx context.Context,
 		trajectoryID string,
 		schemaVersion flightfeatures.SchemaVersion,
+		processingVersions ...flightfeatures.ProcessingVersion,
 	) (Record, error)
 	List(
 		ctx context.Context,

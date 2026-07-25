@@ -59,8 +59,16 @@ func TestPostgresStorePutInsertsCanonicalSnapshot(
 			!strings.Contains(query, "ON CONFLICT") {
 			t.Fatalf("unexpected insert query:\n%s", query)
 		}
-		if len(args) != 10 {
-			t.Fatalf("insert args = %d, want 10", len(args))
+		if len(args) != 11 {
+			t.Fatalf("insert args = %d, want 11", len(args))
+		}
+		if args[3] != string(
+			flightfeatures.CurrentProcessingVersion,
+		) {
+			t.Fatalf(
+				"processing version argument = %#v",
+				args[3],
+			)
 		}
 
 		return rowFromInsertArguments(t, args)
@@ -377,16 +385,19 @@ func TestPostgresStoreListUsesSentinelAndCursor(
 		) (rowIterator, error) {
 			if !strings.Contains(
 				query,
-				"as_of_time_unix_nano < $3",
+				"as_of_time_unix_nano < $4",
 			) {
 				t.Fatalf(
 					"cursor query missing boundary:\n%s",
 					query,
 				)
 			}
-			if len(args) != 4 ||
-				args[2] != base.Add(4*time.Hour).UnixNano() ||
-				args[3] != 3 {
+			if len(args) != 5 ||
+				args[2] != string(
+					flightfeatures.CurrentProcessingVersion,
+				) ||
+				args[3] != base.Add(4*time.Hour).UnixNano() ||
+				args[4] != 3 {
 				t.Fatalf(
 					"list args = %#v",
 					args,
@@ -664,11 +675,18 @@ func rowFromInsertArguments(
 					args[2],
 				)
 			}
-			validationStatus, ok := args[6].(string)
+			processingVersion, ok := args[3].(string)
+			if !ok {
+				t.Fatalf(
+					"processing version argument type = %T",
+					args[3],
+				)
+			}
+			validationStatus, ok := args[7].(string)
 			if !ok {
 				t.Fatalf(
 					"validation status argument type = %T",
-					args[6],
+					args[7],
 				)
 			}
 
@@ -678,13 +696,14 @@ func rowFromInsertArguments(
 				args[0].(string),
 				args[1].(string),
 				schemaVersion,
-				args[3].(time.Time),
-				args[4].(int64),
-				args[5].(string),
+				processingVersion,
+				args[4].(time.Time),
+				args[5].(int64),
+				args[6].(string),
 				validationStatus,
-				args[7].([]byte),
-				args[8].(time.Time),
-				args[9].(int64),
+				args[8].([]byte),
+				args[9].(time.Time),
+				args[10].(int64),
 			)
 
 			return nil
@@ -714,6 +733,7 @@ func rowFromRecord(
 				record.ID,
 				record.Key.TrajectoryID,
 				string(record.Key.SchemaVersion),
+				string(record.Key.ProcessingVersion),
 				record.Key.AsOfTime,
 				record.Key.AsOfTime.UnixNano(),
 				record.InputFingerprint,
@@ -755,6 +775,7 @@ func assignDatabaseRow(
 	id string,
 	trajectoryID string,
 	schemaVersion string,
+	processingVersion string,
 	asOfTime time.Time,
 	asOfTimeUnixNano int64,
 	inputFingerprint string,
@@ -765,9 +786,9 @@ func assignDatabaseRow(
 ) {
 	t.Helper()
 
-	if len(destinations) != 10 {
+	if len(destinations) != 11 {
 		t.Fatalf(
-			"scan destinations = %d, want 10",
+			"scan destinations = %d, want 11",
 			len(destinations),
 		)
 	}
@@ -775,16 +796,17 @@ func assignDatabaseRow(
 	*destinations[0].(*string) = id
 	*destinations[1].(*string) = trajectoryID
 	*destinations[2].(*string) = schemaVersion
-	*destinations[3].(*time.Time) = asOfTime
-	*destinations[4].(*int64) = asOfTimeUnixNano
-	*destinations[5].(*string) = inputFingerprint
-	*destinations[6].(*string) = validationStatus
-	*destinations[7].(*[]byte) = append(
+	*destinations[3].(*string) = processingVersion
+	*destinations[4].(*time.Time) = asOfTime
+	*destinations[5].(*int64) = asOfTimeUnixNano
+	*destinations[6].(*string) = inputFingerprint
+	*destinations[7].(*string) = validationStatus
+	*destinations[8].(*[]byte) = append(
 		[]byte(nil),
 		payload...,
 	)
-	*destinations[8].(*time.Time) = storedAt
-	*destinations[9].(*int64) = storedAtUnixNano
+	*destinations[9].(*time.Time) = storedAt
+	*destinations[10].(*int64) = storedAtUnixNano
 }
 
 func validPostgresFeatures(

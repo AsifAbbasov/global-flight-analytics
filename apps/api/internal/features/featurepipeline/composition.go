@@ -5,6 +5,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractorcomposition"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/featurestore"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/validator"
 )
 
@@ -50,9 +51,10 @@ func NewInMemory(
 	)
 
 	pipeline, err := New(Config{
-		Extractor: extractorComposition.Extractor,
-		Validator: featureValidator,
-		Writer:    store,
+		Extractor:         extractorComposition.Extractor,
+		Validator:         featureValidator,
+		Writer:            store,
+		ProcessingVersion: flightfeatures.CurrentProcessingVersion,
 	})
 	if err != nil {
 		return nil, &ConstructionError{

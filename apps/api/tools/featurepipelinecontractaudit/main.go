@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +33,6 @@ func main() {
 			path: "apps/api/internal/features/featurepipeline/contracts.go",
 			required: []string{
 				"type FeatureWriter interface",
-				"Writer    FeatureWriter",
 				"func (result Result) Features()",
 			},
 			forbidden: []string{
@@ -136,6 +138,16 @@ func main() {
 		}
 	}
 
+	failures = append(
+		failures,
+		validateFeaturePipelineConfig(
+			filepath.Join(
+				resolved,
+				"apps/api/internal/features/featurepipeline/contracts.go",
+			),
+		)...,
+	)
+
 	if len(failures) == 0 {
 		fmt.Println("Feature pipeline contract audit: PASS")
 		return
@@ -148,6 +160,79 @@ func main() {
 	if *strict {
 		os.Exit(1)
 	}
+}
+
+func validateFeaturePipelineConfig(path string) []string {
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, path, nil, 0)
+	if err != nil {
+		return []string{
+			fmt.Sprintf(
+				"%s: parse feature pipeline contracts: %v",
+				path,
+				err,
+			),
+		}
+	}
+
+	var config *ast.StructType
+	for _, declaration := range file.Decls {
+		general, ok := declaration.(*ast.GenDecl)
+		if !ok || general.Tok != token.TYPE {
+			continue
+		}
+		for _, specification := range general.Specs {
+			typeSpec, ok := specification.(*ast.TypeSpec)
+			if !ok || typeSpec.Name.Name != "Config" {
+				continue
+			}
+			config, _ = typeSpec.Type.(*ast.StructType)
+		}
+	}
+	if config == nil {
+		return []string{
+			"feature pipeline Config struct was not found",
+		}
+	}
+
+	writerValid := false
+	processingVersionValid := false
+	for _, field := range config.Fields.List {
+		if len(field.Names) != 1 {
+			continue
+		}
+		switch field.Names[0].Name {
+		case "Writer":
+			identifier, ok := field.Type.(*ast.Ident)
+			writerValid = ok &&
+				identifier.Name == "FeatureWriter"
+		case "ProcessingVersion":
+			selector, ok := field.Type.(*ast.SelectorExpr)
+			if !ok {
+				continue
+			}
+			packageName, ok := selector.X.(*ast.Ident)
+			processingVersionValid = ok &&
+				packageName.Name == "flightfeatures" &&
+				selector.Sel.Name == "ProcessingVersion"
+		}
+	}
+
+	failures := make([]string, 0, 2)
+	if !writerValid {
+		failures = append(
+			failures,
+			"feature pipeline Config.Writer must use FeatureWriter",
+		)
+	}
+	if !processingVersionValid {
+		failures = append(
+			failures,
+			"feature pipeline Config.ProcessingVersion must use flightfeatures.ProcessingVersion",
+		)
+	}
+
+	return failures
 }
 
 func resolveRoot(explicit string) (string, error) {

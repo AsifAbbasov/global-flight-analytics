@@ -210,6 +210,51 @@ func run(
 		return 1
 	}
 
+	alternateFeatures := result.Features()
+	alternateFeatures.Provenance.ProcessingVersion =
+		"flight-feature-processing-verification-v2"
+	alternateRecord, err := composition.Store.Put(
+		ctx,
+		alternateFeatures,
+	)
+	if err != nil {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: store alternate processing version: %v\n",
+			err,
+		)
+		return 1
+	}
+	if alternateRecord.ID == result.Record.ID {
+		fmt.Fprintln(
+			stderr,
+			"ERROR: processing versions produced one record identifier",
+		)
+		return 1
+	}
+	loadedAlternate, err := composition.Store.Get(
+		ctx,
+		alternateRecord.Key,
+	)
+	if err != nil {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: get alternate processing snapshot: %v\n",
+			err,
+		)
+		return 1
+	}
+	if !reflect.DeepEqual(
+		alternateRecord,
+		loadedAlternate,
+	) {
+		fmt.Fprintln(
+			stderr,
+			"ERROR: alternate processing snapshot differs",
+		)
+		return 1
+	}
+
 	loaded, err := composition.Store.Get(
 		ctx,
 		result.Record.Key,
@@ -298,10 +343,10 @@ func run(
 		)
 		return 1
 	}
-	if snapshotCount != 1 {
+	if snapshotCount != 2 {
 		fmt.Fprintf(
 			stderr,
-			"ERROR: transactional snapshot count = %d, want 1\n",
+			"ERROR: transactional snapshot count = %d, want 2\n",
 			snapshotCount,
 		)
 		return 1
@@ -407,6 +452,10 @@ func run(
 	fmt.Fprintln(
 		stdout,
 		"Idempotent replay: PASS",
+	)
+	fmt.Fprintln(
+		stdout,
+		"Processing version isolation: PASS",
 	)
 	fmt.Fprintln(
 		stdout,

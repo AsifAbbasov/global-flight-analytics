@@ -3,8 +3,14 @@ package flightfeatures
 import "time"
 
 type SchemaVersion string
+type ProcessingVersion string
 
 const SchemaVersionV1 SchemaVersion = "flight-features-v1"
+
+const (
+	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v1"
+	LegacyProcessingVersion  ProcessingVersion = "flight-feature-processing-legacy-v1"
+)
 
 type AvailabilityStatus string
 
@@ -128,6 +134,7 @@ type FeatureQuality struct {
 }
 
 type FeatureProvenance struct {
+	ProcessingVersion   ProcessingVersion
 	ExtractorVersion    string
 	InputFingerprint    string
 	TrajectoryUpdatedAt time.Time

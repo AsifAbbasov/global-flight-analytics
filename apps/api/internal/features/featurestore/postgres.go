@@ -20,6 +20,7 @@ const (
 			id,
 			trajectory_id,
 			schema_version,
+			processing_version,
 			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
@@ -36,13 +37,15 @@ const (
 			$5,
 			$6,
 			$7,
-			$8::jsonb,
-			$9,
-			$10
+			$8,
+			$9::jsonb,
+			$10,
+			$11
 		)
 		ON CONFLICT (
 			trajectory_id,
 			schema_version,
+			processing_version,
 			as_of_time_unix_nano
 		)
 		DO NOTHING
@@ -50,6 +53,7 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			processing_version,
 			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
@@ -64,6 +68,7 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			processing_version,
 			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
@@ -74,7 +79,8 @@ const (
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
 		  AND schema_version = $2
-		  AND as_of_time_unix_nano = $3;
+		  AND processing_version = $3
+		  AND as_of_time_unix_nano = $4;
 	`
 
 	getLatestSnapshotSQL = `
@@ -82,6 +88,7 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			processing_version,
 			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
@@ -92,6 +99,7 @@ const (
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
 		  AND schema_version = $2
+		  AND processing_version = $3
 		ORDER BY
 			as_of_time_unix_nano DESC,
 			id ASC
@@ -103,6 +111,7 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			processing_version,
 			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
@@ -124,6 +133,7 @@ const (
 			id,
 			trajectory_id::text,
 			schema_version,
+			processing_version,
 			as_of_time,
 			as_of_time_unix_nano,
 			input_fingerprint,
@@ -134,11 +144,12 @@ const (
 		FROM flight_feature_snapshots
 		WHERE trajectory_id = $1::uuid
 		  AND schema_version = $2
-		  AND as_of_time_unix_nano < $3
+		  AND processing_version = $3
+		  AND as_of_time_unix_nano < $4
 		ORDER BY
 			as_of_time_unix_nano DESC,
 			id ASC
-		LIMIT $4;
+		LIMIT $5;
 	`
 )
 
@@ -231,11 +242,10 @@ func (store *PostgresStore) Put(
 	if err := ctx.Err(); err != nil {
 		return Record{}, err
 	}
-	if err := validateStorableFeatures(features); err != nil {
+	normalized := normalizeFeatures(features)
+	if err := validateStorableFeatures(normalized); err != nil {
 		return Record{}, err
 	}
-
-	normalized := normalizeFeatures(features)
 	trajectoryID, err := normalizePostgresTrajectoryID(
 		normalized.TrajectoryID,
 	)
@@ -268,6 +278,7 @@ func (store *PostgresStore) Put(
 			recordID,
 			key.TrajectoryID,
 			string(key.SchemaVersion),
+			string(key.ProcessingVersion),
 			key.AsOfTime,
 			key.AsOfTime.UnixNano(),
 			fingerprint,
@@ -336,6 +347,7 @@ func (store *PostgresStore) getNormalized(
 			getSnapshotSQL,
 			key.TrajectoryID,
 			string(key.SchemaVersion),
+			string(key.ProcessingVersion),
 			key.AsOfTime.UnixNano(),
 		),
 	)
@@ -357,6 +369,7 @@ func (store *PostgresStore) GetLatest(
 	ctx context.Context,
 	trajectoryID string,
 	schemaVersion flightfeatures.SchemaVersion,
+	processingVersions ...flightfeatures.ProcessingVersion,
 ) (Record, error) {
 	ctx = nonNilContext(ctx)
 	if err := ctx.Err(); err != nil {
@@ -371,6 +384,12 @@ func (store *PostgresStore) GetLatest(
 	if schemaVersion != flightfeatures.SchemaVersionV1 {
 		return Record{}, ErrUnsupportedSchemaVersion
 	}
+	processingVersion, err := normalizeRequestedProcessingVersion(
+		processingVersions,
+	)
+	if err != nil {
+		return Record{}, err
+	}
 
 	record, err := scanRecord(
 		store.client.QueryRow(
@@ -378,6 +397,7 @@ func (store *PostgresStore) GetLatest(
 			getLatestSnapshotSQL,
 			normalizedTrajectoryID,
 			string(schemaVersion),
+			string(processingVersion),
 		),
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -424,6 +444,7 @@ func (store *PostgresStore) List(
 			listSnapshotsSQL,
 			normalizedQuery.TrajectoryID,
 			string(normalizedQuery.SchemaVersion),
+			string(normalizedQuery.ProcessingVersion),
 			limitWithSentinel,
 		)
 	} else {
@@ -432,6 +453,7 @@ func (store *PostgresStore) List(
 			listSnapshotsBeforeSQL,
 			normalizedQuery.TrajectoryID,
 			string(normalizedQuery.SchemaVersion),
+			string(normalizedQuery.ProcessingVersion),
 			normalizedQuery.BeforeAsOfTime.UnixNano(),
 			limitWithSentinel,
 		)
@@ -483,22 +505,24 @@ func (store *PostgresStore) List(
 
 func scanRecord(scanner rowScanner) (Record, error) {
 	var (
-		id               string
-		trajectoryID     string
-		schemaVersion    string
-		asOfTime         time.Time
-		asOfTimeUnixNano int64
-		inputFingerprint string
-		validationStatus string
-		payload          []byte
-		storedAt         time.Time
-		storedAtUnixNano int64
+		id                string
+		trajectoryID      string
+		schemaVersion     string
+		processingVersion string
+		asOfTime          time.Time
+		asOfTimeUnixNano  int64
+		inputFingerprint  string
+		validationStatus  string
+		payload           []byte
+		storedAt          time.Time
+		storedAtUnixNano  int64
 	)
 
 	if err := scanner.Scan(
 		&id,
 		&trajectoryID,
 		&schemaVersion,
+		&processingVersion,
 		&asOfTime,
 		&asOfTimeUnixNano,
 		&inputFingerprint,
@@ -543,9 +567,10 @@ func scanRecord(scanner rowScanner) (Record, error) {
 	}
 
 	key := SnapshotKey{
-		TrajectoryID:  trajectoryID,
-		SchemaVersion: flightfeatures.SchemaVersion(schemaVersion),
-		AsOfTime:      keyAsOfTime,
+		TrajectoryID:      trajectoryID,
+		SchemaVersion:     flightfeatures.SchemaVersion(schemaVersion),
+		ProcessingVersion: flightfeatures.ProcessingVersion(processingVersion),
+		AsOfTime:          keyAsOfTime,
 	}
 	record := Record{
 		ID:               id,
@@ -576,8 +601,16 @@ func validateDecodedRecord(
 		record.InputFingerprint,
 	)
 	if record.ID != expectedID {
-		return &CorruptSnapshotError{
-			Field: "id",
+		legacyID := makeLegacyRecordID(
+			record.Key,
+			record.InputFingerprint,
+		)
+		if record.Key.ProcessingVersion !=
+			flightfeatures.LegacyProcessingVersion ||
+			record.ID != legacyID {
+			return &CorruptSnapshotError{
+				Field: "id",
+			}
 		}
 	}
 	if record.Features.TrajectoryID !=
@@ -590,6 +623,12 @@ func validateDecodedRecord(
 		record.Key.SchemaVersion {
 		return &CorruptSnapshotError{
 			Field: "schema_version",
+		}
+	}
+	if record.Features.Provenance.ProcessingVersion !=
+		record.Key.ProcessingVersion {
+		return &CorruptSnapshotError{
+			Field: "processing_version",
 		}
 	}
 	if !record.Features.Window.AsOfTime.UTC().Equal(

@@ -9,6 +9,9 @@ var (
 	ErrUnsupportedSchemaVersion = errors.New(
 		"feature snapshot schema version is unsupported",
 	)
+	ErrProcessingVersionRequired = errors.New(
+		"feature snapshot processing version is required",
+	)
 	ErrAsOfTimeRequired = errors.New(
 		"feature snapshot as-of time is required",
 	)

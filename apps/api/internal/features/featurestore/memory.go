@@ -45,11 +45,10 @@ func (store *MemoryStore) Put(
 	if err := ctx.Err(); err != nil {
 		return Record{}, err
 	}
-	if err := validateStorableFeatures(features); err != nil {
+	normalized := normalizeFeatures(features)
+	if err := validateStorableFeatures(normalized); err != nil {
 		return Record{}, err
 	}
-
-	normalized := normalizeFeatures(features)
 	key := snapshotKey(normalized)
 	compositeKey := encodeSnapshotKey(key)
 	recordID := makeRecordID(
@@ -81,6 +80,7 @@ func (store *MemoryStore) Put(
 	trajectoryIndexKey := encodeTrajectoryIndexKey(
 		key.TrajectoryID,
 		key.SchemaVersion,
+		key.ProcessingVersion,
 	)
 	store.keysByTrajectory[trajectoryIndexKey] = append(
 		store.keysByTrajectory[trajectoryIndexKey],
@@ -123,6 +123,7 @@ func (store *MemoryStore) GetLatest(
 	ctx context.Context,
 	trajectoryID string,
 	schemaVersion flightfeatures.SchemaVersion,
+	processingVersions ...flightfeatures.ProcessingVersion,
 ) (Record, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -140,10 +141,17 @@ func (store *MemoryStore) GetLatest(
 	if schemaVersion != flightfeatures.SchemaVersionV1 {
 		return Record{}, ErrUnsupportedSchemaVersion
 	}
+	processingVersion, err := normalizeRequestedProcessingVersion(
+		processingVersions,
+	)
+	if err != nil {
+		return Record{}, err
+	}
 
 	indexKey := encodeTrajectoryIndexKey(
 		normalizedTrajectoryID,
 		schemaVersion,
+		processingVersion,
 	)
 
 	store.mutex.RLock()
@@ -179,6 +187,7 @@ func (store *MemoryStore) List(
 	indexKey := encodeTrajectoryIndexKey(
 		normalizedQuery.TrajectoryID,
 		normalizedQuery.SchemaVersion,
+		normalizedQuery.ProcessingVersion,
 	)
 
 	store.mutex.RLock()
@@ -253,6 +262,11 @@ func validateStorableFeatures(
 		flightfeatures.SchemaVersionV1 {
 		return ErrUnsupportedSchemaVersion
 	}
+	if strings.TrimSpace(
+		string(features.Provenance.ProcessingVersion),
+	) == "" {
+		return ErrProcessingVersionRequired
+	}
 	if features.Window.AsOfTime.IsZero() {
 		return ErrAsOfTimeRequired
 	}
@@ -298,6 +312,16 @@ func normalizeFeatures(
 		normalized.Window.AsOfTime.UTC()
 	normalized.ExtractedAt =
 		normalized.ExtractedAt.UTC()
+	normalized.Provenance.ProcessingVersion =
+		flightfeatures.ProcessingVersion(
+			strings.TrimSpace(
+				string(normalized.Provenance.ProcessingVersion),
+			),
+		)
+	if normalized.Provenance.ProcessingVersion == "" {
+		normalized.Provenance.ProcessingVersion =
+			flightfeatures.CurrentProcessingVersion
+	}
 	normalized.Provenance.ExtractorVersion =
 		strings.TrimSpace(
 			normalized.Provenance.ExtractorVersion,
@@ -316,9 +340,10 @@ func snapshotKey(
 	features flightfeatures.FlightFeatures,
 ) SnapshotKey {
 	return SnapshotKey{
-		TrajectoryID:  features.TrajectoryID,
-		SchemaVersion: features.SchemaVersion,
-		AsOfTime:      features.Window.AsOfTime,
+		TrajectoryID:      features.TrajectoryID,
+		SchemaVersion:     features.SchemaVersion,
+		ProcessingVersion: features.Provenance.ProcessingVersion,
+		AsOfTime:          features.Window.AsOfTime,
 	}
 }
 
@@ -336,14 +361,25 @@ func normalizeSnapshotKey(
 		return SnapshotKey{},
 			ErrUnsupportedSchemaVersion
 	}
+	processingVersion := key.ProcessingVersion
+	if processingVersion == "" {
+		processingVersion = flightfeatures.CurrentProcessingVersion
+	}
+	processingVersion = flightfeatures.ProcessingVersion(
+		strings.TrimSpace(string(processingVersion)),
+	)
+	if processingVersion == "" {
+		return SnapshotKey{}, ErrProcessingVersionRequired
+	}
 	if key.AsOfTime.IsZero() {
 		return SnapshotKey{}, ErrAsOfTimeRequired
 	}
 
 	return SnapshotKey{
-		TrajectoryID:  trajectoryID,
-		SchemaVersion: key.SchemaVersion,
-		AsOfTime:      key.AsOfTime.UTC(),
+		TrajectoryID:      trajectoryID,
+		SchemaVersion:     key.SchemaVersion,
+		ProcessingVersion: processingVersion,
+		AsOfTime:          key.AsOfTime.UTC(),
 	}, nil
 }
 
@@ -370,16 +406,28 @@ func normalizeListQuery(
 		return ListQuery{}, ErrInvalidListLimit
 	}
 
+	processingVersion := query.ProcessingVersion
+	if processingVersion == "" {
+		processingVersion = flightfeatures.CurrentProcessingVersion
+	}
+	processingVersion = flightfeatures.ProcessingVersion(
+		strings.TrimSpace(string(processingVersion)),
+	)
+	if processingVersion == "" {
+		return ListQuery{}, ErrProcessingVersionRequired
+	}
+
 	beforeAsOfTime := query.BeforeAsOfTime
 	if !beforeAsOfTime.IsZero() {
 		beforeAsOfTime = beforeAsOfTime.UTC()
 	}
 
 	return ListQuery{
-		TrajectoryID:   trajectoryID,
-		SchemaVersion:  query.SchemaVersion,
-		BeforeAsOfTime: beforeAsOfTime,
-		Limit:          limit,
+		TrajectoryID:      trajectoryID,
+		SchemaVersion:     query.SchemaVersion,
+		ProcessingVersion: processingVersion,
+		BeforeAsOfTime:    beforeAsOfTime,
+		Limit:             limit,
 	}, nil
 }
 
@@ -396,9 +444,10 @@ func normalizeTrajectoryID(
 
 func encodeSnapshotKey(key SnapshotKey) string {
 	return fmt.Sprintf(
-		"%s\x00%s\x00%s",
+		"%s\x00%s\x00%s\x00%s",
 		key.TrajectoryID,
 		key.SchemaVersion,
+		key.ProcessingVersion,
 		key.AsOfTime.UTC().Format(time.RFC3339Nano),
 	)
 }
@@ -406,12 +455,32 @@ func encodeSnapshotKey(key SnapshotKey) string {
 func encodeTrajectoryIndexKey(
 	trajectoryID string,
 	schemaVersion flightfeatures.SchemaVersion,
+	processingVersion flightfeatures.ProcessingVersion,
 ) string {
 	return fmt.Sprintf(
-		"%s\x00%s",
+		"%s\x00%s\x00%s",
 		trajectoryID,
 		schemaVersion,
+		processingVersion,
 	)
+}
+
+func normalizeRequestedProcessingVersion(
+	versions []flightfeatures.ProcessingVersion,
+) (flightfeatures.ProcessingVersion, error) {
+	if len(versions) > 1 {
+		return "", ErrProcessingVersionRequired
+	}
+	if len(versions) == 0 || versions[0] == "" {
+		return flightfeatures.CurrentProcessingVersion, nil
+	}
+	normalized := flightfeatures.ProcessingVersion(
+		strings.TrimSpace(string(versions[0])),
+	)
+	if normalized == "" {
+		return "", ErrProcessingVersionRequired
+	}
+	return normalized, nil
 }
 
 func makeRecordID(
@@ -420,6 +489,23 @@ func makeRecordID(
 ) string {
 	sum := sha256.Sum256(
 		[]byte(compositeKey + "\x00" + fingerprint),
+	)
+
+	return recordIDPrefix + hex.EncodeToString(sum[:])
+}
+
+func makeLegacyRecordID(
+	key SnapshotKey,
+	fingerprint string,
+) string {
+	legacyCompositeKey := fmt.Sprintf(
+		"%s\x00%s\x00%s",
+		key.TrajectoryID,
+		key.SchemaVersion,
+		key.AsOfTime.UTC().Format(time.RFC3339Nano),
+	)
+	sum := sha256.Sum256(
+		[]byte(legacyCompositeKey + "\x00" + fingerprint),
 	)
 
 	return recordIDPrefix + hex.EncodeToString(sum[:])

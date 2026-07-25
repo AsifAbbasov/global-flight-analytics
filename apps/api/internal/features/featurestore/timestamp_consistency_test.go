@@ -232,6 +232,7 @@ func timestampMirrorRow(
 				record.ID,
 				record.Key.TrajectoryID,
 				string(record.Key.SchemaVersion),
+				string(record.Key.ProcessingVersion),
 				asOfTimeMirror,
 				record.Key.AsOfTime.UnixNano(),
 				record.InputFingerprint,

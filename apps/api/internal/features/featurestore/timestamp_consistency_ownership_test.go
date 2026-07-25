@@ -51,7 +51,7 @@ func TestPostgresStoreOwnsTimestampMirrorConsistency(
 	}
 	if !strings.Contains(
 		source,
-		"as_of_time_unix_nano < $3",
+		"as_of_time_unix_nano < $4",
 	) || !strings.Contains(
 		source,
 		"as_of_time_unix_nano DESC",

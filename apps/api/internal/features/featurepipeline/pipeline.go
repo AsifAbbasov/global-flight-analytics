@@ -11,9 +11,10 @@ import (
 )
 
 type Pipeline struct {
-	extractor FeatureExtractor
-	validator FeatureValidator
-	writer    FeatureWriter
+	extractor         FeatureExtractor
+	validator         FeatureValidator
+	writer            FeatureWriter
+	processingVersion flightfeatures.ProcessingVersion
 }
 
 func New(config Config) (*Pipeline, error) {
@@ -27,10 +28,16 @@ func New(config Config) (*Pipeline, error) {
 		return nil, ErrWriterRequired
 	}
 
+	processingVersion := config.ProcessingVersion
+	if processingVersion == "" {
+		processingVersion = flightfeatures.CurrentProcessingVersion
+	}
+
 	return &Pipeline{
-		extractor: config.Extractor,
-		validator: config.Validator,
-		writer:    config.Writer,
+		extractor:         config.Extractor,
+		validator:         config.Validator,
+		writer:            config.Writer,
+		processingVersion: processingVersion,
 	}, nil
 }
 
@@ -99,6 +106,8 @@ func (pipeline *Pipeline) Process(
 	switch report.Status {
 	case flightfeatures.ValidationStatusValid,
 		flightfeatures.ValidationStatusLimited:
+		validated.Provenance.ProcessingVersion =
+			pipeline.processingVersion
 	default:
 		return result.Clone(),
 			&ValidationRejectedError{

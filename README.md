@@ -393,3 +393,9 @@ successful source of truth, rejects ambiguous PostgreSQL wiring, and runs its
 PostgreSQL verifier in Continuous Integration.
 
 Processing identity remains a separate schema-level increment.
+<!-- FEATURE-SNAPSHOT-PROCESSING-IDENTITY:README -->
+
+## Feature Snapshot Processing Identity
+
+Feature snapshots are keyed by trajectory, schema version, processing version
+and as-of time. Existing rows are backfilled as legacy processing output.

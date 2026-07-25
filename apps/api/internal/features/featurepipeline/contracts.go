@@ -47,9 +47,10 @@ type FeatureWriter interface {
 }
 
 type Config struct {
-	Extractor FeatureExtractor
-	Validator FeatureValidator
-	Writer    FeatureWriter
+	Extractor         FeatureExtractor
+	Validator         FeatureValidator
+	Writer            FeatureWriter
+	ProcessingVersion flightfeatures.ProcessingVersion
 }
 
 type Result struct {

@@ -867,3 +867,11 @@ This increment closes result duplication, report-integrity, writer-interface,
 nil-context, typed-nil, PostgreSQL source ambiguity, version-manifest and
 Continuous Integration gaps. Durable processing identity remains the next
 schema-level feature snapshot increment.
+<!-- FEATURE-SNAPSHOT-PROCESSING-IDENTITY:IMPLEMENTATION -->
+
+## Feature Snapshot Processing Identity
+
+Status: IMPLEMENTED.
+
+The snapshot key, record identifier, memory store, PostgreSQL store, uniqueness
+constraint and reads now include processing version.
