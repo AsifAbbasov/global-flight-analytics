@@ -419,3 +419,12 @@ Feature snapshots now retain the complete validation report in durable payloads.
 Legacy rows are explicitly marked unavailable, PostgreSQL enforces report
 presence and status consistency, and every original Feature Pipeline finding has
 a final implemented, rejected or deliberately retained disposition.
+
+<!-- EXTRACTOR-COMPOSITION-PROCESSING-IDENTITY:README -->
+
+## Extractor Composition Processing Identity
+
+Flight feature fingerprints now bind the effective extractor composition,
+geographic precision, aircraft cache and not-found policies, and resolved
+aircraft metadata. Processing generation version 2 prevents silent reuse of
+version 1 snapshots.

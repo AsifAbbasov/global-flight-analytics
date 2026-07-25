@@ -8,7 +8,7 @@ type ProcessingVersion string
 const SchemaVersionV1 SchemaVersion = "flight-features-v1"
 
 const (
-	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v1"
+	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v2"
 	LegacyProcessingVersion  ProcessingVersion = "flight-feature-processing-legacy-v1"
 )
 

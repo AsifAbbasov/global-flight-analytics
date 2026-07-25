@@ -7,12 +7,14 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractor"
 )
 
-const Version = "flight-feature-extractor-composition-v1"
+const Version = "flight-feature-extractor-composition-v2"
+
+type Component string
 
 const (
-	ComponentGeographicalBuilder = "geographical_builder"
-	ComponentAircraftProvider    = "aircraft_provider"
-	ComponentExtractor           = "extractor"
+	ComponentGeographicalBuilder Component = "geographical_builder"
+	ComponentAircraftProvider    Component = "aircraft_provider"
+	ComponentExtractor           Component = "extractor"
 )
 
 type Config struct {
@@ -20,9 +22,10 @@ type Config struct {
 
 	GeographicCellPrecision int
 
-	AircraftPositiveCacheTTL time.Duration
-	AircraftNegativeCacheTTL time.Duration
-	IsAircraftNotFound       func(error) bool
+	AircraftPositiveCacheTTL      time.Duration
+	AircraftNegativeCacheTTL      time.Duration
+	IsAircraftNotFound            func(error) bool
+	AircraftNotFoundPolicyVersion string
 
 	Now func() time.Time
 }
@@ -37,7 +40,17 @@ type Versions struct {
 	TrajectoryBuilder   string
 }
 
+type ProcessingIdentity struct {
+	Versions                      Versions
+	GeographicCellPrecision       int
+	AircraftPositiveCacheTTL      time.Duration
+	AircraftNegativeCacheTTL      time.Duration
+	AircraftNotFoundPolicyVersion string
+}
+
 type Composition struct {
-	Extractor *extractor.Extractor
-	Versions  Versions
+	Extractor           *extractor.Extractor
+	Versions            Versions
+	ProcessingIdentity  ProcessingIdentity
+	FingerprintIdentity string
 }

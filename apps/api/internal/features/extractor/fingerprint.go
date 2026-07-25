@@ -8,9 +8,16 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
 const fingerprintPrefix = "sha256:"
+
+type canonicalFingerprintInput struct {
+	ProcessingIdentity string
+	Trajectory         canonicalTrajectory
+	Aircraft           flightfeatures.AircraftFeatures
+}
 
 type canonicalTrajectory struct {
 	ID               string
@@ -98,12 +105,28 @@ type canonicalCoverageGap struct {
 func fingerprintTrajectory(
 	item trajectory.FlightTrajectory,
 ) (string, error) {
-	canonical := canonicalizeTrajectory(item)
+	return fingerprintExtractionInput(
+		item,
+		flightfeatures.AircraftFeatures{},
+		Version,
+	)
+}
+
+func fingerprintExtractionInput(
+	item trajectory.FlightTrajectory,
+	aircraftFeatures flightfeatures.AircraftFeatures,
+	processingIdentity string,
+) (string, error) {
+	canonical := canonicalFingerprintInput{
+		ProcessingIdentity: processingIdentity,
+		Trajectory:         canonicalizeTrajectory(item),
+		Aircraft:           aircraftFeatures,
+	}
 
 	payload, err := json.Marshal(canonical)
 	if err != nil {
 		return "", fmt.Errorf(
-			"marshal trajectory feature fingerprint input: %w",
+			"marshal extraction fingerprint input: %w",
 			err,
 		)
 	}

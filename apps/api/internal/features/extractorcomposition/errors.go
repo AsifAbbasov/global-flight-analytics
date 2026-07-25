@@ -5,12 +5,17 @@ import (
 	"fmt"
 )
 
-var ErrAircraftLookupRequired = errors.New(
-	"production feature extractor aircraft lookup is required",
+var (
+	ErrAircraftLookupRequired = errors.New(
+		"production feature extractor aircraft lookup is required",
+	)
+	ErrAircraftNotFoundPolicyVersionRequired = errors.New(
+		"custom aircraft not-found policy version is required",
+	)
 )
 
 type ComponentError struct {
-	Component string
+	Component Component
 	Err       error
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
-const Version = "flight-feature-extractor-v1"
+const Version = "flight-feature-extractor-v2"
 
 type Request struct {
 	Trajectory trajectory.FlightTrajectory
@@ -62,5 +62,6 @@ type Config struct {
 	OperationalBuilder      OperationalBuilder
 	TrajectoryBuilder       TrajectoryBuilder
 	AircraftFeatureProvider AircraftFeatureProvider
+	FingerprintIdentity     string
 	Now                     func() time.Time
 }

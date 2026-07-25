@@ -290,33 +290,10 @@ func TestNewBuildsCompleteProductionExtractor(
 	}
 }
 
-func TestNewExtractorReturnsDirectProductionExtractor(
-	t *testing.T,
-) {
-	featureExtractor, err := NewExtractor(Config{
-		AircraftLookup: &fakeAircraftLookup{
-			result: aircraft.Aircraft{
-				ICAO24: "ABC123",
-			},
-		},
-	})
-	if err != nil {
-		t.Fatalf(
-			"NewExtractor() error = %v",
-			err,
-		)
-	}
-	if featureExtractor == nil {
-		t.Fatal(
-			"NewExtractor() returned a nil Extractor",
-		)
-	}
-}
-
 func TestCurrentVersionsRemainStable(t *testing.T) {
 	want := Versions{
-		Composition:         "flight-feature-extractor-composition-v1",
-		Extractor:           "flight-feature-extractor-v1",
+		Composition:         "flight-feature-extractor-composition-v2",
+		Extractor:           "flight-feature-extractor-v2",
 		AircraftProvider:    "aircraft-feature-provider-v1",
 		TemporalBuilder:     "temporal-feature-builder-v1",
 		GeographicalBuilder: "geographical-feature-builder-v1",

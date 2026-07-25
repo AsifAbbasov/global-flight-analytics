@@ -23,6 +23,7 @@ type Extractor struct {
 	operationalBuilder      OperationalBuilder
 	trajectoryBuilder       TrajectoryBuilder
 	aircraftFeatureProvider AircraftFeatureProvider
+	fingerprintIdentity     string
 	now                     func() time.Time
 }
 
@@ -45,12 +46,20 @@ func New(config Config) (*Extractor, error) {
 		now = time.Now
 	}
 
+	fingerprintIdentity := strings.TrimSpace(
+		config.FingerprintIdentity,
+	)
+	if fingerprintIdentity == "" {
+		fingerprintIdentity = Version
+	}
+
 	return &Extractor{
 		temporalBuilder:         config.TemporalBuilder,
 		geographicalBuilder:     config.GeographicalBuilder,
 		operationalBuilder:      config.OperationalBuilder,
 		trajectoryBuilder:       config.TrajectoryBuilder,
 		aircraftFeatureProvider: config.AircraftFeatureProvider,
+		fingerprintIdentity:     fingerprintIdentity,
 		now:                     now,
 	}, nil
 }
@@ -134,7 +143,11 @@ func (extractor *Extractor) Extract(
 		return flightfeatures.FlightFeatures{}, err
 	}
 
-	fingerprint, err := fingerprintTrajectory(request.Trajectory)
+	fingerprint, err := fingerprintExtractionInput(
+		request.Trajectory,
+		aircraftFeatures,
+		extractor.fingerprintIdentity,
+	)
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, err
 	}

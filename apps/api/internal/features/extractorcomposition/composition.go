@@ -10,7 +10,7 @@ import (
 )
 
 func New(config Config) (*Composition, error) {
-	if config.AircraftLookup == nil {
+	if dependencyMissing(config.AircraftLookup) {
 		return nil, ErrAircraftLookupRequired
 	}
 
@@ -44,6 +44,15 @@ func New(config Config) (*Composition, error) {
 		}
 	}
 
+	processingIdentity, fingerprintIdentity, err :=
+		resolveProcessingIdentity(config)
+	if err != nil {
+		return nil, &ComponentError{
+			Component: ComponentAircraftProvider,
+			Err:       err,
+		}
+	}
+
 	featureExtractor, err := extractor.New(
 		extractor.Config{
 			TemporalBuilder:         temporalbuilder.New(),
@@ -51,6 +60,7 @@ func New(config Config) (*Composition, error) {
 			OperationalBuilder:      operationalbuilder.New(),
 			TrajectoryBuilder:       trajectorybuilder.New(),
 			AircraftFeatureProvider: aircraftProvider,
+			FingerprintIdentity:     fingerprintIdentity,
 			Now:                     config.Now,
 		},
 	)
@@ -62,21 +72,11 @@ func New(config Config) (*Composition, error) {
 	}
 
 	return &Composition{
-		Extractor: featureExtractor,
-		Versions:  CurrentVersions(),
+		Extractor:           featureExtractor,
+		Versions:            processingIdentity.Versions,
+		ProcessingIdentity:  processingIdentity,
+		FingerprintIdentity: fingerprintIdentity,
 	}, nil
-}
-
-func NewExtractor(config Config) (
-	*extractor.Extractor,
-	error,
-) {
-	composition, err := New(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return composition.Extractor, nil
 }
 
 func CurrentVersions() Versions {

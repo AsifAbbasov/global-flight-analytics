@@ -9,6 +9,8 @@ import (
 
 const Version = "aircraft-feature-provider-v1"
 
+const DefaultNotFoundPolicyVersion = "aircraft-not-found-pgx-no-rows-v1"
+
 const AircraftFeatureFieldCount = 6
 
 const (

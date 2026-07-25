@@ -74,7 +74,8 @@ func runCommand(
 				IsAircraftNotFound: func(err error) bool {
 					return errors.Is(err, aircraft.ErrNotFound)
 				},
-				Now: now,
+				AircraftNotFoundPolicyVersion: "aircraft-domain-not-found-v1",
+				Now:                           now,
 			},
 			Pool: pool,
 			Now:  now,

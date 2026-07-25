@@ -827,7 +827,7 @@ func validPostgresFeatures(
 			Status: flightfeatures.ValidationStatusValid,
 		},
 		Provenance: flightfeatures.FeatureProvenance{
-			ExtractorVersion: "flight-feature-extractor-v1",
+			ExtractorVersion: "flight-feature-extractor-v2",
 			InputFingerprint: "sha256:" +
 				strings.Repeat(
 					suffix,

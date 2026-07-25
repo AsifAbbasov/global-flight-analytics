@@ -36,6 +36,22 @@ func main() {
 			}
 		}
 	}
+	reject := func(path string, fragments ...string) {
+		content, readErr := os.ReadFile(filepath.Join(resolved, path))
+		if readErr != nil {
+			failures = append(failures, fmt.Sprintf("%s: %v", path, readErr))
+			return
+		}
+		text := string(content)
+		for _, fragment := range fragments {
+			if strings.Contains(text, fragment) {
+				failures = append(
+					failures,
+					fmt.Sprintf("%s contains forbidden %q", path, fragment),
+				)
+			}
+		}
+	}
 
 	require(
 		"apps/api/internal/features/flightfeatures/model.go",
@@ -43,6 +59,41 @@ func main() {
 		"CurrentProcessingVersion",
 		"LegacyProcessingVersion",
 		"ProcessingVersion   ProcessingVersion",
+	)
+	require(
+		"apps/api/internal/features/extractor/contracts.go",
+		"FingerprintIdentity     string",
+	)
+	require(
+		"apps/api/internal/features/extractor/fingerprint.go",
+		"type canonicalFingerprintInput struct",
+		"ProcessingIdentity string",
+		"Aircraft           flightfeatures.AircraftFeatures",
+		"fingerprintExtractionInput",
+	)
+	require(
+		"apps/api/internal/features/extractorcomposition/contracts.go",
+		"type ProcessingIdentity struct",
+		"GeographicCellPrecision",
+		"AircraftNotFoundPolicyVersion",
+	)
+	require(
+		"apps/api/internal/features/extractorcomposition/identity.go",
+		"CurrentVersions()",
+		"DefaultGeographicCellPrecision",
+		"DefaultPositiveCacheTTL",
+		"DefaultNegativeCacheTTL",
+		"ErrAircraftNotFoundPolicyVersionRequired",
+	)
+	require(
+		"apps/api/internal/features/extractorcomposition/processing_identity_test.go",
+		"TestGeographicPrecisionChangesInputFingerprint",
+		"TestAircraftMetadataChangesInputFingerprint",
+		"TestNewRejectsTypedNilAircraftLookup",
+	)
+	reject(
+		"apps/api/internal/features/extractorcomposition/composition.go",
+		"func NewExtractor(",
 	)
 	require(
 		"apps/api/internal/features/featurestore/contracts.go",
@@ -78,6 +129,12 @@ func main() {
 		"docs/105_FEATURE_SNAPSHOT_PROCESSING_IDENTITY.md",
 		"FP-02_PROCESSING_IDENTITY_STATUS=CLOSED",
 		"FEATURE_SNAPSHOT_PROCESSING_IDENTITY=ENFORCED",
+	)
+	require(
+		"docs/109_EXTRACTOR_COMPOSITION_PROCESSING_IDENTITY.md",
+		"EXTRACTOR_COMPOSITION_PROCESSING_IDENTITY=ENFORCED",
+		"GEOGRAPHIC_PRECISION_FINGERPRINT_COLLISION=CLOSED",
+		"AIRCRAFT_METADATA_FINGERPRINT_INPUT=ENFORCED",
 	)
 
 	migrations, globErr := filepath.Glob(

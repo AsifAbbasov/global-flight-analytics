@@ -17,7 +17,7 @@ func TestMemoryStoreSeparatesProcessingVersions(t *testing.T) {
 		flightfeatures.CurrentProcessingVersion
 	second := first.Clone()
 	second.Provenance.ProcessingVersion =
-		"flight-feature-processing-pipeline-v2"
+		"flight-feature-processing-test-alternate-v3"
 
 	firstRecord, err := store.Put(context.Background(), first)
 	if err != nil {
