@@ -53,9 +53,9 @@ func TestNewInMemoryWrapsValidatorConfigurationError(
 	policy.NumericTolerance = 0
 
 	_, err := NewInMemory(InMemoryConfig{
-		Extractor: extractorcomposition.Config{
-			AircraftLookup: &compositionAircraftLookup{},
-		},
+		Extractor: extractorcomposition.DefaultConfig(
+			&compositionAircraftLookup{},
+		),
 		ValidatorPolicy: &policy,
 	})
 	if !errors.Is(
@@ -101,13 +101,13 @@ func TestNewInMemoryBuildsProductionComponentsWithSharedClock(
 	)
 	composition, err := NewInMemory(
 		InMemoryConfig{
-			Extractor: extractorcomposition.Config{
-				AircraftLookup: &compositionAircraftLookup{
+			Extractor: extractorcomposition.DefaultConfig(
+				&compositionAircraftLookup{
 					result: aircraft.Aircraft{
 						ICAO24: "ABC123",
 					},
 				},
-			},
+			),
 			Now: func() time.Time {
 				return fixedNow
 			},

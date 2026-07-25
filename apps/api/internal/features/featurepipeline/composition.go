@@ -19,8 +19,7 @@ func NewInMemory(
 		now = time.Now
 	}
 
-	extractorConfig := config.Extractor
-	extractorConfig.Now = now
+	extractorConfig := config.Extractor.WithClock(now)
 
 	extractorComposition, err :=
 		extractorcomposition.New(extractorConfig)

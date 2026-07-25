@@ -6,9 +6,6 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
-
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/aircraftprovider"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/geographicalbuilder"
 )
 
 const fingerprintIdentityPrefix = "sha256:"
@@ -17,42 +14,19 @@ func resolveProcessingIdentity(
 	config Config,
 ) (ProcessingIdentity, string, error) {
 	policyVersion := strings.TrimSpace(
-		config.AircraftNotFoundPolicyVersion,
+		config.aircraftNotFoundPolicyVersion,
 	)
-	if config.IsAircraftNotFound == nil {
-		if policyVersion == "" {
-			policyVersion =
-				aircraftprovider.DefaultNotFoundPolicyVersion
-		}
-	} else if policyVersion == "" {
+	if policyVersion == "" {
 		return ProcessingIdentity{},
 			"",
 			ErrAircraftNotFoundPolicyVersionRequired
 	}
 
-	geographicCellPrecision := config.GeographicCellPrecision
-	if geographicCellPrecision == 0 {
-		geographicCellPrecision =
-			geographicalbuilder.DefaultGeographicCellPrecision
-	}
-
-	positiveCacheTTL := config.AircraftPositiveCacheTTL
-	if positiveCacheTTL == 0 {
-		positiveCacheTTL =
-			aircraftprovider.DefaultPositiveCacheTTL
-	}
-
-	negativeCacheTTL := config.AircraftNegativeCacheTTL
-	if negativeCacheTTL == 0 {
-		negativeCacheTTL =
-			aircraftprovider.DefaultNegativeCacheTTL
-	}
-
 	identity := ProcessingIdentity{
 		Versions:                      CurrentVersions(),
-		GeographicCellPrecision:       geographicCellPrecision,
-		AircraftPositiveCacheTTL:      positiveCacheTTL,
-		AircraftNegativeCacheTTL:      negativeCacheTTL,
+		GeographicCellPrecision:       config.geographicCellPrecision,
+		AircraftPositiveCacheTTL:      config.aircraftPositiveCacheTTL,
+		AircraftNegativeCacheTTL:      config.aircraftNegativeCacheTTL,
 		AircraftNotFoundPolicyVersion: policyVersion,
 	}
 

@@ -10,7 +10,16 @@ var (
 		"production feature extractor aircraft lookup is required",
 	)
 	ErrAircraftNotFoundPolicyVersionRequired = errors.New(
-		"custom aircraft not-found policy version is required",
+		"aircraft not-found policy version is required",
+	)
+	ErrGeographicCellPrecisionRequired = errors.New(
+		"explicit geographic cell precision is required; start with DefaultConfig",
+	)
+	ErrAircraftPositiveCacheDurationRequired = errors.New(
+		"explicit positive aircraft cache duration is required; start with DefaultConfig",
+	)
+	ErrAircraftNegativeCacheDurationRequired = errors.New(
+		"explicit negative aircraft cache duration is required; start with DefaultConfig",
 	)
 )
 

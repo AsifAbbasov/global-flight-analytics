@@ -94,22 +94,61 @@ func main() {
 	require(
 		"apps/api/internal/features/extractorcomposition/contracts.go",
 		"type ProcessingIdentity struct",
-		"GeographicCellPrecision",
-		"AircraftNotFoundPolicyVersion",
+		"func DefaultConfig(",
+		"WithGeographicCellPrecision",
+		"WithAircraftCacheDurations",
+		"WithAircraftNotFoundPolicy",
+		"WithClock",
+		"geographicCellPrecision int",
+		"aircraftPositiveCacheTTL",
+		"aircraftNegativeCacheTTL",
+	)
+	reject(
+		"apps/api/internal/features/extractorcomposition/contracts.go",
+		"type Config struct {\n\tAircraftLookup aircraftprovider.AircraftLookup",
+		"\tIsAircraftNotFound            func(error) bool",
+		"\tNow func() time.Time\n}",
 	)
 	require(
 		"apps/api/internal/features/extractorcomposition/identity.go",
 		"CurrentVersions()",
+		"config.geographicCellPrecision",
+		"config.aircraftPositiveCacheTTL",
+		"config.aircraftNegativeCacheTTL",
+		"ErrAircraftNotFoundPolicyVersionRequired",
+	)
+	reject(
+		"apps/api/internal/features/extractorcomposition/identity.go",
 		"DefaultGeographicCellPrecision",
 		"DefaultPositiveCacheTTL",
 		"DefaultNegativeCacheTTL",
-		"ErrAircraftNotFoundPolicyVersionRequired",
+		"== 0",
 	)
 	require(
 		"apps/api/internal/features/extractorcomposition/processing_identity_test.go",
+		"TestDefaultConfigUsesExplicitDefaults",
+		"TestNewRejectsZeroExplicitConfigurationValues",
+		"TestConfigurationMethodsDoNotMutateSource",
 		"TestGeographicPrecisionChangesInputFingerprint",
 		"TestAircraftMetadataChangesInputFingerprint",
 		"TestNewRejectsTypedNilAircraftLookup",
+	)
+	require(
+		"apps/api/cmd/materialize-flight-features/main.go",
+		"extractorcomposition.DefaultConfig(",
+		"WithAircraftNotFoundPolicy(",
+	)
+	reject(
+		"apps/api/cmd/materialize-flight-features/main.go",
+		"extractorcomposition."+"Config{",
+	)
+	require(
+		"apps/api/cmd/verify-postgres-feature-pipeline/main.go",
+		"extractorcomposition.DefaultConfig(",
+	)
+	reject(
+		"apps/api/cmd/verify-postgres-feature-pipeline/main.go",
+		"extractorcomposition."+"Config{",
 	)
 	reject(
 		"apps/api/internal/features/extractorcomposition/composition.go",
@@ -161,6 +200,12 @@ func main() {
 		"AIRCRAFT_METADATA_TEMPORAL_GATE=ENFORCED",
 		"AIRCRAFT_CACHE_AS_OF_ISOLATION=ENFORCED",
 		"FUTURE_AIRCRAFT_METADATA_LEAKAGE=CLOSED",
+	)
+	require(
+		"docs/111_EXTRACTOR_COMPOSITION_EXPLICIT_CONFIG.md",
+		"EXTRACTOR_COMPOSITION_EXPLICIT_CONFIG=ENFORCED",
+		"ZERO_VALUE_CONFIG_SENTINELS=CLOSED",
+		"PRODUCTION_CONFIG_LITERAL_BYPASS=REJECTED",
 	)
 
 	migrations, globErr := filepath.Glob(

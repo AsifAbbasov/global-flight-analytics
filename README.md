@@ -436,3 +436,11 @@ version 1 snapshots.
 Historical feature materialization now rejects aircraft metadata updated after
 the requested as-of time. Cache reuse remains ICAO24-based, while temporal
 acceptance is evaluated independently for every request.
+
+<!-- EXTRACTOR-COMPOSITION-EXPLICIT-CONFIG:README -->
+
+## Extractor Composition Explicit Configuration
+
+Production extractor composition now starts from `DefaultConfig` and derives
+explicit overrides through value-returning methods. Raw external configuration
+literals and hidden zero-value defaults are no longer part of the contract.

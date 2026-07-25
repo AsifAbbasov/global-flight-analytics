@@ -10,14 +10,41 @@ import (
 )
 
 func New(config Config) (*Composition, error) {
-	if dependencyMissing(config.AircraftLookup) {
+	if dependencyMissing(config.aircraftLookup) {
 		return nil, ErrAircraftLookupRequired
+	}
+	if config.geographicCellPrecision == 0 {
+		return nil, &ComponentError{
+			Component: ComponentGeographicalBuilder,
+			Err:       ErrGeographicCellPrecisionRequired,
+		}
+	}
+	if config.aircraftPositiveCacheTTL == 0 {
+		return nil, &ComponentError{
+			Component: ComponentAircraftProvider,
+			Err:       ErrAircraftPositiveCacheDurationRequired,
+		}
+	}
+	if config.aircraftNegativeCacheTTL == 0 {
+		return nil, &ComponentError{
+			Component: ComponentAircraftProvider,
+			Err:       ErrAircraftNegativeCacheDurationRequired,
+		}
+	}
+
+	processingIdentity, fingerprintIdentity, err :=
+		resolveProcessingIdentity(config)
+	if err != nil {
+		return nil, &ComponentError{
+			Component: ComponentAircraftProvider,
+			Err:       err,
+		}
 	}
 
 	geographicalBuilder, err :=
 		geographicalbuilder.New(
 			geographicalbuilder.Config{
-				GeographicCellPrecision: config.GeographicCellPrecision,
+				GeographicCellPrecision: config.geographicCellPrecision,
 			},
 		)
 	if err != nil {
@@ -30,22 +57,13 @@ func New(config Config) (*Composition, error) {
 	aircraftProvider, err :=
 		aircraftprovider.New(
 			aircraftprovider.Config{
-				Lookup:           config.AircraftLookup,
-				PositiveCacheTTL: config.AircraftPositiveCacheTTL,
-				NegativeCacheTTL: config.AircraftNegativeCacheTTL,
-				Now:              config.Now,
-				IsNotFound:       config.IsAircraftNotFound,
+				Lookup:           config.aircraftLookup,
+				PositiveCacheTTL: config.aircraftPositiveCacheTTL,
+				NegativeCacheTTL: config.aircraftNegativeCacheTTL,
+				Now:              config.now,
+				IsNotFound:       config.isAircraftNotFound,
 			},
 		)
-	if err != nil {
-		return nil, &ComponentError{
-			Component: ComponentAircraftProvider,
-			Err:       err,
-		}
-	}
-
-	processingIdentity, fingerprintIdentity, err :=
-		resolveProcessingIdentity(config)
 	if err != nil {
 		return nil, &ComponentError{
 			Component: ComponentAircraftProvider,
@@ -61,7 +79,7 @@ func New(config Config) (*Composition, error) {
 			TrajectoryBuilder:       trajectorybuilder.New(),
 			AircraftFeatureProvider: aircraftProvider,
 			FingerprintIdentity:     fingerprintIdentity,
-			Now:                     config.Now,
+			Now:                     config.now,
 		},
 	)
 	if err != nil {

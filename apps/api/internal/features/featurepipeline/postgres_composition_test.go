@@ -42,9 +42,9 @@ func TestNewPostgresWrapsValidatorConfigurationError(
 	policy.NumericTolerance = 0
 
 	_, err := NewPostgres(PostgresConfig{
-		Extractor: extractorcomposition.Config{
-			AircraftLookup: &postgresCompositionAircraftLookup{},
-		},
+		Extractor: extractorcomposition.DefaultConfig(
+			&postgresCompositionAircraftLookup{},
+		),
 		ValidatorPolicy: &policy,
 		Pool:            &pgxpool.Pool{},
 	})
@@ -70,9 +70,9 @@ func TestNewPostgresWrapsStoreConstructionError(
 	t *testing.T,
 ) {
 	_, err := NewPostgres(PostgresConfig{
-		Extractor: extractorcomposition.Config{
-			AircraftLookup: &postgresCompositionAircraftLookup{},
-		},
+		Extractor: extractorcomposition.DefaultConfig(
+			&postgresCompositionAircraftLookup{},
+		),
 	})
 	if !errors.Is(
 		err,
@@ -97,13 +97,13 @@ func TestNewPostgresBuildsProductionComponents(
 ) {
 	composition, err := NewPostgres(
 		PostgresConfig{
-			Extractor: extractorcomposition.Config{
-				AircraftLookup: &postgresCompositionAircraftLookup{
+			Extractor: extractorcomposition.DefaultConfig(
+				&postgresCompositionAircraftLookup{
 					result: aircraft.Aircraft{
 						ICAO24: "ABC123",
 					},
 				},
-			},
+			),
 			Pool: &pgxpool.Pool{},
 		},
 	)

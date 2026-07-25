@@ -141,12 +141,9 @@ func run(
 
 	composition, err := featurepipeline.NewPostgres(
 		featurepipeline.PostgresConfig{
-			Extractor: extractorcomposition.Config{
-				AircraftLookup: verificationAircraftLookup{},
-				Now: func() time.Time {
-					return now
-				},
-			},
+			Extractor: extractorcomposition.DefaultConfig(
+				verificationAircraftLookup{},
+			),
 			Executor: tx,
 			Now: func() time.Time {
 				return now

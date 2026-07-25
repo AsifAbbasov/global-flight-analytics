@@ -13,12 +13,14 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/geographicalbuilder"
 )
 
-func TestProcessingIdentityUsesEffectiveDefaults(t *testing.T) {
-	composition, err := New(Config{
-		AircraftLookup: &fakeAircraftLookup{
-			result: aircraft.Aircraft{ICAO24: "ABC123"},
-		},
-	})
+func TestDefaultConfigUsesExplicitDefaults(t *testing.T) {
+	composition, err := New(
+		DefaultConfig(
+			&fakeAircraftLookup{
+				result: aircraft.Aircraft{ICAO24: "ABC123"},
+			},
+		),
+	)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
@@ -57,19 +59,120 @@ func TestProcessingIdentityUsesEffectiveDefaults(t *testing.T) {
 	}
 }
 
+func TestNewRejectsZeroExplicitConfigurationValues(
+	t *testing.T,
+) {
+	lookup := &fakeAircraftLookup{}
+
+	tests := []struct {
+		name    string
+		config  Config
+		wantErr error
+	}{
+		{
+			name: "geographic precision",
+			config: DefaultConfig(
+				lookup,
+			).WithGeographicCellPrecision(0),
+			wantErr: ErrGeographicCellPrecisionRequired,
+		},
+		{
+			name: "positive cache duration",
+			config: DefaultConfig(
+				lookup,
+			).WithAircraftCacheDurations(
+				0,
+				aircraftprovider.DefaultNegativeCacheTTL,
+			),
+			wantErr: ErrAircraftPositiveCacheDurationRequired,
+		},
+		{
+			name: "negative cache duration",
+			config: DefaultConfig(
+				lookup,
+			).WithAircraftCacheDurations(
+				aircraftprovider.DefaultPositiveCacheTTL,
+				0,
+			),
+			wantErr: ErrAircraftNegativeCacheDurationRequired,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := New(test.config)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf(
+					"New() error = %v, want %v",
+					err,
+					test.wantErr,
+				)
+			}
+		})
+	}
+}
+
+func TestConfigurationMethodsDoNotMutateSource(
+	t *testing.T,
+) {
+	base := DefaultConfig(&fakeAircraftLookup{})
+	custom := base.
+		WithGeographicCellPrecision(4).
+		WithAircraftCacheDurations(
+			time.Minute,
+			30*time.Second,
+		).
+		WithClock(func() time.Time {
+			return time.Unix(1, 0)
+		})
+
+	baseComposition, err := New(base)
+	if err != nil {
+		t.Fatalf("New(base) error = %v", err)
+	}
+	customComposition, err := New(custom)
+	if err != nil {
+		t.Fatalf("New(custom) error = %v", err)
+	}
+
+	if baseComposition.ProcessingIdentity.GeographicCellPrecision !=
+		geographicalbuilder.DefaultGeographicCellPrecision ||
+		baseComposition.ProcessingIdentity.AircraftPositiveCacheTTL !=
+			aircraftprovider.DefaultPositiveCacheTTL {
+		t.Fatalf(
+			"base configuration was mutated: %#v",
+			baseComposition.ProcessingIdentity,
+		)
+	}
+	if customComposition.ProcessingIdentity.GeographicCellPrecision != 4 ||
+		customComposition.ProcessingIdentity.AircraftPositiveCacheTTL !=
+			time.Minute ||
+		customComposition.ProcessingIdentity.AircraftNegativeCacheTTL !=
+			30*time.Second {
+		t.Fatalf(
+			"custom configuration was not applied: %#v",
+			customComposition.ProcessingIdentity,
+		)
+	}
+}
+
 func TestGeographicPrecisionChangesInputFingerprint(t *testing.T) {
-	first := extractFingerprint(t, Config{
-		AircraftLookup: &fakeAircraftLookup{
-			result: aircraft.Aircraft{ICAO24: "ABC123"},
-		},
-		GeographicCellPrecision: 2,
-	})
-	second := extractFingerprint(t, Config{
-		AircraftLookup: &fakeAircraftLookup{
-			result: aircraft.Aircraft{ICAO24: "ABC123"},
-		},
-		GeographicCellPrecision: 3,
-	})
+	first := extractFingerprint(
+		t,
+		DefaultConfig(
+			&fakeAircraftLookup{
+				result: aircraft.Aircraft{ICAO24: "ABC123"},
+			},
+		).WithGeographicCellPrecision(2),
+	)
+	second := extractFingerprint(
+		t,
+		DefaultConfig(
+			&fakeAircraftLookup{
+				result: aircraft.Aircraft{ICAO24: "ABC123"},
+			},
+		).WithGeographicCellPrecision(3),
+	)
 
 	if first == second {
 		t.Fatal(
@@ -79,22 +182,28 @@ func TestGeographicPrecisionChangesInputFingerprint(t *testing.T) {
 }
 
 func TestAircraftMetadataChangesInputFingerprint(t *testing.T) {
-	first := extractFingerprint(t, Config{
-		AircraftLookup: &fakeAircraftLookup{
-			result: aircraft.Aircraft{
-				ICAO24: "ABC123",
-				Model:  "A320",
+	first := extractFingerprint(
+		t,
+		DefaultConfig(
+			&fakeAircraftLookup{
+				result: aircraft.Aircraft{
+					ICAO24: "ABC123",
+					Model:  "A320",
+				},
 			},
-		},
-	})
-	second := extractFingerprint(t, Config{
-		AircraftLookup: &fakeAircraftLookup{
-			result: aircraft.Aircraft{
-				ICAO24: "ABC123",
-				Model:  "A321",
+		),
+	)
+	second := extractFingerprint(
+		t,
+		DefaultConfig(
+			&fakeAircraftLookup{
+				result: aircraft.Aircraft{
+					ICAO24: "ABC123",
+					Model:  "A321",
+				},
 			},
-		},
-	})
+		),
+	)
 
 	if first == second {
 		t.Fatal(
@@ -104,12 +213,16 @@ func TestAircraftMetadataChangesInputFingerprint(t *testing.T) {
 }
 
 func TestCustomAircraftNotFoundPolicyRequiresVersion(t *testing.T) {
-	_, err := New(Config{
-		AircraftLookup: &fakeAircraftLookup{},
-		IsAircraftNotFound: func(error) bool {
-			return true
-		},
-	})
+	_, err := New(
+		DefaultConfig(
+			&fakeAircraftLookup{},
+		).WithAircraftNotFoundPolicy(
+			"",
+			func(error) bool {
+				return true
+			},
+		),
+	)
 	if !errors.Is(
 		err,
 		ErrAircraftNotFoundPolicyVersionRequired,
@@ -125,7 +238,7 @@ func TestCustomAircraftNotFoundPolicyRequiresVersion(t *testing.T) {
 func TestNewRejectsTypedNilAircraftLookup(t *testing.T) {
 	var lookup *fakeAircraftLookup
 
-	_, err := New(Config{AircraftLookup: lookup})
+	_, err := New(DefaultConfig(lookup))
 	if !errors.Is(err, ErrAircraftLookupRequired) {
 		t.Fatalf(
 			"New() error = %v, want %v",
@@ -151,9 +264,11 @@ func extractFingerprint(
 		0,
 		time.UTC,
 	)
-	config.Now = func() time.Time {
-		return fixedNow
-	}
+	config = config.WithClock(
+		func() time.Time {
+			return fixedNow
+		},
+	)
 
 	composition, err := New(config)
 	if err != nil {

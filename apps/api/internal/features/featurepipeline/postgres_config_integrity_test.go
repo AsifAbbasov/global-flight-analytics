@@ -13,9 +13,9 @@ import (
 
 func TestNewPostgresRejectsAmbiguousStorageSource(t *testing.T) {
 	_, err := NewPostgres(PostgresConfig{
-		Extractor: extractorcomposition.Config{
-			AircraftLookup: &postgresCompositionAircraftLookup{},
-		},
+		Extractor: extractorcomposition.DefaultConfig(
+			&postgresCompositionAircraftLookup{},
+		),
 		Pool:     &pgxpool.Pool{},
 		Executor: &fakePostgresExecutor{},
 	})
@@ -32,9 +32,9 @@ func TestNewPostgresRejectsTypedNilExecutor(t *testing.T) {
 	var executor *fakePostgresExecutor
 
 	_, err := NewPostgres(PostgresConfig{
-		Extractor: extractorcomposition.Config{
-			AircraftLookup: &postgresCompositionAircraftLookup{},
-		},
+		Extractor: extractorcomposition.DefaultConfig(
+			&postgresCompositionAircraftLookup{},
+		),
 		Executor: executor,
 	})
 	if !errors.Is(err, ErrPostgresSourceRequired) {

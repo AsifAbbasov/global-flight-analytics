@@ -5,6 +5,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/aircraftprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractor"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/geographicalbuilder"
 )
 
 const Version = "flight-feature-extractor-composition-v3"
@@ -18,16 +19,60 @@ const (
 )
 
 type Config struct {
-	AircraftLookup aircraftprovider.AircraftLookup
+	aircraftLookup aircraftprovider.AircraftLookup
 
-	GeographicCellPrecision int
+	geographicCellPrecision int
 
-	AircraftPositiveCacheTTL      time.Duration
-	AircraftNegativeCacheTTL      time.Duration
-	IsAircraftNotFound            func(error) bool
-	AircraftNotFoundPolicyVersion string
+	aircraftPositiveCacheTTL      time.Duration
+	aircraftNegativeCacheTTL      time.Duration
+	isAircraftNotFound            func(error) bool
+	aircraftNotFoundPolicyVersion string
 
-	Now func() time.Time
+	now func() time.Time
+}
+
+func DefaultConfig(
+	lookup aircraftprovider.AircraftLookup,
+) Config {
+	return Config{
+		aircraftLookup:                lookup,
+		geographicCellPrecision:       geographicalbuilder.DefaultGeographicCellPrecision,
+		aircraftPositiveCacheTTL:      aircraftprovider.DefaultPositiveCacheTTL,
+		aircraftNegativeCacheTTL:      aircraftprovider.DefaultNegativeCacheTTL,
+		aircraftNotFoundPolicyVersion: aircraftprovider.DefaultNotFoundPolicyVersion,
+	}
+}
+
+func (config Config) WithGeographicCellPrecision(
+	precision int,
+) Config {
+	config.geographicCellPrecision = precision
+	return config
+}
+
+func (config Config) WithAircraftCacheDurations(
+	positive time.Duration,
+	negative time.Duration,
+) Config {
+	config.aircraftPositiveCacheTTL = positive
+	config.aircraftNegativeCacheTTL = negative
+	return config
+}
+
+func (config Config) WithAircraftNotFoundPolicy(
+	version string,
+	classifier func(error) bool,
+) Config {
+	config.aircraftNotFoundPolicyVersion = version
+	config.isAircraftNotFound = classifier
+	return config
+}
+
+func (config Config) WithClock(
+	now func() time.Time,
+) Config {
+	config.now = now
+	return config
 }
 
 type Versions struct {

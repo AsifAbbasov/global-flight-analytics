@@ -20,7 +20,7 @@ import (
 )
 
 func TestNewRequiresAircraftLookup(t *testing.T) {
-	_, err := New(Config{})
+	_, err := New(DefaultConfig(nil))
 	if !errors.Is(err, ErrAircraftLookupRequired) {
 		t.Fatalf(
 			"New() error = %v, want %v",
@@ -33,10 +33,11 @@ func TestNewRequiresAircraftLookup(t *testing.T) {
 func TestNewWrapsGeographicalBuilderConfigurationError(
 	t *testing.T,
 ) {
-	_, err := New(Config{
-		AircraftLookup:          &fakeAircraftLookup{},
-		GeographicCellPrecision: 7,
-	})
+	_, err := New(
+		DefaultConfig(
+			&fakeAircraftLookup{},
+		).WithGeographicCellPrecision(7),
+	)
 	if !errors.Is(
 		err,
 		geographicalbuilder.ErrInvalidGeographicCellPrecision,
@@ -68,10 +69,14 @@ func TestNewWrapsGeographicalBuilderConfigurationError(
 func TestNewWrapsAircraftProviderConfigurationError(
 	t *testing.T,
 ) {
-	_, err := New(Config{
-		AircraftLookup:           &fakeAircraftLookup{},
-		AircraftPositiveCacheTTL: -time.Second,
-	})
+	_, err := New(
+		DefaultConfig(
+			&fakeAircraftLookup{},
+		).WithAircraftCacheDurations(
+			-time.Second,
+			aircraftprovider.DefaultNegativeCacheTTL,
+		),
+	)
 	if !errors.Is(
 		err,
 		aircraftprovider.ErrInvalidPositiveCacheTTL,
@@ -124,12 +129,13 @@ func TestNewBuildsCompleteProductionExtractor(
 		},
 	}
 
-	composition, err := New(Config{
-		AircraftLookup: lookup,
-		Now: func() time.Time {
-			return fixedNow
-		},
-	})
+	composition, err := New(
+		DefaultConfig(lookup).WithClock(
+			func() time.Time {
+				return fixedNow
+			},
+		),
+	)
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}

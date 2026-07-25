@@ -69,14 +69,14 @@ func runCommand(
 	aircraftRepository := postgres.NewAircraftRepository(pool)
 	composition, err := featurepipeline.NewPostgres(
 		featurepipeline.PostgresConfig{
-			Extractor: extractorcomposition.Config{
-				AircraftLookup: aircraftRepository,
-				IsAircraftNotFound: func(err error) bool {
+			Extractor: extractorcomposition.DefaultConfig(
+				aircraftRepository,
+			).WithAircraftNotFoundPolicy(
+				"aircraft-domain-not-found-v1",
+				func(err error) bool {
 					return errors.Is(err, aircraft.ErrNotFound)
 				},
-				AircraftNotFoundPolicyVersion: "aircraft-domain-not-found-v1",
-				Now:                           now,
-			},
+			),
 			Pool: pool,
 			Now:  now,
 		},
