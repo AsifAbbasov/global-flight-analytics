@@ -6,9 +6,12 @@ import {
   collectSharpVersions,
   compareVersions,
   nextUsesPinnedPostCSS,
+  webImporterUsesPinnedESLintConfigNext,
+  webImporterUsesPinnedNext,
   webImporterUsesPinnedSharp,
   verifyDependencySecurity,
   verifyFrontendBuildDeterminism,
+  webPinsNextSecurityRelease,
   webPinsSharp,
   workspaceHasSharpOverride,
   workspaceHasTargetedOverride,
@@ -17,14 +20,17 @@ import {
 const secureWorkspace = `packages:
   - 'apps/*'
 overrides:
-  'postcss@<8.5.10': 8.5.15
+  'postcss@<8.5.18': 8.5.18
   'sharp@<0.35.0': 0.35.3
 `;
 
 const secureWebPackage = JSON.stringify({
   dependencies: {
-    next: "16.2.9",
+    next: "16.2.11",
     sharp: "0.35.3",
+  },
+  devDependencies: {
+    "eslint-config-next": "16.2.11",
   },
 });
 
@@ -49,24 +55,28 @@ importers:
   apps/web:
     dependencies:
       next:
-        specifier: 16.2.9
-        version: 16.2.9(react@19.2.4)
+        specifier: 16.2.11
+        version: 16.2.11(react@19.2.4)
       sharp:
         specifier: 0.35.3
         version: 0.35.3
+    devDependencies:
+      eslint-config-next:
+        specifier: 16.2.11
+        version: 16.2.11
 
 packages:
-  postcss@8.5.15:
+  postcss@8.5.18:
     resolution: {integrity: sha512-postcss}
 
   sharp@0.35.3:
     resolution: {integrity: sha512-sharp}
 
 snapshots:
-  next@16.2.9(react@19.2.4):
+  next@16.2.11(react@19.2.4):
     dependencies:
-      postcss: 8.5.15
-  postcss@8.5.15: {}
+      postcss: 8.5.18
+  postcss@8.5.18: {}
 
   sharp@0.35.3: {}
 `;
@@ -98,7 +108,7 @@ test("PostCSS resolutions are collected deterministically", () => {
     collectPostCSSVersions(
       `${secureLockfile}\n  postcss@8.5.12:\n    resolution: {integrity: sha512-second}\n`,
     ),
-    ["8.5.12", "8.5.15"],
+    ["8.5.12", "8.5.18"],
   );
 });
 
@@ -120,6 +130,27 @@ test("web application pins sharp directly", () => {
   assert.equal(webPinsSharp(secureWebPackage), true);
 });
 
+test("web application pins the patched Next.js toolchain", () => {
+  assert.equal(webPinsNextSecurityRelease(secureWebPackage), true);
+  assert.equal(webImporterUsesPinnedNext(secureLockfile), true);
+  assert.equal(
+    webImporterUsesPinnedESLintConfigNext(secureLockfile),
+    true,
+  );
+});
+
+test("vulnerable Next.js release fails", () => {
+  const vulnerablePackage = secureWebPackage.replaceAll(
+    "16.2.11",
+    "16.2.9",
+  );
+
+  assert.throws(
+    () => verify({ webPackageText: vulnerablePackage }),
+    /must pin next and eslint-config-next 16\.2\.11/,
+  );
+});
+
 test("Next.js PostCSS and web Sharp resolutions are recognized", () => {
   assert.equal(nextUsesPinnedPostCSS(secureLockfile), true);
   assert.equal(webImporterUsesPinnedSharp(secureLockfile), true);
@@ -127,19 +158,19 @@ test("Next.js PostCSS and web Sharp resolutions are recognized", () => {
 
 test("secure dependency graph passes", () => {
   const result = verify();
-  assert.deepEqual(result.postcssVersions, ["8.5.15"]);
+  assert.deepEqual(result.postcssVersions, ["8.5.18"]);
   assert.deepEqual(result.sharpVersions, ["0.35.3"]);
 });
 
 test("vulnerable PostCSS resolution fails", () => {
   const vulnerableLockfile = secureLockfile.replaceAll(
-    "8.5.15",
-    "8.4.31",
+    "8.5.18",
+    "8.5.17",
   );
 
   assert.throws(
     () => verify({ lockfileText: vulnerableLockfile }),
-    /vulnerable PostCSS versions: 8\.4\.31/,
+    /vulnerable PostCSS versions: 8\.5\.17/,
   );
 });
 
@@ -172,7 +203,7 @@ test("missing direct sharp pin fails", () => {
     () =>
       verify({
         webPackageText: JSON.stringify({
-          dependencies: { next: "16.2.9" },
+          dependencies: { next: "16.2.11" },
         }),
       }),
     /must pin sharp 0\.35\.3/,

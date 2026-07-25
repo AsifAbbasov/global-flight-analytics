@@ -914,3 +914,10 @@ fixed findings, three deliberately retained contracts, two rejected
 non-blocking mechanical observations, zero deferred or unclassified findings,
 the public precision and value-presence contracts, standard-library source
 sorting, permanent source audit coverage and formal closure gates.
+<!-- NEXT-16-2-11-SECURITY-CLOSURE:DOCUMENT-INDEX -->
+
+## 103. Next.js 16.2.11 Security Closure
+
+```text
+docs/103_NEXT_16_2_11_SECURITY_CLOSURE.md
+```

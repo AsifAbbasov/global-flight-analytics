@@ -1113,6 +1113,41 @@ func auditFrontendContracts(
 		root,
 		[]fileRule{
 			{
+				Name: "Frontend PostCSS security release",
+				Path: "pnpm-workspace.yaml",
+				Required: []string{
+					`'postcss@<8.5.18': 8.5.18`,
+				},
+				Forbidden: []string{
+					`'postcss@<8.5.10': 8.5.15`,
+				},
+			},
+			{
+				Name: "Frontend Next security release",
+				Path: "apps/web/package.json",
+				Required: []string{
+					`"next": "16.2.11"`,
+					`"eslint-config-next": "16.2.11"`,
+				},
+				Forbidden: []string{
+					`"next": "16.2.9"`,
+					`"eslint-config-next": "16.2.9"`,
+				},
+			},
+			{
+				Name: "Frontend dependency security policy",
+				Path: "scripts/verify-frontend-dependency-security.mjs",
+				Required: []string{
+					`MINIMUM_SAFE_NEXT_VERSION = "16.2.11"`,
+					`PINNED_NEXT_VERSION = "16.2.11"`,
+					`MINIMUM_SAFE_POSTCSS_VERSION = "8.5.18"`,
+					`PINNED_POSTCSS_VERSION = "8.5.18"`,
+					"webPinsNextSecurityRelease",
+					"webImporterUsesPinnedNext",
+					"webImporterUsesPinnedESLintConfigNext",
+				},
+			},
+			{
 				Name: "Analytical frontend API ownership",
 				Path: "apps/web/lib/api/analytics.ts",
 				Required: []string{

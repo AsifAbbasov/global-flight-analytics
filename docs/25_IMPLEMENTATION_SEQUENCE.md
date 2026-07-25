@@ -847,3 +847,13 @@ ANALYTICAL_CORE_REVIEW_STATUS=CLOSED
 
 Future Analytical Core work belongs to a new implementation increment and must
 not silently reopen this completed review.
+<!-- NEXT-16-2-11-SECURITY-CLOSURE:IMPLEMENTATION -->
+
+## Post-Analytical-Closure Frontend Security Update
+
+Status: IMPLEMENTED.
+
+Next.js and eslint-config-next are pinned to 16.2.11 after the July 21, 2026
+security advisories. The lockfile, dependency policy, production audit,
+Analytical Core audit, and both Continuous Integration workflows verify the
+same patched dependency graph, including the PostCSS 8.5.18 path traversal fix.

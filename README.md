@@ -367,3 +367,18 @@ Unclassified findings: 0
 
 `go run ./apps/api/tools/analyticalcorefinalaudit -strict` is the permanent
 source-level closure gate.
+<!-- NEXT-16-2-11-SECURITY-CLOSURE:README -->
+
+## Next.js 16.2.11 Security Closure
+
+The frontend pins Next.js and eslint-config-next 16.2.11 and PostCSS 8.5.18. This release is the
+minimum accepted security baseline after the July 21, 2026 Next.js advisories.
+The frontend dependency policy, Analytical Core closure audit, pnpm production
+audit, Backend Continuous Integration, and Frontend Continuous Integration all
+protect this boundary.
+
+```text
+NEXT_SECURITY_BASELINE=16.2.11
+POSTCSS_SECURITY_BASELINE=8.5.18
+FRONTEND_PRODUCTION_AUDIT_REQUIRED=true
+```

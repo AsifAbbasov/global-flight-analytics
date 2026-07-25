@@ -284,3 +284,11 @@ Regression tests prove both directions:
 valid multiline Go and TypeScript contracts pass;
 a genuinely absent compact contract fails.
 ```
+## 14. Post-closure frontend framework security baseline
+
+The Analytical Core remains closed while its frontend publication surface moves
+from Next.js 16.2.9 to the patched 16.2.11 security release.
+
+This update does not change analytical formulas or public metric contracts. It
+closes a dependency-security failure discovered by the independent Frontend
+Continuous Integration evidence check.

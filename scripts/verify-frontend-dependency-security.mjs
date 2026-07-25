@@ -1,11 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
-export const MINIMUM_SAFE_POSTCSS_VERSION = "8.5.10";
-export const PINNED_POSTCSS_VERSION = "8.5.15";
+export const MINIMUM_SAFE_POSTCSS_VERSION = "8.5.18";
+export const PINNED_POSTCSS_VERSION = "8.5.18";
 export const MINIMUM_SAFE_SHARP_VERSION = "0.35.0";
 export const PINNED_SHARP_VERSION = "0.35.3";
-export const NEXT_VERSION = "16.2.9";
+export const MINIMUM_SAFE_NEXT_VERSION = "16.2.11";
+export const PINNED_NEXT_VERSION = "16.2.11";
+export const NEXT_VERSION = PINNED_NEXT_VERSION;
 
 export function parseVersion(value) {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(value);
@@ -140,6 +142,24 @@ export function webImporterUsesPinnedSharp(lockfileText) {
   );
 }
 
+export function webImporterUsesPinnedNext(lockfileText) {
+  return importerDependencyUsesVersion(
+    lockfileText,
+    "apps/web",
+    "next",
+    PINNED_NEXT_VERSION,
+  );
+}
+
+export function webImporterUsesPinnedESLintConfigNext(lockfileText) {
+  return importerDependencyUsesVersion(
+    lockfileText,
+    "apps/web",
+    "eslint-config-next",
+    PINNED_NEXT_VERSION,
+  );
+}
+
 function workspaceHasOverride(workspaceText, packageName, minimum, pinned) {
   return new RegExp(
     `^\\s{2}['\"]?${packageName}@<${minimum.replaceAll(".", "\\.")}['\"]?:\\s+['\"]?${pinned.replaceAll(".", "\\.")}['\"]?\\s*$`,
@@ -168,6 +188,15 @@ export function workspaceHasSharpOverride(workspaceText) {
 export function webPinsSharp(webPackageText) {
   const packageJSON = JSON.parse(webPackageText);
   return packageJSON.dependencies?.sharp === PINNED_SHARP_VERSION;
+}
+
+export function webPinsNextSecurityRelease(webPackageText) {
+  const packageJSON = JSON.parse(webPackageText);
+  return (
+    packageJSON.dependencies?.next === PINNED_NEXT_VERSION &&
+    packageJSON.devDependencies?.["eslint-config-next"] ===
+      PINNED_NEXT_VERSION
+  );
 }
 
 function validateResolvedVersions({
@@ -283,6 +312,24 @@ export function verifyDependencySecurity({
     );
   }
 
+  if (!webPinsNextSecurityRelease(webPackageText)) {
+    failures.push(
+      `apps/web/package.json must pin next and eslint-config-next ${PINNED_NEXT_VERSION}`,
+    );
+  }
+
+  if (!webImporterUsesPinnedNext(lockfileText)) {
+    failures.push(
+      `apps/web importer does not resolve next ${PINNED_NEXT_VERSION}`,
+    );
+  }
+
+  if (!webImporterUsesPinnedESLintConfigNext(lockfileText)) {
+    failures.push(
+      `apps/web importer does not resolve eslint-config-next ${PINNED_NEXT_VERSION}`,
+    );
+  }
+
   const postcssVersions = collectPostCSSVersions(lockfileText);
   validateResolvedVersions({
     failures,
@@ -319,6 +366,8 @@ export function verifyDependencySecurity({
 
   return {
     nextVersion: NEXT_VERSION,
+    minimumSafeNextVersion: MINIMUM_SAFE_NEXT_VERSION,
+    pinnedNextVersion: PINNED_NEXT_VERSION,
     postcssVersions,
     sharpVersions,
     minimumSafePostCSSVersion: MINIMUM_SAFE_POSTCSS_VERSION,
@@ -347,7 +396,7 @@ async function main() {
   });
 
   console.log(
-    `FRONTEND_DEPENDENCY_SECURITY=PASS next=${result.nextVersion} postcss=${result.postcssVersions.join(",")} sharp=${result.sharpVersions.join(",")} minimum_safe_postcss=${result.minimumSafePostCSSVersion} minimum_safe_sharp=${result.minimumSafeSharpVersion} fonts=${result.fontSource}`,
+    `FRONTEND_DEPENDENCY_SECURITY=PASS next=${result.nextVersion} minimum_safe_next=${result.minimumSafeNextVersion} pinned_next=${result.pinnedNextVersion} postcss=${result.postcssVersions.join(",")} sharp=${result.sharpVersions.join(",")} minimum_safe_postcss=${result.minimumSafePostCSSVersion} minimum_safe_sharp=${result.minimumSafeSharpVersion} fonts=${result.fontSource}`,
   );
 }
 
