@@ -382,3 +382,14 @@ NEXT_SECURITY_BASELINE=16.2.11
 POSTCSS_SECURITY_BASELINE=8.5.18
 FRONTEND_PRODUCTION_AUDIT_REQUIRED=true
 ```
+<!-- FEATURE-PIPELINE-CONTRACT-INTEGRITY:README -->
+
+## Feature Pipeline Contract Integrity
+
+The production feature materializer is runtime-reachable. The pipeline now
+depends on a narrow writer, rejects nil contexts and typed-nil dependencies,
+validates complete report evidence, returns stored features as the only
+successful source of truth, rejects ambiguous PostgreSQL wiring, and runs its
+PostgreSQL verifier in Continuous Integration.
+
+Processing identity remains a separate schema-level increment.

@@ -28,7 +28,7 @@ func TestNewRequiresEveryDependency(t *testing.T) {
 			name: "extractor",
 			config: Config{
 				Validator: featureValidator,
-				Store:     store,
+				Writer:    store,
 			},
 			want: ErrExtractorRequired,
 		},
@@ -36,7 +36,7 @@ func TestNewRequiresEveryDependency(t *testing.T) {
 			name: "validator",
 			config: Config{
 				Extractor: featureExtractor,
-				Store:     store,
+				Writer:    store,
 			},
 			want: ErrValidatorRequired,
 		},
@@ -147,7 +147,7 @@ func TestPipelineProcessesInStrictOrderAndStoresValidatedCopy(
 		Config{
 			Extractor: featureExtractor,
 			Validator: featureValidator,
-			Store:     store,
+			Writer:    store,
 		},
 	)
 	request := extractor.Request{
@@ -182,7 +182,7 @@ func TestPipelineProcessesInStrictOrderAndStoresValidatedCopy(
 		)
 	}
 	if result.PipelineVersion != Version ||
-		result.Features.Quality.Status !=
+		result.Features().Quality.Status !=
 			flightfeatures.ValidationStatusValid ||
 		result.ValidationReport.Status !=
 			flightfeatures.ValidationStatusValid ||
@@ -261,7 +261,7 @@ func TestPipelineRejectsInvalidWithoutStoreWrite(t *testing.T) {
 					},
 				},
 			},
-			Store: store,
+			Writer: store,
 		},
 	)
 
@@ -286,7 +286,7 @@ func TestPipelineRejectsInvalidWithoutStoreWrite(t *testing.T) {
 	if rejected.Status !=
 		flightfeatures.ValidationStatusInvalid ||
 		rejected.Report.ErrorCount != 1 ||
-		result.Features.Quality.Status !=
+		rejected.Features.Quality.Status !=
 			flightfeatures.ValidationStatusInvalid ||
 		result.ValidationReport.Status !=
 			flightfeatures.ValidationStatusInvalid {
@@ -338,7 +338,7 @@ func TestPipelineRejectsValidationStatusMismatch(
 					Status: flightfeatures.ValidationStatusLimited,
 				},
 			},
-			Store: store,
+			Writer: store,
 		},
 	)
 
@@ -447,7 +447,7 @@ func TestPipelineWrapsTechnicalStageErrors(t *testing.T) {
 				Config{
 					Extractor: test.extractor,
 					Validator: test.validator,
-					Store:     test.store,
+					Writer:    test.store,
 				},
 			)
 
@@ -493,7 +493,7 @@ func TestPipelinePreservesContextErrors(t *testing.T) {
 				err: context.Canceled,
 			},
 			Validator: &fakeValidator{},
-			Store:     newRecordingStore(nil),
+			Writer:    newRecordingStore(nil),
 		},
 	)
 
@@ -567,7 +567,7 @@ func TestPipelineIsIdempotentAndSurfacesSnapshotConflict(
 		Config{
 			Extractor: featureExtractor,
 			Validator: featureValidator,
-			Store:     store,
+			Writer:    store,
 		},
 	)
 
@@ -651,16 +651,6 @@ func TestPipelineIsIdempotentAndSurfacesSnapshotConflict(
 
 func TestResultCloneDoesNotShareMutableSlices(t *testing.T) {
 	result := Result{
-		Features: flightfeatures.FlightFeatures{
-			Quality: flightfeatures.FeatureQuality{
-				Limitations: []flightfeatures.FeatureLimitation{
-					{Code: "original"},
-				},
-			},
-			Provenance: flightfeatures.FeatureProvenance{
-				SourceNames: []string{"source"},
-			},
-		},
 		ValidationReport: validator.Report{
 			Issues: []validator.Issue{
 				{Code: "issue"},
@@ -673,28 +663,27 @@ func TestResultCloneDoesNotShareMutableSlices(t *testing.T) {
 						{Code: "record"},
 					},
 				},
+				Provenance: flightfeatures.FeatureProvenance{
+					SourceNames: []string{"source"},
+				},
 			},
 		},
 	}
 
 	cloned := result.Clone()
-	cloned.Features.Quality.Limitations[0].Code =
-		"changed"
-	cloned.Features.Provenance.SourceNames[0] =
-		"changed"
 	cloned.ValidationReport.Issues[0].Code =
 		"changed"
 	cloned.Record.Features.Quality.Limitations[0].Code =
 		"changed"
+	cloned.Record.Features.Provenance.SourceNames[0] =
+		"changed"
 
-	if result.Features.Quality.Limitations[0].Code !=
-		"original" ||
-		result.Features.Provenance.SourceNames[0] !=
-			"source" ||
-		result.ValidationReport.Issues[0].Code !=
-			"issue" ||
+	if result.ValidationReport.Issues[0].Code !=
+		"issue" ||
 		result.Record.Features.Quality.Limitations[0].Code !=
-			"record" {
+			"record" ||
+		result.Record.Features.Provenance.SourceNames[0] !=
+			"source" {
 		t.Fatal("Result.Clone() shared mutable slices")
 	}
 }
@@ -744,18 +733,77 @@ func (item *fakeValidator) Validate(
 	validator.Report,
 	error,
 ) {
+	var (
+		validated flightfeatures.FlightFeatures
+		report    validator.Report
+		err       error
+	)
 	if item.validate != nil {
-		return item.validate(ctx, features)
-	}
-	if item.err != nil {
+		validated, report, err = item.validate(ctx, features)
+	} else if item.err != nil {
 		return flightfeatures.FlightFeatures{},
 			validator.Report{},
 			item.err
+	} else {
+		validated = item.features.Clone()
+		report = item.report.Clone()
+	}
+	if err != nil {
+		return validated, report, err
 	}
 
-	return item.features.Clone(),
-		item.report.Clone(),
-		nil
+	if report.ValidatorVersion == "" {
+		report.ValidatorVersion = validator.Version
+	}
+	if report.ValidatedAt.IsZero() {
+		report.ValidatedAt = validated.Window.AsOfTime.UTC()
+		if report.ValidatedAt.IsZero() {
+			report.ValidatedAt = time.Date(
+				2026,
+				time.July,
+				25,
+				8,
+				0,
+				0,
+				0,
+				time.UTC,
+			)
+		}
+	}
+	if report.Status ==
+		flightfeatures.ValidationStatusLimited &&
+		len(report.Issues) == 0 {
+		report.WarningCount = 1
+		report.Issues = []validator.Issue{
+			{
+				Code:     "test.synthetic.warning",
+				Severity: validator.IssueSeverityWarning,
+			},
+		}
+	}
+	if report.Status ==
+		flightfeatures.ValidationStatusInvalid &&
+		len(report.Issues) == 0 {
+		report.Issues = []validator.Issue{
+			{
+				Code:     "test.synthetic.error",
+				Severity: validator.IssueSeverityError,
+			},
+		}
+	}
+
+	report.ErrorCount = 0
+	report.WarningCount = 0
+	for _, issue := range report.Issues {
+		switch issue.Severity {
+		case validator.IssueSeverityError:
+			report.ErrorCount++
+		case validator.IssueSeverityWarning:
+			report.WarningCount++
+		}
+	}
+
+	return validated.Clone(), report.Clone(), nil
 }
 
 type recordingStore struct {

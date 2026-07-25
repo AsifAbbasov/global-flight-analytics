@@ -63,8 +63,23 @@ func NewPostgres(
 		}
 	}
 
+	poolMissing := config.Pool == nil
+	executorMissing := dependencyMissing(config.Executor)
+	if poolMissing && executorMissing {
+		return nil, &ConstructionError{
+			Component: ComponentStore,
+			Err:       ErrPostgresSourceRequired,
+		}
+	}
+	if !poolMissing && !executorMissing {
+		return nil, &ConstructionError{
+			Component: ComponentStore,
+			Err:       ErrPostgresSourceAmbiguous,
+		}
+	}
+
 	var store *featurestore.PostgresStore
-	if config.Executor != nil {
+	if !executorMissing {
 		store, err = featurestore.NewPostgresWithExecutor(
 			config.Executor,
 			now,
@@ -87,7 +102,7 @@ func NewPostgres(
 	pipeline, err := New(Config{
 		Extractor: extractorComposition.Extractor,
 		Validator: featureValidator,
-		Store:     store,
+		Writer:    store,
 	})
 	if err != nil {
 		return nil, &ConstructionError{
@@ -107,6 +122,7 @@ func NewPostgres(
 
 func CurrentPostgresVersions() Versions {
 	return Versions{
+		Composition:         PostgresCompositionVersion,
 		Pipeline:            Version,
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           validator.Version,

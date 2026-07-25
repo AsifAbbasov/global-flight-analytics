@@ -181,6 +181,7 @@ func TestNewInMemoryBuildsProductionComponentsWithSharedClock(
 
 func TestCurrentVersionsRemainStable(t *testing.T) {
 	want := Versions{
+		Composition:         "flight-feature-in-memory-pipeline-composition-v1",
 		Pipeline:            "flight-feature-processing-pipeline-v1",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           "flight-feature-validator-v1",
@@ -194,7 +195,8 @@ func TestCurrentVersionsRemainStable(t *testing.T) {
 			want,
 		)
 	}
-	if want.Validator != validator.Version ||
+	if want.Composition != InMemoryCompositionVersion ||
+		want.Validator != validator.Version ||
 		want.Store != featurestore.Version {
 		t.Fatal(
 			"component version constants diverged from the pipeline manifest",

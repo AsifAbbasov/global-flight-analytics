@@ -6,31 +6,31 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractor"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/featurestore"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/validator"
 )
 
 type Pipeline struct {
 	extractor FeatureExtractor
 	validator FeatureValidator
-	store     featurestore.Store
+	writer    FeatureWriter
 }
 
 func New(config Config) (*Pipeline, error) {
-	if config.Extractor == nil {
+	if dependencyMissing(config.Extractor) {
 		return nil, ErrExtractorRequired
 	}
-	if config.Validator == nil {
+	if dependencyMissing(config.Validator) {
 		return nil, ErrValidatorRequired
 	}
-	if config.Store == nil {
-		return nil, ErrStoreRequired
+	if dependencyMissing(config.Writer) {
+		return nil, ErrWriterRequired
 	}
 
 	return &Pipeline{
 		extractor: config.Extractor,
 		validator: config.Validator,
-		store:     config.Store,
+		writer:    config.Writer,
 	}, nil
 }
 
@@ -39,7 +39,7 @@ func (pipeline *Pipeline) Process(
 	request extractor.Request,
 ) (Result, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Result{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
@@ -75,7 +75,6 @@ func (pipeline *Pipeline) Process(
 
 	result := Result{
 		PipelineVersion:  Version,
-		Features:         validated.Clone(),
 		ValidationReport: report.Clone(),
 	}
 
@@ -86,6 +85,16 @@ func (pipeline *Pipeline) Process(
 				ReportStatus:  report.Status,
 			}
 	}
+	if err := validator.ValidateReport(
+		report,
+		validated.Quality.Status,
+	); err != nil {
+		return result.Clone(),
+			newStageError(
+				StageValidation,
+				err,
+			)
+	}
 
 	switch report.Status {
 	case flightfeatures.ValidationStatusValid,
@@ -93,12 +102,13 @@ func (pipeline *Pipeline) Process(
 	default:
 		return result.Clone(),
 			&ValidationRejectedError{
-				Status: report.Status,
-				Report: report.Clone(),
+				Status:   report.Status,
+				Features: validated.Clone(),
+				Report:   report.Clone(),
 			}
 	}
 
-	record, err := pipeline.store.Put(
+	record, err := pipeline.writer.Put(
 		ctx,
 		validated.Clone(),
 	)

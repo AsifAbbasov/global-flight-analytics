@@ -8,6 +8,8 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/validator"
 )
 
+const InMemoryCompositionVersion = "flight-feature-in-memory-pipeline-composition-v1"
+
 func NewInMemory(
 	config InMemoryConfig,
 ) (*InMemoryComposition, error) {
@@ -50,7 +52,7 @@ func NewInMemory(
 	pipeline, err := New(Config{
 		Extractor: extractorComposition.Extractor,
 		Validator: featureValidator,
-		Store:     store,
+		Writer:    store,
 	})
 	if err != nil {
 		return nil, &ConstructionError{
@@ -70,6 +72,7 @@ func NewInMemory(
 
 func CurrentVersions() Versions {
 	return Versions{
+		Composition:         InMemoryCompositionVersion,
 		Pipeline:            Version,
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           validator.Version,

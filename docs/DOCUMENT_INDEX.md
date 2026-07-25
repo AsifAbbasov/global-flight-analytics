@@ -921,3 +921,10 @@ sorting, permanent source audit coverage and formal closure gates.
 ```text
 docs/103_NEXT_16_2_11_SECURITY_CLOSURE.md
 ```
+<!-- FEATURE-PIPELINE-CONTRACT-INTEGRITY:DOCUMENT-INDEX -->
+
+## 104. Feature Pipeline Review Triage and Contract Integrity
+
+```text
+docs/104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md
+```

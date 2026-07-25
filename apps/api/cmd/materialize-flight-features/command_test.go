@@ -172,7 +172,6 @@ func (processor *fakeFeatureProcessor) Process(
 
 	return featurepipeline.Result{
 		PipelineVersion: featurepipeline.Version,
-		Features:        features,
 		Record: featurestore.Record{
 			ID:               "feature-record-test",
 			InputFingerprint: "sha256:test",

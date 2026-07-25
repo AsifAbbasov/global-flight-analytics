@@ -39,27 +39,36 @@ type FeatureValidator interface {
 	)
 }
 
+type FeatureWriter interface {
+	Put(
+		ctx context.Context,
+		features flightfeatures.FlightFeatures,
+	) (featurestore.Record, error)
+}
+
 type Config struct {
 	Extractor FeatureExtractor
 	Validator FeatureValidator
-	Store     featurestore.Store
+	Writer    FeatureWriter
 }
 
 type Result struct {
 	PipelineVersion  string
-	Features         flightfeatures.FlightFeatures
 	ValidationReport validator.Report
 	Record           featurestore.Record
 }
 
 func (result Result) Clone() Result {
 	cloned := result
-	cloned.Features = result.Features.Clone()
 	cloned.ValidationReport =
 		result.ValidationReport.Clone()
 	cloned.Record = result.Record.Clone()
 
 	return cloned
+}
+
+func (result Result) Features() flightfeatures.FlightFeatures {
+	return result.Record.Features.Clone()
 }
 
 type InMemoryConfig struct {
@@ -69,6 +78,7 @@ type InMemoryConfig struct {
 }
 
 type Versions struct {
+	Composition         string
 	Pipeline            string
 	ExtractorComponents extractorcomposition.Versions
 	Validator           string

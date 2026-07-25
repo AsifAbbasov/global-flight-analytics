@@ -15,8 +15,18 @@ var (
 	ErrValidatorRequired = errors.New(
 		"feature processing pipeline validator is required",
 	)
-	ErrStoreRequired = errors.New(
-		"feature processing pipeline store is required",
+	ErrWriterRequired = errors.New(
+		"feature processing pipeline writer is required",
+	)
+	ErrStoreRequired   = ErrWriterRequired
+	ErrContextRequired = errors.New(
+		"feature processing pipeline context is required",
+	)
+	ErrPostgresSourceRequired = errors.New(
+		"feature processing pipeline postgres pool or executor is required",
+	)
+	ErrPostgresSourceAmbiguous = errors.New(
+		"feature processing pipeline postgres pool and executor are mutually exclusive",
 	)
 	ErrValidationRejected = errors.New(
 		"feature processing pipeline rejected validation result",
@@ -52,8 +62,9 @@ func (err *StageError) Unwrap() error {
 }
 
 type ValidationRejectedError struct {
-	Status flightfeatures.ValidationStatus
-	Report validator.Report
+	Status   flightfeatures.ValidationStatus
+	Features flightfeatures.FlightFeatures
+	Report   validator.Report
 }
 
 func (err *ValidationRejectedError) Error() string {

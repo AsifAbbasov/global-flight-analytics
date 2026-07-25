@@ -393,7 +393,7 @@ func run(
 	fmt.Fprintf(
 		stdout,
 		"Validation status: %s\n",
-		result.Features.Quality.Status,
+		result.Features().Quality.Status,
 	)
 	fmt.Fprintf(
 		stdout,

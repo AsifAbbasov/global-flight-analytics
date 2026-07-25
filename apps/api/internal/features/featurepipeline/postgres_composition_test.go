@@ -76,12 +76,12 @@ func TestNewPostgresWrapsStoreConstructionError(
 	})
 	if !errors.Is(
 		err,
-		featurestore.ErrPostgresPoolRequired,
+		ErrPostgresSourceRequired,
 	) {
 		t.Fatalf(
 			"NewPostgres() error = %v, want %v",
 			err,
-			featurestore.ErrPostgresPoolRequired,
+			ErrPostgresSourceRequired,
 		)
 	}
 
@@ -140,6 +140,7 @@ func TestCurrentPostgresVersionsRemainStable(
 	t *testing.T,
 ) {
 	want := Versions{
+		Composition:         "flight-feature-postgres-pipeline-composition-v1",
 		Pipeline:            "flight-feature-processing-pipeline-v1",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           "flight-feature-validator-v1",

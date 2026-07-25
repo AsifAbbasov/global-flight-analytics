@@ -97,6 +97,9 @@ jobs:
       - name: Run Analytical Core closure audit
         run: go run ./tools/analyticalcorefinalaudit -strict
 
+      - name: Run feature pipeline contract audit
+        run: go run ./tools/featurepipelinecontractaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
@@ -453,5 +456,13 @@ jobs:
             ./internal/features/featurestore \
             ./internal/routeintelligence/routestore \
             ./internal/historicalintelligence/historicalaggregate
+
+      - name: Verify PostgreSQL feature pipeline
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/global_flight_analytics_test?sslmode=disable
+          DATABASE_CONNECT_TIMEOUT: 10s
+          MIGRATIONS_DIR: ${{ github.workspace }}/database/migrations
+          MIGRATION_TIMEOUT: 2m
+        run: go run ./cmd/verify-postgres-feature-pipeline
 
 # STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1
