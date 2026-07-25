@@ -8,36 +8,22 @@ import (
 
 const Version = "flight-feature-validator-v1"
 
-type IssueSeverity string
+type AuditState = flightfeatures.ValidationAuditState
 
 const (
-	IssueSeverityWarning IssueSeverity = "warning"
-	IssueSeverityError   IssueSeverity = "error"
+	AuditStateComplete          = flightfeatures.ValidationAuditStateComplete
+	AuditStateLegacyUnavailable = flightfeatures.ValidationAuditStateLegacyUnavailable
 )
 
-type Issue struct {
-	Code     string
-	Message  string
-	Path     string
-	Group    flightfeatures.FeatureGroup
-	Severity IssueSeverity
-}
+type IssueSeverity = flightfeatures.ValidationIssueSeverity
 
-type Report struct {
-	ValidatorVersion string
-	Status           flightfeatures.ValidationStatus
-	ErrorCount       int
-	WarningCount     int
-	Issues           []Issue
-	ValidatedAt      time.Time
-}
+const (
+	IssueSeverityWarning = flightfeatures.ValidationIssueSeverityWarning
+	IssueSeverityError   = flightfeatures.ValidationIssueSeverityError
+)
 
-func (report Report) Clone() Report {
-	cloned := report
-	cloned.Issues = append([]Issue(nil), report.Issues...)
-
-	return cloned
-}
+type Issue = flightfeatures.ValidationIssue
+type Report = flightfeatures.ValidationReport
 
 type Policy struct {
 	MinimumValidCompletenessScore float64

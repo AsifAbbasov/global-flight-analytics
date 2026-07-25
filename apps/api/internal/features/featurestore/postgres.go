@@ -566,6 +566,7 @@ func scanRecord(scanner rowScanner) (Record, error) {
 			Err:       err,
 		}
 	}
+	normalizeValidationReport(&features)
 
 	key := SnapshotKey{
 		TrajectoryID:      trajectoryID,
@@ -649,6 +650,13 @@ func validateDecodedRecord(
 		validationStatus {
 		return &CorruptSnapshotError{
 			Field: "validation_status",
+		}
+	}
+	if err := validateStoredValidationReport(
+		record.Features,
+	); err != nil {
+		return &CorruptSnapshotError{
+			Field: "validation_report",
 		}
 	}
 	if err := validateStorableFeatures(

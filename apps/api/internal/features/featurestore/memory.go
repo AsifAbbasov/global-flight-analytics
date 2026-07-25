@@ -279,7 +279,7 @@ func validateStorableFeatures(
 	switch features.Quality.Status {
 	case flightfeatures.ValidationStatusValid,
 		flightfeatures.ValidationStatusLimited:
-		return nil
+		return validateStoredValidationReport(features)
 	case flightfeatures.ValidationStatusInvalid:
 		return ErrFeaturesInvalid
 	default:
@@ -312,6 +312,7 @@ func normalizeFeatures(
 		normalized.Window.AsOfTime.UTC()
 	normalized.ExtractedAt =
 		normalized.ExtractedAt.UTC()
+	normalizeValidationReport(&normalized)
 	normalized.Provenance.ProcessingVersion =
 		flightfeatures.ProcessingVersion(
 			strings.TrimSpace(

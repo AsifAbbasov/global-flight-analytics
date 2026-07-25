@@ -43,7 +43,10 @@ func main() {
 		{
 			path: "apps/api/internal/features/featurepipeline/pipeline.go",
 			required: []string{
+				"validator.NormalizeReport(",
 				"validator.ValidateReport(",
+				"validated.ValidationReport =",
+				"result.Record.Features.ValidationReport.Clone()",
 				"ErrContextRequired",
 				"pipeline.writer.Put(",
 			},
@@ -56,10 +59,57 @@ func main() {
 			path: "apps/api/internal/features/validator/report_validation.go",
 			required: []string{
 				"ErrInvalidReport",
+				"NormalizeStoredReport",
+				"ValidateStoredReport",
+				"AuditStateLegacyUnavailable",
 				"report.ValidatorVersion",
 				"report.ValidatedAt.IsZero()",
 				"entries must be unique",
 				"does not match issue severities",
+			},
+		},
+		{
+			path: "apps/api/internal/features/flightfeatures/model.go",
+			required: []string{
+				"type ValidationReport struct",
+				"ValidationAuditStateComplete",
+				"ValidationAuditStateLegacyUnavailable",
+				"ValidationReport ValidationReport",
+				"features.ValidationReport.Clone()",
+			},
+		},
+		{
+			path: "apps/api/internal/features/featurestore/validation_audit.go",
+			required: []string{
+				"normalizeValidationReport",
+				"validator.NormalizeStoredReport",
+				"validator.ValidateStoredReport",
+			},
+		},
+		{
+			path: "database/migrations/027_flight_feature_validation_audit.sql",
+			required: []string{
+				"ValidationReport",
+				"legacy_unavailable",
+				"flight_feature_snapshots_validation_report_present",
+				"flight_feature_snapshots_validation_report_status_match",
+			},
+		},
+		{
+			path: "docs/104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md",
+			required: []string{
+				"FP-07_COMPOSITION_PLACEMENT=DELIBERATELY_RETAINED_NON_BLOCKING",
+				"FP-09_COMPOSITION_HANDLE=DELIBERATELY_RETAINED_NON_BLOCKING",
+				"FEATURE_PIPELINE_REVIEW_STATUS=CLOSED",
+				"UNCLASSIFIED_FINDINGS=0",
+				"DEFERRED_FINDINGS=0",
+			},
+		},
+		{
+			path: "docs/108_FEATURE_PIPELINE_VALIDATION_AUDIT_AND_FINAL_CLOSURE.md",
+			required: []string{
+				"FEATURE_PIPELINE_VALIDATION_AUDIT_TRAIL=CLOSED",
+				"FEATURE_PIPELINE_REVIEW_STATUS=CLOSED",
 			},
 		},
 		{
@@ -96,6 +146,8 @@ func main() {
 			path: "apps/api/cmd/verify-postgres-feature-pipeline/main.go",
 			required: []string{
 				"result.Features().Quality.Status",
+				"Validation audit trail: PASS",
+				"validator.AuditStateComplete",
 			},
 			forbidden: []string{
 				"result.Features.Quality.Status",

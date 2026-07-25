@@ -891,3 +891,13 @@ Status: IMPLEMENTED.
 
 The isolated feature-store PostgreSQL fixture now contains processing version
 and uses processing-aware snapshot uniqueness.
+<!-- FEATURE-PIPELINE-FINAL-REVIEW-CLOSURE:IMPLEMENTATION -->
+
+## Feature Pipeline Validation Audit and Final Closure
+
+Status: IMPLEMENTED.
+
+The durable feature payload now owns the complete validation report, legacy
+snapshots disclose unavailable audit evidence, PostgreSQL enforces the report
+contract, and the remaining composition observations have explicit final
+dispositions.

@@ -411,3 +411,11 @@ version and binds its sentinel limit through a separate placeholder.
 
 The isolated PostgreSQL feature-store integration fixture now owns the same
 processing-version column and uniqueness identity as the production schema.
+<!-- FEATURE-PIPELINE-FINAL-REVIEW-CLOSURE:README -->
+
+## Feature Pipeline Durable Validation Audit and Final Review Closure
+
+Feature snapshots now retain the complete validation report in durable payloads.
+Legacy rows are explicitly marked unavailable, PostgreSQL enforces report
+presence and status consistency, and every original Feature Pipeline finding has
+a final implemented, rejected or deliberately retained disposition.

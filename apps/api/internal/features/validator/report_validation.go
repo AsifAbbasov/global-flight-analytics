@@ -34,10 +34,113 @@ func (err *ReportIntegrityError) Unwrap() error {
 	return ErrInvalidReport
 }
 
+func NormalizeReport(report Report) Report {
+	normalized := report.Clone()
+	if normalized.AuditState == "" {
+		normalized.AuditState = AuditStateComplete
+	}
+	normalized.ValidatorVersion =
+		strings.TrimSpace(normalized.ValidatorVersion)
+	if !normalized.ValidatedAt.IsZero() {
+		normalized.ValidatedAt =
+			normalized.ValidatedAt.UTC()
+	}
+
+	return normalized
+}
+
+func NormalizeStoredReport(
+	report Report,
+	expectedStatus flightfeatures.ValidationStatus,
+) Report {
+	if reportIsZero(report) {
+		return Report{
+			AuditState: AuditStateLegacyUnavailable,
+			Status:     expectedStatus,
+		}
+	}
+
+	normalized := report.Clone()
+	if normalized.AuditState == "" {
+		normalized.AuditState = AuditStateComplete
+	}
+	normalized.ValidatorVersion =
+		strings.TrimSpace(normalized.ValidatorVersion)
+	if !normalized.ValidatedAt.IsZero() {
+		normalized.ValidatedAt =
+			normalized.ValidatedAt.UTC()
+	}
+
+	return normalized
+}
+
+func ValidateStoredReport(
+	report Report,
+	expectedStatus flightfeatures.ValidationStatus,
+) error {
+	report = NormalizeStoredReport(report, expectedStatus)
+
+	switch report.AuditState {
+	case AuditStateComplete:
+		return ValidateReport(report, expectedStatus)
+	case AuditStateLegacyUnavailable:
+		if report.Status != expectedStatus {
+			return invalidReport(
+				"status",
+				"legacy audit status must match stored feature status",
+			)
+		}
+		if strings.TrimSpace(report.ValidatorVersion) != "" {
+			return invalidReport(
+				"validator_version",
+				"legacy unavailable audit must not invent a validator version",
+			)
+		}
+		if !report.ValidatedAt.IsZero() {
+			return invalidReport(
+				"validated_at",
+				"legacy unavailable audit must not invent validation time",
+			)
+		}
+		if report.ErrorCount != 0 ||
+			report.WarningCount != 0 ||
+			len(report.Issues) != 0 {
+			return invalidReport(
+				"issues",
+				"legacy unavailable audit must not invent issues or counts",
+			)
+		}
+
+		return nil
+	default:
+		return invalidReport(
+			"audit_state",
+			"must be complete or legacy_unavailable",
+		)
+	}
+}
+
+func reportIsZero(report Report) bool {
+	return report.AuditState == "" &&
+		strings.TrimSpace(report.ValidatorVersion) == "" &&
+		report.Status == "" &&
+		report.ErrorCount == 0 &&
+		report.WarningCount == 0 &&
+		len(report.Issues) == 0 &&
+		report.ValidatedAt.IsZero()
+}
+
 func ValidateReport(
 	report Report,
 	expectedStatus flightfeatures.ValidationStatus,
 ) error {
+	report = NormalizeReport(report)
+	if report.AuditState != AuditStateComplete {
+		return invalidReport(
+			"audit_state",
+			"current validation report must be complete",
+		)
+	}
 	if strings.TrimSpace(report.ValidatorVersion) != Version {
 		return invalidReport(
 			"validator_version",

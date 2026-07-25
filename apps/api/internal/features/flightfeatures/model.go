@@ -29,6 +29,48 @@ const (
 	ValidationStatusInvalid     ValidationStatus = "invalid"
 )
 
+type ValidationAuditState string
+
+const (
+	ValidationAuditStateComplete          ValidationAuditState = "complete"
+	ValidationAuditStateLegacyUnavailable ValidationAuditState = "legacy_unavailable"
+)
+
+type ValidationIssueSeverity string
+
+const (
+	ValidationIssueSeverityWarning ValidationIssueSeverity = "warning"
+	ValidationIssueSeverityError   ValidationIssueSeverity = "error"
+)
+
+type ValidationIssue struct {
+	Code     string
+	Message  string
+	Path     string
+	Group    FeatureGroup
+	Severity ValidationIssueSeverity
+}
+
+type ValidationReport struct {
+	AuditState       ValidationAuditState
+	ValidatorVersion string
+	Status           ValidationStatus
+	ErrorCount       int
+	WarningCount     int
+	Issues           []ValidationIssue
+	ValidatedAt      time.Time
+}
+
+func (report ValidationReport) Clone() ValidationReport {
+	cloned := report
+	cloned.Issues = append(
+		[]ValidationIssue(nil),
+		report.Issues...,
+	)
+
+	return cloned
+}
+
 type FeatureWindow struct {
 	StartTime time.Time
 	EndTime   time.Time
@@ -142,15 +184,16 @@ type FeatureProvenance struct {
 }
 
 type FlightFeatures struct {
-	SchemaVersion SchemaVersion
-	TrajectoryID  string
-	IdentityKey   string
-	FlightID      string
-	AircraftID    string
-	ICAO24        string
-	Callsign      string
-	Window        FeatureWindow
-	ExtractedAt   time.Time
+	SchemaVersion    SchemaVersion
+	TrajectoryID     string
+	IdentityKey      string
+	FlightID         string
+	AircraftID       string
+	ICAO24           string
+	Callsign         string
+	Window           FeatureWindow
+	ExtractedAt      time.Time
+	ValidationReport ValidationReport
 
 	Temporal     TemporalFeatures
 	Geographical GeographicalFeatures
@@ -183,6 +226,8 @@ func (features FlightFeatures) Clone() FlightFeatures {
 	cloned.Quality.Limitations = cloneLimitations(
 		features.Quality.Limitations,
 	)
+	cloned.ValidationReport =
+		features.ValidationReport.Clone()
 	cloned.Provenance.SourceNames = append(
 		[]string(nil),
 		features.Provenance.SourceNames...,

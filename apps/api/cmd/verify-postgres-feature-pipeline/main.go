@@ -19,6 +19,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/featurepipeline"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/featurestore"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/validator"
 	"github.com/joho/godotenv"
 )
 
@@ -278,6 +279,30 @@ func run(
 		return 1
 	}
 
+	validationReport := loaded.Features.ValidationReport
+	if validationReport.AuditState !=
+		validator.AuditStateComplete ||
+		validationReport.ValidatorVersion != validator.Version ||
+		!validationReport.ValidatedAt.Equal(now) ||
+		validationReport.Status != loaded.Features.Quality.Status {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: incomplete durable validation audit: %#v\n",
+			validationReport,
+		)
+		return 1
+	}
+	if !reflect.DeepEqual(
+		result.ValidationReport,
+		validationReport,
+	) {
+		fmt.Fprintln(
+			stderr,
+			"ERROR: result validation report differs from stored audit",
+		)
+		return 1
+	}
+
 	latest, err := composition.Store.GetLatest(
 		ctx,
 		trajectoryID,
@@ -456,6 +481,10 @@ func run(
 	fmt.Fprintln(
 		stdout,
 		"Processing version isolation: PASS",
+	)
+	fmt.Fprintln(
+		stdout,
+		"Validation audit trail: PASS",
 	)
 	fmt.Fprintln(
 		stdout,

@@ -129,6 +129,7 @@ func (validator *Validator) Validate(
 	)
 
 	report := Report{
+		AuditState:       AuditStateComplete,
 		ValidatorVersion: Version,
 		Status:           status,
 		ErrorCount:       collector.errorCount(),

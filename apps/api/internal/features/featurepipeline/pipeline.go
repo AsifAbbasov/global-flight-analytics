@@ -80,6 +80,7 @@ func (pipeline *Pipeline) Process(
 		return Result{}, err
 	}
 
+	report = validator.NormalizeReport(report)
 	result := Result{
 		PipelineVersion:  Version,
 		ValidationReport: report.Clone(),
@@ -102,6 +103,8 @@ func (pipeline *Pipeline) Process(
 				err,
 			)
 	}
+
+	validated.ValidationReport = report.Clone()
 
 	switch report.Status {
 	case flightfeatures.ValidationStatusValid,
@@ -130,6 +133,8 @@ func (pipeline *Pipeline) Process(
 	}
 
 	result.Record = record.Clone()
+	result.ValidationReport =
+		result.Record.Features.ValidationReport.Clone()
 
 	return result.Clone(), nil
 }
