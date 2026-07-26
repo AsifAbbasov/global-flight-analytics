@@ -290,7 +290,7 @@ func TestExtractorAssemblesFeaturesAndProvenance(t *testing.T) {
 		)
 	}
 	if result.Aircraft.Evidence.TotalFieldCount !=
-		aircraftFeatureFieldCount {
+		flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft) {
 		t.Fatalf(
 			"aircraft total fields = %d",
 			result.Aircraft.Evidence.TotalFieldCount,
@@ -372,8 +372,8 @@ func TestExtractorUsesAircraftFeatureProvider(t *testing.T) {
 		features: flightfeatures.AircraftFeatures{
 			Evidence: flightfeatures.GroupEvidence{
 				Status:              flightfeatures.AvailabilityStatusAvailable,
-				AvailableFieldCount: aircraftFeatureFieldCount,
-				TotalFieldCount:     aircraftFeatureFieldCount,
+				AvailableFieldCount: flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
+				TotalFieldCount:     flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
 			},
 			Registration: "4K-AZ01",
 			Model:        "Example",

@@ -59,6 +59,7 @@ func main() {
 	require(
 		"apps/api/internal/features/flightfeatures/requirements.go",
 		"CurrentGroupRequirementCounts",
+		"CurrentGroupFieldCount",
 		"Required int",
 		"Optional int",
 	)

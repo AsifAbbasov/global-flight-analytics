@@ -3,7 +3,7 @@ package extractor
 import (
 	"context"
 	"errors"
-	"regexp"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"sort"
 	"strings"
 	"time"
@@ -11,10 +11,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
-
-const aircraftFeatureFieldCount = 6
-
-var icao24Pattern = regexp.MustCompile(`^[A-F0-9]{6}$`)
 
 type Extractor struct {
 	temporalBuilder                 TemporalBuilder
@@ -105,7 +101,7 @@ func (extractor *Extractor) Extract(
 
 	temporalFeatures, err := extractor.temporalBuilder.Build(
 		ctx,
-		cloneTrajectory(request.Trajectory),
+		request.Trajectory.Clone(),
 	)
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, newGroupBuildError(
@@ -120,7 +116,7 @@ func (extractor *Extractor) Extract(
 	geographicalFeatures, err :=
 		extractor.geographicalBuilder.Build(
 			ctx,
-			cloneTrajectory(request.Trajectory),
+			request.Trajectory.Clone(),
 		)
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, newGroupBuildError(
@@ -134,7 +130,7 @@ func (extractor *Extractor) Extract(
 
 	operationalFeatures, err := extractor.operationalBuilder.Build(
 		ctx,
-		cloneTrajectory(request.Trajectory),
+		request.Trajectory.Clone(),
 	)
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, newGroupBuildError(
@@ -148,7 +144,7 @@ func (extractor *Extractor) Extract(
 
 	trajectoryFeatures, err := extractor.trajectoryBuilder.Build(
 		ctx,
-		cloneTrajectory(request.Trajectory),
+		request.Trajectory.Clone(),
 	)
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, newGroupBuildError(
@@ -195,8 +191,8 @@ func (extractor *Extractor) Extract(
 		IdentityKey:   request.Trajectory.IdentityKey,
 		FlightID:      request.Trajectory.FlightID,
 		AircraftID:    request.Trajectory.AircraftID,
-		ICAO24: strings.ToUpper(
-			strings.TrimSpace(request.Trajectory.ICAO24),
+		ICAO24: aircraft.CanonicalICAO24(
+			request.Trajectory.ICAO24,
 		),
 		Callsign: strings.TrimSpace(
 			request.Trajectory.Callsign,
@@ -253,7 +249,7 @@ func (extractor *Extractor) buildAircraftFeatures(
 		return flightfeatures.AircraftFeatures{
 			Evidence: flightfeatures.GroupEvidence{
 				Status:          flightfeatures.AvailabilityStatusUnavailable,
-				TotalFieldCount: aircraftFeatureFieldCount,
+				TotalFieldCount: flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
 				Limitations: []flightfeatures.FeatureLimitation{
 					{
 						Code:    "aircraft_feature_provider_unavailable",
@@ -268,11 +264,9 @@ func (extractor *Extractor) buildAircraftFeatures(
 		ctx,
 		AircraftReference{
 			AircraftID: strings.TrimSpace(item.AircraftID),
-			ICAO24: strings.ToUpper(
-				strings.TrimSpace(item.ICAO24),
-			),
-			Callsign: strings.TrimSpace(item.Callsign),
-			AsOfTime: asOfTime.UTC(),
+			ICAO24:     aircraft.CanonicalICAO24(item.ICAO24),
+			Callsign:   strings.TrimSpace(item.Callsign),
+			AsOfTime:   asOfTime.UTC(),
 		},
 	)
 	if err != nil {
@@ -293,9 +287,7 @@ func validateRequest(request Request) error {
 		return ErrTrajectoryIDRequired
 	case strings.TrimSpace(item.IdentityKey) == "":
 		return ErrIdentityKeyRequired
-	case !icao24Pattern.MatchString(
-		strings.ToUpper(strings.TrimSpace(item.ICAO24)),
-	):
+	case !aircraft.IsValidICAO24(item.ICAO24):
 		return ErrInvalidICAO24
 	case item.StartTime.IsZero():
 		return ErrTrajectoryStartTimeRequired
@@ -383,24 +375,4 @@ func normalizedTrajectoryUpdatedAt(
 		return time.Time{}
 	}
 	return item.UpdatedAt.UTC()
-}
-
-func cloneTrajectory(
-	item trajectory.FlightTrajectory,
-) trajectory.FlightTrajectory {
-	cloned := item
-	cloned.Points = append(
-		[]trajectory.TrackPoint4D(nil),
-		item.Points...,
-	)
-	cloned.Segments = append(
-		[]trajectory.TrajectorySegment(nil),
-		item.Segments...,
-	)
-	cloned.CoverageGaps = append(
-		[]trajectory.CoverageGap(nil),
-		item.CoverageGaps...,
-	)
-
-	return cloned
 }

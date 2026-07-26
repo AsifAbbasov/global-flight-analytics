@@ -23,7 +23,7 @@ func (provider cancelingAircraftProvider) Provide(
 	return flightfeatures.AircraftFeatures{
 		Evidence: flightfeatures.GroupEvidence{
 			Status:          flightfeatures.AvailabilityStatusUnavailable,
-			TotalFieldCount: aircraftFeatureFieldCount,
+			TotalFieldCount: flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
 		},
 	}, nil
 }

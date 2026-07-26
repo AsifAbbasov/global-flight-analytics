@@ -76,7 +76,7 @@ func main() {
 	)
 	require(
 		"apps/api/internal/features/extractor/fingerprint.go",
-		"normalizeFingerprintICAO24(item.ICAO24)",
+		"aircraft.CanonicalICAO24(item.ICAO24)",
 		"strings.TrimSpace(item.Callsign)",
 	)
 	require(

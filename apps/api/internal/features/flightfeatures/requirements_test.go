@@ -30,3 +30,14 @@ func TestCurrentGroupRequirementCountsRemainExplicit(t *testing.T) {
 		}
 	}
 }
+
+func TestCurrentGroupFieldCountIsSchemaDerived(t *testing.T) {
+	for group, counts := range CurrentGroupRequirementCounts() {
+		if got := CurrentGroupFieldCount(group); got != counts.Total() {
+			t.Fatalf("group %q field count = %d, want %d", group, got, counts.Total())
+		}
+	}
+	if got := CurrentGroupFieldCount(FeatureGroupAircraft); got != 6 {
+		t.Fatalf("aircraft field count = %d, want 6", got)
+	}
+}

@@ -462,3 +462,13 @@ Core completeness now measures required fields only, while optional enrichment
 uses an independent coverage score. Trajectory record timestamps are stored
 without event-time fallbacks, aircraft metadata source/version/retrieval
 provenance is explicit, and processing advances to generation 5.
+
+<!-- EXTRACTOR-REVIEW-FINAL-CLOSURE:README -->
+
+## Extractor Review Final Closure
+
+ICAO24 identity, trajectory cloning, and schema field counts now have canonical
+owners throughout the extractor processing path. Reflection tests protect deterministic fingerprint mirrors
+from silent model drift, and a permanent closure audit records zero open,
+unclassified, or deferred extractor-review findings without changing processing
+generation 5.

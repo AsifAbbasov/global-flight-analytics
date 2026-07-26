@@ -12,8 +12,6 @@ const Version = "aircraft-feature-provider-v2"
 const DefaultNotFoundPolicyVersion = "aircraft-not-found-pgx-no-rows-v1"
 const MetadataSourceName = "aircraft-reference-lookup"
 
-const AircraftFeatureFieldCount = 6
-
 const (
 	DefaultPositiveCacheTTL = 30 * time.Minute
 	DefaultNegativeCacheTTL = 5 * time.Minute

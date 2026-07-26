@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"math"
 	"regexp"
 	"sort"
@@ -13,11 +14,8 @@ import (
 
 const issueCodePrefix = "feature_validation."
 
-var (
-	icao24Pattern      = regexp.MustCompile(`^[A-F0-9]{6}$`)
-	fingerprintPattern = regexp.MustCompile(
-		`^sha256:[0-9a-f]{64}$`,
-	)
+var fingerprintPattern = regexp.MustCompile(
+	`^sha256:[0-9a-f]{64}$`,
 )
 
 func validateIdentity(
@@ -52,7 +50,7 @@ func validateIdentity(
 			"Stable trajectory identity key is required.",
 		)
 	}
-	if !icao24Pattern.MatchString(features.ICAO24) {
+	if !aircraft.IsCanonicalICAO24(features.ICAO24) {
 		collector.error(
 			"",
 			"icao24",

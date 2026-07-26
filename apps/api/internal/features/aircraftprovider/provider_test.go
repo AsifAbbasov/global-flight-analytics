@@ -144,8 +144,8 @@ func TestProviderReturnsAvailableNormalizedFeatures(t *testing.T) {
 	want := flightfeatures.AircraftFeatures{
 		Evidence: flightfeatures.GroupEvidence{
 			Status:              flightfeatures.AvailabilityStatusAvailable,
-			AvailableFieldCount: AircraftFeatureFieldCount,
-			TotalFieldCount:     AircraftFeatureFieldCount,
+			AvailableFieldCount: flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
+			TotalFieldCount:     flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
 		},
 		Registration: "4K-AZ01",
 		Manufacturer: "Example Manufacturer",
@@ -196,7 +196,7 @@ func TestProviderReturnsPartialEvidence(t *testing.T) {
 		flightfeatures.AvailabilityStatusPartial ||
 		features.Evidence.AvailableFieldCount != 3 ||
 		features.Evidence.TotalFieldCount !=
-			AircraftFeatureFieldCount {
+			flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft) {
 		t.Fatalf(
 			"unexpected partial evidence: %#v",
 			features.Evidence,
@@ -782,10 +782,10 @@ func TestProviderContractConstantsRemainStable(t *testing.T) {
 	if Version != "aircraft-feature-provider-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
-	if AircraftFeatureFieldCount != 6 {
+	if flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft) != 6 {
 		t.Fatalf(
-			"AircraftFeatureFieldCount = %d",
-			AircraftFeatureFieldCount,
+			"flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft) = %d",
+			flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
 		)
 	}
 	if DefaultPositiveCacheTTL != 30*time.Minute ||

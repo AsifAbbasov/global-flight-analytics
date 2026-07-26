@@ -26,3 +26,9 @@ func CurrentGroupRequirementCounts() map[FeatureGroup]GroupRequirementCounts {
 	}
 	return counts
 }
+
+// CurrentGroupFieldCount returns the total field count for one group directly
+// from the current versioned feature schema.
+func CurrentGroupFieldCount(group FeatureGroup) int {
+	return CurrentGroupRequirementCounts()[group].Total()
+}

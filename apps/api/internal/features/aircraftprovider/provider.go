@@ -3,7 +3,6 @@ package aircraftprovider
 import (
 	"context"
 	"errors"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -13,8 +12,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 	"github.com/jackc/pgx/v5"
 )
-
-var icao24Pattern = regexp.MustCompile(`^[A-F0-9]{6}$`)
 
 var _ extractor.AircraftFeatureProvider = (*Provider)(nil)
 
@@ -96,9 +93,9 @@ func (provider *Provider) Provide(
 		return flightfeatures.AircraftFeatures{}, err
 	}
 
-	icao24, err := normalizeICAO24(reference.ICAO24)
-	if err != nil {
-		return flightfeatures.AircraftFeatures{}, err
+	icao24, valid := aircraft.NormalizeICAO24(reference.ICAO24)
+	if !valid {
+		return flightfeatures.AircraftFeatures{}, ErrInvalidICAO24
 	}
 
 	if cached, found := provider.cached(icao24); found {
@@ -168,9 +165,7 @@ func (provider *Provider) resolve(
 		return flightfeatures.AircraftFeatures{}, err
 	}
 
-	returnedICAO24 := strings.ToUpper(
-		strings.TrimSpace(item.ICAO24),
-	)
+	returnedICAO24 := aircraft.CanonicalICAO24(item.ICAO24)
 	if returnedICAO24 != "" && returnedICAO24 != icao24 {
 		return flightfeatures.AircraftFeatures{},
 			ErrAircraftIdentityMismatch
@@ -270,11 +265,11 @@ func mapAircraft(
 	availableFieldCount := countAvailableFields(features)
 	features.Evidence = flightfeatures.GroupEvidence{
 		AvailableFieldCount: availableFieldCount,
-		TotalFieldCount:     AircraftFeatureFieldCount,
+		TotalFieldCount:     flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
 	}
 
 	switch {
-	case availableFieldCount == AircraftFeatureFieldCount:
+	case availableFieldCount == flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft):
 		features.Evidence.Status =
 			flightfeatures.AvailabilityStatusAvailable
 	case availableFieldCount == 0:
@@ -337,7 +332,7 @@ func unavailableFeatures(
 	return flightfeatures.AircraftFeatures{
 		Evidence: flightfeatures.GroupEvidence{
 			Status:          flightfeatures.AvailabilityStatusUnavailable,
-			TotalFieldCount: AircraftFeatureFieldCount,
+			TotalFieldCount: flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft),
 			Limitations: []flightfeatures.FeatureLimitation{
 				{
 					Code:    code,
@@ -368,15 +363,6 @@ func countAvailableFields(
 	}
 
 	return count
-}
-
-func normalizeICAO24(value string) (string, error) {
-	normalized := strings.ToUpper(strings.TrimSpace(value))
-	if !icao24Pattern.MatchString(normalized) {
-		return "", ErrInvalidICAO24
-	}
-
-	return normalized, nil
 }
 
 func cloneFeatures(

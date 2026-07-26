@@ -33,7 +33,7 @@ func TestFingerprintTrajectoryIsDeterministic(t *testing.T) {
 
 func TestFingerprintTrajectoryNormalizesTimeZones(t *testing.T) {
 	firstItem := validRequest().Trajectory
-	secondItem := cloneTrajectory(firstItem)
+	secondItem := firstItem.Clone()
 	location := time.FixedZone("UTC+04", 4*60*60)
 
 	secondItem.StartTime = firstItem.StartTime.In(location)
@@ -82,7 +82,7 @@ func TestFingerprintTrajectoryNormalizesTimeZones(t *testing.T) {
 
 func TestFingerprintTrajectoryChangesWithEvidence(t *testing.T) {
 	firstItem := validRequest().Trajectory
-	secondItem := cloneTrajectory(firstItem)
+	secondItem := firstItem.Clone()
 	secondItem.Points[0].Latitude += 0.01
 
 	first, err := fingerprintTrajectory(firstItem)
@@ -101,7 +101,7 @@ func TestFingerprintTrajectoryChangesWithEvidence(t *testing.T) {
 
 func TestFingerprintTrajectoryPreservesEvidenceOrder(t *testing.T) {
 	firstItem := validRequest().Trajectory
-	secondItem := cloneTrajectory(firstItem)
+	secondItem := firstItem.Clone()
 	secondItem.Points[0], secondItem.Points[1] =
 		secondItem.Points[1], secondItem.Points[0]
 

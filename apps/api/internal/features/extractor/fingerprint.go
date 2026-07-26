@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"strings"
 	"time"
 
@@ -165,7 +166,7 @@ func canonicalizeTrajectory(
 				FlightStateID:            point.FlightStateID,
 				FlightID:                 point.FlightID,
 				AircraftID:               point.AircraftID,
-				ICAO24:                   normalizeFingerprintICAO24(point.ICAO24),
+				ICAO24:                   aircraft.CanonicalICAO24(point.ICAO24),
 				Callsign:                 strings.TrimSpace(point.Callsign),
 				Latitude:                 point.Latitude,
 				Longitude:                point.Longitude,
@@ -197,7 +198,7 @@ func canonicalizeTrajectory(
 				TrajectoryID:    segment.TrajectoryID,
 				FlightID:        segment.FlightID,
 				AircraftID:      segment.AircraftID,
-				ICAO24:          normalizeFingerprintICAO24(segment.ICAO24),
+				ICAO24:          aircraft.CanonicalICAO24(segment.ICAO24),
 				Callsign:        strings.TrimSpace(segment.Callsign),
 				SequenceNumber:  segment.SequenceNumber,
 				Status:          segment.Status,
@@ -229,7 +230,7 @@ func canonicalizeTrajectory(
 				TrajectoryID:      gap.TrajectoryID,
 				PreviousSegmentID: gap.PreviousSegmentID,
 				NextSegmentID:     gap.NextSegmentID,
-				ICAO24:            normalizeFingerprintICAO24(gap.ICAO24),
+				ICAO24:            aircraft.CanonicalICAO24(gap.ICAO24),
 				StartTime:         gap.StartTime.UTC(),
 				EndTime:           gap.EndTime.UTC(),
 				DurationSeconds:   gap.DurationSeconds,
@@ -248,7 +249,7 @@ func canonicalizeTrajectory(
 		SplitReason:      item.SplitReason,
 		FlightID:         item.FlightID,
 		AircraftID:       item.AircraftID,
-		ICAO24:           normalizeFingerprintICAO24(item.ICAO24),
+		ICAO24:           aircraft.CanonicalICAO24(item.ICAO24),
 		Callsign:         strings.TrimSpace(item.Callsign),
 		StartTime:        item.StartTime.UTC(),
 		EndTime:          item.EndTime.UTC(),
@@ -264,8 +265,4 @@ func canonicalizeTrajectory(
 		CreatedAt:        item.CreatedAt.UTC(),
 		UpdatedAt:        item.UpdatedAt.UTC(),
 	}
-}
-
-func normalizeFingerprintICAO24(value string) string {
-	return strings.ToUpper(strings.TrimSpace(value))
 }
