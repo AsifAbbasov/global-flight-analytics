@@ -8,7 +8,7 @@ type ProcessingVersion string
 const SchemaVersionV1 SchemaVersion = "flight-features-v1"
 
 const (
-	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v4"
+	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v5"
 	LegacyProcessingVersion  ProcessingVersion = "flight-feature-processing-legacy-v1"
 )
 
@@ -169,19 +169,24 @@ type FeatureLimitation struct {
 }
 
 type FeatureQuality struct {
-	Status               ValidationStatus
-	CompletenessScore    float64
-	InputQualityScore    float64
-	SupportingPointCount int
-	Limitations          []FeatureLimitation
+	Status                ValidationStatus
+	CompletenessScore     float64
+	OptionalCoverageScore float64
+	InputQualityScore     float64
+	SupportingPointCount  int
+	Limitations           []FeatureLimitation
 }
 
 type FeatureProvenance struct {
-	ProcessingVersion   ProcessingVersion
-	ExtractorVersion    string
-	InputFingerprint    string
-	TrajectoryUpdatedAt time.Time
-	SourceNames         []string
+	ProcessingVersion               ProcessingVersion
+	ExtractorVersion                string
+	InputFingerprint                string
+	TrajectoryCreatedAt             time.Time
+	TrajectoryUpdatedAt             time.Time
+	AircraftMetadataSourceName      string
+	AircraftMetadataProviderVersion string
+	AircraftMetadataRetrievedAt     time.Time
+	SourceNames                     []string
 }
 
 type FlightFeatures struct {

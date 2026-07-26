@@ -160,23 +160,41 @@ func validateProvenance(
 			"Input fingerprint must use the sha256 prefix followed by 64 lowercase hexadecimal characters.",
 		)
 	}
-	validateRequiredTimestamp(
-		collector,
-		"",
-		"provenance.trajectory_updated_at",
-		"trajectory_updated_at_required",
-		provenance.TrajectoryUpdatedAt,
-	)
-	if !provenance.TrajectoryUpdatedAt.IsZero() &&
-		!features.Window.AsOfTime.IsZero() &&
-		provenance.TrajectoryUpdatedAt.After(
-			features.Window.AsOfTime,
-		) {
+	if !provenance.TrajectoryCreatedAt.IsZero() {
+		validateRequiredTimestamp(
+			collector,
+			"",
+			"provenance.trajectory_created_at",
+			"trajectory_created_at_required",
+			provenance.TrajectoryCreatedAt,
+		)
+	}
+	if !provenance.TrajectoryUpdatedAt.IsZero() {
+		validateRequiredTimestamp(
+			collector,
+			"",
+			"provenance.trajectory_updated_at",
+			"trajectory_updated_at_required",
+			provenance.TrajectoryUpdatedAt,
+		)
+	}
+	if provenance.TrajectoryCreatedAt.IsZero() &&
+		provenance.TrajectoryUpdatedAt.IsZero() {
+		collector.warning(
+			"",
+			"provenance.trajectory_record_timestamps",
+			issueCodePrefix+"trajectory_record_timestamps_unavailable",
+			"Trajectory record creation and update timestamps are unavailable.",
+		)
+	}
+	if !provenance.TrajectoryCreatedAt.IsZero() &&
+		!provenance.TrajectoryUpdatedAt.IsZero() &&
+		provenance.TrajectoryUpdatedAt.Before(provenance.TrajectoryCreatedAt) {
 		collector.error(
 			"",
 			"provenance.trajectory_updated_at",
-			issueCodePrefix+"trajectory_updated_after_as_of",
-			"Trajectory update time is after the declared as-of time.",
+			issueCodePrefix+"trajectory_updated_before_created",
+			"Trajectory update time is before its creation time.",
 		)
 	}
 
@@ -243,6 +261,7 @@ func validateGroupEvidence(
 	path string,
 	evidence flightfeatures.GroupEvidence,
 	expectedFieldCount int,
+	availabilityRequired bool,
 ) {
 	switch evidence.Status {
 	case flightfeatures.AvailabilityStatusAvailable,
@@ -329,15 +348,17 @@ func validateGroupEvidence(
 				"Partial evidence must expose at least one but fewer than all schema fields.",
 			)
 		}
-		collector.warning(
-			group,
-			path,
-			issueCodePrefix+"feature_group_partial",
-			fmt.Sprintf(
-				"Feature group %q is only partially available.",
+		if availabilityRequired {
+			collector.warning(
 				group,
-			),
-		)
+				path,
+				issueCodePrefix+"feature_group_partial",
+				fmt.Sprintf(
+					"Feature group %q is only partially available.",
+					group,
+				),
+			)
+		}
 	case flightfeatures.AvailabilityStatusUnavailable:
 		if evidence.AvailableFieldCount != 0 {
 			collector.error(
@@ -347,15 +368,17 @@ func validateGroupEvidence(
 				"Unavailable evidence must expose zero available fields.",
 			)
 		}
-		collector.warning(
-			group,
-			path,
-			issueCodePrefix+"feature_group_unavailable",
-			fmt.Sprintf(
-				"Feature group %q is unavailable.",
+		if availabilityRequired {
+			collector.warning(
 				group,
-			),
-		)
+				path,
+				issueCodePrefix+"feature_group_unavailable",
+				fmt.Sprintf(
+					"Feature group %q is unavailable.",
+					group,
+				),
+			)
+		}
 	}
 
 	validateLimitations(
@@ -363,7 +386,7 @@ func validateGroupEvidence(
 		group,
 		path+".limitations",
 		evidence.Limitations,
-		true,
+		availabilityRequired,
 	)
 }
 
@@ -1221,6 +1244,86 @@ func validateAircraftFeatures(
 			),
 		)
 	}
+
+	provenance := features.Provenance
+	sourceName := strings.TrimSpace(provenance.AircraftMetadataSourceName)
+	providerVersion := strings.TrimSpace(
+		provenance.AircraftMetadataProviderVersion,
+	)
+	retrievedAt := provenance.AircraftMetadataRetrievedAt
+	provenancePresent := sourceName != "" || providerVersion != "" || !retrievedAt.IsZero()
+	provenanceRequired := item.Evidence.Status !=
+		flightfeatures.AvailabilityStatusUnavailable
+
+	if provenanceRequired && !provenancePresent {
+		collector.error(
+			flightfeatures.FeatureGroupAircraft,
+			"provenance.aircraft_metadata",
+			issueCodePrefix+"aircraft_metadata_provenance_required",
+			"Available or partial aircraft metadata requires source, provider version, and retrieval time provenance.",
+		)
+	}
+	if provenancePresent {
+		if sourceName == "" {
+			collector.error(
+				flightfeatures.FeatureGroupAircraft,
+				"provenance.aircraft_metadata_source_name",
+				issueCodePrefix+"aircraft_metadata_source_name_required",
+				"Aircraft metadata source name is required when aircraft provenance is present.",
+			)
+		} else if provenance.AircraftMetadataSourceName != sourceName {
+			collector.error(
+				flightfeatures.FeatureGroupAircraft,
+				"provenance.aircraft_metadata_source_name",
+				issueCodePrefix+"aircraft_metadata_source_name_not_normalized",
+				"Aircraft metadata source name must not contain surrounding whitespace.",
+			)
+		}
+		if providerVersion == "" {
+			collector.error(
+				flightfeatures.FeatureGroupAircraft,
+				"provenance.aircraft_metadata_provider_version",
+				issueCodePrefix+"aircraft_metadata_provider_version_required",
+				"Aircraft metadata provider version is required when aircraft provenance is present.",
+			)
+		} else if provenance.AircraftMetadataProviderVersion != providerVersion {
+			collector.error(
+				flightfeatures.FeatureGroupAircraft,
+				"provenance.aircraft_metadata_provider_version",
+				issueCodePrefix+"aircraft_metadata_provider_version_not_normalized",
+				"Aircraft metadata provider version must not contain surrounding whitespace.",
+			)
+		}
+		validateRequiredTimestamp(
+			collector,
+			flightfeatures.FeatureGroupAircraft,
+			"provenance.aircraft_metadata_retrieved_at",
+			"aircraft_metadata_retrieved_at_required",
+			retrievedAt,
+		)
+		if !retrievedAt.IsZero() &&
+			!features.ExtractedAt.IsZero() &&
+			retrievedAt.After(features.ExtractedAt) {
+			collector.error(
+				flightfeatures.FeatureGroupAircraft,
+				"provenance.aircraft_metadata_retrieved_at",
+				issueCodePrefix+"aircraft_metadata_retrieved_after_extraction",
+				"Aircraft metadata retrieval time is after feature extraction time.",
+			)
+		}
+	}
+
+	if !item.MetadataUpdatedAt.IsZero() &&
+		!features.Window.AsOfTime.IsZero() &&
+		item.MetadataUpdatedAt.After(features.Window.AsOfTime) &&
+		item.Evidence.Status != flightfeatures.AvailabilityStatusUnavailable {
+		collector.error(
+			flightfeatures.FeatureGroupAircraft,
+			"aircraft.metadata_updated_at",
+			issueCodePrefix+"future_aircraft_metadata_available",
+			"Aircraft metadata newer than the feature as-of time must not be exposed as available evidence.",
+		)
+	}
 }
 
 func validateQuality(
@@ -1258,6 +1361,13 @@ func validateQuality(
 		collector,
 		IssueSeverityError,
 		"",
+		"quality.optional_coverage_score",
+		quality.OptionalCoverageScore,
+	)
+	validateRatio(
+		collector,
+		IssueSeverityError,
+		"",
 		"quality.input_quality_score",
 		quality.InputQualityScore,
 	)
@@ -1270,35 +1380,51 @@ func validateQuality(
 		)
 	}
 
-	evidenceGroups := []flightfeatures.GroupEvidence{
-		features.Temporal.Evidence,
-		features.Geographical.Evidence,
-		features.Operational.Evidence,
-		features.Trajectory.Evidence,
-		features.Aircraft.Evidence,
+	type namedEvidence struct {
+		group    flightfeatures.FeatureGroup
+		evidence flightfeatures.GroupEvidence
 	}
-	availableFields := 0
-	totalFields := 0
+	evidenceGroups := []namedEvidence{
+		{flightfeatures.FeatureGroupTemporal, features.Temporal.Evidence},
+		{flightfeatures.FeatureGroupGeographical, features.Geographical.Evidence},
+		{flightfeatures.FeatureGroupOperational, features.Operational.Evidence},
+		{flightfeatures.FeatureGroupTrajectory, features.Trajectory.Evidence},
+		{flightfeatures.FeatureGroupAircraft, features.Aircraft.Evidence},
+	}
+	requirements := flightfeatures.CurrentGroupRequirementCounts()
+	requiredAvailable := 0
+	requiredTotal := 0
+	optionalAvailable := 0
+	optionalTotal := 0
 	expectedSupportingPoints := features.Trajectory.PointCount
-	for _, evidence := range evidenceGroups {
-		if evidence.AvailableFieldCount > 0 {
-			availableFields += evidence.AvailableFieldCount
+	for _, named := range evidenceGroups {
+		counts := requirements[named.group]
+		if counts.Required > 0 && counts.Optional > 0 {
+			collector.error(
+				"",
+				"quality",
+				issueCodePrefix+"mixed_requirement_group_unsupported",
+				fmt.Sprintf(
+					"Feature group %q mixes required and optional aggregate evidence.",
+					named.group,
+				),
+			)
+			continue
 		}
-		if evidence.TotalFieldCount > 0 {
-			totalFields += evidence.TotalFieldCount
+		if counts.Required > 0 {
+			requiredAvailable += named.evidence.AvailableFieldCount
+			requiredTotal += named.evidence.TotalFieldCount
+		} else {
+			optionalAvailable += named.evidence.AvailableFieldCount
+			optionalTotal += named.evidence.TotalFieldCount
 		}
-		if evidence.SupportingPointCount >
-			expectedSupportingPoints {
-			expectedSupportingPoints =
-				evidence.SupportingPointCount
+		if named.evidence.SupportingPointCount > expectedSupportingPoints {
+			expectedSupportingPoints = named.evidence.SupportingPointCount
 		}
 	}
 
-	expectedCompleteness := 0.0
-	if totalFields > 0 {
-		expectedCompleteness =
-			float64(availableFields) / float64(totalFields)
-	}
+	expectedCompleteness := qualityRatioOrOne(requiredAvailable, requiredTotal)
+	expectedOptionalCoverage := qualityRatioOrOne(optionalAvailable, optionalTotal)
 	if finite(quality.CompletenessScore) &&
 		!approximatelyEqual(
 			quality.CompletenessScore,
@@ -1310,9 +1436,26 @@ func validateQuality(
 			"quality.completeness_score",
 			issueCodePrefix+"completeness_score_mismatch",
 			fmt.Sprintf(
-				"Completeness score %.6f does not match evidence-derived score %.6f.",
+				"Required completeness score %.6f does not match evidence-derived score %.6f.",
 				quality.CompletenessScore,
 				expectedCompleteness,
+			),
+		)
+	}
+	if finite(quality.OptionalCoverageScore) &&
+		!approximatelyEqual(
+			quality.OptionalCoverageScore,
+			expectedOptionalCoverage,
+			collector.tolerance,
+		) {
+		collector.error(
+			"",
+			"quality.optional_coverage_score",
+			issueCodePrefix+"optional_coverage_score_mismatch",
+			fmt.Sprintf(
+				"Optional coverage score %.6f does not match evidence-derived score %.6f.",
+				quality.OptionalCoverageScore,
+				expectedOptionalCoverage,
 			),
 		)
 	}
@@ -1344,23 +1487,21 @@ func validateQuality(
 	}
 
 	if ratioInRange(quality.CompletenessScore) &&
-		quality.CompletenessScore+
-			collector.tolerance <
+		quality.CompletenessScore+collector.tolerance <
 			policy.MinimumValidCompletenessScore {
 		collector.warning(
 			"",
 			"quality.completeness_score",
 			issueCodePrefix+"completeness_below_valid_threshold",
 			fmt.Sprintf(
-				"Completeness score %.3f is below the valid threshold %.3f.",
+				"Required completeness score %.3f is below the valid threshold %.3f.",
 				quality.CompletenessScore,
 				policy.MinimumValidCompletenessScore,
 			),
 		)
 	}
 	if ratioInRange(quality.InputQualityScore) &&
-		quality.InputQualityScore+
-			collector.tolerance <
+		quality.InputQualityScore+collector.tolerance <
 			policy.MinimumValidInputQualityScore {
 		collector.warning(
 			"",
@@ -1379,8 +1520,15 @@ func validateQuality(
 		"",
 		"quality.limitations",
 		quality.Limitations,
-		true,
+		false,
 	)
+}
+
+func qualityRatioOrOne(available int, total int) float64 {
+	if total == 0 {
+		return 1
+	}
+	return float64(available) / float64(total)
 }
 
 func validateLimitations(

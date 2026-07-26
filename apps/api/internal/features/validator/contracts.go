@@ -6,7 +6,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
-const Version = "flight-feature-validator-v1"
+const Version = "flight-feature-validator-v2"
 
 type AuditState = flightfeatures.ValidationAuditState
 

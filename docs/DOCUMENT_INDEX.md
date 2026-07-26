@@ -990,3 +990,13 @@ validation, strict context and typed-nil dependency contracts, invalid evidence
 and floating-point rejection, semantic fingerprint normalization, processing
 generation version 4, permanent audit coverage, and explicitly deferred
 provenance and optional-completeness boundaries.
+
+<!-- EXTRACTOR-QUALITY-PROVENANCE:DOCUMENT-INDEX -->
+
+## Document 113 — Extractor Quality and Provenance Semantics
+
+`113_EXTRACTOR_QUALITY_AND_PROVENANCE_SEMANTICS.md` records separation of
+required completeness from optional coverage, removal of the trajectory
+`EndTime` provenance fallback, explicit trajectory creation/update timestamps,
+aircraft metadata source/version/retrieval provenance, validator generation 2,
+processing generation 5, tests, and permanent audit enforcement.

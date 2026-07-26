@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/aircraftprovider"
 )
 
 const fingerprintIdentityPrefix = "sha256:"
@@ -28,6 +30,7 @@ func resolveProcessingIdentity(
 		AircraftPositiveCacheTTL:      config.aircraftPositiveCacheTTL,
 		AircraftNegativeCacheTTL:      config.aircraftNegativeCacheTTL,
 		AircraftNotFoundPolicyVersion: policyVersion,
+		AircraftMetadataSourceName:    aircraftprovider.MetadataSourceName,
 	}
 
 	payload, err := json.Marshal(identity)

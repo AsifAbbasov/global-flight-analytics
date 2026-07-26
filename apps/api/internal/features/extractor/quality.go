@@ -24,9 +24,12 @@ func buildInitialQuality(
 		{group: flightfeatures.FeatureGroupTrajectory, evidence: features.Trajectory.Evidence},
 		{group: flightfeatures.FeatureGroupAircraft, evidence: features.Aircraft.Evidence},
 	}
+	requirements := flightfeatures.CurrentGroupRequirementCounts()
 
-	availableFieldCount := 0
-	totalFieldCount := 0
+	requiredAvailable := 0
+	requiredTotal := 0
+	optionalAvailable := 0
+	optionalTotal := 0
 	supportingPointCount := item.PointCount
 	if len(item.Points) > supportingPointCount {
 		supportingPointCount = len(item.Points)
@@ -37,47 +40,6 @@ func buildInitialQuality(
 			ErrInvalidSupportingPointCount,
 			supportingPointCount,
 		)
-	}
-
-	limitations := make([]flightfeatures.FeatureLimitation, 0)
-	seenLimitations := make(map[string]struct{})
-
-	for _, named := range evidenceGroups {
-		evidence := named.evidence
-		if evidence.AvailableFieldCount < 0 ||
-			evidence.TotalFieldCount < 0 ||
-			evidence.AvailableFieldCount > evidence.TotalFieldCount {
-			return flightfeatures.FeatureQuality{}, fmt.Errorf(
-				"%w: group=%s available=%d total=%d",
-				ErrInvalidEvidenceFieldCount,
-				named.group,
-				evidence.AvailableFieldCount,
-				evidence.TotalFieldCount,
-			)
-		}
-		if evidence.SupportingPointCount < 0 {
-			return flightfeatures.FeatureQuality{}, fmt.Errorf(
-				"%w: group=%s count=%d",
-				ErrInvalidSupportingPointCount,
-				named.group,
-				evidence.SupportingPointCount,
-			)
-		}
-
-		availableFieldCount += evidence.AvailableFieldCount
-		totalFieldCount += evidence.TotalFieldCount
-		if evidence.SupportingPointCount > supportingPointCount {
-			supportingPointCount = evidence.SupportingPointCount
-		}
-
-		for _, limitation := range evidence.Limitations {
-			key := limitation.Code + "\x00" + limitation.Message
-			if _, exists := seenLimitations[key]; exists {
-				continue
-			}
-			seenLimitations[key] = struct{}{}
-			limitations = append(limitations, limitation)
-		}
 	}
 
 	inputQualityScore := features.Trajectory.TrajectoryQualityScore
@@ -92,16 +54,84 @@ func buildInitialQuality(
 		)
 	}
 
-	completenessScore := 0.0
-	if totalFieldCount > 0 {
-		completenessScore = float64(availableFieldCount) / float64(totalFieldCount)
+	limitations := make([]flightfeatures.FeatureLimitation, 0)
+	seenLimitations := make(map[string]struct{})
+
+	for _, named := range evidenceGroups {
+		evidence := named.evidence
+		counts, exists := requirements[named.group]
+		if !exists {
+			return flightfeatures.FeatureQuality{}, fmt.Errorf(
+				"%w: group=%s is absent from schema",
+				ErrInvalidEvidenceFieldCount,
+				named.group,
+			)
+		}
+		if counts.Required > 0 && counts.Optional > 0 {
+			return flightfeatures.FeatureQuality{}, fmt.Errorf(
+				"%w: group=%s required=%d optional=%d",
+				ErrMixedRequirementGroupEvidence,
+				named.group,
+				counts.Required,
+				counts.Optional,
+			)
+		}
+		if evidence.AvailableFieldCount < 0 ||
+			evidence.TotalFieldCount < 0 ||
+			evidence.AvailableFieldCount > evidence.TotalFieldCount ||
+			evidence.TotalFieldCount != counts.Total() {
+			return flightfeatures.FeatureQuality{}, fmt.Errorf(
+				"%w: group=%s available=%d total=%d schema_total=%d",
+				ErrInvalidEvidenceFieldCount,
+				named.group,
+				evidence.AvailableFieldCount,
+				evidence.TotalFieldCount,
+				counts.Total(),
+			)
+		}
+		if evidence.SupportingPointCount < 0 {
+			return flightfeatures.FeatureQuality{}, fmt.Errorf(
+				"%w: group=%s count=%d",
+				ErrInvalidSupportingPointCount,
+				named.group,
+				evidence.SupportingPointCount,
+			)
+		}
+
+		if counts.Required > 0 {
+			requiredAvailable += evidence.AvailableFieldCount
+			requiredTotal += evidence.TotalFieldCount
+		} else {
+			optionalAvailable += evidence.AvailableFieldCount
+			optionalTotal += evidence.TotalFieldCount
+		}
+		if evidence.SupportingPointCount > supportingPointCount {
+			supportingPointCount = evidence.SupportingPointCount
+		}
+
+		for _, limitation := range evidence.Limitations {
+			key := limitation.Code + "\x00" + limitation.Message
+			if _, exists := seenLimitations[key]; exists {
+				continue
+			}
+			seenLimitations[key] = struct{}{}
+			limitations = append(limitations, limitation)
+		}
 	}
 
 	return flightfeatures.FeatureQuality{
-		Status:               flightfeatures.ValidationStatusUnvalidated,
-		CompletenessScore:    completenessScore,
-		InputQualityScore:    inputQualityScore,
-		SupportingPointCount: supportingPointCount,
-		Limitations:          limitations,
+		Status:                flightfeatures.ValidationStatusUnvalidated,
+		CompletenessScore:     ratioOrOne(requiredAvailable, requiredTotal),
+		OptionalCoverageScore: ratioOrOne(optionalAvailable, optionalTotal),
+		InputQualityScore:     inputQualityScore,
+		SupportingPointCount:  supportingPointCount,
+		Limitations:           limitations,
 	}, nil
+}
+
+func ratioOrOne(available int, total int) float64 {
+	if total == 0 {
+		return 1
+	}
+	return float64(available) / float64(total)
 }

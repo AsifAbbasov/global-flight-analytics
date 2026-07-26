@@ -58,11 +58,11 @@ func main() {
 		"type ProcessingVersion string",
 		"CurrentProcessingVersion",
 		"LegacyProcessingVersion",
-		"ProcessingVersion   ProcessingVersion",
+		"ProcessingVersion",
 	)
 	require(
 		"apps/api/internal/features/extractor/contracts.go",
-		"FingerprintIdentity     string",
+		"FingerprintIdentity",
 		"AsOfTime   time.Time",
 	)
 	require(
@@ -87,8 +87,8 @@ func main() {
 	require(
 		"apps/api/internal/features/extractor/fingerprint.go",
 		"type canonicalFingerprintInput struct",
-		"ProcessingIdentity string",
-		"Aircraft           flightfeatures.AircraftFeatures",
+		"ProcessingIdentity",
+		"Aircraft",
 		"fingerprintExtractionInput",
 	)
 	require(

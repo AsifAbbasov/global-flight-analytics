@@ -10,6 +10,7 @@ import (
 const Version = "aircraft-feature-provider-v2"
 
 const DefaultNotFoundPolicyVersion = "aircraft-not-found-pgx-no-rows-v1"
+const MetadataSourceName = "aircraft-reference-lookup"
 
 const AircraftFeatureFieldCount = 6
 

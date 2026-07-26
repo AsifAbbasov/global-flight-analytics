@@ -127,7 +127,7 @@ func TestValidatorMarksCompleteFeaturesValid(t *testing.T) {
 	}
 }
 
-func TestValidatorMarksIncompleteFeaturesLimited(t *testing.T) {
+func TestValidatorTreatsUnavailableOptionalFeaturesAsValid(t *testing.T) {
 	validator := newTestValidator(t, Config{})
 	input := validFeatures()
 	input.Aircraft = flightfeatures.AircraftFeatures{
@@ -142,7 +142,15 @@ func TestValidatorMarksIncompleteFeaturesLimited(t *testing.T) {
 			},
 		},
 	}
-	input.Quality.CompletenessScore = float64(46) / 52
+	input.Quality.CompletenessScore = 1
+	input.Quality.OptionalCoverageScore = 0
+	input.Quality.Limitations = append(
+		[]flightfeatures.FeatureLimitation(nil),
+		input.Aircraft.Evidence.Limitations...,
+	)
+	input.Provenance.AircraftMetadataSourceName = ""
+	input.Provenance.AircraftMetadataProviderVersion = ""
+	input.Provenance.AircraftMetadataRetrievedAt = time.Time{}
 
 	result, report, err := validator.Validate(
 		context.Background(),
@@ -152,33 +160,20 @@ func TestValidatorMarksIncompleteFeaturesLimited(t *testing.T) {
 		t.Fatalf("Validate() error = %v", err)
 	}
 
-	if result.Quality.Status !=
-		flightfeatures.ValidationStatusLimited {
-		t.Fatalf(
-			"status = %q, want limited",
-			result.Quality.Status,
-		)
+	if result.Quality.Status != flightfeatures.ValidationStatusValid {
+		t.Fatalf("status = %q, want valid", result.Quality.Status)
 	}
-	if report.ErrorCount != 0 || report.WarningCount < 2 {
+	if report.ErrorCount != 0 || report.WarningCount != 0 {
 		t.Fatalf("unexpected report: %#v", report)
 	}
-	if !hasIssue(
-		report,
-		issueCodePrefix+"feature_group_unavailable",
-	) {
-		t.Fatalf(
-			"missing unavailable-group issue: %#v",
-			report.Issues,
-		)
+	if hasIssue(report, issueCodePrefix+"feature_group_unavailable") {
+		t.Fatalf("optional unavailability affected validation: %#v", report.Issues)
 	}
 	if !hasLimitation(
 		result.Quality.Limitations,
 		"aircraft_metadata_unavailable",
 	) {
-		t.Fatalf(
-			"missing original limitation: %#v",
-			result.Quality.Limitations,
-		)
+		t.Fatalf("missing transparent optional limitation: %#v", result.Quality.Limitations)
 	}
 }
 
@@ -250,7 +245,7 @@ func TestValidatorTreatsPartialRelationshipFailureAsWarning(
 		flightfeatures.AvailabilityStatusPartial
 	input.Temporal.Evidence.AvailableFieldCount = 7
 	input.Temporal.StartHourUTC = 4
-	input.Quality.CompletenessScore = float64(51) / 52
+	input.Quality.CompletenessScore = float64(45) / 46
 
 	result, report, err := validator.Validate(
 		context.Background(),
@@ -290,7 +285,16 @@ func TestValidatorDoesNotMutateInputOrShareResultSlices(
 	input.Aircraft.AircraftType = ""
 	input.Aircraft.Airline = ""
 	input.Aircraft.Country = ""
-	input.Quality.CompletenessScore = float64(46) / 52
+	input.Aircraft.Evidence.Limitations = []flightfeatures.FeatureLimitation{
+		{Code: "aircraft_metadata_unavailable", Message: "Aircraft metadata unavailable."},
+	}
+	input.Quality.CompletenessScore = 1
+	input.Quality.OptionalCoverageScore = 0
+	input.Quality.InputQualityScore = 0.5
+	input.Trajectory.TrajectoryQualityScore = 0.5
+	input.Provenance.AircraftMetadataSourceName = ""
+	input.Provenance.AircraftMetadataProviderVersion = ""
+	input.Provenance.AircraftMetadataRetrievedAt = time.Time{}
 	original := input.Clone()
 
 	result, report, err := validator.Validate(
@@ -304,13 +308,13 @@ func TestValidatorDoesNotMutateInputOrShareResultSlices(
 	if !reflect.DeepEqual(input, original) {
 		t.Fatal("validator mutated input features")
 	}
+	if len(result.Quality.Limitations) == 0 || len(report.Issues) == 0 {
+		t.Fatalf("expected independent output slices: result=%#v report=%#v", result, report)
+	}
 
 	result.Quality.Limitations[0].Code = "changed"
 	report.Issues[0].Code = "changed"
 
-	if input.Quality.Limitations != nil {
-		t.Fatal("result limitations share input storage")
-	}
 	secondResult, secondReport, err := validator.Validate(
 		context.Background(),
 		input,
@@ -382,7 +386,8 @@ func TestValidatorHonorsCustomThresholdPolicy(t *testing.T) {
 	input.Aircraft.Evidence.AvailableFieldCount = 4
 	input.Aircraft.Airline = ""
 	input.Aircraft.Country = ""
-	input.Quality.CompletenessScore = float64(50) / 52
+	input.Quality.CompletenessScore = 1
+	input.Quality.OptionalCoverageScore = float64(4) / 6
 	input.Quality.InputQualityScore = 0.7
 	input.Trajectory.TrajectoryQualityScore = 0.7
 
@@ -394,9 +399,8 @@ func TestValidatorHonorsCustomThresholdPolicy(t *testing.T) {
 		t.Fatalf("Validate() error = %v", err)
 	}
 
-	if result.Quality.Status !=
-		flightfeatures.ValidationStatusLimited {
-		t.Fatalf("status = %q, want limited", result.Quality.Status)
+	if result.Quality.Status != flightfeatures.ValidationStatusValid {
+		t.Fatalf("status = %q, want valid", result.Quality.Status)
 	}
 	if hasIssue(
 		report,
@@ -574,15 +578,20 @@ func validFeatures() flightfeatures.FlightFeatures {
 			Country:      "Azerbaijan",
 		},
 		Quality: flightfeatures.FeatureQuality{
-			Status:               flightfeatures.ValidationStatusUnvalidated,
-			CompletenessScore:    1,
-			InputQualityScore:    0.9,
-			SupportingPointCount: 4,
+			Status:                flightfeatures.ValidationStatusUnvalidated,
+			CompletenessScore:     1,
+			OptionalCoverageScore: 1,
+			InputQualityScore:     0.9,
+			SupportingPointCount:  4,
 		},
 		Provenance: flightfeatures.FeatureProvenance{
-			ExtractorVersion:    "flight-feature-extractor-v3",
-			InputFingerprint:    "sha256:" + strings.Repeat("a", 64),
-			TrajectoryUpdatedAt: end,
+			ExtractorVersion:                "flight-feature-extractor-v5",
+			InputFingerprint:                "sha256:" + strings.Repeat("a", 64),
+			TrajectoryCreatedAt:             end.Add(-time.Minute),
+			TrajectoryUpdatedAt:             end.Add(30 * time.Second),
+			AircraftMetadataSourceName:      "aircraft-reference-lookup",
+			AircraftMetadataProviderVersion: "aircraft-feature-provider-v2",
+			AircraftMetadataRetrievedAt:     end.Add(30 * time.Second),
 			SourceNames: []string{
 				"airplanes.live",
 				"open-sky",

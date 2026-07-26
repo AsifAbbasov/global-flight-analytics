@@ -17,13 +17,15 @@ const aircraftFeatureFieldCount = 6
 var icao24Pattern = regexp.MustCompile(`^[A-F0-9]{6}$`)
 
 type Extractor struct {
-	temporalBuilder         TemporalBuilder
-	geographicalBuilder     GeographicalBuilder
-	operationalBuilder      OperationalBuilder
-	trajectoryBuilder       TrajectoryBuilder
-	aircraftFeatureProvider AircraftFeatureProvider
-	fingerprintIdentity     string
-	now                     func() time.Time
+	temporalBuilder                 TemporalBuilder
+	geographicalBuilder             GeographicalBuilder
+	operationalBuilder              OperationalBuilder
+	trajectoryBuilder               TrajectoryBuilder
+	aircraftFeatureProvider         AircraftFeatureProvider
+	aircraftMetadataSourceName      string
+	aircraftMetadataProviderVersion string
+	fingerprintIdentity             string
+	now                             func() time.Time
 }
 
 func New(config Config) (*Extractor, error) {
@@ -44,6 +46,23 @@ func New(config Config) (*Extractor, error) {
 	if dependencyMissing(aircraftFeatureProvider) {
 		aircraftFeatureProvider = nil
 	}
+	aircraftMetadataSourceName := strings.TrimSpace(
+		config.AircraftMetadataSourceName,
+	)
+	aircraftMetadataProviderVersion := strings.TrimSpace(
+		config.AircraftMetadataProviderVersion,
+	)
+	if aircraftFeatureProvider != nil {
+		if aircraftMetadataSourceName == "" {
+			return nil, ErrAircraftMetadataSourceNameRequired
+		}
+		if aircraftMetadataProviderVersion == "" {
+			return nil, ErrAircraftMetadataProviderVersionRequired
+		}
+	} else {
+		aircraftMetadataSourceName = ""
+		aircraftMetadataProviderVersion = ""
+	}
 
 	now := config.Now
 	if now == nil {
@@ -58,13 +77,15 @@ func New(config Config) (*Extractor, error) {
 	}
 
 	return &Extractor{
-		temporalBuilder:         config.TemporalBuilder,
-		geographicalBuilder:     config.GeographicalBuilder,
-		operationalBuilder:      config.OperationalBuilder,
-		trajectoryBuilder:       config.TrajectoryBuilder,
-		aircraftFeatureProvider: aircraftFeatureProvider,
-		fingerprintIdentity:     fingerprintIdentity,
-		now:                     now,
+		temporalBuilder:                 config.TemporalBuilder,
+		geographicalBuilder:             config.GeographicalBuilder,
+		operationalBuilder:              config.OperationalBuilder,
+		trajectoryBuilder:               config.TrajectoryBuilder,
+		aircraftFeatureProvider:         aircraftFeatureProvider,
+		aircraftMetadataSourceName:      aircraftMetadataSourceName,
+		aircraftMetadataProviderVersion: aircraftMetadataProviderVersion,
+		fingerprintIdentity:             fingerprintIdentity,
+		now:                             now,
 	}, nil
 }
 
@@ -151,15 +172,23 @@ func (extractor *Extractor) Extract(
 		return flightfeatures.FlightFeatures{}, err
 	}
 
+	aircraftMetadataRetrievedAt := time.Time{}
+	if extractor.aircraftFeatureProvider != nil {
+		aircraftMetadataRetrievedAt = extractor.now().UTC()
+	}
+
 	fingerprint, err := fingerprintExtractionInput(
 		request.Trajectory,
 		aircraftFeatures,
 		extractor.fingerprintIdentity,
+		extractor.aircraftMetadataSourceName,
+		extractor.aircraftMetadataProviderVersion,
 	)
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, err
 	}
 
+	extractedAt := extractor.now().UTC()
 	features := flightfeatures.FlightFeatures{
 		SchemaVersion: flightfeatures.SchemaVersionV1,
 		TrajectoryID:  request.Trajectory.ID,
@@ -177,7 +206,7 @@ func (extractor *Extractor) Extract(
 			EndTime:   request.Trajectory.EndTime.UTC(),
 			AsOfTime:  request.AsOfTime.UTC(),
 		},
-		ExtractedAt: extractor.now().UTC(),
+		ExtractedAt: extractedAt,
 
 		Temporal:     temporalFeatures,
 		Geographical: geographicalFeatures,
@@ -188,9 +217,15 @@ func (extractor *Extractor) Extract(
 		Provenance: flightfeatures.FeatureProvenance{
 			ExtractorVersion: Version,
 			InputFingerprint: fingerprint,
+			TrajectoryCreatedAt: normalizedTrajectoryCreatedAt(
+				request.Trajectory,
+			),
 			TrajectoryUpdatedAt: normalizedTrajectoryUpdatedAt(
 				request.Trajectory,
 			),
+			AircraftMetadataSourceName:      extractor.aircraftMetadataSourceName,
+			AircraftMetadataProviderVersion: extractor.aircraftMetadataProviderVersion,
+			AircraftMetadataRetrievedAt:     aircraftMetadataRetrievedAt,
 			SourceNames: collectSourceNames(
 				request.Trajectory,
 			),
@@ -332,17 +367,22 @@ func addSourceName(
 	target[normalized] = struct{}{}
 }
 
+func normalizedTrajectoryCreatedAt(
+	item trajectory.FlightTrajectory,
+) time.Time {
+	if item.CreatedAt.IsZero() {
+		return time.Time{}
+	}
+	return item.CreatedAt.UTC()
+}
+
 func normalizedTrajectoryUpdatedAt(
 	item trajectory.FlightTrajectory,
 ) time.Time {
-	if !item.UpdatedAt.IsZero() {
-		return item.UpdatedAt.UTC()
+	if item.UpdatedAt.IsZero() {
+		return time.Time{}
 	}
-	if !item.CreatedAt.IsZero() {
-		return item.CreatedAt.UTC()
-	}
-
-	return item.EndTime.UTC()
+	return item.UpdatedAt.UTC()
 }
 
 func cloneTrajectory(

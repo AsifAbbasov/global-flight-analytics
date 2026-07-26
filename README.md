@@ -453,3 +453,12 @@ Historical feature extraction now rejects nested point, segment, and coverage-ga
 evidence after the requested as-of time. Invalid evidence counts and non-finite
 quality scores are rejected, semantic aircraft identity is canonicalized before
 hashing, and processing generation advances to version 4.
+
+<!-- EXTRACTOR-QUALITY-PROVENANCE:README -->
+
+## Extractor Quality and Provenance Semantics
+
+Core completeness now measures required fields only, while optional enrichment
+uses an independent coverage score. Trajectory record timestamps are stored
+without event-time fallbacks, aircraft metadata source/version/retrieval
+provenance is explicit, and processing advances to generation 5.

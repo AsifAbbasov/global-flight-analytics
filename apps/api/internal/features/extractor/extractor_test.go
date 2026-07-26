@@ -305,7 +305,7 @@ func TestExtractorAssemblesFeaturesAndProvenance(t *testing.T) {
 	}
 
 	wantCompleteness := float64(8+9+11+16) /
-		float64(8+11+11+16+aircraftFeatureFieldCount)
+		float64(8+11+11+16)
 	if math.Abs(
 		result.Quality.CompletenessScore-wantCompleteness,
 	) > 1e-12 {
@@ -315,7 +315,8 @@ func TestExtractorAssemblesFeaturesAndProvenance(t *testing.T) {
 			wantCompleteness,
 		)
 	}
-	if result.Quality.InputQualityScore != 0.75 ||
+	if result.Quality.OptionalCoverageScore != 0 ||
+		result.Quality.InputQualityScore != 0.75 ||
 		result.Quality.SupportingPointCount != 4 {
 		t.Fatalf("unexpected quality: %#v", result.Quality)
 	}
@@ -572,8 +573,23 @@ func TestExtractorGivesEachBuilderIndependentTrajectoryCopy(
 ) {
 	temporalBuilder := &temporalBuilderStub{
 		mutate: true,
+		features: flightfeatures.TemporalFeatures{
+			Evidence: flightfeatures.GroupEvidence{
+				Status:              flightfeatures.AvailabilityStatusAvailable,
+				AvailableFieldCount: 8,
+				TotalFieldCount:     8,
+			},
+		},
 	}
-	geographicalBuilder := &geographicalBuilderStub{}
+	geographicalBuilder := &geographicalBuilderStub{
+		features: flightfeatures.GeographicalFeatures{
+			Evidence: flightfeatures.GroupEvidence{
+				Status:              flightfeatures.AvailabilityStatusAvailable,
+				AvailableFieldCount: 11,
+				TotalFieldCount:     11,
+			},
+		},
+	}
 	extractor := newTestExtractor(t, Config{
 		TemporalBuilder:     temporalBuilder,
 		GeographicalBuilder: geographicalBuilder,
@@ -617,7 +633,10 @@ func TestExtractorResultDoesNotShareBuilderLimitationSlices(
 	temporalBuilder := &temporalBuilderStub{
 		features: flightfeatures.TemporalFeatures{
 			Evidence: flightfeatures.GroupEvidence{
-				Limitations: limitations,
+				Status:              flightfeatures.AvailabilityStatusAvailable,
+				AvailableFieldCount: 8,
+				TotalFieldCount:     8,
+				Limitations:         limitations,
 			},
 		},
 	}
@@ -686,6 +705,8 @@ func newTestExtractor(
 				TrajectoryQualityScore: 0.8,
 			},
 		},
+		AircraftMetadataSourceName:      "test-aircraft-reference",
+		AircraftMetadataProviderVersion: "test-aircraft-provider-v1",
 		Now: func() time.Time {
 			return time.Date(
 				2026,
@@ -715,6 +736,14 @@ func newTestExtractor(
 	if overrides.AircraftFeatureProvider != nil {
 		config.AircraftFeatureProvider =
 			overrides.AircraftFeatureProvider
+	}
+	if overrides.AircraftMetadataSourceName != "" {
+		config.AircraftMetadataSourceName =
+			overrides.AircraftMetadataSourceName
+	}
+	if overrides.AircraftMetadataProviderVersion != "" {
+		config.AircraftMetadataProviderVersion =
+			overrides.AircraftMetadataProviderVersion
 	}
 	if overrides.Now != nil {
 		config.Now = overrides.Now

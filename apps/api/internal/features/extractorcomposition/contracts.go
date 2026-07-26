@@ -8,7 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/geographicalbuilder"
 )
 
-const Version = "flight-feature-extractor-composition-v4"
+const Version = "flight-feature-extractor-composition-v5"
 
 type Component string
 
@@ -91,6 +91,7 @@ type ProcessingIdentity struct {
 	AircraftPositiveCacheTTL      time.Duration
 	AircraftNegativeCacheTTL      time.Duration
 	AircraftNotFoundPolicyVersion string
+	AircraftMetadataSourceName    string
 }
 
 type Composition struct {

@@ -15,9 +15,11 @@ import (
 const fingerprintPrefix = "sha256:"
 
 type canonicalFingerprintInput struct {
-	ProcessingIdentity string
-	Trajectory         canonicalTrajectory
-	Aircraft           flightfeatures.AircraftFeatures
+	ProcessingIdentity              string
+	AircraftMetadataSourceName      string
+	AircraftMetadataProviderVersion string
+	Trajectory                      canonicalTrajectory
+	Aircraft                        flightfeatures.AircraftFeatures
 }
 
 type canonicalTrajectory struct {
@@ -110,6 +112,8 @@ func fingerprintTrajectory(
 		item,
 		flightfeatures.AircraftFeatures{},
 		Version,
+		"",
+		"",
 	)
 }
 
@@ -117,11 +121,19 @@ func fingerprintExtractionInput(
 	item trajectory.FlightTrajectory,
 	aircraftFeatures flightfeatures.AircraftFeatures,
 	processingIdentity string,
+	aircraftMetadataSourceName string,
+	aircraftMetadataProviderVersion string,
 ) (string, error) {
 	canonical := canonicalFingerprintInput{
 		ProcessingIdentity: processingIdentity,
-		Trajectory:         canonicalizeTrajectory(item),
-		Aircraft:           aircraftFeatures,
+		AircraftMetadataSourceName: strings.TrimSpace(
+			aircraftMetadataSourceName,
+		),
+		AircraftMetadataProviderVersion: strings.TrimSpace(
+			aircraftMetadataProviderVersion,
+		),
+		Trajectory: canonicalizeTrajectory(item),
+		Aircraft:   aircraftFeatures,
 	}
 
 	payload, err := json.Marshal(canonical)

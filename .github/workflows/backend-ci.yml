@@ -106,6 +106,9 @@ jobs:
       - name: Run extractor correctness audit
         run: go run ./tools/extractorcorrectnessaudit -strict
 
+      - name: Run feature quality and provenance audit
+        run: go run ./tools/featurequalityprovenanceaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

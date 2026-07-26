@@ -64,6 +64,7 @@ func (validator *Validator) Validate(
 		tolerance: validator.policy.NumericTolerance,
 	}
 	expectedFieldCounts := schemaFieldCounts()
+	requirementCounts := flightfeatures.CurrentGroupRequirementCounts()
 
 	validateIdentity(&collector, features)
 	validateWindow(&collector, features)
@@ -74,6 +75,7 @@ func (validator *Validator) Validate(
 		"temporal.evidence",
 		features.Temporal.Evidence,
 		expectedFieldCounts[flightfeatures.FeatureGroupTemporal],
+		requirementCounts[flightfeatures.FeatureGroupTemporal].Required > 0,
 	)
 	validateGroupEvidence(
 		&collector,
@@ -81,6 +83,7 @@ func (validator *Validator) Validate(
 		"geographical.evidence",
 		features.Geographical.Evidence,
 		expectedFieldCounts[flightfeatures.FeatureGroupGeographical],
+		requirementCounts[flightfeatures.FeatureGroupGeographical].Required > 0,
 	)
 	validateGroupEvidence(
 		&collector,
@@ -88,6 +91,7 @@ func (validator *Validator) Validate(
 		"operational.evidence",
 		features.Operational.Evidence,
 		expectedFieldCounts[flightfeatures.FeatureGroupOperational],
+		requirementCounts[flightfeatures.FeatureGroupOperational].Required > 0,
 	)
 	validateGroupEvidence(
 		&collector,
@@ -95,6 +99,7 @@ func (validator *Validator) Validate(
 		"trajectory.evidence",
 		features.Trajectory.Evidence,
 		expectedFieldCounts[flightfeatures.FeatureGroupTrajectory],
+		requirementCounts[flightfeatures.FeatureGroupTrajectory].Required > 0,
 	)
 	validateGroupEvidence(
 		&collector,
@@ -102,6 +107,7 @@ func (validator *Validator) Validate(
 		"aircraft.evidence",
 		features.Aircraft.Evidence,
 		expectedFieldCounts[flightfeatures.FeatureGroupAircraft],
+		requirementCounts[flightfeatures.FeatureGroupAircraft].Required > 0,
 	)
 
 	validateTemporalFeatures(&collector, features)

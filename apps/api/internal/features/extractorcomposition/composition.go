@@ -73,13 +73,15 @@ func New(config Config) (*Composition, error) {
 
 	featureExtractor, err := extractor.New(
 		extractor.Config{
-			TemporalBuilder:         temporalbuilder.New(),
-			GeographicalBuilder:     geographicalBuilder,
-			OperationalBuilder:      operationalbuilder.New(),
-			TrajectoryBuilder:       trajectorybuilder.New(),
-			AircraftFeatureProvider: aircraftProvider,
-			FingerprintIdentity:     fingerprintIdentity,
-			Now:                     config.now,
+			TemporalBuilder:                 temporalbuilder.New(),
+			GeographicalBuilder:             geographicalBuilder,
+			OperationalBuilder:              operationalbuilder.New(),
+			TrajectoryBuilder:               trajectorybuilder.New(),
+			AircraftFeatureProvider:         aircraftProvider,
+			AircraftMetadataSourceName:      aircraftprovider.MetadataSourceName,
+			AircraftMetadataProviderVersion: aircraftprovider.Version,
+			FingerprintIdentity:             fingerprintIdentity,
+			Now:                             config.now,
 		},
 	)
 	if err != nil {
