@@ -482,3 +482,9 @@ already participates in deterministic fingerprint identity. Aircraft enrichment
 and cache disablement are explicit policies, while the historical temporal gate
 continues to evaluate every request after cache lookup. Processing advances to
 generation 6.
+
+<!-- AIRCRAFT-PROVIDER-REVIEW-HARDENING:README -->
+
+## Aircraft Provider Review Hardening
+
+Aircraft metadata lookup now uses atomic cache and in-flight acquisition, caller-independent bounded shared lookup contexts, and a capacity-bounded cache with expiry sweeping. Domain not-found errors are recognized by default and successful lookup records must carry a matching ICAO24 identity.

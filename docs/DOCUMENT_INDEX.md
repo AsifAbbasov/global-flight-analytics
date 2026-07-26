@@ -1019,3 +1019,7 @@ extractor-review findings.
 persists the typed processing manifest, adds explicit optional aircraft
 enrichment and cache-disable policies, preserves per-request historical temporal
 filtering, advances processing generation 6, and installs a permanent audit gate.
+
+## Document 116: Aircraft Provider Review Hardening
+
+`116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` records atomic request coalescing, independent cancellation, bounded cache lifecycle, domain not-found semantics, lookup identity enforcement, and final aircraft provider review closure.

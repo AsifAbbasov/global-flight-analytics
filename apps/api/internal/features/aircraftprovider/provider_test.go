@@ -13,7 +13,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
-	"github.com/jackc/pgx/v5"
 )
 
 type lookupStub struct {
@@ -260,7 +259,7 @@ func TestProviderTreatsNotFoundAsUnavailableEvidence(
 	lookup := &lookupStub{
 		err: fmt.Errorf(
 			"read aircraft: %w",
-			pgx.ErrNoRows,
+			aircraft.ErrNotFound,
 		),
 	}
 	provider := newTestProvider(t, Config{
@@ -489,7 +488,7 @@ func TestProviderUsesNegativeCacheUntilExpiry(t *testing.T) {
 		time.UTC,
 	)
 	lookup := &lookupStub{
-		err: pgx.ErrNoRows,
+		err: aircraft.ErrNotFound,
 	}
 	provider := newTestProvider(t, Config{
 		Lookup:           lookup,
@@ -779,7 +778,7 @@ func TestProviderPreservesAlreadyCanceledContext(
 }
 
 func TestProviderContractConstantsRemainStable(t *testing.T) {
-	if Version != "aircraft-feature-provider-v3" {
+	if Version != "aircraft-feature-provider-v4" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft) != 6 {

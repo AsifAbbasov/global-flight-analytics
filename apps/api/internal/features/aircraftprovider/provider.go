@@ -10,7 +10,6 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractor"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
-	"github.com/jackc/pgx/v5"
 )
 
 var _ extractor.AircraftFeatureProvider = (*Provider)(nil)
@@ -20,6 +19,8 @@ type Provider struct {
 	cacheMode        CacheMode
 	positiveCacheTTL time.Duration
 	negativeCacheTTL time.Duration
+	maxCacheEntries  int
+	lookupTimeout    time.Duration
 	now              func() time.Time
 	isNotFound       func(error) bool
 
@@ -80,7 +81,7 @@ func New(config Config) (*Provider, error) {
 	isNotFound := config.IsNotFound
 	if isNotFound == nil {
 		isNotFound = func(err error) bool {
-			return errors.Is(err, pgx.ErrNoRows)
+			return errors.Is(err, aircraft.ErrNotFound)
 		}
 	}
 
@@ -89,6 +90,8 @@ func New(config Config) (*Provider, error) {
 		cacheMode:        cacheMode,
 		positiveCacheTTL: positiveCacheTTL,
 		negativeCacheTTL: negativeCacheTTL,
+		maxCacheEntries:  DefaultMaxCacheEntries,
+		lookupTimeout:    DefaultLookupTimeout,
 		now:              now,
 		isNotFound:       isNotFound,
 		cache:            make(map[string]cacheEntry),
@@ -101,7 +104,7 @@ func (provider *Provider) Provide(
 	reference extractor.AircraftReference,
 ) (flightfeatures.AircraftFeatures, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return flightfeatures.AircraftFeatures{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return flightfeatures.AircraftFeatures{}, err
@@ -112,159 +115,187 @@ func (provider *Provider) Provide(
 		return flightfeatures.AircraftFeatures{}, ErrInvalidICAO24
 	}
 
-	if cached, found := provider.cached(icao24); found {
-		return applyTemporalPolicy(
-			cached,
-			reference.AsOfTime,
-		), nil
+	cached, call, leader, found := provider.acquire(icao24)
+	if found {
+		return applyTemporalPolicy(cached, reference.AsOfTime), nil
+	}
+	if leader {
+		provider.startLookup(context.WithoutCancel(ctx), icao24, call)
 	}
 
-	call, leader := provider.beginCall(icao24)
-	if !leader {
-		select {
-		case <-ctx.Done():
-			return flightfeatures.AircraftFeatures{}, ctx.Err()
-		case <-call.done:
-			if call.err != nil {
-				return flightfeatures.AircraftFeatures{}, call.err
-			}
+	features, err := waitForCall(ctx, call)
+	if err != nil {
+		return flightfeatures.AircraftFeatures{}, err
+	}
+	return applyTemporalPolicy(features, reference.AsOfTime), nil
+}
 
-			return applyTemporalPolicy(
-				call.features,
-				reference.AsOfTime,
-			), nil
+func (provider *Provider) acquire(
+	icao24 string,
+) (
+	flightfeatures.AircraftFeatures,
+	*inFlightCall,
+	bool,
+	bool,
+) {
+	provider.mutex.Lock()
+	defer provider.mutex.Unlock()
+
+	if provider.cacheMode == CacheModeEnabled {
+		now := provider.now().UTC()
+		provider.pruneExpiredLocked(now)
+		if entry, exists := provider.cache[icao24]; exists {
+			return cloneFeatures(entry.features), nil, false, true
 		}
 	}
 
-	features, lookupErr := provider.resolve(ctx, icao24)
-	provider.completeCall(icao24, call, features, lookupErr)
-
-	if lookupErr != nil {
-		return flightfeatures.AircraftFeatures{}, lookupErr
+	if existing, exists := provider.inFlight[icao24]; exists {
+		return flightfeatures.AircraftFeatures{}, existing, false, false
 	}
 
-	return applyTemporalPolicy(
-		features,
-		reference.AsOfTime,
-	), nil
+	call := &inFlightCall{done: make(chan struct{})}
+	provider.inFlight[icao24] = call
+	return flightfeatures.AircraftFeatures{}, call, true, false
+}
+
+func (provider *Provider) startLookup(
+	base context.Context,
+	icao24 string,
+	call *inFlightCall,
+) {
+	go func() {
+		lookupContext, cancel := context.WithTimeout(
+			base,
+			provider.lookupTimeout,
+		)
+		defer cancel()
+
+		features, ttl, err := provider.resolve(lookupContext, icao24)
+		provider.completeCall(icao24, call, features, ttl, err)
+	}()
+}
+
+func waitForCall(
+	ctx context.Context,
+	call *inFlightCall,
+) (flightfeatures.AircraftFeatures, error) {
+	select {
+	case <-call.done:
+		if call.err != nil {
+			return flightfeatures.AircraftFeatures{}, call.err
+		}
+		return cloneFeatures(call.features), nil
+	default:
+	}
+
+	select {
+	case <-ctx.Done():
+		return flightfeatures.AircraftFeatures{}, ctx.Err()
+	case <-call.done:
+		if call.err != nil {
+			return flightfeatures.AircraftFeatures{}, call.err
+		}
+		return cloneFeatures(call.features), nil
+	}
 }
 
 func (provider *Provider) resolve(
 	ctx context.Context,
 	icao24 string,
-) (flightfeatures.AircraftFeatures, error) {
+) (flightfeatures.AircraftFeatures, time.Duration, error) {
 	item, err := provider.lookup.GetByICAO24(ctx, icao24)
 	if err != nil {
+		if errors.Is(err, context.Canceled) ||
+			errors.Is(err, context.DeadlineExceeded) {
+			return flightfeatures.AircraftFeatures{}, 0, err
+		}
 		if provider.isNotFound(err) {
 			features := unavailableFeatures(
 				"aircraft_metadata_not_found",
 				"Aircraft metadata was not found for the supplied ICAO24.",
 			)
-			provider.storeCache(
-				icao24,
-				features,
-				provider.negativeCacheTTL,
-			)
-
-			return features, nil
+			return features, provider.negativeCacheTTL, nil
 		}
-
-		return flightfeatures.AircraftFeatures{},
-			&LookupError{
-				ICAO24: icao24,
-				Err:    err,
-			}
+		return flightfeatures.AircraftFeatures{}, 0, &LookupError{
+			ICAO24: icao24,
+			Err:    err,
+		}
 	}
 	if err := ctx.Err(); err != nil {
-		return flightfeatures.AircraftFeatures{}, err
+		return flightfeatures.AircraftFeatures{}, 0, err
 	}
 
-	returnedICAO24 := aircraft.CanonicalICAO24(item.ICAO24)
-	if returnedICAO24 != "" && returnedICAO24 != icao24 {
-		return flightfeatures.AircraftFeatures{},
-			ErrAircraftIdentityMismatch
+	if strings.TrimSpace(item.ICAO24) == "" {
+		return flightfeatures.AircraftFeatures{}, 0, ErrAircraftIdentityMissing
+	}
+	returnedICAO24, valid := aircraft.NormalizeICAO24(item.ICAO24)
+	if !valid || returnedICAO24 != icao24 {
+		return flightfeatures.AircraftFeatures{}, 0, ErrAircraftIdentityMismatch
 	}
 
-	features := mapAircraft(item)
-	provider.storeCache(
-		icao24,
-		features,
-		provider.positiveCacheTTL,
-	)
-
-	return features, nil
-}
-
-func (provider *Provider) cached(
-	icao24 string,
-) (flightfeatures.AircraftFeatures, bool) {
-	if provider.cacheMode == CacheModeDisabled {
-		return flightfeatures.AircraftFeatures{}, false
-	}
-	now := provider.now().UTC()
-
-	provider.mutex.Lock()
-	defer provider.mutex.Unlock()
-
-	entry, exists := provider.cache[icao24]
-	if !exists {
-		return flightfeatures.AircraftFeatures{}, false
-	}
-	if !now.Before(entry.expiresAt) {
-		delete(provider.cache, icao24)
-		return flightfeatures.AircraftFeatures{}, false
-	}
-
-	return cloneFeatures(entry.features), true
-}
-
-func (provider *Provider) storeCache(
-	icao24 string,
-	features flightfeatures.AircraftFeatures,
-	ttl time.Duration,
-) {
-	if provider.cacheMode == CacheModeDisabled {
-		return
-	}
-	provider.mutex.Lock()
-	defer provider.mutex.Unlock()
-
-	provider.cache[icao24] = cacheEntry{
-		features:  cloneFeatures(features),
-		expiresAt: provider.now().UTC().Add(ttl),
-	}
-}
-
-func (provider *Provider) beginCall(
-	icao24 string,
-) (*inFlightCall, bool) {
-	provider.mutex.Lock()
-	defer provider.mutex.Unlock()
-
-	if existing, exists := provider.inFlight[icao24]; exists {
-		return existing, false
-	}
-
-	call := &inFlightCall{
-		done: make(chan struct{}),
-	}
-	provider.inFlight[icao24] = call
-
-	return call, true
+	return mapAircraft(item), provider.positiveCacheTTL, nil
 }
 
 func (provider *Provider) completeCall(
 	icao24 string,
 	call *inFlightCall,
 	features flightfeatures.AircraftFeatures,
+	ttl time.Duration,
 	err error,
 ) {
 	provider.mutex.Lock()
+	if err == nil && provider.cacheMode == CacheModeEnabled && ttl > 0 {
+		provider.storeCacheLocked(
+			icao24,
+			features,
+			provider.now().UTC().Add(ttl),
+		)
+	}
 	call.features = cloneFeatures(features)
 	call.err = err
 	delete(provider.inFlight, icao24)
 	close(call.done)
 	provider.mutex.Unlock()
+}
+
+func (provider *Provider) storeCacheLocked(
+	icao24 string,
+	features flightfeatures.AircraftFeatures,
+	expiresAt time.Time,
+) {
+	provider.pruneExpiredLocked(provider.now().UTC())
+	if _, exists := provider.cache[icao24]; !exists &&
+		len(provider.cache) >= provider.maxCacheEntries {
+		provider.evictOneLocked()
+	}
+	provider.cache[icao24] = cacheEntry{
+		features:  cloneFeatures(features),
+		expiresAt: expiresAt,
+	}
+}
+
+func (provider *Provider) pruneExpiredLocked(now time.Time) {
+	for key, entry := range provider.cache {
+		if !now.Before(entry.expiresAt) {
+			delete(provider.cache, key)
+		}
+	}
+}
+
+func (provider *Provider) evictOneLocked() {
+	victimKey := ""
+	var victimExpiry time.Time
+	for key, entry := range provider.cache {
+		if victimKey == "" ||
+			entry.expiresAt.Before(victimExpiry) ||
+			(entry.expiresAt.Equal(victimExpiry) && key < victimKey) {
+			victimKey = key
+			victimExpiry = entry.expiresAt
+		}
+	}
+	if victimKey != "" {
+		delete(provider.cache, victimKey)
+	}
 }
 
 func mapAircraft(
@@ -290,28 +321,23 @@ func mapAircraft(
 
 	switch {
 	case availableFieldCount == flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft):
-		features.Evidence.Status =
-			flightfeatures.AvailabilityStatusAvailable
+		features.Evidence.Status = flightfeatures.AvailabilityStatusAvailable
 	case availableFieldCount == 0:
-		features.Evidence.Status =
-			flightfeatures.AvailabilityStatusUnavailable
-		features.Evidence.Limitations =
-			[]flightfeatures.FeatureLimitation{
-				{
-					Code:    "aircraft_metadata_empty",
-					Message: "Aircraft lookup succeeded but returned no usable metadata fields.",
-				},
-			}
+		features.Evidence.Status = flightfeatures.AvailabilityStatusUnavailable
+		features.Evidence.Limitations = []flightfeatures.FeatureLimitation{
+			{
+				Code:    "aircraft_metadata_empty",
+				Message: "Aircraft lookup succeeded but returned no usable metadata fields.",
+			},
+		}
 	default:
-		features.Evidence.Status =
-			flightfeatures.AvailabilityStatusPartial
-		features.Evidence.Limitations =
-			[]flightfeatures.FeatureLimitation{
-				{
-					Code:    "aircraft_metadata_partial",
-					Message: "Only part of the aircraft metadata is available.",
-				},
-			}
+		features.Evidence.Status = flightfeatures.AvailabilityStatusPartial
+		features.Evidence.Limitations = []flightfeatures.FeatureLimitation{
+			{
+				Code:    "aircraft_metadata_partial",
+				Message: "Only part of the aircraft metadata is available.",
+			},
+		}
 	}
 
 	return features
@@ -333,7 +359,6 @@ func applyTemporalPolicy(
 		"Current aircraft metadata was updated after the feature as-of time and cannot be used as historical evidence.",
 	)
 	blocked.MetadataUpdatedAt = normalized.MetadataUpdatedAt
-
 	return blocked
 }
 
@@ -341,7 +366,6 @@ func normalizedMetadataUpdatedAt(value time.Time) time.Time {
 	if value.IsZero() {
 		return time.Time{}
 	}
-
 	return value.UTC()
 }
 
@@ -381,7 +405,6 @@ func countAvailableFields(
 			count++
 		}
 	}
-
 	return count
 }
 
@@ -393,6 +416,5 @@ func cloneFeatures(
 		[]flightfeatures.FeatureLimitation(nil),
 		features.Evidence.Limitations...,
 	)
-
 	return cloned
 }

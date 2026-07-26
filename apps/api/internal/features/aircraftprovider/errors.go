@@ -6,6 +6,9 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"aircraft feature request context is required",
+	)
 	ErrLookupRequired = errors.New(
 		"aircraft feature lookup is required",
 	)
@@ -21,8 +24,11 @@ var (
 	ErrInvalidICAO24 = errors.New(
 		"aircraft feature reference has an invalid icao24",
 	)
+	ErrAircraftIdentityMissing = errors.New(
+		"aircraft feature lookup returned no icao24 identity",
+	)
 	ErrAircraftIdentityMismatch = errors.New(
-		"aircraft feature lookup returned a different icao24",
+		"aircraft feature lookup returned an invalid or different icao24",
 	)
 )
 

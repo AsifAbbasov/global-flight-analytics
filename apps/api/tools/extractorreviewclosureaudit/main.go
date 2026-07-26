@@ -67,7 +67,7 @@ func main() {
 			path: "apps/api/internal/features/aircraftprovider/provider.go",
 			required: []string{
 				"aircraft.NormalizeICAO24(",
-				"aircraft.CanonicalICAO24(",
+				"returnedICAO24, valid := aircraft.NormalizeICAO24(",
 				"flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft)",
 			},
 			forbidden: []string{

@@ -48,78 +48,64 @@ func main() {
 	}
 
 	require(
-		"apps/api/internal/features/flightfeatures/processing_identity.go",
-		"type ProcessingIdentity struct",
-		"AircraftEnrichmentMode",
-		"AircraftCacheMode",
-		"ProcessingComponentVersions",
-	)
-	require(
-		"apps/api/internal/features/flightfeatures/model.go",
-		"ProcessingIdentityFingerprint",
-		"ProcessingIdentity              ProcessingIdentity",
-		`flight-feature-processing-pipeline-v6`,
-	)
-	require(
-		"apps/api/internal/features/extractorcomposition/contracts.go",
-		"DefaultConfigWithoutAircraftEnrichment",
-		"WithoutAircraftCache",
-		"type FeatureExtractor interface",
-		`flight-feature-extractor-composition-v6`,
-	)
-	require(
-		"apps/api/internal/features/extractorcomposition/composition.go",
-		"validateConfig",
-		"newGeographicalBuilder",
-		"newAircraftFeatureProvider",
-		"ProcessingIdentity:              processingIdentity",
-	)
-	require(
-		"apps/api/internal/features/extractorcomposition/processing_identity_test.go",
-		"TestProcessingManifestIsPersistedInFeatureProvenance",
-		"TestCompositionSupportsExplicitlyDisabledAircraftEnrichment",
-		"TestAircraftCacheModeChangesInputFingerprint",
-	)
-	require(
 		"apps/api/internal/features/aircraftprovider/contracts.go",
-		"CacheModeEnabled",
-		"CacheModeDisabled",
-		`aircraft-feature-provider-v4`,
+		`const Version = "aircraft-feature-provider-v4"`,
+		`DefaultNotFoundPolicyVersion = "aircraft-domain-not-found-v2"`,
+		"DefaultMaxCacheEntries",
+		"DefaultLookupTimeout",
 	)
 	require(
 		"apps/api/internal/features/aircraftprovider/provider.go",
 		"func (provider *Provider) acquire(",
-		"provider.cacheMode == CacheModeEnabled",
-		"provider.storeCacheLocked(",
-	)
-	require(
-		"apps/api/internal/features/extractor/extractor.go",
-		"ProcessingIdentityFingerprint: extractor.fingerprintIdentity",
-		"ProcessingIdentity:            extractor.processingIdentity",
-	)
-	require(
-		"apps/api/cmd/materialize-flight-features/main.go",
-		"featurepipeline.NewPostgres(",
-		"extractorcomposition.DefaultConfig(",
+		"context.WithoutCancel(ctx)",
+		"context.WithTimeout(",
+		"provider.pruneExpiredLocked(now)",
+		"provider.evictOneLocked()",
+		"ErrAircraftIdentityMissing",
+		"errors.Is(err, aircraft.ErrNotFound)",
 	)
 	reject(
-		"apps/api/internal/features/extractorcomposition/composition.go",
-		"func NewExtractor(",
+		"apps/api/internal/features/aircraftprovider/provider.go",
+		"github.com/jackc/pgx/v5",
+		"func (provider *Provider) cached(",
+		"func (provider *Provider) beginCall(",
+		"ctx = context.Background()",
 	)
 	require(
-		"docs/115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md",
-		"PROCESSING_MANIFEST_PERSISTENCE=ENFORCED",
-		"OPTIONAL_AIRCRAFT_ENRICHMENT=EXPLICIT",
-		"AIRCRAFT_CACHE_DISABLE_MODE=EXPLICIT",
-		"STALE_REVIEW_FINDINGS=CLASSIFIED",
+		"apps/api/internal/features/aircraftprovider/provider_review_hardening_test.go",
+		"TestProviderRecognizesDomainAircraftNotFoundByDefault",
+		"TestLeaderCancellationDoesNotCancelActiveWaiter",
+		"TestAcquireAtomicallyUsesCompletedCache",
+		"TestProviderBoundsCacheAndEvictsOldestExpiry",
+		"TestProviderPrunesExpiredUniqueEntries",
+		"TestProviderRejectsLookupWithoutAircraftIdentity",
+		"TestProviderRejectsNilContext",
+		"TestSharedLookupHasBoundedLifetime",
+	)
+	require(
+		"apps/api/internal/features/extractorcomposition/composition_test.go",
+		`AircraftProvider:    "aircraft-feature-provider-v4"`,
+	)
+	require(
+		".github/workflows/backend-ci.yml",
+		"Run aircraft provider review audit",
+		"go run ./tools/aircraftproviderreviewaudit -strict",
+	)
+	require(
+		"docs/116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md",
+		"AIRCRAFT_PROVIDER_ACQUIRE=ATOMIC",
+		"SHARED_LOOKUP_CANCELLATION=ISOLATED",
+		"AIRCRAFT_CACHE_CAPACITY=BOUNDED",
+		"AIRCRAFT_DOMAIN_NOT_FOUND=DEFAULT",
+		"AIRCRAFT_LOOKUP_IDENTITY=REQUIRED",
+		"AIRCRAFT_PROVIDER_REVIEW_STATUS=CLOSED",
 	)
 
 	if len(failures) == 0 {
-		fmt.Println("Extractor composition review audit: PASS")
+		fmt.Println("Aircraft provider review audit: PASS")
 		return
 	}
-
-	fmt.Fprintln(os.Stderr, "Extractor composition review audit: FAIL")
+	fmt.Fprintln(os.Stderr, "Aircraft provider review audit: FAIL")
 	for _, failure := range failures {
 		fmt.Fprintln(os.Stderr, "-", failure)
 	}
