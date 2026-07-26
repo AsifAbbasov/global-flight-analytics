@@ -8,7 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/geographicalbuilder"
 )
 
-const Version = "flight-feature-extractor-composition-v3"
+const Version = "flight-feature-extractor-composition-v4"
 
 type Component string
 

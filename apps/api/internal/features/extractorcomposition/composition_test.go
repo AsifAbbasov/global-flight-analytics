@@ -298,8 +298,8 @@ func TestNewBuildsCompleteProductionExtractor(
 
 func TestCurrentVersionsRemainStable(t *testing.T) {
 	want := Versions{
-		Composition:         "flight-feature-extractor-composition-v3",
-		Extractor:           "flight-feature-extractor-v3",
+		Composition:         "flight-feature-extractor-composition-v4",
+		Extractor:           "flight-feature-extractor-v4",
 		AircraftProvider:    "aircraft-feature-provider-v2",
 		TemporalBuilder:     "temporal-feature-builder-v1",
 		GeographicalBuilder: "geographical-feature-builder-v1",

@@ -980,3 +980,13 @@ docs/110_AIRCRAFT_METADATA_TEMPORAL_SAFETY.md
 ```text
 docs/111_EXTRACTOR_COMPOSITION_EXPLICIT_CONFIG.md
 ```
+
+<!-- EXTRACTOR-INPUT-CORRECTNESS-HARDENING:DOCUMENT-INDEX -->
+
+## Document 112 — Extractor Input Correctness Hardening
+
+`112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` records nested event-time cutoff
+validation, strict context and typed-nil dependency contracts, invalid evidence
+and floating-point rejection, semantic fingerprint normalization, processing
+generation version 4, permanent audit coverage, and explicitly deferred
+provenance and optional-completeness boundaries.

@@ -444,3 +444,12 @@ acceptance is evaluated independently for every request.
 Production extractor composition now starts from `DefaultConfig` and derives
 explicit overrides through value-returning methods. Raw external configuration
 literals and hidden zero-value defaults are no longer part of the contract.
+
+<!-- EXTRACTOR-INPUT-CORRECTNESS-HARDENING:README -->
+
+## Extractor Input Correctness Hardening
+
+Historical feature extraction now rejects nested point, segment, and coverage-gap
+evidence after the requested as-of time. Invalid evidence counts and non-finite
+quality scores are rejected, semantic aircraft identity is canonicalized before
+hashing, and processing generation advances to version 4.

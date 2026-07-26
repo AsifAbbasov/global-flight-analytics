@@ -22,6 +22,13 @@ var (
 	ErrAsOfTimeRequired            = errors.New("feature as-of time is required")
 	ErrAsOfBeforeTrajectoryEnd     = errors.New("feature as-of time is before trajectory end time")
 	ErrTrajectoryEvidenceRequired  = errors.New("trajectory points or segments are required")
+	ErrContextRequired             = errors.New("extractor context is required")
+	ErrTrajectoryPointAfterAsOf    = errors.New("trajectory point is observed after feature as-of time")
+	ErrTrajectorySegmentAfterAsOf  = errors.New("trajectory segment extends after feature as-of time")
+	ErrCoverageGapAfterAsOf        = errors.New("trajectory coverage gap extends after feature as-of time")
+	ErrInvalidEvidenceFieldCount   = errors.New("invalid feature evidence field count")
+	ErrInvalidSupportingPointCount = errors.New("invalid feature evidence supporting point count")
+	ErrInvalidInputQualityScore    = errors.New("invalid trajectory input quality score")
 )
 
 type GroupBuildError struct {

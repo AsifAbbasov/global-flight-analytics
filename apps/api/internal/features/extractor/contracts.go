@@ -8,7 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
-const Version = "flight-feature-extractor-v3"
+const Version = "flight-feature-extractor-v4"
 
 type Request struct {
 	Trajectory trajectory.FlightTrajectory

@@ -3,7 +3,6 @@ package extractor
 import (
 	"context"
 	"errors"
-	"math"
 	"regexp"
 	"sort"
 	"strings"
@@ -28,17 +27,22 @@ type Extractor struct {
 }
 
 func New(config Config) (*Extractor, error) {
-	if config.TemporalBuilder == nil {
+	if dependencyMissing(config.TemporalBuilder) {
 		return nil, ErrTemporalBuilderRequired
 	}
-	if config.GeographicalBuilder == nil {
+	if dependencyMissing(config.GeographicalBuilder) {
 		return nil, ErrGeographicalBuilderRequired
 	}
-	if config.OperationalBuilder == nil {
+	if dependencyMissing(config.OperationalBuilder) {
 		return nil, ErrOperationalBuilderRequired
 	}
-	if config.TrajectoryBuilder == nil {
+	if dependencyMissing(config.TrajectoryBuilder) {
 		return nil, ErrTrajectoryBuilderRequired
+	}
+
+	aircraftFeatureProvider := config.AircraftFeatureProvider
+	if dependencyMissing(aircraftFeatureProvider) {
+		aircraftFeatureProvider = nil
 	}
 
 	now := config.Now
@@ -58,7 +62,7 @@ func New(config Config) (*Extractor, error) {
 		geographicalBuilder:     config.GeographicalBuilder,
 		operationalBuilder:      config.OperationalBuilder,
 		trajectoryBuilder:       config.TrajectoryBuilder,
-		aircraftFeatureProvider: config.AircraftFeatureProvider,
+		aircraftFeatureProvider: aircraftFeatureProvider,
 		fingerprintIdentity:     fingerprintIdentity,
 		now:                     now,
 	}, nil
@@ -69,7 +73,7 @@ func (extractor *Extractor) Extract(
 	request Request,
 ) (flightfeatures.FlightFeatures, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return flightfeatures.FlightFeatures{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return flightfeatures.FlightFeatures{}, err
@@ -143,6 +147,9 @@ func (extractor *Extractor) Extract(
 	if err != nil {
 		return flightfeatures.FlightFeatures{}, err
 	}
+	if err := ctx.Err(); err != nil {
+		return flightfeatures.FlightFeatures{}, err
+	}
 
 	fingerprint, err := fingerprintExtractionInput(
 		request.Trajectory,
@@ -190,10 +197,14 @@ func (extractor *Extractor) Extract(
 		},
 	}
 
-	features.Quality = buildInitialQuality(
+	quality, err := buildInitialQuality(
 		features,
 		request.Trajectory,
 	)
+	if err != nil {
+		return flightfeatures.FlightFeatures{}, err
+	}
+	features.Quality = quality
 
 	return features.Clone(), nil
 }
@@ -263,9 +274,9 @@ func validateRequest(request Request) error {
 		return ErrAsOfBeforeTrajectoryEnd
 	case len(item.Points) == 0 && len(item.Segments) == 0:
 		return ErrTrajectoryEvidenceRequired
-	default:
-		return nil
 	}
+
+	return validateSnapshotEvidence(item, request.AsOfTime)
 }
 
 func newGroupBuildError(
@@ -283,68 +294,6 @@ func newGroupBuildError(
 	return &GroupBuildError{
 		Group: group,
 		Err:   err,
-	}
-}
-
-func buildInitialQuality(
-	features flightfeatures.FlightFeatures,
-	item trajectory.FlightTrajectory,
-) flightfeatures.FeatureQuality {
-	evidenceGroups := []flightfeatures.GroupEvidence{
-		features.Temporal.Evidence,
-		features.Geographical.Evidence,
-		features.Operational.Evidence,
-		features.Trajectory.Evidence,
-		features.Aircraft.Evidence,
-	}
-
-	availableFieldCount := 0
-	totalFieldCount := 0
-	supportingPointCount := item.PointCount
-	if len(item.Points) > supportingPointCount {
-		supportingPointCount = len(item.Points)
-	}
-	limitations := make(
-		[]flightfeatures.FeatureLimitation,
-		0,
-	)
-	seenLimitations := make(map[string]struct{})
-
-	for _, evidence := range evidenceGroups {
-		if evidence.AvailableFieldCount > 0 {
-			availableFieldCount += evidence.AvailableFieldCount
-		}
-		if evidence.TotalFieldCount > 0 {
-			totalFieldCount += evidence.TotalFieldCount
-		}
-		if evidence.SupportingPointCount > supportingPointCount {
-			supportingPointCount = evidence.SupportingPointCount
-		}
-
-		for _, limitation := range evidence.Limitations {
-			key := limitation.Code + "\x00" + limitation.Message
-			if _, exists := seenLimitations[key]; exists {
-				continue
-			}
-			seenLimitations[key] = struct{}{}
-			limitations = append(limitations, limitation)
-		}
-	}
-
-	completenessScore := 0.0
-	if totalFieldCount > 0 {
-		completenessScore = clamp01(
-			float64(availableFieldCount) /
-				float64(totalFieldCount),
-		)
-	}
-
-	return flightfeatures.FeatureQuality{
-		Status:               flightfeatures.ValidationStatusUnvalidated,
-		CompletenessScore:    completenessScore,
-		InputQualityScore:    clamp01(features.Trajectory.TrajectoryQualityScore),
-		SupportingPointCount: supportingPointCount,
-		Limitations:          limitations,
 	}
 }
 
@@ -414,17 +363,4 @@ func cloneTrajectory(
 	)
 
 	return cloned
-}
-
-func clamp01(value float64) float64 {
-	switch {
-	case math.IsNaN(value), math.IsInf(value, 0):
-		return 0
-	case value < 0:
-		return 0
-	case value > 1:
-		return 1
-	default:
-		return value
-	}
 }

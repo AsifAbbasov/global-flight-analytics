@@ -103,6 +103,9 @@ jobs:
       - name: Run feature processing identity audit
         run: go run ./tools/featureprocessingidentityaudit -strict
 
+      - name: Run extractor correctness audit
+        run: go run ./tools/extractorcorrectnessaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
