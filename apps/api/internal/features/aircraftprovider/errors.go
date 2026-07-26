@@ -15,6 +15,9 @@ var (
 	ErrInvalidNegativeCacheTTL = errors.New(
 		"aircraft feature negative cache ttl must be greater than zero",
 	)
+	ErrInvalidCacheMode = errors.New(
+		"aircraft feature cache mode is unsupported",
+	)
 	ErrInvalidICAO24 = errors.New(
 		"aircraft feature reference has an invalid icao24",
 	)

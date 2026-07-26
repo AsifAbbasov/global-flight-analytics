@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/aircraftprovider"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
 const fingerprintIdentityPrefix = "sha256:"
@@ -24,13 +25,21 @@ func resolveProcessingIdentity(
 			ErrAircraftNotFoundPolicyVersionRequired
 	}
 
+	metadataSourceName := ""
+	if config.aircraftEnrichmentMode ==
+		flightfeatures.AircraftEnrichmentModeEnabled {
+		metadataSourceName = aircraftprovider.MetadataSourceName
+	}
+
 	identity := ProcessingIdentity{
 		Versions:                      CurrentVersions(),
 		GeographicCellPrecision:       config.geographicCellPrecision,
+		AircraftEnrichmentMode:        config.aircraftEnrichmentMode,
+		AircraftCacheMode:             string(config.aircraftCacheMode),
 		AircraftPositiveCacheTTL:      config.aircraftPositiveCacheTTL,
 		AircraftNegativeCacheTTL:      config.aircraftNegativeCacheTTL,
 		AircraftNotFoundPolicyVersion: policyVersion,
-		AircraftMetadataSourceName:    aircraftprovider.MetadataSourceName,
+		AircraftMetadataSourceName:    metadataSourceName,
 	}
 
 	payload, err := json.Marshal(identity)

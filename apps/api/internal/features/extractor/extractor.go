@@ -21,6 +21,7 @@ type Extractor struct {
 	aircraftMetadataSourceName      string
 	aircraftMetadataProviderVersion string
 	fingerprintIdentity             string
+	processingIdentity              flightfeatures.ProcessingIdentity
 	now                             func() time.Time
 }
 
@@ -81,6 +82,7 @@ func New(config Config) (*Extractor, error) {
 		aircraftMetadataSourceName:      aircraftMetadataSourceName,
 		aircraftMetadataProviderVersion: aircraftMetadataProviderVersion,
 		fingerprintIdentity:             fingerprintIdentity,
+		processingIdentity:              config.ProcessingIdentity,
 		now:                             now,
 	}, nil
 }
@@ -211,8 +213,10 @@ func (extractor *Extractor) Extract(
 		Aircraft:     aircraftFeatures,
 
 		Provenance: flightfeatures.FeatureProvenance{
-			ExtractorVersion: Version,
-			InputFingerprint: fingerprint,
+			ExtractorVersion:              Version,
+			InputFingerprint:              fingerprint,
+			ProcessingIdentityFingerprint: extractor.fingerprintIdentity,
+			ProcessingIdentity:            extractor.processingIdentity,
 			TrajectoryCreatedAt: normalizedTrajectoryCreatedAt(
 				request.Trajectory,
 			),

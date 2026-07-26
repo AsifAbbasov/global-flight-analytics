@@ -63,6 +63,7 @@ func main() {
 	require(
 		"apps/api/internal/features/extractor/contracts.go",
 		"FingerprintIdentity",
+		"ProcessingIdentity",
 		"AsOfTime   time.Time",
 	)
 	require(
@@ -93,13 +94,17 @@ func main() {
 	)
 	require(
 		"apps/api/internal/features/extractorcomposition/contracts.go",
-		"type ProcessingIdentity struct",
+		"type ProcessingIdentity = flightfeatures.ProcessingIdentity",
 		"func DefaultConfig(",
+		"DefaultConfigWithoutAircraftEnrichment",
 		"WithGeographicCellPrecision",
 		"WithAircraftCacheDurations",
+		"WithoutAircraftCache",
 		"WithAircraftNotFoundPolicy",
 		"WithClock",
 		"geographicCellPrecision int",
+		"aircraftEnrichmentMode",
+		"aircraftCacheMode",
 		"aircraftPositiveCacheTTL",
 		"aircraftNegativeCacheTTL",
 	)
@@ -113,6 +118,8 @@ func main() {
 		"apps/api/internal/features/extractorcomposition/identity.go",
 		"CurrentVersions()",
 		"config.geographicCellPrecision",
+		"config.aircraftEnrichmentMode",
+		"config.aircraftCacheMode",
 		"config.aircraftPositiveCacheTTL",
 		"config.aircraftNegativeCacheTTL",
 		"ErrAircraftNotFoundPolicyVersionRequired",
@@ -132,6 +139,9 @@ func main() {
 		"TestGeographicPrecisionChangesInputFingerprint",
 		"TestAircraftMetadataChangesInputFingerprint",
 		"TestNewRejectsTypedNilAircraftLookup",
+		"TestProcessingManifestIsPersistedInFeatureProvenance",
+		"TestCompositionSupportsExplicitlyDisabledAircraftEnrichment",
+		"TestAircraftCacheModeChangesInputFingerprint",
 	)
 	require(
 		"apps/api/cmd/materialize-flight-features/main.go",

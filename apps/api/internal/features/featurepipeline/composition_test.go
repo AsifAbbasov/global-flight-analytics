@@ -17,7 +17,9 @@ import (
 func TestNewInMemoryWrapsExtractorCompositionError(
 	t *testing.T,
 ) {
-	_, err := NewInMemory(InMemoryConfig{})
+	_, err := NewInMemory(InMemoryConfig{
+		Extractor: extractorcomposition.DefaultConfig(nil),
+	})
 	if !errors.Is(
 		err,
 		extractorcomposition.ErrAircraftLookupRequired,
@@ -182,7 +184,7 @@ func TestNewInMemoryBuildsProductionComponentsWithSharedClock(
 func TestCurrentVersionsRemainStable(t *testing.T) {
 	want := Versions{
 		Composition:         "flight-feature-in-memory-pipeline-composition-v1",
-		Pipeline:            "flight-feature-processing-pipeline-v5",
+		Pipeline:            "flight-feature-processing-pipeline-v6",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           "flight-feature-validator-v2",
 		Store:               "flight-feature-store-v1",

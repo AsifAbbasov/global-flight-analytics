@@ -102,15 +102,15 @@ func main() {
 		},
 		{
 			path:     "apps/api/internal/features/extractor/contracts.go",
-			required: []string{`const Version = "flight-feature-extractor-v5"`},
+			required: []string{`const Version = "flight-feature-extractor-v6"`},
 		},
 		{
 			path:     "apps/api/internal/features/extractorcomposition/contracts.go",
-			required: []string{`const Version = "flight-feature-extractor-composition-v5"`},
+			required: []string{`const Version = "flight-feature-extractor-composition-v6"`},
 		},
 		{
 			path:     "apps/api/internal/features/featurepipeline/contracts.go",
-			required: []string{`const Version = "flight-feature-processing-pipeline-v5"`},
+			required: []string{`const Version = "flight-feature-processing-pipeline-v6"`},
 		},
 		{
 			path:     "apps/api/internal/features/validator/contracts.go",

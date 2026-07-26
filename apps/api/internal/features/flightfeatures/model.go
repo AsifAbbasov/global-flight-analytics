@@ -8,7 +8,7 @@ type ProcessingVersion string
 const SchemaVersionV1 SchemaVersion = "flight-features-v1"
 
 const (
-	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v5"
+	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v6"
 	LegacyProcessingVersion  ProcessingVersion = "flight-feature-processing-legacy-v1"
 )
 
@@ -181,6 +181,8 @@ type FeatureProvenance struct {
 	ProcessingVersion               ProcessingVersion
 	ExtractorVersion                string
 	InputFingerprint                string
+	ProcessingIdentityFingerprint   string
+	ProcessingIdentity              ProcessingIdentity
 	TrajectoryCreatedAt             time.Time
 	TrajectoryUpdatedAt             time.Time
 	AircraftMetadataSourceName      string

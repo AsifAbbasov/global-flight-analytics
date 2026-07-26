@@ -7,10 +7,18 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 )
 
-const Version = "aircraft-feature-provider-v2"
+const Version = "aircraft-feature-provider-v3"
 
 const DefaultNotFoundPolicyVersion = "aircraft-not-found-pgx-no-rows-v1"
 const MetadataSourceName = "aircraft-reference-lookup"
+
+type CacheMode string
+
+const (
+	CacheModeDefault  CacheMode = ""
+	CacheModeEnabled  CacheMode = "enabled"
+	CacheModeDisabled CacheMode = "disabled"
+)
 
 const (
 	DefaultPositiveCacheTTL = 30 * time.Minute
@@ -26,6 +34,7 @@ type AircraftLookup interface {
 
 type Config struct {
 	Lookup           AircraftLookup
+	CacheMode        CacheMode
 	PositiveCacheTTL time.Duration
 	NegativeCacheTTL time.Duration
 	Now              func() time.Time

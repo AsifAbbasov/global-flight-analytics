@@ -112,6 +112,9 @@ jobs:
       - name: Run extractor review closure audit
         run: go run ./tools/extractorreviewclosureaudit -strict
 
+      - name: Run extractor composition review audit
+        run: go run ./tools/extractorcompositionreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

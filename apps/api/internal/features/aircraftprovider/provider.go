@@ -17,6 +17,7 @@ var _ extractor.AircraftFeatureProvider = (*Provider)(nil)
 
 type Provider struct {
 	lookup           AircraftLookup
+	cacheMode        CacheMode
 	positiveCacheTTL time.Duration
 	negativeCacheTTL time.Duration
 	now              func() time.Time
@@ -43,20 +44,32 @@ func New(config Config) (*Provider, error) {
 		return nil, ErrLookupRequired
 	}
 
-	positiveCacheTTL := config.PositiveCacheTTL
-	if positiveCacheTTL == 0 {
-		positiveCacheTTL = DefaultPositiveCacheTTL
+	cacheMode := config.CacheMode
+	if cacheMode == CacheModeDefault {
+		cacheMode = CacheModeEnabled
 	}
-	if positiveCacheTTL < 0 {
-		return nil, ErrInvalidPositiveCacheTTL
+	if cacheMode != CacheModeEnabled && cacheMode != CacheModeDisabled {
+		return nil, ErrInvalidCacheMode
 	}
 
+	positiveCacheTTL := config.PositiveCacheTTL
 	negativeCacheTTL := config.NegativeCacheTTL
-	if negativeCacheTTL == 0 {
-		negativeCacheTTL = DefaultNegativeCacheTTL
-	}
-	if negativeCacheTTL < 0 {
-		return nil, ErrInvalidNegativeCacheTTL
+	if cacheMode == CacheModeEnabled {
+		if positiveCacheTTL == 0 {
+			positiveCacheTTL = DefaultPositiveCacheTTL
+		}
+		if positiveCacheTTL < 0 {
+			return nil, ErrInvalidPositiveCacheTTL
+		}
+		if negativeCacheTTL == 0 {
+			negativeCacheTTL = DefaultNegativeCacheTTL
+		}
+		if negativeCacheTTL < 0 {
+			return nil, ErrInvalidNegativeCacheTTL
+		}
+	} else {
+		positiveCacheTTL = 0
+		negativeCacheTTL = 0
 	}
 
 	now := config.Now
@@ -73,6 +86,7 @@ func New(config Config) (*Provider, error) {
 
 	return &Provider{
 		lookup:           config.Lookup,
+		cacheMode:        cacheMode,
 		positiveCacheTTL: positiveCacheTTL,
 		negativeCacheTTL: negativeCacheTTL,
 		now:              now,
@@ -184,6 +198,9 @@ func (provider *Provider) resolve(
 func (provider *Provider) cached(
 	icao24 string,
 ) (flightfeatures.AircraftFeatures, bool) {
+	if provider.cacheMode == CacheModeDisabled {
+		return flightfeatures.AircraftFeatures{}, false
+	}
 	now := provider.now().UTC()
 
 	provider.mutex.Lock()
@@ -206,6 +223,9 @@ func (provider *Provider) storeCache(
 	features flightfeatures.AircraftFeatures,
 	ttl time.Duration,
 ) {
+	if provider.cacheMode == CacheModeDisabled {
+		return
+	}
 	provider.mutex.Lock()
 	defer provider.mutex.Unlock()
 

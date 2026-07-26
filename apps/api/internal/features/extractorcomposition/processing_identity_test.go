@@ -10,6 +10,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/aircraft"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/aircraftprovider"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/extractor"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/geographicalbuilder"
 )
 
@@ -287,4 +288,87 @@ func extractFingerprint(
 	}
 
 	return features.Provenance.InputFingerprint
+}
+
+func TestProcessingManifestIsPersistedInFeatureProvenance(t *testing.T) {
+	composition, err := New(DefaultConfig(&fakeAircraftLookup{
+		result: aircraft.Aircraft{ICAO24: "ABC123", Model: "A320"},
+	}))
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	item := completeTrajectory()
+	features, err := composition.Extractor.Extract(
+		context.Background(),
+		extractor.Request{
+			Trajectory: item,
+			AsOfTime:   item.EndTime.Add(time.Minute),
+		},
+	)
+	if err != nil {
+		t.Fatalf("Extract() error = %v", err)
+	}
+	if features.Provenance.ProcessingIdentityFingerprint !=
+		composition.FingerprintIdentity {
+		t.Fatalf(
+			"processing fingerprint = %q, want %q",
+			features.Provenance.ProcessingIdentityFingerprint,
+			composition.FingerprintIdentity,
+		)
+	}
+	if features.Provenance.ProcessingIdentity !=
+		composition.ProcessingIdentity {
+		t.Fatalf(
+			"persisted identity = %#v, want %#v",
+			features.Provenance.ProcessingIdentity,
+			composition.ProcessingIdentity,
+		)
+	}
+}
+
+func TestCompositionSupportsExplicitlyDisabledAircraftEnrichment(t *testing.T) {
+	composition, err := New(DefaultConfigWithoutAircraftEnrichment())
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	item := completeTrajectory()
+	features, err := composition.Extractor.Extract(
+		context.Background(),
+		extractor.Request{
+			Trajectory: item,
+			AsOfTime:   item.EndTime.Add(time.Minute),
+		},
+	)
+	if err != nil {
+		t.Fatalf("Extract() error = %v", err)
+	}
+	if features.Aircraft.Evidence.Status !=
+		flightfeatures.AvailabilityStatusUnavailable {
+		t.Fatalf("aircraft evidence = %#v", features.Aircraft.Evidence)
+	}
+	if features.Provenance.AircraftMetadataSourceName != "" ||
+		features.Provenance.AircraftMetadataProviderVersion != "" ||
+		!features.Provenance.AircraftMetadataRetrievedAt.IsZero() {
+		t.Fatalf("unexpected disabled enrichment provenance: %#v", features.Provenance)
+	}
+	if features.Provenance.ProcessingIdentity.AircraftEnrichmentMode !=
+		flightfeatures.AircraftEnrichmentModeDisabled {
+		t.Fatalf("processing identity = %#v", features.Provenance.ProcessingIdentity)
+	}
+}
+
+func TestAircraftCacheModeChangesInputFingerprint(t *testing.T) {
+	lookup := &fakeAircraftLookup{
+		result: aircraft.Aircraft{ICAO24: "ABC123", Model: "A320"},
+	}
+	cached := extractFingerprint(t, DefaultConfig(lookup))
+	uncached := extractFingerprint(
+		t,
+		DefaultConfig(&fakeAircraftLookup{
+			result: aircraft.Aircraft{ICAO24: "ABC123", Model: "A320"},
+		}).WithoutAircraftCache(),
+	)
+	if cached == uncached {
+		t.Fatal("enabled and disabled cache modes produced one input fingerprint")
+	}
 }

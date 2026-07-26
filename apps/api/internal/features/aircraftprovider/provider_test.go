@@ -779,7 +779,7 @@ func TestProviderPreservesAlreadyCanceledContext(
 }
 
 func TestProviderContractConstantsRemainStable(t *testing.T) {
-	if Version != "aircraft-feature-provider-v2" {
+	if Version != "aircraft-feature-provider-v3" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if flightfeatures.CurrentGroupFieldCount(flightfeatures.FeatureGroupAircraft) != 6 {
@@ -960,5 +960,48 @@ func TestProviderAppliesTemporalPolicyAfterCacheLookup(
 			"lookup calls = %d, want 1 because temporal policy follows cache lookup",
 			lookup.callCount(),
 		)
+	}
+}
+
+func TestProviderSupportsExplicitlyDisabledCache(t *testing.T) {
+	lookup := &lookupStub{
+		item: aircraft.Aircraft{
+			ICAO24: "ABC123",
+			Model:  "A320",
+		},
+	}
+	provider, err := New(Config{
+		Lookup:    lookup,
+		CacheMode: CacheModeDisabled,
+	})
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	reference := extractor.AircraftReference{
+		ICAO24:   "ABC123",
+		AsOfTime: time.Date(2026, time.July, 26, 12, 0, 0, 0, time.UTC),
+	}
+	for index := 0; index < 2; index++ {
+		if _, err := provider.Provide(context.Background(), reference); err != nil {
+			t.Fatalf("Provide() error = %v", err)
+		}
+	}
+
+	lookup.mutex.Lock()
+	calls := lookup.calls
+	lookup.mutex.Unlock()
+	if calls != 2 {
+		t.Fatalf("lookup calls = %d, want 2 with cache disabled", calls)
+	}
+}
+
+func TestProviderRejectsUnknownCacheMode(t *testing.T) {
+	_, err := New(Config{
+		Lookup:    &lookupStub{},
+		CacheMode: CacheMode("unknown"),
+	})
+	if !errors.Is(err, ErrInvalidCacheMode) {
+		t.Fatalf("New() error = %v, want %v", err, ErrInvalidCacheMode)
 	}
 }

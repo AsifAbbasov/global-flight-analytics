@@ -1010,3 +1010,12 @@ defensive trajectory cloning, schema-derived aircraft field counts, canonical
 fingerprint mirror protection, permanent Continuous Integration closure audit,
 processing generation 5 stability, and zero open, unclassified, or deferred
 extractor-review findings.
+
+<!-- EXTRACTOR-COMPOSITION-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 115 — Extractor Composition Review Hardening
+
+`115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` classifies stale review findings,
+persists the typed processing manifest, adds explicit optional aircraft
+enrichment and cache-disable policies, preserves per-request historical temporal
+filtering, advances processing generation 6, and installs a permanent audit gate.

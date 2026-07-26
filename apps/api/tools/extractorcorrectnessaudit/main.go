@@ -90,19 +90,19 @@ func main() {
 	)
 	require(
 		"apps/api/internal/features/extractor/contracts.go",
-		`const Version = "flight-feature-extractor-v5"`,
+		`const Version = "flight-feature-extractor-v6"`,
 	)
 	require(
 		"apps/api/internal/features/extractorcomposition/contracts.go",
-		`const Version = "flight-feature-extractor-composition-v5"`,
+		`const Version = "flight-feature-extractor-composition-v6"`,
 	)
 	require(
 		"apps/api/internal/features/featurepipeline/contracts.go",
-		`const Version = "flight-feature-processing-pipeline-v5"`,
+		`const Version = "flight-feature-processing-pipeline-v6"`,
 	)
 	require(
 		"apps/api/internal/features/flightfeatures/model.go",
-		`CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v5"`,
+		`CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v6"`,
 	)
 	require(
 		"docs/112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md",

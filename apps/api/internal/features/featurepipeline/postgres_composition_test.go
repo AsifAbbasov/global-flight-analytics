@@ -16,7 +16,9 @@ import (
 func TestNewPostgresWrapsExtractorCompositionError(
 	t *testing.T,
 ) {
-	_, err := NewPostgres(PostgresConfig{})
+	_, err := NewPostgres(PostgresConfig{
+		Extractor: extractorcomposition.DefaultConfig(nil),
+	})
 	if !errors.Is(
 		err,
 		extractorcomposition.ErrAircraftLookupRequired,
@@ -141,7 +143,7 @@ func TestCurrentPostgresVersionsRemainStable(
 ) {
 	want := Versions{
 		Composition:         "flight-feature-postgres-pipeline-composition-v1",
-		Pipeline:            "flight-feature-processing-pipeline-v5",
+		Pipeline:            "flight-feature-processing-pipeline-v6",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           "flight-feature-validator-v2",
 		Store:               "flight-feature-postgres-store-v1",

@@ -472,3 +472,13 @@ owners throughout the extractor processing path. Reflection tests protect determ
 from silent model drift, and a permanent closure audit records zero open,
 unclassified, or deferred extractor-review findings without changing processing
 generation 5.
+
+<!-- EXTRACTOR-COMPOSITION-REVIEW-HARDENING:README -->
+
+## Extractor Composition Review Hardening
+
+Production feature provenance now persists the typed composition manifest that
+already participates in deterministic fingerprint identity. Aircraft enrichment
+and cache disablement are explicit policies, while the historical temporal gate
+continues to evaluate every request after cache lookup. Processing advances to
+generation 6.

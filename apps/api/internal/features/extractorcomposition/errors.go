@@ -7,7 +7,13 @@ import (
 
 var (
 	ErrAircraftLookupRequired = errors.New(
-		"production feature extractor aircraft lookup is required",
+		"production feature extractor aircraft lookup is required when enrichment is enabled",
+	)
+	ErrAircraftEnrichmentModeRequired = errors.New(
+		"explicit aircraft enrichment mode is required; start with a default config constructor",
+	)
+	ErrAircraftEnrichmentConfigurationAmbiguous = errors.New(
+		"aircraft lookup must be absent when enrichment is disabled",
 	)
 	ErrAircraftNotFoundPolicyVersionRequired = errors.New(
 		"aircraft not-found policy version is required",
