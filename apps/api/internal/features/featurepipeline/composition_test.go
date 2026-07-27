@@ -187,7 +187,7 @@ func TestCurrentVersionsRemainStable(t *testing.T) {
 		Pipeline:            "flight-feature-processing-pipeline-v6",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           "flight-feature-validator-v2",
-		Store:               "flight-feature-store-v1",
+		Store:               "flight-feature-store-v2",
 	}
 
 	if got := CurrentVersions(); !reflect.DeepEqual(got, want) {

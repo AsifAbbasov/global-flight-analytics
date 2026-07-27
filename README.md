@@ -488,3 +488,9 @@ generation 6.
 ## Aircraft Provider Review Hardening
 
 Aircraft metadata lookup now uses atomic cache and in-flight acquisition, caller-independent bounded shared lookup contexts, and a capacity-bounded cache with expiry sweeping. Domain not-found errors are recognized by default and successful lookup records must carry a matching ICAO24 identity.
+
+<!-- FEATURE-STORE-REVIEW-HARDENING:README -->
+
+## Feature Store Review Hardening
+
+Feature snapshots now require matching input and semantic output fingerprints, use a versioned persistence payload, enforce shared Memory/PostgreSQL identity contracts, reject incomplete validation proof, and bound in-memory storage.

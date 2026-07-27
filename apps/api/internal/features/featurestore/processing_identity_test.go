@@ -12,7 +12,7 @@ func TestMemoryStoreSeparatesProcessingVersions(t *testing.T) {
 	store := NewMemory(MemoryConfig{})
 	asOf := time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC)
 
-	first := validStoredFeatures("trajectory-one", asOf, "a")
+	first := validStoredFeatures("afa6017b-49cc-5a2a-8942-cdcac5a7a1ef", asOf, "a")
 	first.Provenance.ProcessingVersion =
 		flightfeatures.CurrentProcessingVersion
 	second := first.Clone()
@@ -46,7 +46,7 @@ func TestMemoryStoreSeparatesProcessingVersions(t *testing.T) {
 
 	latestSecond, err := store.GetLatest(
 		context.Background(),
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		flightfeatures.SchemaVersionV1,
 		second.Provenance.ProcessingVersion,
 	)
@@ -60,7 +60,7 @@ func TestMemoryStoreSeparatesProcessingVersions(t *testing.T) {
 	page, err := store.List(
 		context.Background(),
 		ListQuery{
-			TrajectoryID:      "trajectory-one",
+			TrajectoryID:      "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			SchemaVersion:     flightfeatures.SchemaVersionV1,
 			ProcessingVersion: second.Provenance.ProcessingVersion,
 		},
@@ -77,7 +77,7 @@ func TestMemoryStoreSeparatesProcessingVersions(t *testing.T) {
 func TestMemoryStoreDefaultsBlankProcessingVersion(t *testing.T) {
 	store := NewMemory(MemoryConfig{})
 	features := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC),
 		"a",
 	)
@@ -99,21 +99,26 @@ func TestMemoryStoreDefaultsBlankProcessingVersion(t *testing.T) {
 
 func TestLegacyProcessingSnapshotAcceptsOriginalIdentifier(t *testing.T) {
 	asOf := time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC)
-	features := validStoredFeatures("trajectory-one", asOf, "a")
+	features := validStoredFeatures("afa6017b-49cc-5a2a-8942-cdcac5a7a1ef", asOf, "a")
 	features = normalizeFeatures(features)
 	features.Provenance.ProcessingVersion =
 		flightfeatures.LegacyProcessingVersion
 
 	key := snapshotKey(features)
+	outputFingerprint, err := fingerprintSnapshotOutput(features)
+	if err != nil {
+		t.Fatalf("fingerprintSnapshotOutput() error = %v", err)
+	}
 	record := Record{
 		ID: makeLegacyRecordID(
 			key,
 			features.Provenance.InputFingerprint,
 		),
-		Key:              key,
-		InputFingerprint: features.Provenance.InputFingerprint,
-		Features:         features,
-		StoredAt:         asOf.Add(time.Minute),
+		Key:               key,
+		InputFingerprint:  features.Provenance.InputFingerprint,
+		OutputFingerprint: outputFingerprint,
+		Features:          features,
+		StoredAt:          asOf.Add(time.Minute),
 	}
 
 	if err := validateDecodedRecord(

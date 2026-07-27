@@ -2,14 +2,10 @@ package featurestore
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -239,12 +235,11 @@ func (store *PostgresStore) Put(
 	ctx context.Context,
 	features flightfeatures.FlightFeatures,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Record{}, err
 	}
 	normalized := normalizeFeatures(features)
-	if err := validateStorableFeatures(normalized); err != nil {
+	if err := validateWritableFeatures(normalized); err != nil {
 		return Record{}, err
 	}
 	trajectoryID, err := normalizePostgresTrajectoryID(
@@ -255,12 +250,9 @@ func (store *PostgresStore) Put(
 	}
 	normalized.TrajectoryID = trajectoryID
 
-	payload, err := json.Marshal(normalized)
+	payload, outputFingerprint, err := encodeSnapshotPayload(normalized)
 	if err != nil {
-		return Record{}, fmt.Errorf(
-			"marshal feature snapshot payload: %w",
-			err,
-		)
+		return Record{}, err
 	}
 
 	key := snapshotKey(normalized)
@@ -307,7 +299,8 @@ func (store *PostgresStore) Put(
 	if err != nil {
 		return Record{}, err
 	}
-	if existing.InputFingerprint != fingerprint {
+	if existing.InputFingerprint != fingerprint ||
+		existing.OutputFingerprint != outputFingerprint {
 		return Record{}, ErrSnapshotConflict
 	}
 
@@ -318,8 +311,7 @@ func (store *PostgresStore) Get(
 	ctx context.Context,
 	key SnapshotKey,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -372,8 +364,7 @@ func (store *PostgresStore) GetLatest(
 	schemaVersion flightfeatures.SchemaVersion,
 	processingVersions ...flightfeatures.ProcessingVersion,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -419,8 +410,7 @@ func (store *PostgresStore) List(
 	ctx context.Context,
 	query ListQuery,
 ) (Page, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Page{}, err
 	}
 
@@ -559,14 +549,10 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		return Record{}, err
 	}
 
-	var features flightfeatures.FlightFeatures
-	if err := json.Unmarshal(payload, &features); err != nil {
-		return Record{}, &DatabaseError{
-			Operation: "decode snapshot payload",
-			Err:       err,
-		}
+	features, outputFingerprint, err := decodeSnapshotPayload(payload)
+	if err != nil {
+		return Record{}, err
 	}
-	normalizeValidationReport(&features)
 
 	key := SnapshotKey{
 		TrajectoryID:      trajectoryID,
@@ -575,11 +561,12 @@ func scanRecord(scanner rowScanner) (Record, error) {
 		AsOfTime:          keyAsOfTime,
 	}
 	record := Record{
-		ID:               id,
-		Key:              key,
-		InputFingerprint: inputFingerprint,
-		Features:         features,
-		StoredAt:         exactStoredAt,
+		ID:                id,
+		Key:               key,
+		InputFingerprint:  inputFingerprint,
+		OutputFingerprint: outputFingerprint,
+		Features:          features,
+		StoredAt:          exactStoredAt,
 	}
 
 	if err := validateDecodedRecord(
@@ -646,6 +633,12 @@ func validateDecodedRecord(
 			Field: "input_fingerprint",
 		}
 	}
+	expectedOutputFingerprint, err := fingerprintSnapshotOutput(record.Features)
+	if err != nil || record.OutputFingerprint != expectedOutputFingerprint {
+		return &CorruptSnapshotError{
+			Field: "output_fingerprint",
+		}
+	}
 	if record.Features.Quality.Status !=
 		validationStatus {
 		return &CorruptSnapshotError{
@@ -673,29 +666,7 @@ func validateDecodedRecord(
 func normalizePostgresTrajectoryID(
 	trajectoryID string,
 ) (string, error) {
-	normalized, err := normalizeTrajectoryID(
-		trajectoryID,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	parsed, err := uuid.Parse(normalized)
-	if err != nil {
-		return "", ErrInvalidTrajectoryID
-	}
-
-	return strings.ToLower(parsed.String()), nil
-}
-
-func nonNilContext(
-	ctx context.Context,
-) context.Context {
-	if ctx == nil {
-		return context.Background()
-	}
-
-	return ctx
+	return normalizeTrajectoryID(trajectoryID)
 }
 
 func databaseFailure(

@@ -562,7 +562,7 @@ func TestPostgresStoreDetectsCorruptSnapshot(
 
 func TestPostgresStoreVersionRemainsStable(t *testing.T) {
 	if PostgresVersion !=
-		"flight-feature-postgres-store-v1" {
+		"flight-feature-postgres-store-v2" {
 		t.Fatalf(
 			"PostgresVersion = %q",
 			PostgresVersion,
@@ -823,6 +823,10 @@ func validPostgresFeatures(
 			AsOfTime:  asOfTime,
 		},
 		ExtractedAt: asOfTime,
+		ValidationReport: testCompleteValidationReport(
+			flightfeatures.ValidationStatusValid,
+			asOfTime,
+		),
 		Quality: flightfeatures.FeatureQuality{
 			Status: flightfeatures.ValidationStatusValid,
 		},
@@ -855,17 +859,21 @@ func expectedRecord(
 	}
 	normalized.TrajectoryID = trajectoryID
 	key := snapshotKey(normalized)
-	fingerprint :=
-		normalized.Provenance.InputFingerprint
+	fingerprint := normalized.Provenance.InputFingerprint
+	outputFingerprint, err := fingerprintSnapshotOutput(normalized)
+	if err != nil {
+		panic(err)
+	}
 
 	return Record{
 		ID: makeRecordID(
 			encodeSnapshotKey(key),
 			fingerprint,
 		),
-		Key:              key,
-		InputFingerprint: fingerprint,
-		Features:         normalized,
-		StoredAt:         storedAt.UTC(),
+		Key:               key,
+		InputFingerprint:  fingerprint,
+		OutputFingerprint: outputFingerprint,
+		Features:          normalized,
+		StoredAt:          storedAt.UTC(),
 	}
 }

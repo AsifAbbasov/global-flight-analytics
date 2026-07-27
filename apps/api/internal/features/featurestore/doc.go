@@ -1,13 +1,12 @@
 // Package featurestore defines immutable storage semantics for validated
 // FlightFeatures snapshots.
 //
-// A snapshot is uniquely identified by trajectory ID, schema version and
-// as-of time. Repeating a write with the same input fingerprint is
-// idempotent. Reusing the same snapshot key with different evidence is a
-// conflict, because silently replacing historical features would break
-// replay and analytical reproducibility.
+// Snapshot identity includes trajectory, schema, processing version and exact
+// as-of time. Idempotent replay requires matching input and semantic output
+// fingerprints. New PostgreSQL payloads use an explicit versioned persistence
+// contract while legacy unversioned rows remain readable.
 //
-// This package includes a concurrency-safe in-memory implementation. A
-// PostgreSQL adapter remains separate until the repository migration-number
-// conflict is audited against the deployed schema_migrations table.
+// The package provides a bounded concurrency-safe in-memory implementation and
+// a production PostgreSQL implementation with the same identifier, fingerprint,
+// validation-proof and context contracts.
 package featurestore

@@ -146,7 +146,7 @@ func TestCurrentPostgresVersionsRemainStable(
 		Pipeline:            "flight-feature-processing-pipeline-v6",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
 		Validator:           "flight-feature-validator-v2",
-		Store:               "flight-feature-postgres-store-v1",
+		Store:               "flight-feature-postgres-store-v2",
 	}
 
 	if got := CurrentPostgresVersions(); !reflect.DeepEqual(got, want) {

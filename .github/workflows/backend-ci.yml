@@ -118,6 +118,9 @@ jobs:
       - name: Run aircraft provider review audit
         run: go run ./tools/aircraftproviderreviewaudit -strict
 
+      - name: Run feature store review audit
+        run: go run ./tools/featurestorereviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

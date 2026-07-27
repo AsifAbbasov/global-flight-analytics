@@ -2,6 +2,8 @@ package featurepipeline
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"reflect"
 	"testing"
@@ -152,7 +154,7 @@ func TestPipelineProcessesInStrictOrderAndStoresValidatedCopy(
 	)
 	request := extractor.Request{
 		Trajectory: trajectory.FlightTrajectory{
-			ID:          "trajectory-input",
+			ID:          "88e4f622-a4cb-57e4-9708-1bb0a1403624",
 			IdentityKey: "identity-input",
 			Points: []trajectory.TrackPoint4D{
 				{
@@ -596,7 +598,7 @@ func TestPipelineIsIdempotentAndSurfacesSnapshotConflict(
 	page, err := store.List(
 		context.Background(),
 		featurestore.ListQuery{
-			TrajectoryID:  "trajectory-1",
+			TrajectoryID:  "a7bd4786-5c83-5ea5-9eb0-354a460eaa91",
 			SchemaVersion: flightfeatures.SchemaVersionV1,
 		},
 	)
@@ -641,7 +643,7 @@ func TestPipelineIsIdempotentAndSurfacesSnapshotConflict(
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	if stored.InputFingerprint != "fingerprint-a" {
+	if stored.InputFingerprint != canonicalTestFingerprint("fingerprint-a") {
 		t.Fatalf(
 			"existing record changed to %q",
 			stored.InputFingerprint,
@@ -878,9 +880,9 @@ func storableFeatures(
 	fingerprint string,
 	asOfTime time.Time,
 ) flightfeatures.FlightFeatures {
-	return flightfeatures.FlightFeatures{
+	features := flightfeatures.FlightFeatures{
 		SchemaVersion: flightfeatures.SchemaVersionV1,
-		TrajectoryID:  "trajectory-1",
+		TrajectoryID:  "a7bd4786-5c83-5ea5-9eb0-354a460eaa91",
 		IdentityKey:   "identity-1",
 		ICAO24:        "ABC123",
 		Window: flightfeatures.FeatureWindow{
@@ -893,9 +895,24 @@ func storableFeatures(
 		},
 		Provenance: flightfeatures.FeatureProvenance{
 			ExtractorVersion: "test-extractor",
-			InputFingerprint: fingerprint,
+			InputFingerprint: canonicalTestFingerprint(fingerprint),
 		},
 	}
+	if status == flightfeatures.ValidationStatusValid ||
+		status == flightfeatures.ValidationStatusLimited {
+		features.ValidationReport = flightfeatures.ValidationReport{
+			AuditState:       flightfeatures.ValidationAuditStateComplete,
+			ValidatorVersion: validator.Version,
+			Status:           status,
+			ValidatedAt:      asOfTime.UTC(),
+		}
+	}
+	return features
+}
+
+func canonicalTestFingerprint(value string) string {
+	sum := sha256.Sum256([]byte(value))
+	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
 func newTestPipeline(

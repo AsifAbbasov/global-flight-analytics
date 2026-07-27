@@ -7,11 +7,12 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
-const Version = "flight-feature-store-v1"
+const Version = "flight-feature-store-v2"
 
 const (
-	DefaultListLimit = 20
-	MaximumListLimit = 100
+	DefaultListLimit            = 20
+	MaximumListLimit            = 100
+	DefaultMemoryMaximumRecords = 10000
 )
 
 type SnapshotKey struct {
@@ -22,11 +23,12 @@ type SnapshotKey struct {
 }
 
 type Record struct {
-	ID               string
-	Key              SnapshotKey
-	InputFingerprint string
-	Features         flightfeatures.FlightFeatures
-	StoredAt         time.Time
+	ID                string
+	Key               SnapshotKey
+	InputFingerprint  string
+	OutputFingerprint string
+	Features          flightfeatures.FlightFeatures
+	StoredAt          time.Time
 }
 
 func (record Record) Clone() Record {
@@ -64,11 +66,14 @@ func (page Page) Clone() Page {
 	return cloned
 }
 
-type Store interface {
+type SnapshotWriter interface {
 	Put(
 		ctx context.Context,
 		features flightfeatures.FlightFeatures,
 	) (Record, error)
+}
+
+type SnapshotReader interface {
 	Get(
 		ctx context.Context,
 		key SnapshotKey,
@@ -85,6 +90,12 @@ type Store interface {
 	) (Page, error)
 }
 
+type Store interface {
+	SnapshotWriter
+	SnapshotReader
+}
+
 type MemoryConfig struct {
-	Now func() time.Time
+	Now            func() time.Time
+	MaximumRecords int
 }

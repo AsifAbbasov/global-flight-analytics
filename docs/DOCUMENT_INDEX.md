@@ -1023,3 +1023,9 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 116: Aircraft Provider Review Hardening
 
 `116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` records atomic request coalescing, independent cancellation, bounded cache lifecycle, domain not-found semantics, lookup identity enforcement, and final aircraft provider review closure.
+
+<!-- FEATURE-STORE-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 117 — Feature Store Review Hardening
+
+`117_FEATURE_STORE_REVIEW_HARDENING.md` records semantic output fingerprinting, versioned persistence data transfer objects, strict Store implementation conformance, complete validation proof, bounded Memory Store capacity, permanent tests and Continuous Integration audit closure.

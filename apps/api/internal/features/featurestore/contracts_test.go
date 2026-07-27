@@ -60,7 +60,7 @@ func TestPageCloneDoesNotShareRecords(t *testing.T) {
 }
 
 func TestFeatureStoreContractConstantsRemainStable(t *testing.T) {
-	if Version != "flight-feature-store-v1" {
+	if Version != "flight-feature-store-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if DefaultListLimit != 20 ||

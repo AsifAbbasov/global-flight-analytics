@@ -30,7 +30,7 @@ func TestMemoryStorePutAndGet(t *testing.T) {
 		},
 	})
 	features := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		time.Date(
 			2026,
 			time.July,
@@ -56,7 +56,7 @@ func TestMemoryStorePutAndGet(t *testing.T) {
 		len(record.ID) != len(recordIDPrefix)+64 {
 		t.Fatalf("unexpected record id: %q", record.ID)
 	}
-	if record.Key.TrajectoryID != "trajectory-one" ||
+	if record.Key.TrajectoryID != "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef" ||
 		record.Key.SchemaVersion !=
 			flightfeatures.SchemaVersionV1 ||
 		!record.Key.AsOfTime.Equal(
@@ -116,7 +116,7 @@ func TestMemoryStorePutIsIdempotentForSameFingerprint(
 		},
 	})
 	features := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		time.Date(
 			2026,
 			time.July,
@@ -175,12 +175,12 @@ func TestMemoryStoreRejectsConflictingSnapshotEvidence(
 		time.UTC,
 	)
 	first := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		asOfTime,
 		"a",
 	)
 	second := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		asOfTime,
 		"b",
 	)
@@ -205,7 +205,7 @@ func TestMemoryStoreRejectsConflictingSnapshotEvidence(
 	loaded, err := store.Get(
 		context.Background(),
 		SnapshotKey{
-			TrajectoryID:  "trajectory-one",
+			TrajectoryID:  "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			SchemaVersion: flightfeatures.SchemaVersionV1,
 			AsOfTime:      asOfTime,
 		},
@@ -278,7 +278,7 @@ func TestMemoryStoreRejectsUnstorableFeatures(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			store := NewMemory(MemoryConfig{})
 			features := validStoredFeatures(
-				"trajectory-one",
+				"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 				time.Date(
 					2026,
 					time.July,
@@ -311,7 +311,7 @@ func TestMemoryStoreRejectsUnstorableFeatures(t *testing.T) {
 func TestMemoryStoreAcceptsLimitedFeatures(t *testing.T) {
 	store := NewMemory(MemoryConfig{})
 	features := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		time.Date(
 			2026,
 			time.July,
@@ -326,6 +326,18 @@ func TestMemoryStoreAcceptsLimitedFeatures(t *testing.T) {
 	)
 	features.Quality.Status =
 		flightfeatures.ValidationStatusLimited
+	features.ValidationReport = testCompleteValidationReport(
+		flightfeatures.ValidationStatusLimited,
+		features.Window.AsOfTime,
+	)
+	features.ValidationReport.WarningCount = 1
+	features.ValidationReport.Issues = []flightfeatures.ValidationIssue{
+		{
+			Code: "featurestore.test.limited",
+			Severity: flightfeatures.
+				ValidationIssueSeverityWarning,
+		},
+	}
 
 	record, err := store.Put(
 		context.Background(),
@@ -362,7 +374,7 @@ func TestMemoryStoreGetLatestAndListUseDescendingAsOfTime(
 		_, err := store.Put(
 			context.Background(),
 			validStoredFeatures(
-				"trajectory-one",
+				"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 				base.Add(
 					time.Duration(index)*time.Hour,
 				),
@@ -380,7 +392,7 @@ func TestMemoryStoreGetLatestAndListUseDescendingAsOfTime(
 
 	latest, err := store.GetLatest(
 		context.Background(),
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		flightfeatures.SchemaVersionV1,
 	)
 	if err != nil {
@@ -398,7 +410,7 @@ func TestMemoryStoreGetLatestAndListUseDescendingAsOfTime(
 	page, err := store.List(
 		context.Background(),
 		ListQuery{
-			TrajectoryID:  "trajectory-one",
+			TrajectoryID:  "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			SchemaVersion: flightfeatures.SchemaVersionV1,
 			Limit:         2,
 		},
@@ -423,7 +435,7 @@ func TestMemoryStoreGetLatestAndListUseDescendingAsOfTime(
 	nextPage, err := store.List(
 		context.Background(),
 		ListQuery{
-			TrajectoryID:   "trajectory-one",
+			TrajectoryID:   "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			SchemaVersion:  flightfeatures.SchemaVersionV1,
 			BeforeAsOfTime: page.Records[1].Key.AsOfTime,
 			Limit:          2,
@@ -456,8 +468,8 @@ func TestMemoryStoreIsolatesTrajectories(t *testing.T) {
 	)
 
 	for _, trajectoryID := range []string{
-		"trajectory-one",
-		"trajectory-two",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
+		"d77d051c-463d-5986-97bc-599d8bf4f558",
 	} {
 		_, err := store.Put(
 			context.Background(),
@@ -479,7 +491,7 @@ func TestMemoryStoreIsolatesTrajectories(t *testing.T) {
 	page, err := store.List(
 		context.Background(),
 		ListQuery{
-			TrajectoryID:  "trajectory-one",
+			TrajectoryID:  "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			SchemaVersion: flightfeatures.SchemaVersionV1,
 		},
 	)
@@ -488,7 +500,7 @@ func TestMemoryStoreIsolatesTrajectories(t *testing.T) {
 	}
 	if len(page.Records) != 1 ||
 		page.Records[0].Key.TrajectoryID !=
-			"trajectory-one" {
+			"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef" {
 		t.Fatalf("unexpected isolated page: %#v", page)
 	}
 }
@@ -496,7 +508,7 @@ func TestMemoryStoreIsolatesTrajectories(t *testing.T) {
 func TestMemoryStoreReturnsDefensiveCopies(t *testing.T) {
 	store := NewMemory(MemoryConfig{})
 	features := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		time.Date(
 			2026,
 			time.July,
@@ -562,7 +574,7 @@ func TestMemoryStoreReturnsDefensiveCopies(t *testing.T) {
 func TestMemoryStoreConcurrentIdempotentPut(t *testing.T) {
 	store := NewMemory(MemoryConfig{})
 	features := validStoredFeatures(
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		time.Date(
 			2026,
 			time.July,
@@ -629,7 +641,7 @@ func TestMemoryStoreConcurrentIdempotentPut(t *testing.T) {
 	page, err := store.List(
 		context.Background(),
 		ListQuery{
-			TrajectoryID:  "trajectory-one",
+			TrajectoryID:  "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			SchemaVersion: flightfeatures.SchemaVersionV1,
 		},
 	)
@@ -658,7 +670,7 @@ func TestMemoryStoreValidatesQueriesAndContext(t *testing.T) {
 	}
 	if _, err := store.GetLatest(
 		context.Background(),
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		"future",
 	); !errors.Is(err, ErrUnsupportedSchemaVersion) {
 		t.Fatalf(
@@ -669,7 +681,7 @@ func TestMemoryStoreValidatesQueriesAndContext(t *testing.T) {
 	if _, err := store.List(
 		context.Background(),
 		ListQuery{
-			TrajectoryID:  "trajectory-one",
+			TrajectoryID:  "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			SchemaVersion: flightfeatures.SchemaVersionV1,
 			Limit:         MaximumListLimit + 1,
 		},
@@ -685,7 +697,7 @@ func TestMemoryStoreValidatesQueriesAndContext(t *testing.T) {
 	if _, err := store.Put(
 		ctx,
 		validStoredFeatures(
-			"trajectory-one",
+			"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 			time.Now().UTC(),
 			"a",
 		),
@@ -700,7 +712,7 @@ func TestMemoryStoreValidatesQueriesAndContext(t *testing.T) {
 func TestMemoryStoreReturnsNotFound(t *testing.T) {
 	store := NewMemory(MemoryConfig{})
 	key := SnapshotKey{
-		TrajectoryID:  "trajectory-one",
+		TrajectoryID:  "afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		SchemaVersion: flightfeatures.SchemaVersionV1,
 		AsOfTime: time.Date(
 			2026,
@@ -726,7 +738,7 @@ func TestMemoryStoreReturnsNotFound(t *testing.T) {
 	}
 	if _, err := store.GetLatest(
 		context.Background(),
-		"trajectory-one",
+		"afa6017b-49cc-5a2a-8942-cdcac5a7a1ef",
 		flightfeatures.SchemaVersionV1,
 	); !errors.Is(err, ErrSnapshotNotFound) {
 		t.Fatalf(
@@ -763,6 +775,10 @@ func validStoredFeatures(
 			AsOfTime:  asOfTime,
 		},
 		ExtractedAt: asOfTime.Add(time.Minute),
+		ValidationReport: testCompleteValidationReport(
+			flightfeatures.ValidationStatusValid,
+			asOfTime.Add(time.Minute),
+		),
 		Temporal: flightfeatures.TemporalFeatures{
 			Evidence: flightfeatures.GroupEvidence{
 				Status:               flightfeatures.AvailabilityStatusAvailable,

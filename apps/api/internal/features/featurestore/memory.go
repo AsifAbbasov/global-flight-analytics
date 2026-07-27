@@ -18,6 +18,7 @@ const recordIDPrefix = "feature-record-"
 type MemoryStore struct {
 	mutex            sync.RWMutex
 	now              func() time.Time
+	maximumRecords   int
 	records          map[string]Record
 	keysByTrajectory map[string][]string
 }
@@ -27,9 +28,14 @@ func NewMemory(config MemoryConfig) *MemoryStore {
 	if now == nil {
 		now = time.Now
 	}
+	maximumRecords := config.MaximumRecords
+	if maximumRecords <= 0 {
+		maximumRecords = DefaultMemoryMaximumRecords
+	}
 
 	return &MemoryStore{
 		now:              now,
+		maximumRecords:   maximumRecords,
 		records:          make(map[string]Record),
 		keysByTrajectory: make(map[string][]string),
 	}
@@ -39,14 +45,15 @@ func (store *MemoryStore) Put(
 	ctx context.Context,
 	features flightfeatures.FlightFeatures,
 ) (Record, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Record{}, err
 	}
 	normalized := normalizeFeatures(features)
-	if err := validateStorableFeatures(normalized); err != nil {
+	if err := validateWritableFeatures(normalized); err != nil {
+		return Record{}, err
+	}
+	outputFingerprint, err := fingerprintSnapshotOutput(normalized)
+	if err != nil {
 		return Record{}, err
 	}
 	key := snapshotKey(normalized)
@@ -60,20 +67,24 @@ func (store *MemoryStore) Put(
 	defer store.mutex.Unlock()
 
 	if existing, exists := store.records[compositeKey]; exists {
-		if existing.InputFingerprint !=
-			normalized.Provenance.InputFingerprint {
+		if existing.InputFingerprint != normalized.Provenance.InputFingerprint ||
+			existing.OutputFingerprint != outputFingerprint {
 			return Record{}, ErrSnapshotConflict
 		}
 
 		return existing.Clone(), nil
 	}
+	if len(store.records) >= store.maximumRecords {
+		return Record{}, ErrMemoryCapacityExceeded
+	}
 
 	record := Record{
-		ID:               recordID,
-		Key:              key,
-		InputFingerprint: normalized.Provenance.InputFingerprint,
-		Features:         normalized.Clone(),
-		StoredAt:         store.now().UTC(),
+		ID:                recordID,
+		Key:               key,
+		InputFingerprint:  normalized.Provenance.InputFingerprint,
+		OutputFingerprint: outputFingerprint,
+		Features:          normalized.Clone(),
+		StoredAt:          store.now().UTC(),
 	}
 
 	store.records[compositeKey] = record.Clone()
@@ -95,10 +106,7 @@ func (store *MemoryStore) Get(
 	ctx context.Context,
 	key SnapshotKey,
 ) (Record, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -125,10 +133,7 @@ func (store *MemoryStore) GetLatest(
 	schemaVersion flightfeatures.SchemaVersion,
 	processingVersions ...flightfeatures.ProcessingVersion,
 ) (Record, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -173,10 +178,7 @@ func (store *MemoryStore) List(
 	ctx context.Context,
 	query ListQuery,
 ) (Page, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if err := ctx.Err(); err != nil {
+	if err := requireStoreContext(ctx); err != nil {
 		return Page{}, err
 	}
 
@@ -191,10 +193,7 @@ func (store *MemoryStore) List(
 	)
 
 	store.mutex.RLock()
-	keys := append(
-		[]string(nil),
-		store.keysByTrajectory[indexKey]...,
-	)
+	keys := store.keysByTrajectory[indexKey]
 	result := make(
 		[]Record,
 		0,
@@ -270,10 +269,13 @@ func validateStorableFeatures(
 	if features.Window.AsOfTime.IsZero() {
 		return ErrAsOfTimeRequired
 	}
-	if strings.TrimSpace(
+	if err := validateInputFingerprint(
 		features.Provenance.InputFingerprint,
-	) == "" {
-		return ErrInputFingerprintRequired
+	); err != nil {
+		return err
+	}
+	if err := validateFiniteFeatureValues(features); err != nil {
+		return err
 	}
 
 	switch features.Quality.Status {
@@ -291,8 +293,10 @@ func normalizeFeatures(
 	features flightfeatures.FlightFeatures,
 ) flightfeatures.FlightFeatures {
 	normalized := features.Clone()
-	normalized.TrajectoryID =
-		strings.TrimSpace(normalized.TrajectoryID)
+	normalized.TrajectoryID = strings.TrimSpace(normalized.TrajectoryID)
+	if trajectoryID, err := normalizeTrajectoryID(normalized.TrajectoryID); err == nil {
+		normalized.TrajectoryID = trajectoryID
+	}
 	normalized.IdentityKey =
 		strings.TrimSpace(normalized.IdentityKey)
 	normalized.FlightID =
@@ -331,8 +335,14 @@ func normalizeFeatures(
 		strings.TrimSpace(
 			normalized.Provenance.InputFingerprint,
 		)
+	normalized.Aircraft.MetadataUpdatedAt =
+		normalized.Aircraft.MetadataUpdatedAt.UTC()
+	normalized.Provenance.TrajectoryCreatedAt =
+		normalized.Provenance.TrajectoryCreatedAt.UTC()
 	normalized.Provenance.TrajectoryUpdatedAt =
 		normalized.Provenance.TrajectoryUpdatedAt.UTC()
+	normalized.Provenance.AircraftMetadataRetrievedAt =
+		normalized.Provenance.AircraftMetadataRetrievedAt.UTC()
 
 	return normalized
 }
@@ -435,12 +445,7 @@ func normalizeListQuery(
 func normalizeTrajectoryID(
 	trajectoryID string,
 ) (string, error) {
-	normalized := strings.TrimSpace(trajectoryID)
-	if normalized == "" {
-		return "", ErrTrajectoryIDRequired
-	}
-
-	return normalized, nil
+	return canonicalTrajectoryID(trajectoryID)
 }
 
 func encodeSnapshotKey(key SnapshotKey) string {

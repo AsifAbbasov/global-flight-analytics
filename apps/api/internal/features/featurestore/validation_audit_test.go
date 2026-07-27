@@ -10,12 +10,12 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/validator"
 )
 
-func TestMemoryStorePersistsExplicitLegacyAuditForCompatibility(
+func TestMemoryStoreRejectsLegacyAuditOnNewWrite(
 	t *testing.T,
 ) {
 	store := NewMemory(MemoryConfig{})
 	features := validStoredFeatures(
-		"trajectory-validation-audit",
+		"66196dc0-56f2-5a06-ab2c-6e0ac07316e3",
 		time.Date(
 			2026,
 			time.July,
@@ -28,36 +28,17 @@ func TestMemoryStorePersistsExplicitLegacyAuditForCompatibility(
 		),
 		"a",
 	)
+	features.ValidationReport = flightfeatures.ValidationReport{}
 
-	record, err := store.Put(
+	_, err := store.Put(
 		context.Background(),
 		features,
 	)
-	if err != nil {
-		t.Fatalf("Put() error = %v", err)
-	}
-
-	report := record.Features.ValidationReport
-	if report.AuditState !=
-		flightfeatures.
-			ValidationAuditStateLegacyUnavailable ||
-		report.Status != record.Features.Quality.Status {
-		t.Fatalf("stored legacy audit = %#v", report)
-	}
-
-	loaded, err := store.Get(
-		context.Background(),
-		record.Key,
-	)
-	if err != nil {
-		t.Fatalf("Get() error = %v", err)
-	}
-	if loaded.Features.ValidationReport.AuditState !=
-		flightfeatures.
-			ValidationAuditStateLegacyUnavailable {
+	if !errors.Is(err, ErrValidationProofRequired) {
 		t.Fatalf(
-			"loaded legacy audit = %#v",
-			loaded.Features.ValidationReport,
+			"Put() error = %v, want %v",
+			err,
+			ErrValidationProofRequired,
 		)
 	}
 }
@@ -67,7 +48,7 @@ func TestMemoryStoreRejectsCorruptCompleteValidationAudit(
 ) {
 	store := NewMemory(MemoryConfig{})
 	features := validStoredFeatures(
-		"trajectory-validation-audit",
+		"66196dc0-56f2-5a06-ab2c-6e0ac07316e3",
 		time.Date(
 			2026,
 			time.July,
