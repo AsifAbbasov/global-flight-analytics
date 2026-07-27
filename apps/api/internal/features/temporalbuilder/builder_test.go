@@ -38,6 +38,7 @@ func TestBuilderBuildsCompleteSameDayUTCFeatures(t *testing.T) {
 		DurationSeconds: int64(
 			endTime.Sub(startTime) / time.Second,
 		),
+		PointCount: 3,
 		Points: []trajectory.TrackPoint4D{
 			{ObservedAt: startTime},
 			{ObservedAt: startTime.Add(time.Hour)},
@@ -545,7 +546,7 @@ func TestCloneFeaturesDoesNotShareLimitations(t *testing.T) {
 func TestTemporalBuilderContractConstantsRemainStable(
 	t *testing.T,
 ) {
-	if Version != "temporal-feature-builder-v1" {
+	if Version != "temporal-feature-builder-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if TemporalFeatureFieldCount != 8 {

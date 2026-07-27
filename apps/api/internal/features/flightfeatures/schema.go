@@ -40,7 +40,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeInteger,
 		Unit:        "seconds",
 		Required:    true,
-		Description: "Duration of the feature observation window.",
+		Description: "Duration of the feature observation window in whole seconds, with fractional seconds truncated toward zero.",
 	},
 	{
 		Name:        "temporal.start_hour_utc",

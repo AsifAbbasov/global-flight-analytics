@@ -98,11 +98,11 @@ func main() {
 	)
 	require(
 		"apps/api/internal/features/featurepipeline/contracts.go",
-		`const Version = "flight-feature-processing-pipeline-v7"`,
+		`const Version = "flight-feature-processing-pipeline-v8"`,
 	)
 	require(
 		"apps/api/internal/features/flightfeatures/model.go",
-		`CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v7"`,
+		`CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v8"`,
 	)
 	require(
 		"docs/112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md",

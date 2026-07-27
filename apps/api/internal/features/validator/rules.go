@@ -470,7 +470,10 @@ func validateTemporalFeatures(
 		return
 	}
 
-	expectedDuration := int64(end.Sub(start) / time.Second)
+	expectedDuration := flightfeatures.TemporalDurationSeconds(
+		start,
+		end,
+	)
 	if item.DurationSeconds != expectedDuration {
 		addBySeverity(
 			collector,

@@ -500,3 +500,9 @@ Feature snapshots now require matching input and semantic output fingerprints, u
 ## Flight Features Schema Review Hardening
 
 The version-one registry now includes every geographical analytical field, completeness uses a fifteen-field geographical denominator, builder counts share the central schema contract, schema lookup is version-aware, and processing generation seven isolates the corrected semantics.
+
+<!-- TEMPORAL-BUILDER-REVIEW-HARDENING:README -->
+
+## Temporal Builder Review Hardening
+
+Temporal feature extraction now rejects nil contexts, observes cancellation during evidence scans, uses a centralized whole-second duration policy, detects zero-valued duration mismatches, and reconstructs production temporal support from unique persisted segment-boundary timestamps when raw point records are not materialized. Processing generation eight isolates the corrected output semantics.

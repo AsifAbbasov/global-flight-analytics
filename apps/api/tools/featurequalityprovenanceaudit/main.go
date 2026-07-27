@@ -54,7 +54,7 @@ func main() {
 		"AircraftMetadataSourceName",
 		"AircraftMetadataProviderVersion",
 		"AircraftMetadataRetrievedAt",
-		`flight-feature-processing-pipeline-v7`,
+		`flight-feature-processing-pipeline-v8`,
 	)
 	require(
 		"apps/api/internal/features/flightfeatures/requirements.go",

@@ -1036,3 +1036,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 118 — Flight Features Schema Review Hardening
 
 `118_FLIGHT_FEATURES_SCHEMA_REVIEW_HARDENING.md` records geographical schema-model alignment, the fifteen-field completeness denominator, centralized group-count ownership, version-aware schema lookup, processing generation seven, stale and rejected finding classifications, permanent tests and Continuous Integration audit closure.
+
+
+<!-- TEMPORAL-BUILDER-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 119 — Temporal Builder Review Hardening
+
+`119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` records production segment-boundary temporal evidence fallback, centralized fractional-second duration policy, zero-duration metadata mismatch detection, strict context and cancellation contracts, exact evidence diagnostics, stale as-of finding classification, processing generation eight, permanent tests and Continuous Integration audit closure.

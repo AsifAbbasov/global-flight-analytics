@@ -110,7 +110,7 @@ func main() {
 		},
 		{
 			path:     "apps/api/internal/features/featurepipeline/contracts.go",
-			required: []string{`const Version = "flight-feature-processing-pipeline-v7"`},
+			required: []string{`const Version = "flight-feature-processing-pipeline-v8"`},
 		},
 		{
 			path:     "apps/api/internal/features/validator/contracts.go",

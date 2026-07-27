@@ -3,6 +3,9 @@ package temporalbuilder
 import "errors"
 
 var (
+	ErrContextRequired = errors.New(
+		"temporal feature builder context is required",
+	)
 	ErrTrajectoryStartTimeRequired = errors.New(
 		"temporal feature trajectory start time is required",
 	)

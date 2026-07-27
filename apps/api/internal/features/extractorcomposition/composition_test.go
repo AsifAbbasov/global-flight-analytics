@@ -301,7 +301,7 @@ func TestCurrentVersionsRemainStable(t *testing.T) {
 		Composition:         "flight-feature-extractor-composition-v6",
 		Extractor:           "flight-feature-extractor-v6",
 		AircraftProvider:    "aircraft-feature-provider-v4",
-		TemporalBuilder:     "temporal-feature-builder-v1",
+		TemporalBuilder:     "temporal-feature-builder-v2",
 		GeographicalBuilder: "geographical-feature-builder-v2",
 		OperationalBuilder:  "operational-feature-builder-v1",
 		TrajectoryBuilder:   "trajectory-feature-builder-v1",
