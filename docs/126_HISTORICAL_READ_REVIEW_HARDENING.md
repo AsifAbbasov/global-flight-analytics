@@ -1,6 +1,6 @@
 # Historical Read Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -28,3 +28,28 @@ This change hardens `apps/api/internal/historicalintelligence/historicalread` as
 ## Database impact
 
 Migration `028_harden_historical_read_snapshot.sql` creates temporal version history, capture triggers, the history coverage marker, and query-aligned indexes. Existing rows are backfilled as their currently known versions. Earlier overwritten states cannot be reconstructed retroactively, so an `AsOfTime` earlier than the migration coverage boundary is rejected.
+
+## Formal closure evidence
+
+The engineering remediation was completed by:
+
+- Hardening commit: `b67546391984b4726e05d67a51471d401f921e29` (`fix: harden historical read integrity`).
+- Final engineering commit: `98750a7eb5972cd770e6333f46cd0855eca8ad0e` (`test: align historical read fixtures with integrity`).
+
+GitHub Actions run `30298888993` for commit `98750a7eb5972cd770e6333f46cd0855eca8ad0e` completed with all required jobs successful after the PostgreSQL infrastructure-only retry:
+
+```text
+Backend Quality=SUCCESS
+Backend Race Safety=SUCCESS
+PostgreSQL 16 Integration=SUCCESS
+Backend Container=SUCCESS
+```
+
+The successful PostgreSQL job applied and verified the production migration catalog, ran the PostgreSQL correctness integration tests, and verified the PostgreSQL feature pipeline.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_READ_REVIEW_STATUS=CLOSED
+```
