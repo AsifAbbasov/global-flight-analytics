@@ -298,7 +298,7 @@ func TestTemporalBuilderProcessingVersionIsIsolated(t *testing.T) {
 		t.Fatalf("Version = %q", Version)
 	}
 	if flightfeatures.CurrentProcessingVersion !=
-		"flight-feature-processing-pipeline-v11" {
+		"flight-feature-processing-pipeline-v12" {
 		t.Fatalf(
 			"processing version = %q",
 			flightfeatures.CurrentProcessingVersion,

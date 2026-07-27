@@ -3,6 +3,9 @@ package validator
 import "errors"
 
 var (
+	ErrContextRequired = errors.New(
+		"flight feature validation context is required",
+	)
 	ErrInvalidMinimumCompleteness = errors.New(
 		"minimum valid completeness score must be between zero and one",
 	)

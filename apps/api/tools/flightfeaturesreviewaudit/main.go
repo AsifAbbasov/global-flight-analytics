@@ -61,7 +61,7 @@ func main() {
 		{
 			path: "apps/api/internal/features/flightfeatures/model.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v11`,
+				`flight-feature-processing-pipeline-v12`,
 				"processing-configuration mirror",
 				"ProcessingIdentityFingerprint",
 				"AircraftMetadataProviderVersion",
@@ -99,13 +99,13 @@ func main() {
 		{
 			path: "apps/api/internal/features/validator/contracts.go",
 			required: []string{
-				`flight-feature-validator-v5`,
+				`flight-feature-validator-v6`,
 			},
 		},
 		{
 			path: "apps/api/internal/features/featurepipeline/contracts.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v11`,
+				`flight-feature-processing-pipeline-v12`,
 			},
 		},
 		{

@@ -136,6 +136,9 @@ jobs:
       - name: Run trajectory builder review audit
         run: go run ./tools/trajectorybuilderreviewaudit -strict
 
+      - name: Run validator review audit
+        run: go run ./tools/validatorreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

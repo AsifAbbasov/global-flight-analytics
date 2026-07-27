@@ -61,8 +61,11 @@ func validateGeographicalDistanceRelationships(
 
 	if finite(item.GreatCircleDistanceKM) &&
 		finite(item.ObservedPathDistanceKM) &&
-		item.GreatCircleDistanceKM >
-			item.ObservedPathDistanceKM+collector.tolerance {
+		greaterThanWithRelativeTolerance(
+			item.GreatCircleDistanceKM,
+			item.ObservedPathDistanceKM,
+			collector.tolerance,
+		) {
 		addBySeverity(
 			collector,
 			severity,
@@ -74,8 +77,11 @@ func validateGeographicalDistanceRelationships(
 	}
 	if finite(item.MaximumDisplacementKM) &&
 		finite(item.ObservedPathDistanceKM) &&
-		item.MaximumDisplacementKM >
-			item.ObservedPathDistanceKM+collector.tolerance {
+		greaterThanWithRelativeTolerance(
+			item.MaximumDisplacementKM,
+			item.ObservedPathDistanceKM,
+			collector.tolerance,
+		) {
 		addBySeverity(
 			collector,
 			severity,

@@ -1062,3 +1062,9 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 122 — Trajectory Builder Review Hardening
 
 `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` records canonical point evidence, unique timestamp sampling, persisted point-count fallback, observation-supported coverage, disconnected path parts, explicit duration and distance policies, dynamic field availability, quality and Validator reconciliation, processing generation eleven, permanent tests, and Continuous Integration closure.
+
+<!-- VALIDATOR-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 123 — Validator Review Hardening
+
+`123_VALIDATOR_REVIEW_HARDENING.md` records strict integrity severity independent of feature availability, explainable partial and unavailable evidence, canonical unavailable payloads, current-evidence quality limitation reconstruction, observation-support ownership, dimensionless relative tolerance semantics, validator generation six, processing generation twelve, permanent regression tests, and Continuous Integration enforcement.

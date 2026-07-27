@@ -270,10 +270,7 @@ func validateGroupEvidence(
 			group,
 			path+".status",
 			issueCodePrefix+"unsupported_availability_status",
-			fmt.Sprintf(
-				"Availability status %q is unsupported.",
-				evidence.Status,
-			),
+			fmt.Sprintf("Availability status %q is unsupported.", evidence.Status),
 		)
 	}
 
@@ -291,101 +288,52 @@ func validateGroupEvidence(
 		)
 	}
 	if evidence.AvailableFieldCount < 0 {
-		collector.error(
-			group,
-			path+".available_field_count",
-			issueCodePrefix+"negative_available_field_count",
-			"Available field count must not be negative.",
-		)
+		collector.error(group, path+".available_field_count", issueCodePrefix+"negative_available_field_count", "Available field count must not be negative.")
 	}
 	if evidence.TotalFieldCount < 0 {
-		collector.error(
-			group,
-			path+".total_field_count",
-			issueCodePrefix+"negative_total_field_count",
-			"Total field count must not be negative.",
-		)
+		collector.error(group, path+".total_field_count", issueCodePrefix+"negative_total_field_count", "Total field count must not be negative.")
 	}
 	if evidence.AvailableFieldCount > evidence.TotalFieldCount {
-		collector.error(
-			group,
-			path+".available_field_count",
-			issueCodePrefix+"available_field_count_exceeds_total",
-			"Available field count exceeds total field count.",
-		)
+		collector.error(group, path+".available_field_count", issueCodePrefix+"available_field_count_exceeds_total", "Available field count exceeds total field count.")
 	}
 	if evidence.SupportingPointCount < 0 {
-		collector.error(
-			group,
-			path+".supporting_point_count",
-			issueCodePrefix+"negative_supporting_point_count",
-			"Supporting point count must not be negative.",
-		)
+		collector.error(group, path+".supporting_point_count", issueCodePrefix+"negative_supporting_point_count", "Supporting point count must not be negative.")
 	}
 
 	switch evidence.Status {
 	case flightfeatures.AvailabilityStatusAvailable:
-		if evidence.TotalFieldCount <= 0 ||
-			evidence.AvailableFieldCount !=
-				evidence.TotalFieldCount {
-			collector.error(
-				group,
-				path,
-				issueCodePrefix+"available_evidence_inconsistent",
-				"Available evidence must expose every schema field in the group.",
-			)
+		if evidence.TotalFieldCount <= 0 || evidence.AvailableFieldCount != evidence.TotalFieldCount {
+			collector.error(group, path, issueCodePrefix+"available_evidence_inconsistent", "Available evidence must expose every schema field in the group.")
 		}
 	case flightfeatures.AvailabilityStatusPartial:
-		if evidence.AvailableFieldCount <= 0 ||
-			evidence.AvailableFieldCount >=
-				evidence.TotalFieldCount {
-			collector.error(
-				group,
-				path,
-				issueCodePrefix+"partial_evidence_inconsistent",
-				"Partial evidence must expose at least one but fewer than all schema fields.",
-			)
+		if evidence.AvailableFieldCount <= 0 || evidence.AvailableFieldCount >= evidence.TotalFieldCount {
+			collector.error(group, path, issueCodePrefix+"partial_evidence_inconsistent", "Partial evidence must expose at least one but fewer than all schema fields.")
 		}
 		if availabilityRequired {
-			collector.warning(
-				group,
-				path,
-				issueCodePrefix+"feature_group_partial",
-				fmt.Sprintf(
-					"Feature group %q is only partially available.",
-					group,
-				),
-			)
+			collector.warning(group, path, issueCodePrefix+"feature_group_partial", fmt.Sprintf("Feature group %q is only partially available.", group))
 		}
 	case flightfeatures.AvailabilityStatusUnavailable:
 		if evidence.AvailableFieldCount != 0 {
-			collector.error(
-				group,
-				path,
-				issueCodePrefix+"unavailable_evidence_inconsistent",
-				"Unavailable evidence must expose zero available fields.",
-			)
+			collector.error(group, path, issueCodePrefix+"unavailable_evidence_inconsistent", "Unavailable evidence must expose zero available fields.")
 		}
 		if availabilityRequired {
-			collector.warning(
-				group,
-				path,
-				issueCodePrefix+"feature_group_unavailable",
-				fmt.Sprintf(
-					"Feature group %q is unavailable.",
-					group,
-				),
-			)
+			collector.warning(group, path, issueCodePrefix+"feature_group_unavailable", fmt.Sprintf("Feature group %q is unavailable.", group))
 		}
 	}
 
-	validateLimitations(
-		collector,
-		group,
-		path+".limitations",
-		evidence.Limitations,
-		availabilityRequired,
-	)
+	if evidence.Status != flightfeatures.AvailabilityStatusAvailable && !hasNonValidatorLimitation(evidence.Limitations) {
+		collector.error(
+			group,
+			path+".limitations",
+			issueCodePrefix+"evidence_limitation_required",
+			"Partial or unavailable evidence must include a normalized domain limitation explaining why evidence is incomplete.",
+		)
+	}
+
+	validateLimitations(collector, group, path+".limitations", evidence.Limitations)
+	if availabilityRequired {
+		emitLimitationsAsWarnings(collector, group, path+".limitations", evidence.Limitations)
+	}
 }
 
 func validateTemporalFeatures(
@@ -395,10 +343,11 @@ func validateTemporalFeatures(
 	item := features.Temporal
 	if item.Evidence.Status ==
 		flightfeatures.AvailabilityStatusUnavailable {
+		validateUnavailableTemporalPayload(collector, item)
 		return
 	}
 
-	severity := relationshipSeverity(item.Evidence.Status)
+	severity := IssueSeverityError
 	validateIntegerRange(
 		collector,
 		severity,
@@ -573,10 +522,12 @@ func validateGeographicalFeatures(
 	item := features.Geographical
 	if item.Evidence.Status ==
 		flightfeatures.AvailabilityStatusUnavailable {
+		validateUnavailableGeographicalPayload(collector, item)
 		return
 	}
-	severity := relationshipSeverity(item.Evidence.Status)
+	severity := IssueSeverityError
 	group := flightfeatures.FeatureGroupGeographical
+	validateAvailableObservationSupport(collector, group, "geographical.evidence", item.Evidence)
 
 	validateLatitude(
 		collector,
@@ -753,36 +704,16 @@ func validateOperationalFeatures(
 	item := features.Operational
 	if item.Evidence.Status ==
 		flightfeatures.AvailabilityStatusUnavailable {
+		validateUnavailableOperationalPayload(collector, item)
 		return
 	}
-	severity := relationshipSeverity(item.Evidence.Status)
+	severity := IssueSeverityError
 	group := flightfeatures.FeatureGroupOperational
+	validateAvailableObservationSupport(collector, group, "operational.evidence", item.Evidence)
 
-	values := []struct {
-		path  string
-		value float64
-	}{
-		{"operational.minimum_altitude_m", item.MinimumAltitudeM},
-		{"operational.maximum_altitude_m", item.MaximumAltitudeM},
-		{"operational.mean_altitude_m", item.MeanAltitudeM},
-		{"operational.altitude_range_m", item.AltitudeRangeM},
-		{"operational.mean_velocity_mps", item.MeanVelocityMPS},
-		{"operational.maximum_velocity_mps", item.MaximumVelocityMPS},
-		{"operational.mean_absolute_vertical_rate_mps", item.MeanAbsoluteVerticalRateMPS},
-		{"operational.maximum_absolute_vertical_rate_mps", item.MaximumAbsoluteVerticalRateMPS},
-		{"operational.heading_change_degrees", item.HeadingChangeDegrees},
-		{"operational.ground_observation_share", item.GroundObservationShare},
-		{"operational.airborne_observation_share", item.AirborneObservationShare},
-	}
-	for _, value := range values {
-		validateFinite(
-			collector,
-			severity,
-			group,
-			value.path,
-			value.value,
-		)
-	}
+	validateFinite(collector, severity, group, "operational.minimum_altitude_m", item.MinimumAltitudeM)
+	validateFinite(collector, severity, group, "operational.maximum_altitude_m", item.MaximumAltitudeM)
+	validateFinite(collector, severity, group, "operational.mean_altitude_m", item.MeanAltitudeM)
 
 	if finite(item.MinimumAltitudeM) &&
 		finite(item.MaximumAltitudeM) &&
@@ -799,10 +730,8 @@ func validateOperationalFeatures(
 	if finite(item.MeanAltitudeM) &&
 		finite(item.MinimumAltitudeM) &&
 		finite(item.MaximumAltitudeM) &&
-		(item.MeanAltitudeM <
-			item.MinimumAltitudeM-collector.tolerance ||
-			item.MeanAltitudeM >
-				item.MaximumAltitudeM+collector.tolerance) {
+		(lessThanWithRelativeTolerance(item.MeanAltitudeM, item.MinimumAltitudeM, collector.tolerance) ||
+			greaterThanWithRelativeTolerance(item.MeanAltitudeM, item.MaximumAltitudeM, collector.tolerance)) {
 		addBySeverity(
 			collector,
 			severity,
@@ -882,7 +811,7 @@ func validateOperationalFeatures(
 		"operational.airborne_observation_share",
 		item.AirborneObservationShare,
 	)
-	if item.Evidence.SupportingPointCount > 0 &&
+	if operationalGroundSharesClaimedAvailable(item.Evidence) &&
 		finite(item.GroundObservationShare) &&
 		finite(item.AirborneObservationShare) &&
 		!approximatelyEqual(
@@ -909,10 +838,12 @@ func validateTrajectoryFeatures(
 	item := features.Trajectory
 	if item.Evidence.Status ==
 		flightfeatures.AvailabilityStatusUnavailable {
+		validateUnavailableTrajectoryPayload(collector, item)
 		return
 	}
-	severity := relationshipSeverity(item.Evidence.Status)
+	severity := IssueSeverityError
 	group := flightfeatures.FeatureGroupTrajectory
+	validateAvailableObservationSupport(collector, group, "trajectory.evidence", item.Evidence)
 
 	counts := []struct {
 		path  string
@@ -1076,9 +1007,11 @@ func validateTrajectoryFeatures(
 	)
 	if finite(item.MeanSamplingIntervalSeconds) &&
 		finite(item.MaximumSamplingGapSeconds) &&
-		item.MaximumSamplingGapSeconds+
-			collector.tolerance <
-			item.MeanSamplingIntervalSeconds {
+		greaterThanWithRelativeTolerance(
+			item.MeanSamplingIntervalSeconds,
+			item.MaximumSamplingGapSeconds,
+			collector.tolerance,
+		) {
 		addBySeverity(
 			collector,
 			severity,
@@ -1195,7 +1128,7 @@ func validateAircraftFeatures(
 	}
 
 	if availableCount != item.Evidence.AvailableFieldCount {
-		severity := relationshipSeverity(item.Evidence.Status)
+		severity := IssueSeverityError
 		if item.Evidence.Status ==
 			flightfeatures.AvailabilityStatusUnavailable {
 			severity = IssueSeverityError
@@ -1456,8 +1389,11 @@ func validateQuality(
 	}
 
 	if ratioInRange(quality.CompletenessScore) &&
-		quality.CompletenessScore+collector.tolerance <
-			policy.MinimumValidCompletenessScore {
+		lessThanWithRelativeTolerance(
+			quality.CompletenessScore,
+			policy.MinimumValidCompletenessScore,
+			collector.tolerance,
+		) {
 		collector.warning(
 			"",
 			"quality.completeness_score",
@@ -1470,8 +1406,11 @@ func validateQuality(
 		)
 	}
 	if ratioInRange(quality.InputQualityScore) &&
-		quality.InputQualityScore+collector.tolerance <
-			policy.MinimumValidInputQualityScore {
+		lessThanWithRelativeTolerance(
+			quality.InputQualityScore,
+			policy.MinimumValidInputQualityScore,
+			collector.tolerance,
+		) {
 		collector.warning(
 			"",
 			"quality.input_quality_score",
@@ -1489,7 +1428,6 @@ func validateQuality(
 		"",
 		"quality.limitations",
 		quality.Limitations,
-		false,
 	)
 }
 
@@ -1505,63 +1443,26 @@ func validateLimitations(
 	group flightfeatures.FeatureGroup,
 	path string,
 	limitations []flightfeatures.FeatureLimitation,
-	markValidAsWarning bool,
 ) {
 	seen := make(map[string]struct{}, len(limitations))
-
 	for index, limitation := range limitations {
 		itemPath := fmt.Sprintf("%s[%d]", path, index)
 		code := strings.TrimSpace(limitation.Code)
 		message := strings.TrimSpace(limitation.Message)
-
 		if code == "" {
-			collector.error(
-				group,
-				itemPath+".code",
-				issueCodePrefix+"limitation_code_required",
-				"Feature limitation code is required.",
-			)
+			collector.error(group, itemPath+".code", issueCodePrefix+"limitation_code_required", "Feature limitation code is required.")
 		}
 		if message == "" {
-			collector.error(
-				group,
-				itemPath+".message",
-				issueCodePrefix+"limitation_message_required",
-				"Feature limitation message is required.",
-			)
+			collector.error(group, itemPath+".message", issueCodePrefix+"limitation_message_required", "Feature limitation message is required.")
 		}
-		if limitation.Code != code ||
-			limitation.Message != message {
-			collector.error(
-				group,
-				itemPath,
-				issueCodePrefix+"limitation_not_normalized",
-				"Feature limitation code and message must not contain leading or trailing whitespace.",
-			)
+		if limitation.Code != code || limitation.Message != message {
+			collector.error(group, itemPath, issueCodePrefix+"limitation_not_normalized", "Feature limitation code and message must not contain leading or trailing whitespace.")
 		}
-
 		key := code + "\x00" + message
 		if _, exists := seen[key]; exists {
-			collector.warning(
-				group,
-				itemPath,
-				issueCodePrefix+"duplicate_limitation",
-				"Duplicate feature limitation was reported.",
-			)
+			collector.warning(group, itemPath, issueCodePrefix+"duplicate_limitation", "Duplicate feature limitation was reported.")
 		}
 		seen[key] = struct{}{}
-
-		if markValidAsWarning &&
-			code != "" &&
-			message != "" &&
-			!strings.HasPrefix(code, issueCodePrefix) {
-			collector.warning(
-				group,
-				itemPath,
-				code,
-				message,
-			)
-		}
 	}
 }
 
@@ -1591,16 +1492,6 @@ func validateRequiredTimestamp(
 			fmt.Sprintf("%s must be normalized to UTC.", path),
 		)
 	}
-}
-
-func relationshipSeverity(
-	status flightfeatures.AvailabilityStatus,
-) IssueSeverity {
-	if status == flightfeatures.AvailabilityStatusPartial {
-		return IssueSeverityWarning
-	}
-
-	return IssueSeverityError
 }
 
 func addBySeverity(
@@ -1779,7 +1670,11 @@ func validateOrderedNonNegativePair(
 
 	if finite(meanValue) &&
 		finite(maximumValue) &&
-		meanValue > maximumValue+collector.tolerance {
+		greaterThanWithRelativeTolerance(
+			meanValue,
+			maximumValue,
+			collector.tolerance,
+		) {
 		addBySeverity(
 			collector,
 			severity,

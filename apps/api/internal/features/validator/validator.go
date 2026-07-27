@@ -53,13 +53,14 @@ func (validator *Validator) Validate(
 	error,
 ) {
 	if ctx == nil {
-		ctx = context.Background()
+		return flightfeatures.FlightFeatures{}, Report{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return flightfeatures.FlightFeatures{}, Report{}, err
 	}
 
 	features := input.Clone()
+	features.Quality.Limitations = collectCurrentGroupLimitations(features)
 	collector := issueCollector{
 		tolerance: validator.policy.NumericTolerance,
 	}

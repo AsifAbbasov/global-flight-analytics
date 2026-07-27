@@ -6,7 +6,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
-const Version = "flight-feature-validator-v5"
+const Version = "flight-feature-validator-v6"
 
 type AuditState = flightfeatures.ValidationAuditState
 
@@ -28,7 +28,10 @@ type Report = flightfeatures.ValidationReport
 type Policy struct {
 	MinimumValidCompletenessScore float64
 	MinimumValidInputQualityScore float64
-	NumericTolerance              float64
+	// NumericTolerance is a dimensionless relative tolerance. Unit-bearing
+	// comparisons must use relative comparison helpers rather than adding this
+	// value directly to metres, kilometres, degrees, or seconds.
+	NumericTolerance float64
 }
 
 func DefaultPolicy() Policy {

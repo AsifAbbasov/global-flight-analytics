@@ -144,11 +144,11 @@ func main() {
 		},
 		{
 			path:     "apps/api/internal/features/featurepipeline/contracts.go",
-			required: []string{`flight-feature-processing-pipeline-v11`},
+			required: []string{`flight-feature-processing-pipeline-v12`},
 		},
 		{
 			path:     "apps/api/internal/features/validator/contracts.go",
-			required: []string{`flight-feature-validator-v5`},
+			required: []string{`flight-feature-validator-v6`},
 		},
 		{
 			path: "docs/122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md",

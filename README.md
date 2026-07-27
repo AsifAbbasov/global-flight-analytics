@@ -523,3 +523,9 @@ Feature materialization now opts into flight-state point hydration inside the ex
 ## Trajectory Builder Review Hardening
 
 Trajectory feature extraction now uses one canonical point-evidence sequence for counts, sampling, and path metrics; collapses duplicate timestamps; filters the authoritative trajectory window; prevents coverage-gap and segment-gap path bridging; requires observation evidence for coverage; derives quality support from group evidence; and applies explicit compensated arithmetic and ratio-tolerance policies. Processing generation eleven and Validator generation five isolate the corrected semantics.
+
+<!-- VALIDATOR-REVIEW-HARDENING:README -->
+
+## Validator Review Hardening
+
+Flight Feature validation now separates evidence incompleteness from mathematical integrity: partial groups may remain limited only when their evidence is explainable and internally valid, while non-finite values, impossible ranges, inconsistent relationships, residual unavailable payloads, and unsupported zero-evidence claims are rejected. Quality limitations are rebuilt from current group evidence on every validation pass, and all tolerance comparisons use a dimensionless relative policy. Validator generation six and processing generation twelve isolate the corrected trust-gate semantics.

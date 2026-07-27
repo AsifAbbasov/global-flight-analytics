@@ -236,38 +236,28 @@ func TestValidatorMarksContractViolationsInvalid(t *testing.T) {
 	}
 }
 
-func TestValidatorTreatsPartialRelationshipFailureAsWarning(
+func TestValidatorRejectsPartialRelationshipFailure(
 	t *testing.T,
 ) {
 	validator := newTestValidator(t, Config{})
 	input := validFeatures()
-	input.Temporal.Evidence.Status =
-		flightfeatures.AvailabilityStatusPartial
+	input.Temporal.Evidence.Status = flightfeatures.AvailabilityStatusPartial
 	input.Temporal.Evidence.AvailableFieldCount = 7
+	input.Temporal.Evidence.Limitations = []flightfeatures.FeatureLimitation{
+		{Code: "temporal_field_unavailable", Message: "One temporal field is unavailable."},
+	}
 	input.Temporal.StartHourUTC = 4
 	input.Quality.CompletenessScore = float64(49) / 50
 
-	result, report, err := validator.Validate(
-		context.Background(),
-		input,
-	)
+	result, report, err := validator.Validate(context.Background(), input)
 	if err != nil {
 		t.Fatalf("Validate() error = %v", err)
 	}
-
-	if result.Quality.Status !=
-		flightfeatures.ValidationStatusLimited ||
-		report.ErrorCount != 0 {
-		t.Fatalf("unexpected report: %#v", report)
+	if result.Quality.Status != flightfeatures.ValidationStatusInvalid || report.ErrorCount == 0 {
+		t.Fatalf("partial mathematical corruption was not rejected: %#v", report)
 	}
-	if !hasIssue(
-		report,
-		issueCodePrefix+"start_hour_mismatch",
-	) {
-		t.Fatalf(
-			"missing partial relationship warning: %#v",
-			report.Issues,
-		)
+	if !hasIssue(report, issueCodePrefix+"start_hour_mismatch") {
+		t.Fatalf("missing partial relationship error: %#v", report.Issues)
 	}
 }
 
@@ -384,6 +374,9 @@ func TestValidatorHonorsCustomThresholdPolicy(t *testing.T) {
 	input.Aircraft.Evidence.Status =
 		flightfeatures.AvailabilityStatusPartial
 	input.Aircraft.Evidence.AvailableFieldCount = 4
+	input.Aircraft.Evidence.Limitations = []flightfeatures.FeatureLimitation{
+		{Code: "aircraft_fields_unavailable", Message: "Airline and country metadata are unavailable."},
+	}
 	input.Aircraft.Airline = ""
 	input.Aircraft.Country = ""
 	input.Quality.CompletenessScore = 1
