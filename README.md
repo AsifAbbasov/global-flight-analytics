@@ -512,3 +512,9 @@ Temporal feature extraction now rejects nil contexts, observes cancellation duri
 ## Geographical Builder Review Hardening
 
 Geographical feature extraction now filters and chronologically orders production point evidence, separates circular longitude envelopes from path crossing, excludes disconnected segment gaps from observed distance, uses metadata-based fallback support counts, applies compensated distance summation, and records versioned distance and geographic-cell policies. Processing generation nine isolates the corrected output semantics.
+
+<!-- OPERATIONAL-BUILDER-REVIEW-HARDENING:README -->
+
+## Operational Builder Review Hardening
+
+Feature materialization now opts into flight-state point hydration inside the existing repeatable-read snapshot without expanding ordinary trajectory reads, preserves nullable operational telemetry through TrackPoint availability flags, filters and orders operational evidence, rejects invalid headings and conflicting ground altitude, avoid altitude-source mixing and heading-gap bridging, and use explicit observation-weighted compensated aggregation. Processing generation ten isolates the corrected output semantics.

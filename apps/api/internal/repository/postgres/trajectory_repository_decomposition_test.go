@@ -105,6 +105,21 @@ func TestTrajectoryRepositoryResponsibilitiesHaveDedicatedOwners(t *testing.T) {
 		"trajectory_child_read.go": {
 			") loadTrajectoryChildren(",
 		},
+		"trajectory_feature_read.go": {
+			"type FeatureTrajectoryReader struct",
+			"NewFeatureTrajectoryReader(",
+			"repository.withTrajectoryReadSnapshot(",
+			"hydrateFeatureTrajectoryPoints(",
+		},
+		"trajectory_point_read.go": {
+			") listTrajectoryPoints(",
+			"trajectoryPointsByFlightIDAndWindowQuery",
+			"trajectoryPointsByICAO24AndWindowQuery",
+		},
+		"trajectory_point_row_scan.go": {
+			"func scanTrajectoryPoint(",
+			"func scanTrajectoryPointRows(",
+		},
 		"trajectory_segment_read.go": {
 			") ListTrajectorySegments(",
 			"scanTrajectorySegmentRows(rows)",
@@ -120,6 +135,9 @@ func TestTrajectoryRepositoryResponsibilitiesHaveDedicatedOwners(t *testing.T) {
 			"const trajectoriesByEndTimeAndBoundsQuery",
 			"const trajectorySegmentsByTrajectoryIDQuery",
 			"const coverageGapsByTrajectoryIDQuery",
+			"const trajectoryPointSelectColumns",
+			"const trajectoryPointsByFlightIDAndWindowQuery",
+			"const trajectoryPointsByICAO24AndWindowQuery",
 		},
 		"trajectory_row_scan.go": {
 			"func scanFlightTrajectory(",

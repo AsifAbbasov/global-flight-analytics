@@ -48,25 +48,30 @@ type canonicalTrajectory struct {
 }
 
 type canonicalTrackPoint struct {
-	ID                       string
-	FlightStateID            string
-	FlightID                 string
-	AircraftID               string
-	ICAO24                   string
-	Callsign                 string
-	Latitude                 float64
-	Longitude                float64
-	BarometricAltitudeM      float64
-	BarometricAltitudeStatus string
-	GeometricAltitudeM       float64
-	GeometricAltitudeStatus  string
-	VelocityMPS              float64
-	HeadingDegrees           float64
-	VerticalRateMPS          float64
-	OnGround                 bool
-	OriginCountry            string
-	ObservedAt               time.Time
-	SourceName               string
+	ID                         string
+	FlightStateID              string
+	FlightID                   string
+	AircraftID                 string
+	ICAO24                     string
+	Callsign                   string
+	Latitude                   float64
+	Longitude                  float64
+	BarometricAltitudeM        float64
+	BarometricAltitudeStatus   string
+	GeometricAltitudeM         float64
+	GeometricAltitudeStatus    string
+	VelocityMPS                float64
+	VelocityAvailable          bool
+	HeadingDegrees             float64
+	HeadingAvailable           bool
+	VerticalRateMPS            float64
+	VerticalRateAvailable      bool
+	OnGround                   bool
+	OnGroundAvailable          bool
+	TelemetryAvailabilityKnown bool
+	OriginCountry              string
+	ObservedAt                 time.Time
+	SourceName                 string
 }
 
 type canonicalSegment struct {
@@ -162,25 +167,30 @@ func canonicalizeTrajectory(
 		points = append(
 			points,
 			canonicalTrackPoint{
-				ID:                       point.ID,
-				FlightStateID:            point.FlightStateID,
-				FlightID:                 point.FlightID,
-				AircraftID:               point.AircraftID,
-				ICAO24:                   aircraft.CanonicalICAO24(point.ICAO24),
-				Callsign:                 strings.TrimSpace(point.Callsign),
-				Latitude:                 point.Latitude,
-				Longitude:                point.Longitude,
-				BarometricAltitudeM:      point.BarometricAltitudeM,
-				BarometricAltitudeStatus: string(point.BarometricAltitudeStatus),
-				GeometricAltitudeM:       point.GeometricAltitudeM,
-				GeometricAltitudeStatus:  string(point.GeometricAltitudeStatus),
-				VelocityMPS:              point.VelocityMPS,
-				HeadingDegrees:           point.HeadingDegrees,
-				VerticalRateMPS:          point.VerticalRateMPS,
-				OnGround:                 point.OnGround,
-				OriginCountry:            point.OriginCountry,
-				ObservedAt:               point.ObservedAt.UTC(),
-				SourceName:               point.SourceName,
+				ID:                         point.ID,
+				FlightStateID:              point.FlightStateID,
+				FlightID:                   point.FlightID,
+				AircraftID:                 point.AircraftID,
+				ICAO24:                     aircraft.CanonicalICAO24(point.ICAO24),
+				Callsign:                   strings.TrimSpace(point.Callsign),
+				Latitude:                   point.Latitude,
+				Longitude:                  point.Longitude,
+				BarometricAltitudeM:        point.BarometricAltitudeM,
+				BarometricAltitudeStatus:   string(point.BarometricAltitudeStatus),
+				GeometricAltitudeM:         point.GeometricAltitudeM,
+				GeometricAltitudeStatus:    string(point.GeometricAltitudeStatus),
+				VelocityMPS:                point.VelocityMPS,
+				VelocityAvailable:          point.VelocityAvailable,
+				HeadingDegrees:             point.HeadingDegrees,
+				HeadingAvailable:           point.HeadingAvailable,
+				VerticalRateMPS:            point.VerticalRateMPS,
+				VerticalRateAvailable:      point.VerticalRateAvailable,
+				OnGround:                   point.OnGround,
+				OnGroundAvailable:          point.OnGroundAvailable,
+				TelemetryAvailabilityKnown: point.TelemetryAvailabilityKnown,
+				OriginCountry:              point.OriginCountry,
+				ObservedAt:                 point.ObservedAt.UTC(),
+				SourceName:                 point.SourceName,
 			},
 		)
 	}

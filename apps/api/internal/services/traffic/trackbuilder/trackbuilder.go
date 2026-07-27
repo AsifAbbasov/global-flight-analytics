@@ -296,32 +296,7 @@ func groupInputsByAircraft(
 func toTrackPoint4D(
 	state flightstate.FlightState,
 ) trajectory.TrackPoint4D {
-	return trajectory.TrackPoint4D{
-		FlightStateID:       state.ID,
-		FlightID:            state.FlightID,
-		AircraftID:          state.AircraftID,
-		ICAO24:              state.ICAO24,
-		Callsign:            state.Callsign,
-		Latitude:            state.Latitude,
-		Longitude:           state.Longitude,
-		BarometricAltitudeM: state.BarometricAltitudeM,
-		BarometricAltitudeStatus: flightstate.ResolveAltitudeStatus(
-			state.BarometricAltitudeM,
-			state.BarometricAltitudeStatus,
-		),
-		GeometricAltitudeM: state.GeometricAltitudeM,
-		GeometricAltitudeStatus: flightstate.ResolveAltitudeStatus(
-			state.GeometricAltitudeM,
-			state.GeometricAltitudeStatus,
-		),
-		VelocityMPS:     state.VelocityMPS,
-		HeadingDegrees:  state.HeadingDegrees,
-		VerticalRateMPS: state.VerticalRateMPS,
-		OnGround:        state.OnGround,
-		OriginCountry:   state.OriginCountry,
-		ObservedAt:      state.ObservedAt,
-		SourceName:      state.SourceName,
-	}
+	return trajectory.TrackPoint4DFromFlightState(state)
 }
 
 func firstNonEmptyFlightID(

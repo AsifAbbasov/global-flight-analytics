@@ -303,7 +303,7 @@ func TestCurrentVersionsRemainStable(t *testing.T) {
 		AircraftProvider:    "aircraft-feature-provider-v4",
 		TemporalBuilder:     "temporal-feature-builder-v2",
 		GeographicalBuilder: "geographical-feature-builder-v3",
-		OperationalBuilder:  "operational-feature-builder-v1",
+		OperationalBuilder:  "operational-feature-builder-v2",
 		TrajectoryBuilder:   "trajectory-feature-builder-v1",
 	}
 

@@ -65,7 +65,7 @@ func runCommand(
 	}
 	defer pool.Close()
 
-	trajectoryRepository := postgres.NewTrajectoryRepository(pool)
+	trajectoryRepository := postgres.NewFeatureTrajectoryReader(pool)
 	aircraftRepository := postgres.NewAircraftRepository(pool)
 	composition, err := featurepipeline.NewPostgres(
 		featurepipeline.PostgresConfig{

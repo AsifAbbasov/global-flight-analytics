@@ -222,7 +222,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres",
 		Required:    true,
-		Description: "Minimum usable aircraft altitude.",
+		Description: "Minimum usable altitude from the trajectory-level selected altitude source.",
 	},
 	{
 		Name:        "operational.maximum_altitude_m",
@@ -230,7 +230,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres",
 		Required:    true,
-		Description: "Maximum usable aircraft altitude.",
+		Description: "Maximum usable altitude from the trajectory-level selected altitude source.",
 	},
 	{
 		Name:        "operational.mean_altitude_m",
@@ -238,7 +238,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres",
 		Required:    true,
-		Description: "Mean usable aircraft altitude.",
+		Description: "Observation-weighted mean altitude from one trajectory-level selected altitude source using compensated summation.",
 	},
 	{
 		Name:        "operational.altitude_range_m",
@@ -246,7 +246,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres",
 		Required:    true,
-		Description: "Difference between maximum and minimum usable altitude.",
+		Description: "Difference between maximum and minimum altitude from the selected trajectory-level altitude source.",
 	},
 	{
 		Name:        "operational.mean_velocity_mps",
@@ -254,7 +254,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres_per_second",
 		Required:    true,
-		Description: "Mean usable ground velocity.",
+		Description: "Observation-weighted mean of available finite non-negative ground-velocity observations using compensated summation.",
 	},
 	{
 		Name:        "operational.maximum_velocity_mps",
@@ -262,7 +262,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres_per_second",
 		Required:    true,
-		Description: "Maximum usable ground velocity.",
+		Description: "Maximum available finite non-negative ground-velocity observation.",
 	},
 	{
 		Name:        "operational.mean_absolute_vertical_rate_mps",
@@ -270,7 +270,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres_per_second",
 		Required:    true,
-		Description: "Mean absolute vertical rate.",
+		Description: "Observation-weighted mean absolute available vertical rate using compensated summation.",
 	},
 	{
 		Name:        "operational.maximum_absolute_vertical_rate_mps",
@@ -278,7 +278,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "metres_per_second",
 		Required:    true,
-		Description: "Maximum absolute vertical rate.",
+		Description: "Maximum absolute available finite vertical-rate observation.",
 	},
 	{
 		Name:        "operational.heading_change_degrees",
@@ -286,7 +286,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "degrees",
 		Required:    true,
-		Description: "Cumulative normalized heading change.",
+		Description: "Cumulative chronological shortest-arc heading change across contiguous valid heading runs; unavailable or invalid headings break continuity.",
 	},
 	{
 		Name:        "operational.ground_observation_share",
@@ -294,7 +294,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "ratio",
 		Required:    true,
-		Description: "Share of usable observations marked on ground.",
+		Description: "Share of observations with an explicitly available on-ground state that are marked on ground.",
 	},
 	{
 		Name:        "operational.airborne_observation_share",
@@ -302,7 +302,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "ratio",
 		Required:    true,
-		Description: "Share of usable observations marked airborne.",
+		Description: "Share of observations with an explicitly available on-ground state that are marked airborne.",
 	},
 	{
 		Name:        "trajectory.point_count",

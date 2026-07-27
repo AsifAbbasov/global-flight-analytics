@@ -5,13 +5,25 @@ import (
 	"testing"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
-func TestAltitudeValueUsesExplicitStatuses(t *testing.T) {
+func TestAssessAltitudeUsesExplicitStatuses(t *testing.T) {
+	explicitGround := trajectory.TrackPoint4D{
+		OnGround:                   true,
+		OnGroundAvailable:          true,
+		TelemetryAvailabilityKnown: true,
+	}
+	missingGroundState := trajectory.TrackPoint4D{
+		OnGround:                   true,
+		TelemetryAvailabilityKnown: true,
+	}
+
 	tests := []struct {
 		name        string
 		value       float64
 		status      flightstate.AltitudeStatus
+		point       trajectory.TrackPoint4D
 		wantValue   float64
 		wantUsable  bool
 		wantInvalid bool
@@ -24,11 +36,26 @@ func TestAltitudeValueUsesExplicitStatuses(t *testing.T) {
 			wantUsable: true,
 		},
 		{
-			name:       "ground",
-			value:      999,
+			name:       "explicit ground",
+			value:      0,
 			status:     flightstate.AltitudeStatusGround,
+			point:      explicitGround,
 			wantValue:  0,
 			wantUsable: true,
+		},
+		{
+			name:        "ground value conflict",
+			value:       999,
+			status:      flightstate.AltitudeStatusGround,
+			point:       explicitGround,
+			wantInvalid: true,
+		},
+		{
+			name:        "ground state unavailable",
+			value:       0,
+			status:      flightstate.AltitudeStatusGround,
+			point:       missingGroundState,
+			wantInvalid: true,
 		},
 		{
 			name:   "unavailable",
@@ -59,6 +86,12 @@ func TestAltitudeValueUsesExplicitStatuses(t *testing.T) {
 			wantInvalid: true,
 		},
 		{
+			name:        "negative observed value",
+			value:       -1,
+			status:      flightstate.AltitudeStatusObserved,
+			wantInvalid: true,
+		},
+		{
 			name:       "implicit observed",
 			value:      100,
 			wantValue:  100,
@@ -72,19 +105,15 @@ func TestAltitudeValueUsesExplicitStatuses(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			value, usable, invalid := altitudeValue(
-				test.value,
-				test.status,
-			)
-
-			if value != test.wantValue ||
-				usable != test.wantUsable ||
-				invalid != test.wantInvalid {
+			assessment := assessAltitude(test.value, test.status, test.point)
+			if assessment.value != test.wantValue ||
+				assessment.usable != test.wantUsable ||
+				assessment.invalid != test.wantInvalid {
 				t.Fatalf(
-					"altitudeValue() = (%v, %v, %v), want (%v, %v, %v)",
-					value,
-					usable,
-					invalid,
+					"assessAltitude() = (%v, %v, %v), want (%v, %v, %v)",
+					assessment.value,
+					assessment.usable,
+					assessment.invalid,
 					test.wantValue,
 					test.wantUsable,
 					test.wantInvalid,

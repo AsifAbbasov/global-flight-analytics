@@ -25,10 +25,12 @@ func TestBuilderBuildsCompleteOperationalFeatures(t *testing.T) {
 		time.UTC,
 	)
 	item := trajectory.FlightTrajectory{
+		StartTime:  startTime,
+		EndTime:    startTime.Add(2 * time.Minute),
 		PointCount: 3,
 		Points: []trajectory.TrackPoint4D{
 			{
-				BarometricAltitudeM:      999,
+				BarometricAltitudeM:      0,
 				BarometricAltitudeStatus: flightstate.AltitudeStatusGround,
 				VelocityMPS:              0,
 				VerticalRateMPS:          0,
@@ -245,40 +247,37 @@ func TestBuilderUsesGeometricAltitudeFallback(t *testing.T) {
 	}
 }
 
-func TestBuilderNormalizesHeadingAndUsesShortestArc(
+func TestBuilderRejectsOutOfRangeHeadingAndUsesShortestArc(
 	t *testing.T,
 ) {
+	start := time.Date(2026, time.July, 14, 8, 0, 0, 0, time.UTC)
 	item := trajectory.FlightTrajectory{
-		PointCount: 3,
+		StartTime:  start,
+		EndTime:    start.Add(3 * time.Second),
+		PointCount: 4,
 		Points: []trajectory.TrackPoint4D{
-			{HeadingDegrees: -10},
-			{HeadingDegrees: 370},
-			{HeadingDegrees: 180},
+			{ObservedAt: start, HeadingDegrees: -10},
+			{ObservedAt: start.Add(time.Second), HeadingDegrees: 350},
+			{ObservedAt: start.Add(2 * time.Second), HeadingDegrees: 10},
+			{ObservedAt: start.Add(3 * time.Second), HeadingDegrees: 370},
 		},
 	}
 
-	features, err := New().Build(
-		context.Background(),
-		item,
-	)
+	features, err := New().Build(context.Background(), item)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
-
-	if features.HeadingChangeDegrees != 190 {
-		t.Fatalf(
-			"heading change = %v, want 190",
-			features.HeadingChangeDegrees,
-		)
+	if features.HeadingChangeDegrees != 20 {
+		t.Fatalf("heading change = %v, want 20", features.HeadingChangeDegrees)
 	}
 	if !hasLimitation(
 		features.Evidence.Limitations,
-		"operational_heading_normalized",
+		flightfeatures.OperationalLimitationInvalidHeadingObservations,
 	) {
-		t.Fatalf(
-			"missing heading normalization limitation: %#v",
-			features.Evidence.Limitations,
-		)
+		t.Fatalf("missing invalid-heading limitation: %#v", features.Evidence.Limitations)
+	}
+	if hasLimitation(features.Evidence.Limitations, "operational_heading_normalized") {
+		t.Fatalf("out-of-range heading was normalized: %#v", features.Evidence.Limitations)
 	}
 }
 
@@ -303,45 +302,29 @@ func TestBuilderSupportsSingleHeading(t *testing.T) {
 	}
 }
 
-func TestBuilderReportsNonMonotonicPointOrder(t *testing.T) {
-	base := time.Date(
-		2026,
-		time.July,
-		14,
-		8,
-		0,
-		0,
-		0,
-		time.UTC,
-	)
+func TestBuilderSortsNonMonotonicPointOrder(
+	t *testing.T,
+) {
+	base := time.Date(2026, time.July, 14, 8, 0, 0, 0, time.UTC)
 	item := trajectory.FlightTrajectory{
+		StartTime:  base,
+		EndTime:    base.Add(time.Minute),
+		PointCount: 2,
 		Points: []trajectory.TrackPoint4D{
-			{
-				ObservedAt:     base.Add(time.Minute),
-				HeadingDegrees: 10,
-			},
-			{
-				ObservedAt:     base,
-				HeadingDegrees: 20,
-			},
+			{ObservedAt: base.Add(time.Minute), HeadingDegrees: 10},
+			{ObservedAt: base, HeadingDegrees: 20},
 		},
 	}
 
-	features, err := New().Build(
-		context.Background(),
-		item,
-	)
+	features, err := New().Build(context.Background(), item)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
-	if !hasLimitation(
-		features.Evidence.Limitations,
-		"operational_point_order_nonmonotonic",
-	) {
-		t.Fatalf(
-			"missing point-order limitation: %#v",
-			features.Evidence.Limitations,
-		)
+	if features.HeadingChangeDegrees != 10 {
+		t.Fatalf("heading change = %v, want 10 after chronological sorting", features.HeadingChangeDegrees)
+	}
+	if hasLimitation(features.Evidence.Limitations, "operational_point_order_nonmonotonic") {
+		t.Fatalf("input-order-dependent limitation remained: %#v", features.Evidence.Limitations)
 	}
 }
 
@@ -453,7 +436,7 @@ func TestCloneFeaturesDoesNotShareLimitations(t *testing.T) {
 func TestOperationalBuilderContractConstantsRemainStable(
 	t *testing.T,
 ) {
-	if Version != "operational-feature-builder-v1" {
+	if Version != "operational-feature-builder-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if OperationalFeatureFieldCount != 11 {

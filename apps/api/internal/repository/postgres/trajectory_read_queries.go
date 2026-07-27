@@ -136,3 +136,46 @@ const coverageGapsByTrajectoryIDQuery = `
 	WHERE gap.trajectory_id = $1
 	ORDER BY gap.gap_start_time ASC;
 `
+
+const trajectoryPointSelectColumns = `
+	state.id::text,
+	COALESCE(state.flight_id::text, ''),
+	COALESCE(state.aircraft_id::text, ''),
+	state.icao24,
+	COALESCE(state.callsign, ''),
+	state.latitude::float8,
+	state.longitude::float8,
+	state.barometric_altitude_m::float8,
+	state.barometric_altitude_status,
+	state.geometric_altitude_m::float8,
+	state.geometric_altitude_status,
+	state.velocity_mps::float8,
+	state.heading_degrees::float8,
+	state.vertical_rate_mps::float8,
+	state.on_ground,
+	COALESCE(state.origin_country, ''),
+	state.observed_at,
+	state.source_name
+`
+
+const trajectoryPointsByFlightIDAndWindowQuery = `
+	SELECT ` + trajectoryPointSelectColumns + `
+	FROM flight_states AS state
+	WHERE state.flight_id = $1::uuid
+		AND state.observed_at >= $2
+		AND state.observed_at <= $3
+		AND state.latitude IS NOT NULL
+		AND state.longitude IS NOT NULL
+	ORDER BY state.observed_at ASC, state.id ASC;
+`
+
+const trajectoryPointsByICAO24AndWindowQuery = `
+	SELECT ` + trajectoryPointSelectColumns + `
+	FROM flight_states AS state
+	WHERE state.icao24 = $1
+		AND state.observed_at >= $2
+		AND state.observed_at <= $3
+		AND state.latitude IS NOT NULL
+		AND state.longitude IS NOT NULL
+	ORDER BY state.observed_at ASC, state.id ASC;
+`

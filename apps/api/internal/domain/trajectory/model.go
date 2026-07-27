@@ -42,25 +42,30 @@ const (
 )
 
 type TrackPoint4D struct {
-	ID                       string
-	FlightStateID            string
-	FlightID                 string
-	AircraftID               string
-	ICAO24                   string
-	Callsign                 string
-	Latitude                 float64
-	Longitude                float64
-	BarometricAltitudeM      float64
-	BarometricAltitudeStatus flightstate.AltitudeStatus
-	GeometricAltitudeM       float64
-	GeometricAltitudeStatus  flightstate.AltitudeStatus
-	VelocityMPS              float64
-	HeadingDegrees           float64
-	VerticalRateMPS          float64
-	OnGround                 bool
-	OriginCountry            string
-	ObservedAt               time.Time
-	SourceName               string
+	ID                         string
+	FlightStateID              string
+	FlightID                   string
+	AircraftID                 string
+	ICAO24                     string
+	Callsign                   string
+	Latitude                   float64
+	Longitude                  float64
+	BarometricAltitudeM        float64
+	BarometricAltitudeStatus   flightstate.AltitudeStatus
+	GeometricAltitudeM         float64
+	GeometricAltitudeStatus    flightstate.AltitudeStatus
+	VelocityMPS                float64
+	VelocityAvailable          bool
+	HeadingDegrees             float64
+	HeadingAvailable           bool
+	VerticalRateMPS            float64
+	VerticalRateAvailable      bool
+	OnGround                   bool
+	OnGroundAvailable          bool
+	TelemetryAvailabilityKnown bool
+	OriginCountry              string
+	ObservedAt                 time.Time
+	SourceName                 string
 }
 
 type CoverageGap struct {

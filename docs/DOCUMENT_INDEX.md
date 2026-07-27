@@ -1050,3 +1050,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 120 — Geographical Builder Review Hardening
 
 `120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` records chronological point-window filtering, order-independent point snapshots, disconnected segment-path semantics, circular longitude envelope validation, metadata-based fallback support counts, versioned Haversine and decimal-degree cell policies, compensated distance summation, processing generation nine, permanent tests and Continuous Integration closure.
+
+
+<!-- OPERATIONAL-BUILDER-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 121 — Operational Builder Review Hardening
+
+`121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` records explicit feature-only repeatable-read point hydration, nullable operational telemetry availability, trajectory-window filtering, deterministic ordering, strict heading and ground-altitude semantics, one-source altitude aggregation, explicit ground-state share denominators, compensated observation-weighted arithmetic, processing generation ten, permanent tests and Continuous Integration closure.
