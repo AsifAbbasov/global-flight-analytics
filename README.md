@@ -550,3 +550,9 @@ Historical Intelligence window planning now enforces bucket limits during genera
 ## Historical Read Review Hardening
 
 Historical Intelligence PostgreSQL reads now use one repository-owned read-only repeatable-read snapshot, reconstruct mutable flight and trajectory state from append-only version history, enforce correct half-open overlap semantics, select the latest route version by trajectory event time before bounded output, use exact matched-row coverage denominators, cap route payload bytes, preserve nullable identifier provenance, validate repository records, and enforce query-aligned indexes through migration `028`.
+
+<!-- HISTORICAL-SERIES-REVIEW-HARDENING:README -->
+
+## Historical Series Review Hardening
+
+Historical Intelligence series construction now binds explicit coverage evidence to every bucket, derives series status from bucket states, requires real provenance timestamps, rejects malformed or duplicate limitations, preserves distinct exclusion intervals, uses checked sample accumulation, and keeps sample volume separate from source-completeness confidence. Historical Traffic, Airport, and Route builders use the version-two series contract.

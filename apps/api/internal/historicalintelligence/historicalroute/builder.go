@@ -91,12 +91,8 @@ func Build(
 		request.MetricName,
 	)
 
-	coverageRatio := routeCoverage(
-		len(selected),
-		len(selected)-invalidPayloadCount,
-		request.Snapshot.TotalForSource(
-			historicalread.DatasetRoutes,
-		),
+	routeMatchedCount := request.Snapshot.TotalForSource(
+		historicalread.DatasetRoutes,
 	)
 	limitations := []historicalcontract.Limitation{
 		{
@@ -140,6 +136,23 @@ func Build(
 		)
 	}
 
+	coverageState := historicalseries.DatasetReadComplete
+	if request.Snapshot.RouteLimitReached ||
+		request.Snapshot.RouteByteLimitReached ||
+		invalidPayloadCount > 0 {
+		coverageState = historicalseries.DatasetReadIncomplete
+	}
+	values, err = historicalseries.BindDatasetCoverage(
+		values,
+		historicalseries.DatasetCoverage{
+			State:        coverageState,
+			MatchedCount: routeMatchedCount,
+		},
+	)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
+
 	return historicalseries.Build(
 		historicalseries.BuildRequest{
 			Metric: historicalcontract.Metric{
@@ -150,7 +163,6 @@ func Build(
 			Scope:                 scope,
 			Plan:                  request.Plan,
 			Values:                values,
-			DataCoverageRatio:     coverageRatio,
 			BuilderVersion:        Version,
 			InputFingerprint:      routeFingerprint(request, originICAOCode, destinationICAOCode),
 			SourceNames:           []string{"flight_route_results", "route_intelligence"},

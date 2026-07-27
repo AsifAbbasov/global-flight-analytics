@@ -1089,3 +1089,9 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 126 — Historical Read Review Hardening
 
 `126_HISTORICAL_READ_REVIEW_HARDENING.md` records repository-owned repeatable-read snapshot consistency, half-open temporal predicates, append-only flight and trajectory version history, event-time route selection with pre-limit latest-version deduplication, exact matched-row coverage, bounded route payload bytes, nullable provenance preservation, explicit numeric rounding, record validation, query-aligned PostgreSQL indexes, permanent tests, and Continuous Integration enforcement.
+
+<!-- HISTORICAL-SERIES-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 127 — Historical Series Review Hardening
+
+`127_HISTORICAL_SERIES_REVIEW_HARDENING.md` records bucket-level coverage evidence, fail-closed provenance timestamps and limitations, unique exclusion evidence, checked sample accumulation, focused builder responsibilities, accepted findings, rejected stale findings, permanent tests, and Continuous Integration enforcement.

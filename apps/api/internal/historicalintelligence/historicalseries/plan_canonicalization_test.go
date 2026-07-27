@@ -44,6 +44,23 @@ func TestBuildCanonicalizesMutablePlan(
 	plan.PreviousWindow.StartTime =
 		plan.PreviousWindow.StartTime.Add(time.Hour)
 
+	values, err := BindDatasetCoverage(
+		[]BucketValue{
+			{
+				Bucket:      plan.Buckets[0],
+				Value:       1,
+				SampleCount: 1,
+			},
+		},
+		DatasetCoverage{
+			State:        DatasetReadComplete,
+			MatchedCount: 1,
+		},
+	)
+	if err != nil {
+		t.Fatalf("bind coverage: %v", err)
+	}
+
 	result, err := Build(
 		BuildRequest{
 			Metric: historicalcontract.Metric{
@@ -54,19 +71,13 @@ func TestBuildCanonicalizesMutablePlan(
 			Scope: historicalcontract.Scope{
 				Type: historicalcontract.ScopeTypeGlobal,
 			},
-			Plan: plan,
-			Values: []BucketValue{
-				{
-					Bucket:      plan.Buckets[0],
-					Value:       1,
-					SampleCount: 1,
-				},
-			},
-			DataCoverageRatio: 1,
-			BuilderVersion:    Version,
-			InputFingerprint: "sha256:" +
-				strings.Repeat("a", 64),
-			SourceNames: []string{"flight_states"},
+			Plan:             plan,
+			Values:           values,
+			BuilderVersion:   Version,
+			InputFingerprint: "sha256:" + strings.Repeat("a", 64),
+			SourceNames:      []string{"flight_states"},
+			LatestSourceUpdatedAt: startTime.
+				Add(30 * time.Minute),
 			GeneratedAt: startTime.Add(2 * time.Hour),
 		},
 	)

@@ -537,15 +537,28 @@ func verificationResult(
 					Bucket:      firstBucket,
 					Value:       2,
 					SampleCount: 2,
+					Coverage: historicalseries.CoverageEvidence{
+						State: historicalseries.
+							CoverageStateComplete,
+						LoadedCount:  2,
+						MatchedCount: 2,
+						Ratio:        1,
+					},
 				},
 				{
 					Bucket:      secondBucket,
 					Value:       3,
 					SampleCount: 3,
+					Coverage: historicalseries.CoverageEvidence{
+						State: historicalseries.
+							CoverageStateComplete,
+						LoadedCount:  3,
+						MatchedCount: 3,
+						Ratio:        1,
+					},
 				},
 			},
-			DataCoverageRatio: 1,
-			BuilderVersion:    "historical-aggregate-runtime-verification-v1",
+			BuilderVersion: "historical-aggregate-runtime-verification-v1",
 			InputFingerprint: "sha256:" +
 				strings.Repeat("a", 64),
 			SourceNames: []string{

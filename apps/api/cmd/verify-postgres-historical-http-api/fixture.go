@@ -146,9 +146,15 @@ func buildVerificationResult(
 					Bucket:      bucket,
 					Value:       value,
 					SampleCount: int(value),
+					Coverage: historicalseries.CoverageEvidence{
+						State: historicalseries.
+							CoverageStateComplete,
+						LoadedCount:  int64(value),
+						MatchedCount: int64(value),
+						Ratio:        1,
+					},
 				},
 			},
-			DataCoverageRatio:     1,
 			BuilderVersion:        verificationBuilderVersion,
 			InputFingerprint:      fingerprint("result|" + seed),
 			SourceNames:           []string{"historical_http_runtime_verification"},

@@ -196,6 +196,13 @@ func comparisonSeries(
 				Bucket:      bucket,
 				Value:       value,
 				SampleCount: int(value),
+				Coverage: historicalseries.CoverageEvidence{
+					State: historicalseries.
+						CoverageStateComplete,
+					LoadedCount:  int64(value),
+					MatchedCount: int64(value),
+					Ratio:        1,
+				},
 			},
 		)
 	}
@@ -225,9 +232,8 @@ func comparisonSeries(
 				Buckets:            buckets,
 				MaximumBucketCount: 100,
 			},
-			Values:            bucketValues,
-			DataCoverageRatio: 1,
-			BuilderVersion:    Version,
+			Values:         bucketValues,
+			BuilderVersion: Version,
 			InputFingerprint: "sha256:" +
 				strings.Repeat(
 					string(rune('a'+len(values))),

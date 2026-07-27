@@ -321,10 +321,16 @@ func aggregateFixture(
 					Bucket:      bucket,
 					Value:       3,
 					SampleCount: 3,
+					Coverage: historicalseries.CoverageEvidence{
+						State: historicalseries.
+							CoverageStateComplete,
+						LoadedCount:  3,
+						MatchedCount: 3,
+						Ratio:        1,
+					},
 				},
 			},
-			DataCoverageRatio: 1,
-			BuilderVersion:    Version,
+			BuilderVersion: Version,
 			InputFingerprint: "sha256:" +
 				strings.Repeat(
 					fingerprintCharacter,

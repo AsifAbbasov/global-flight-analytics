@@ -51,13 +51,12 @@ func Build(
 		2,
 	)
 
-	relevantCount := 0
 	latestSourceTime := time.Time{}
 	sourceNames := []string{definition.sourceName}
+	excludedEvidenceCount := 0
 
 	switch request.MetricName {
 	case historicalcontract.MetricNameFlightCount:
-		relevantCount = len(request.Snapshot.Flights)
 		latestSourceTime = latestFlightUpdate(
 			request.Snapshot.Flights,
 			request.Plan.AsOfTime,
@@ -68,8 +67,6 @@ func Build(
 		)
 
 	case historicalcontract.MetricNameTrajectoryCount:
-		relevantCount =
-			len(request.Snapshot.Trajectories)
 		latestSourceTime = latestTrajectoryUpdate(
 			request.Snapshot.Trajectories,
 			request.Plan.AsOfTime,
@@ -80,8 +77,6 @@ func Build(
 		)
 
 	case historicalcontract.MetricNameObservationCount:
-		relevantCount =
-			len(request.Snapshot.Observations)
 		latestSourceTime = latestObservationUpdate(
 			request.Snapshot.Observations,
 			request.Plan.AsOfTime,
@@ -92,8 +87,6 @@ func Build(
 		)
 
 	case historicalcontract.MetricNameActiveAircraft:
-		relevantCount =
-			len(request.Snapshot.Observations)
 		latestSourceTime = latestObservationUpdate(
 			request.Snapshot.Observations,
 			request.Plan.AsOfTime,
@@ -104,6 +97,7 @@ func Build(
 				request.Plan.Buckets,
 				request.Snapshot.Observations,
 			)
+		excludedEvidenceCount = missingIdentityCount
 		if missingIdentityCount > 0 {
 			limitations = append(
 				limitations,
@@ -119,8 +113,6 @@ func Build(
 		}
 
 	case historicalcontract.MetricNameTrafficDensity:
-		relevantCount =
-			len(request.Snapshot.Observations)
 		latestSourceTime = latestObservationUpdate(
 			request.Snapshot.Observations,
 			request.Plan.AsOfTime,
@@ -134,12 +126,23 @@ func Build(
 	limitReached := definition.limitReached(
 		request.Snapshot,
 	)
-	coverageRatio := conservativeCoverage(
-		relevantCount,
-		request.Snapshot.TotalForSource(
-			definition.sourceName,
-		),
+	matchedCount := request.Snapshot.TotalForSource(
+		definition.sourceName,
 	)
+	coverageState := historicalseries.DatasetReadComplete
+	if limitReached || excludedEvidenceCount > 0 {
+		coverageState = historicalseries.DatasetReadIncomplete
+	}
+	values, err = historicalseries.BindDatasetCoverage(
+		values,
+		historicalseries.DatasetCoverage{
+			State:        coverageState,
+			MatchedCount: matchedCount,
+		},
+	)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
 	if limitReached {
 		limitations = append(
 			limitations,
@@ -163,7 +166,6 @@ func Build(
 			},
 			Plan:                  request.Plan,
 			Values:                values,
-			DataCoverageRatio:     coverageRatio,
 			BuilderVersion:        Version,
 			InputFingerprint:      trafficFingerprint(request),
 			SourceNames:           sourceNames,
@@ -395,16 +397,6 @@ func bucketIndex(
 	}
 
 	return index
-}
-
-func conservativeCoverage(
-	recordCount int,
-	matchedCount int64,
-) float64 {
-	return historicalread.RepresentedCoverage(
-		recordCount,
-		matchedCount,
-	)
 }
 
 func latestFlightUpdate(

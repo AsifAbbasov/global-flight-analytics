@@ -148,6 +148,9 @@ jobs:
       - name: Run historical read review audit
         run: go run ./tools/historicalreadreviewaudit -strict
 
+      - name: Run historical series review audit
+        run: go run ./tools/historicalseriesreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

@@ -1,10 +1,12 @@
 package historicalseries
 
 import (
+	"fmt"
 	"math"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalwindow"
@@ -13,6 +15,16 @@ import (
 var fingerprintPattern = regexp.MustCompile(
 	`^sha256:[0-9a-f]{64}$`,
 )
+
+type validatedBuildRequest struct {
+	window                historicalcontract.TimeWindow
+	windowAvailable       bool
+	builderVersion        string
+	sourceNames           []string
+	latestSourceUpdatedAt time.Time
+	generatedAt           time.Time
+	limitations           []historicalcontract.Limitation
+}
 
 func Build(
 	request BuildRequest,
@@ -25,83 +37,140 @@ func Build(
 	}
 	request.Plan = canonicalPlan
 
-	window, available, err := resolveWindow(
-		request.Plan,
-	)
+	validated, err := validateBuildRequest(&request)
 	if err != nil {
 		return historicalcontract.Result{}, err
 	}
 
-	if len(request.Values) != len(request.Plan.Buckets) {
-		return historicalcontract.Result{},
-			ErrBucketValueCountInvalid
+	result := newResult(request, validated)
+	if !validated.windowAvailable {
+		return buildUnavailableWindowResult(result)
 	}
 
-	for index, value := range request.Values {
-		planned := request.Plan.Buckets[index]
-		if !value.Bucket.StartTime.Equal(planned.StartTime) ||
-			!value.Bucket.EndTime.Equal(planned.EndTime) {
-			return historicalcontract.Result{},
-				ErrBucketValueOrderInvalid
+	points, err := buildSeriesPoints(request.Values)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
+
+	coverageScore := temporalCoverageScore(points)
+	status, representedPointCount := deriveSeriesStatus(points)
+	result.Status = status
+	result.Points = points
+
+	switch status {
+	case historicalcontract.SeriesStatusComplete:
+
+	case historicalcontract.SeriesStatusPartial:
+		result.Limitations, err = appendGeneratedLimitation(
+			result.Limitations,
+			historicalcontract.Limitation{
+				Code:    "historical_data_partial_coverage",
+				Message: "Historical bucket evidence is incomplete; each represented bucket carries its own conservative coverage lower bound.",
+				Scope:   "series",
+			},
+		)
+		if err != nil {
+			return historicalcontract.Result{}, err
 		}
-		request.Values[index].Bucket = planned
+
+	case historicalcontract.SeriesStatusUnavailable:
+		result.Points = []historicalcontract.Point{}
+		result.Limitations, err = appendGeneratedLimitation(
+			result.Limitations,
+			historicalcontract.Limitation{
+				Code:    "historical_data_unavailable",
+				Message: "No historical bucket contains represented source evidence.",
+				Scope:   "series",
+			},
+		)
+		if err != nil {
+			return historicalcontract.Result{}, err
+		}
 	}
 
-	if math.IsNaN(request.DataCoverageRatio) ||
-		math.IsInf(request.DataCoverageRatio, 0) ||
-		request.DataCoverageRatio < 0 ||
-		request.DataCoverageRatio > 1 {
-		return historicalcontract.Result{},
-			ErrCoverageRatioInvalid
+	result.Summary = historicalcontract.Summarize(
+		result.Points,
+	)
+
+	totalSamples, err := checkedSampleCount(
+		result.Points,
+	)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
+	if representedPointCount == 0 {
+		coverageScore = 0
+	}
+	result.Confidence = confidence(
+		coverageScore,
+		totalSamples,
+		"historical_bucket_coverage",
+		"Confidence reflects the mean temporal coverage across planned historical buckets.",
+	)
+
+	return validateResult(result)
+}
+
+func validateBuildRequest(
+	request *BuildRequest,
+) (validatedBuildRequest, error) {
+	window, available, err := resolveWindow(request.Plan)
+	if err != nil {
+		return validatedBuildRequest{}, err
+	}
+
+	if err := validateBucketValues(request); err != nil {
+		return validatedBuildRequest{}, err
 	}
 
 	builderVersion := strings.TrimSpace(
 		request.BuilderVersion,
 	)
 	if builderVersion == "" {
-		return historicalcontract.Result{},
+		return validatedBuildRequest{},
 			ErrBuilderVersionRequired
 	}
 	if !fingerprintPattern.MatchString(
 		request.InputFingerprint,
 	) {
-		return historicalcontract.Result{},
+		return validatedBuildRequest{},
 			ErrFingerprintInvalid
 	}
 
-	sourceNames := normalizeSourceNames(
+	sourceNames, err := normalizeSourceNames(
 		request.SourceNames,
 	)
-	if len(sourceNames) == 0 {
-		return historicalcontract.Result{},
-			ErrSourceNamesRequired
+	if err != nil {
+		return validatedBuildRequest{}, err
 	}
 
 	latestSourceUpdatedAt :=
 		request.LatestSourceUpdatedAt
 	if latestSourceUpdatedAt.IsZero() {
-		latestSourceUpdatedAt = window.EndTime
+		return validatedBuildRequest{},
+			ErrLatestSourceTimeRequired
 	}
 	latestSourceUpdatedAt =
 		latestSourceUpdatedAt.UTC()
 	if latestSourceUpdatedAt.After(
 		window.AsOfTime,
 	) {
-		return historicalcontract.Result{},
+		return validatedBuildRequest{},
 			ErrLatestSourceTimeInvalid
 	}
 
 	generatedAt := request.GeneratedAt
 	if generatedAt.IsZero() {
-		generatedAt = window.AsOfTime
+		return validatedBuildRequest{},
+			ErrGeneratedAtRequired
 	}
 	generatedAt = generatedAt.UTC()
 	if generatedAt.Before(window.AsOfTime) {
-		return historicalcontract.Result{},
+		return validatedBuildRequest{},
 			ErrGeneratedAtInvalid
 	}
 
-	limitations := normalizeLimitations(
+	limitations, err := normalizeLimitations(
 		append(
 			append(
 				[]historicalcontract.Limitation(nil),
@@ -110,127 +179,202 @@ func Build(
 			planLimitations(request.Plan)...,
 		),
 	)
+	if err != nil {
+		return validatedBuildRequest{}, err
+	}
 
-	result := historicalcontract.Result{
+	return validatedBuildRequest{
+		window:                window,
+		windowAvailable:       available,
+		builderVersion:        builderVersion,
+		sourceNames:           sourceNames,
+		latestSourceUpdatedAt: latestSourceUpdatedAt,
+		generatedAt:           generatedAt,
+		limitations:           limitations,
+	}, nil
+}
+
+func validateBucketValues(
+	request *BuildRequest,
+) error {
+	if len(request.Values) !=
+		len(request.Plan.Buckets) {
+		return ErrBucketValueCountInvalid
+	}
+
+	for index, value := range request.Values {
+		planned := request.Plan.Buckets[index]
+		if !value.Bucket.StartTime.Equal(
+			planned.StartTime,
+		) ||
+			!value.Bucket.EndTime.Equal(
+				planned.EndTime,
+			) {
+			return ErrBucketValueOrderInvalid
+		}
+		request.Values[index].Bucket = planned
+
+		if err := validateCoverageEvidence(
+			request.Values[index],
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func newResult(
+	request BuildRequest,
+	validated validatedBuildRequest,
+) historicalcontract.Result {
+	return historicalcontract.Result{
 		SchemaVersion: historicalcontract.SchemaVersionV1,
 		Status:        historicalcontract.SeriesStatusUnavailable,
 		Metric:        request.Metric,
 		Scope:         request.Scope,
-		Window:        window,
+		Window:        validated.window,
 		Granularity:   request.Plan.Granularity,
 		Points:        []historicalcontract.Point{},
-		Limitations:   limitations,
+		Limitations:   validated.limitations,
 		Provenance: historicalcontract.Provenance{
-			BuilderVersion:        builderVersion,
+			BuilderVersion:        validated.builderVersion,
 			InputFingerprint:      request.InputFingerprint,
-			SourceNames:           sourceNames,
-			LatestSourceUpdatedAt: latestSourceUpdatedAt,
+			SourceNames:           validated.sourceNames,
+			LatestSourceUpdatedAt: validated.latestSourceUpdatedAt,
 		},
-		GeneratedAt: generatedAt,
+		GeneratedAt: validated.generatedAt,
 	}
+}
 
-	if !available {
-		result.Limitations = normalizeLimitations(
-			append(
-				result.Limitations,
-				historicalcontract.Limitation{
-					Code:    "historical_window_unavailable",
-					Message: "No complete historical bucket is available for the requested window.",
-					Scope:   "series",
-				},
-			),
-		)
-		result.Confidence = confidence(
-			0,
-			0,
-			"historical_window_unavailable",
-			"No historical bucket could be represented.",
-		)
-		result.Summary = historicalcontract.Summarize(
-			result.Points,
-		)
-
-		return validateResult(result)
-	}
-
-	result.Points = make(
-		[]historicalcontract.Point,
-		0,
-		len(request.Values),
+func buildUnavailableWindowResult(
+	result historicalcontract.Result,
+) (historicalcontract.Result, error) {
+	var err error
+	result.Limitations, err = appendGeneratedLimitation(
+		result.Limitations,
+		historicalcontract.Limitation{
+			Code:    "historical_window_unavailable",
+			Message: "No complete historical bucket is available for the requested window.",
+			Scope:   "series",
+		},
 	)
-
-	for _, value := range request.Values {
-		point, pointErr := buildPoint(
-			value,
-			request.DataCoverageRatio,
-		)
-		if pointErr != nil {
-			return historicalcontract.Result{},
-				pointErr
-		}
-		result.Points = append(
-			result.Points,
-			point,
-		)
+	if err != nil {
+		return historicalcontract.Result{}, err
 	}
-
-	representedPointCount := 0
-	for _, point := range result.Points {
-		if point.Status !=
-			historicalcontract.BucketStatusUnavailable {
-			representedPointCount++
-		}
-	}
-
-	switch {
-	case request.DataCoverageRatio == 1:
-		result.Status =
-			historicalcontract.SeriesStatusComplete
-	case representedPointCount > 0:
-		result.Status =
-			historicalcontract.SeriesStatusPartial
-		result.Limitations = normalizeLimitations(
-			append(
-				result.Limitations,
-				historicalcontract.Limitation{
-					Code:    "historical_data_partial_coverage",
-					Message: "Historical source coverage is a conservative lower bound because one or more bounded reads were incomplete.",
-					Scope:   "series",
-				},
-			),
-		)
-	default:
-		result.Status =
-			historicalcontract.SeriesStatusUnavailable
-		result.Points = []historicalcontract.Point{}
-		result.Limitations = normalizeLimitations(
-			append(
-				result.Limitations,
-				historicalcontract.Limitation{
-					Code:    "historical_data_unavailable",
-					Message: "No historical bucket contains represented source evidence.",
-					Scope:   "series",
-				},
-			),
-		)
-	}
-
+	result.Confidence = confidence(
+		0,
+		0,
+		"historical_window_unavailable",
+		"No historical bucket could be represented.",
+	)
 	result.Summary = historicalcontract.Summarize(
 		result.Points,
 	)
 
-	totalSamples := 0
-	for _, point := range result.Points {
-		totalSamples += point.SampleCount
-	}
-	result.Confidence = confidence(
-		request.DataCoverageRatio,
-		totalSamples,
-		"historical_data_coverage",
-		"Confidence reflects the conservative represented share of the bounded historical read.",
-	)
-
 	return validateResult(result)
+}
+
+func buildSeriesPoints(
+	values []BucketValue,
+) ([]historicalcontract.Point, error) {
+	points := make(
+		[]historicalcontract.Point,
+		0,
+		len(values),
+	)
+	for _, value := range values {
+		point, err := buildPoint(value)
+		if err != nil {
+			return nil, err
+		}
+		points = append(points, point)
+	}
+	return points, nil
+}
+
+func deriveSeriesStatus(
+	points []historicalcontract.Point,
+) (historicalcontract.SeriesStatus, int) {
+	if len(points) == 0 {
+		return historicalcontract.
+				SeriesStatusUnavailable,
+			0
+	}
+
+	represented := 0
+	complete := 0
+	for _, point := range points {
+		switch point.Status {
+		case historicalcontract.BucketStatusComplete:
+			represented++
+			complete++
+		case historicalcontract.BucketStatusPartial:
+			represented++
+		}
+	}
+
+	switch {
+	case represented == 0:
+		return historicalcontract.
+				SeriesStatusUnavailable,
+			0
+	case complete == len(points):
+		return historicalcontract.
+				SeriesStatusComplete,
+			represented
+	default:
+		return historicalcontract.
+				SeriesStatusPartial,
+			represented
+	}
+}
+
+func temporalCoverageScore(
+	points []historicalcontract.Point,
+) float64 {
+	if len(points) == 0 {
+		return 0
+	}
+
+	total := 0.0
+	compensation := 0.0
+	for _, point := range points {
+		corrected :=
+			point.CoverageRatio - compensation
+		next := total + corrected
+		compensation = (next - total) - corrected
+		total = next
+	}
+
+	score := total / float64(len(points))
+	if math.IsNaN(score) ||
+		math.IsInf(score, 0) ||
+		score < 0 {
+		return 0
+	}
+	if score > 1 {
+		return 1
+	}
+	return score
+}
+
+func checkedSampleCount(
+	points []historicalcontract.Point,
+) (int, error) {
+	total := 0
+	maximum := int(^uint(0) >> 1)
+	for _, point := range points {
+		if point.SampleCount < 0 {
+			return 0, ErrBucketSampleCountInvalid
+		}
+		if point.SampleCount >
+			maximum-total {
+			return 0, ErrSampleCountOverflow
+		}
+		total += point.SampleCount
+	}
+	return total, nil
 }
 
 func resolveWindow(
@@ -280,28 +424,24 @@ func resolveWindow(
 
 func buildPoint(
 	value BucketValue,
-	coverageRatio float64,
 ) (historicalcontract.Point, error) {
-	status := historicalcontract.BucketStatusComplete
+	if err := validateCoverageEvidence(
+		value,
+	); err != nil {
+		return historicalcontract.Point{}, err
+	}
+
+	status := historicalcontract.BucketStatus(
+		value.Coverage.State,
+	)
 	limitations := []historicalcontract.Limitation{}
 
-	switch {
-	case coverageRatio == 0:
-		if value.Value != 0 ||
-			value.SampleCount != 0 {
-			return historicalcontract.Point{},
-				ErrUnavailableBucketHasData
-		}
-		status = historicalcontract.
-			BucketStatusUnavailable
-
-	case coverageRatio < 1:
-		status = historicalcontract.
-			BucketStatusPartial
+	if value.Coverage.State ==
+		CoverageStatePartial {
 		limitations = []historicalcontract.Limitation{
 			{
 				Code:    "historical_bucket_partial_coverage",
-				Message: "Bucket value is based on a bounded source read with conservative partial coverage.",
+				Message: "Bucket evidence is incomplete; coverage is a conservative lower bound derived from explicit dataset evidence.",
 				Scope:   "bucket",
 			},
 		}
@@ -313,12 +453,12 @@ func buildPoint(
 		Status:        status,
 		Value:         value.Value,
 		SampleCount:   value.SampleCount,
-		CoverageRatio: coverageRatio,
+		CoverageRatio: value.Coverage.Ratio,
 		Confidence: confidence(
-			coverageRatio,
+			value.Coverage.Ratio,
 			value.SampleCount,
 			"historical_bucket_coverage",
-			"Bucket confidence reflects represented source coverage.",
+			"Bucket confidence reflects explicit bucket coverage evidence.",
 		),
 		Limitations: limitations,
 	}, nil
@@ -354,14 +494,24 @@ func planLimitations(
 		len(plan.Exclusions)+1,
 	)
 
-	for _, exclusion := range plan.Exclusions {
+	for index, exclusion := range plan.Exclusions {
 		result = append(
 			result,
 			historicalcontract.Limitation{
-				Code: "historical_window_" +
-					string(exclusion.Reason),
-				Message: "The requested historical window contains an excluded interval that is not represented by a complete analytical bucket.",
-				Scope:   "window",
+				Code: fmt.Sprintf(
+					"historical_window_%s_%d",
+					exclusion.Reason,
+					index,
+				),
+				Message: fmt.Sprintf(
+					"The requested historical window excludes interval [%s, %s) because %s.",
+					exclusion.StartTime.UTC().
+						Format(time.RFC3339Nano),
+					exclusion.EndTime.UTC().
+						Format(time.RFC3339Nano),
+					exclusion.Reason,
+				),
+				Scope: "window",
 			},
 		)
 	}
@@ -382,29 +532,34 @@ func planLimitations(
 
 func normalizeSourceNames(
 	values []string,
-) []string {
+) ([]string, error) {
+	if len(values) == 0 {
+		return nil, ErrSourceNamesRequired
+	}
+
 	seen := make(map[string]struct{})
 	result := make([]string, 0, len(values))
 
 	for _, value := range values {
 		normalized := strings.TrimSpace(value)
-		if normalized == "" {
-			continue
+		if normalized == "" ||
+			normalized != value {
+			return nil, ErrSourceNameInvalid
 		}
 		if _, exists := seen[normalized]; exists {
-			continue
+			return nil, ErrSourceNameDuplicate
 		}
 		seen[normalized] = struct{}{}
 		result = append(result, normalized)
 	}
 
 	sort.Strings(result)
-	return result
+	return result, nil
 }
 
 func normalizeLimitations(
 	values []historicalcontract.Limitation,
-) []historicalcontract.Limitation {
+) ([]historicalcontract.Limitation, error) {
 	seen := make(map[string]struct{})
 	result := make(
 		[]historicalcontract.Limitation,
@@ -413,29 +568,33 @@ func normalizeLimitations(
 	)
 
 	for _, value := range values {
-		value.Code = strings.TrimSpace(value.Code)
-		value.Message = strings.TrimSpace(
-			value.Message,
-		)
-		value.Scope = strings.TrimSpace(value.Scope)
-		if value.Code == "" ||
-			value.Message == "" ||
-			value.Scope == "" {
-			continue
+		normalized := historicalcontract.Limitation{
+			Code:    strings.TrimSpace(value.Code),
+			Message: strings.TrimSpace(value.Message),
+			Scope:   strings.TrimSpace(value.Scope),
+		}
+		if normalized.Code == "" ||
+			normalized.Message == "" ||
+			normalized.Scope == "" ||
+			normalized.Code != value.Code ||
+			normalized.Scope != value.Scope {
+			return nil, ErrLimitationInvalid
 		}
 
-		key := value.Scope + "\x00" + value.Code
+		key := normalized.Scope + "\x00" +
+			normalized.Code
 		if _, exists := seen[key]; exists {
-			continue
+			return nil, ErrLimitationDuplicate
 		}
 		seen[key] = struct{}{}
-		result = append(result, value)
+		result = append(result, normalized)
 	}
 
 	sort.SliceStable(
 		result,
 		func(left int, right int) bool {
-			if result[left].Scope != result[right].Scope {
+			if result[left].Scope !=
+				result[right].Scope {
 				return result[left].Scope <
 					result[right].Scope
 			}
@@ -444,7 +603,22 @@ func normalizeLimitations(
 		},
 	)
 
-	return result
+	return result, nil
+}
+
+func appendGeneratedLimitation(
+	values []historicalcontract.Limitation,
+	value historicalcontract.Limitation,
+) ([]historicalcontract.Limitation, error) {
+	return normalizeLimitations(
+		append(
+			append(
+				[]historicalcontract.Limitation(nil),
+				values...,
+			),
+			value,
+		),
+	)
 }
 
 func validateResult(
