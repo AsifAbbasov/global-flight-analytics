@@ -1133,6 +1133,7 @@ func validateTrajectoryFeatures(
 			features.Geographical.Evidence.Limitations,
 			flightfeatures.GeographicalLimitationSegmentEndpointFallback,
 		) &&
+		trajectoryPathEfficiencyComparable(item.Evidence) &&
 		finite(item.PathEfficiencyRatio) {
 		expectedRatio :=
 			features.Geographical.GreatCircleDistanceKM /

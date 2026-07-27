@@ -1,210 +1,172 @@
 package trajectorybuilder
 
 import (
+	"context"
 	"fmt"
-	"sort"
+	"math"
 	"time"
 
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
 )
 
-type ratioMetric struct {
-	available bool
-	value     float64
-}
-
 func calculateCoverageRatio(
-	item trajectory.FlightTrajectory,
-) (
-	ratioMetric,
-	[]flightfeatures.FeatureLimitation,
-) {
-	if item.StartTime.IsZero() ||
-		item.EndTime.IsZero() {
-		return ratioMetric{},
-			[]flightfeatures.FeatureLimitation{
-				{
-					Code:    "trajectory_coverage_window_unavailable",
-					Message: "Trajectory start and end timestamps are required for coverage ratio calculation.",
-				},
-			}
-	}
-	if item.EndTime.Before(item.StartTime) {
-		return ratioMetric{},
-			[]flightfeatures.FeatureLimitation{
-				{
-					Code:    "trajectory_coverage_window_invalid",
-					Message: "Trajectory end time is before start time, so coverage ratio cannot be calculated.",
-				},
-			}
+	ctx context.Context,
+	evidence canonicalEvidence,
+	segmentSummary segmentStatusSummary,
+) (ratioMetric, []flightfeatures.FeatureLimitation, error) {
+	if !evidence.windowAvailable {
+		return ratioMetric{}, []flightfeatures.FeatureLimitation{{
+			Code:    flightfeatures.TrajectoryLimitationCoverageWindowUnavailable,
+			Message: "Trajectory start and end timestamps are required for coverage ratio calculation.",
+		}}, nil
 	}
 
-	windowStart := item.StartTime.UTC()
-	windowEnd := item.EndTime.UTC()
-	windowDuration := windowEnd.Sub(windowStart)
+	windowDuration := evidence.windowEnd.Sub(evidence.windowStart)
+	usableSegmentCount := 0
+	if segmentSummary.available {
+		usableSegmentCount = segmentSummary.observedCount +
+			segmentSummary.interpolatedCount +
+			segmentSummary.estimatedCount
+	}
+	hasObservationEvidence := usableSegmentCount > 0 ||
+		(windowDuration == 0 && len(evidence.points) > 0)
+	if !hasObservationEvidence {
+		return ratioMetric{}, []flightfeatures.FeatureLimitation{{
+			Code:    flightfeatures.TrajectoryLimitationCoverageObservationEvidenceUnavailable,
+			Message: "Positive-duration coverage requires at least one materialized non-invalid trajectory segment; a zero-duration instant requires one canonical point. Absence of coverage gaps alone does not prove observation coverage.",
+		}}, nil
+	}
 
-	if windowDuration == 0 {
-		if len(item.CoverageGaps) == 0 {
-			return ratioMetric{
-				available: true,
-				value:     1,
-			}, nil
+	intervals := make([]timeInterval, 0, len(evidence.gaps))
+	limitations := make([]flightfeatures.FeatureLimitation, 0, 4)
+	outsideCount := 0
+	durationMismatchCount := 0
+
+	for index, gap := range evidence.gaps {
+		if index%contextCheckInterval == 0 {
+			if err := ctx.Err(); err != nil {
+				return ratioMetric{}, nil, err
+			}
 		}
-
-		return ratioMetric{},
-			[]flightfeatures.FeatureLimitation{
-				{
-					Code:    "trajectory_coverage_zero_duration_with_gaps",
-					Message: "Coverage ratio is undefined for a zero-duration trajectory window containing coverage gaps.",
-				},
-			}
-	}
-
-	intervals := make(
-		[]timeInterval,
-		0,
-		len(item.CoverageGaps),
-	)
-	limitations := make(
-		[]flightfeatures.FeatureLimitation,
-		0,
-		2,
-	)
-
-	for _, gap := range item.CoverageGaps {
-		if gap.StartTime.IsZero() ||
-			gap.EndTime.IsZero() ||
-			gap.EndTime.Before(gap.StartTime) {
-			return ratioMetric{},
-				append(
-					limitations,
-					flightfeatures.FeatureLimitation{
-						Code: "trajectory_coverage_gap_window_invalid",
-						Message: fmt.Sprintf(
-							"Coverage gap %q has missing or reversed timestamps, so coverage ratio cannot be calculated reliably.",
-							gap.ID,
-						),
-					},
-				)
+		if gap.StartTime.IsZero() || gap.EndTime.IsZero() || gap.EndTime.Before(gap.StartTime) {
+			return ratioMetric{}, append(limitations, flightfeatures.FeatureLimitation{
+				Code: flightfeatures.TrajectoryLimitationCoverageGapWindowInvalid,
+				Message: fmt.Sprintf(
+					"Coverage gap %q has missing or reversed timestamps, so coverage ratio cannot be calculated reliably.",
+					gap.ID,
+				),
+			}), nil
 		}
 
 		gapStart := gap.StartTime.UTC()
 		gapEnd := gap.EndTime.UTC()
-		actualDurationSeconds := int64(
-			gapEnd.Sub(gapStart) / time.Second,
-		)
-		if gap.DurationSeconds != 0 &&
-			gap.DurationSeconds != actualDurationSeconds {
-			limitations = append(
-				limitations,
-				flightfeatures.FeatureLimitation{
-					Code: "trajectory_coverage_gap_duration_metadata_mismatch",
-					Message: fmt.Sprintf(
-						"Coverage gap %q duration metadata does not match its timestamps.",
-						gap.ID,
-					),
-				},
-			)
+		actualDurationSeconds := flightfeatures.TemporalDurationSeconds(gapStart, gapEnd)
+		if gap.DurationSeconds != actualDurationSeconds {
+			durationMismatchCount++
 		}
 
-		if gapEnd.Before(windowStart) ||
-			gapStart.After(windowEnd) ||
-			gapEnd.Equal(windowStart) ||
-			gapStart.Equal(windowEnd) {
-			limitations = append(
-				limitations,
-				flightfeatures.FeatureLimitation{
-					Code: "trajectory_coverage_gap_outside_window",
-					Message: fmt.Sprintf(
-						"Coverage gap %q lies outside the authoritative trajectory window and was excluded.",
-						gap.ID,
-					),
-				},
-			)
+		if !gapEnd.After(evidence.windowStart) || !gapStart.Before(evidence.windowEnd) {
+			outsideCount++
 			continue
 		}
-
-		if gapStart.Before(windowStart) {
-			gapStart = windowStart
+		if gapStart.Before(evidence.windowStart) {
+			gapStart = evidence.windowStart
 		}
-		if gapEnd.After(windowEnd) {
-			gapEnd = windowEnd
+		if gapEnd.After(evidence.windowEnd) {
+			gapEnd = evidence.windowEnd
 		}
-		if !gapEnd.After(gapStart) {
-			continue
+		if gapEnd.After(gapStart) {
+			intervals = append(intervals, timeInterval{start: gapStart, end: gapEnd})
 		}
-
-		intervals = append(
-			intervals,
-			timeInterval{
-				start: gapStart,
-				end:   gapEnd,
-			},
-		)
 	}
 
-	uncoveredDuration := unionDuration(intervals)
-	coverage := 1 -
-		uncoveredDuration.Seconds()/
-			windowDuration.Seconds()
+	if outsideCount > 0 {
+		limitations = append(limitations, flightfeatures.FeatureLimitation{
+			Code: flightfeatures.TrajectoryLimitationCoverageGapOutsideWindow,
+			Message: fmt.Sprintf(
+				"%d coverage gaps lie outside the authoritative trajectory window and were excluded.",
+				outsideCount,
+			),
+		})
+	}
+	if durationMismatchCount > 0 {
+		limitations = append(limitations, flightfeatures.FeatureLimitation{
+			Code: flightfeatures.TrajectoryLimitationCoverageGapDurationMismatch,
+			Message: fmt.Sprintf(
+				"%d coverage-gap duration metadata values do not match timestamp durations under the shared truncate-fractional-seconds policy.",
+				durationMismatchCount,
+			),
+		})
+	}
+
+	if windowDuration == 0 {
+		return ratioMetric{available: true, value: 1}, limitations, nil
+	}
+	uncoveredDuration, err := unionDurationContext(ctx, intervals)
+	if err != nil {
+		return ratioMetric{}, nil, err
+	}
+	coverage := 1 - uncoveredDuration.Seconds()/windowDuration.Seconds()
+	if math.IsNaN(coverage) || math.IsInf(coverage, 0) {
+		return ratioMetric{}, append(limitations, flightfeatures.FeatureLimitation{
+			Code:    flightfeatures.TrajectoryLimitationCoverageAggregateNonFinite,
+			Message: "Coverage aggregation produced a non-finite ratio.",
+		}), nil
+	}
+	if coverage < -pathRatioTolerance || coverage > 1+pathRatioTolerance {
+		return ratioMetric{}, append(limitations, flightfeatures.FeatureLimitation{
+			Code:    flightfeatures.TrajectoryLimitationCoverageRatioOutOfRange,
+			Message: "Coverage ratio is outside the inclusive zero-to-one range beyond numerical tolerance.",
+		}), nil
+	}
 	if coverage < 0 {
 		coverage = 0
 	}
 	if coverage > 1 {
 		coverage = 1
 	}
-
-	return ratioMetric{
-		available: true,
-		value:     coverage,
-	}, limitations
+	return ratioMetric{available: true, value: coverage}, limitations, nil
 }
 
-func unionDuration(
+func unionDurationContext(
+	ctx context.Context,
 	intervals []timeInterval,
-) time.Duration {
+) (time.Duration, error) {
 	if len(intervals) == 0 {
-		return 0
+		return 0, nil
 	}
-
-	ordered := append(
-		[]timeInterval(nil),
-		intervals...,
-	)
-	sort.SliceStable(
-		ordered,
-		func(left int, right int) bool {
-			if ordered[left].start.Equal(
-				ordered[right].start,
-			) {
-				return ordered[left].end.Before(
-					ordered[right].end,
-				)
+	ordered := append([]timeInterval(nil), intervals...)
+	// canonicalEvidence already sorts gaps, but clipping can equalize starts.
+	for index := 1; index < len(ordered); index++ {
+		if ordered[index].start.Before(ordered[index-1].start) {
+			// Stable insertion keeps this helper allocation-free beyond the copy.
+			value := ordered[index]
+			position := index
+			for position > 0 && value.start.Before(ordered[position-1].start) {
+				ordered[position] = ordered[position-1]
+				position--
 			}
-
-			return ordered[left].start.Before(
-				ordered[right].start,
-			)
-		},
-	)
-
+			ordered[position] = value
+		}
+	}
 	currentStart := ordered[0].start
 	currentEnd := ordered[0].end
 	total := time.Duration(0)
-
-	for _, interval := range ordered[1:] {
+	for index, interval := range ordered[1:] {
+		if index%contextCheckInterval == 0 {
+			if err := ctx.Err(); err != nil {
+				return 0, err
+			}
+		}
 		if !interval.start.After(currentEnd) {
 			if interval.end.After(currentEnd) {
 				currentEnd = interval.end
 			}
 			continue
 		}
-
 		total += currentEnd.Sub(currentStart)
 		currentStart = interval.start
 		currentEnd = interval.end
 	}
-
-	return total + currentEnd.Sub(currentStart)
+	return total + currentEnd.Sub(currentStart), nil
 }

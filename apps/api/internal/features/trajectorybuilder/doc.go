@@ -1,9 +1,11 @@
-// Package trajectorybuilder derives deterministic trajectory-structure
-// features from persisted trajectory points, segments, and coverage gaps.
+// Package trajectorybuilder derives deterministic trajectory-structure features
+// from one canonical evidence view.
 //
-// Collection lengths are authoritative for count features. Persisted count
-// metadata is retained only as consistency evidence. Sampling metrics use a
-// sorted copy of non-zero point timestamps, coverage uses the union of
-// clipped gap intervals, and path efficiency uses the same shortest-arc
-// geographic semantics as the geographical feature builder.
+// Point observations are filtered to the authoritative trajectory window,
+// ordered deterministically and collapsed to one point per observation instant.
+// Sampling and point-path calculations consume that same canonical sequence.
+// Coverage gaps split path continuity, and segment fallback treats every usable
+// segment as an independent observed part so unobserved jumps are never counted
+// as flown distance. Count availability, zero-valued metrics and persisted
+// point-count fallback are represented explicitly through group evidence.
 package trajectorybuilder

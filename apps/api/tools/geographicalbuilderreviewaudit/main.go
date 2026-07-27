@@ -146,7 +146,7 @@ func main() {
 		{
 			path: "apps/api/internal/features/flightfeatures/model.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v10`,
+				`flight-feature-processing-pipeline-v11`,
 				"western circular envelope bound",
 				"eastern circular envelope bound",
 			},
@@ -154,13 +154,13 @@ func main() {
 		{
 			path: "apps/api/internal/features/validator/contracts.go",
 			required: []string{
-				`flight-feature-validator-v4`,
+				`flight-feature-validator-v5`,
 			},
 		},
 		{
 			path: "apps/api/internal/features/featurepipeline/contracts.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v10`,
+				`flight-feature-processing-pipeline-v11`,
 			},
 		},
 		{

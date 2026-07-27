@@ -518,3 +518,8 @@ Geographical feature extraction now filters and chronologically orders productio
 ## Operational Builder Review Hardening
 
 Feature materialization now opts into flight-state point hydration inside the existing repeatable-read snapshot without expanding ordinary trajectory reads, preserves nullable operational telemetry through TrackPoint availability flags, filters and orders operational evidence, rejects invalid headings and conflicting ground altitude, avoid altitude-source mixing and heading-gap bridging, and use explicit observation-weighted compensated aggregation. Processing generation ten isolates the corrected output semantics.
+<!-- TRAJECTORY-BUILDER-REVIEW-HARDENING:README -->
+
+## Trajectory Builder Review Hardening
+
+Trajectory feature extraction now uses one canonical point-evidence sequence for counts, sampling, and path metrics; collapses duplicate timestamps; filters the authoritative trajectory window; prevents coverage-gap and segment-gap path bridging; requires observation evidence for coverage; derives quality support from group evidence; and applies explicit compensated arithmetic and ratio-tolerance policies. Processing generation eleven and Validator generation five isolate the corrected semantics.

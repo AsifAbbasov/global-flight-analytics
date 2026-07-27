@@ -11,7 +11,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/validator"
 )
 
-const Version = "flight-feature-processing-pipeline-v10"
+const Version = "flight-feature-processing-pipeline-v11"
 
 type Stage string
 

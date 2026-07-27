@@ -304,7 +304,7 @@ func TestCurrentVersionsRemainStable(t *testing.T) {
 		TemporalBuilder:     "temporal-feature-builder-v2",
 		GeographicalBuilder: "geographical-feature-builder-v3",
 		OperationalBuilder:  "operational-feature-builder-v2",
-		TrajectoryBuilder:   "trajectory-feature-builder-v1",
+		TrajectoryBuilder:   "trajectory-feature-builder-v2",
 	}
 
 	if got := CurrentVersions(); !reflect.DeepEqual(got, want) {

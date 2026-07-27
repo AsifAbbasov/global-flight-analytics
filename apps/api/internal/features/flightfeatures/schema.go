@@ -310,7 +310,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeInteger,
 		Unit:        "points",
 		Required:    true,
-		Description: "Number of trajectory points used as evidence.",
+		Description: "Number of unique temporally eligible canonical point observations, or persisted point-count metadata when point records are intentionally unmaterialized.",
 	},
 	{
 		Name:        "trajectory.segment_count",
@@ -406,7 +406,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "seconds",
 		Required:    true,
-		Description: "Mean time between consecutive usable points.",
+		Description: "Compensated mean interval between unique chronological canonical point timestamps.",
 	},
 	{
 		Name:        "trajectory.maximum_sampling_gap_seconds",
@@ -414,7 +414,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "seconds",
 		Required:    true,
-		Description: "Maximum time between consecutive usable points.",
+		Description: "Maximum interval between unique chronological canonical point timestamps.",
 	},
 	{
 		Name:        "trajectory.coverage_ratio",
@@ -422,7 +422,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "ratio",
 		Required:    true,
-		Description: "Observed temporal coverage relative to the feature window.",
+		Description: "Observation-supported temporal coverage after clipping and unioning declared coverage gaps inside the trajectory window.",
 	},
 	{
 		Name:        "trajectory.path_efficiency_ratio",
@@ -430,7 +430,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "ratio",
 		Required:    true,
-		Description: "Great-circle endpoint distance divided by observed path distance.",
+		Description: "Sum of direct great-circle distances divided by observed distance inside continuous path parts; declared gaps and segment discontinuities are never bridged.",
 	},
 	{
 		Name:        "aircraft.registration",

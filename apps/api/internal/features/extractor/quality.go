@@ -30,17 +30,14 @@ func buildInitialQuality(
 	requiredTotal := 0
 	optionalAvailable := 0
 	optionalTotal := 0
-	supportingPointCount := item.PointCount
-	if len(item.Points) > supportingPointCount {
-		supportingPointCount = len(item.Points)
-	}
-	if supportingPointCount < 0 {
+	if item.PointCount < 0 {
 		return flightfeatures.FeatureQuality{}, fmt.Errorf(
 			"%w: trajectory point count=%d",
 			ErrInvalidSupportingPointCount,
-			supportingPointCount,
+			item.PointCount,
 		)
 	}
+	supportingPointCount := 0
 
 	inputQualityScore := features.Trajectory.TrajectoryQualityScore
 	if math.IsNaN(inputQualityScore) ||
