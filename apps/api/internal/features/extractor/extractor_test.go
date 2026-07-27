@@ -194,7 +194,7 @@ func TestExtractorAssemblesFeaturesAndProvenance(t *testing.T) {
 			Evidence: flightfeatures.GroupEvidence{
 				Status:               flightfeatures.AvailabilityStatusPartial,
 				AvailableFieldCount:  9,
-				TotalFieldCount:      11,
+				TotalFieldCount:      15,
 				SupportingPointCount: 4,
 				Limitations: []flightfeatures.FeatureLimitation{
 					duplicateLimitation,
@@ -305,7 +305,7 @@ func TestExtractorAssemblesFeaturesAndProvenance(t *testing.T) {
 	}
 
 	wantCompleteness := float64(8+9+11+16) /
-		float64(8+11+11+16)
+		float64(8+15+11+16)
 	if math.Abs(
 		result.Quality.CompletenessScore-wantCompleteness,
 	) > 1e-12 {
@@ -585,8 +585,8 @@ func TestExtractorGivesEachBuilderIndependentTrajectoryCopy(
 		features: flightfeatures.GeographicalFeatures{
 			Evidence: flightfeatures.GroupEvidence{
 				Status:              flightfeatures.AvailabilityStatusAvailable,
-				AvailableFieldCount: 11,
-				TotalFieldCount:     11,
+				AvailableFieldCount: 15,
+				TotalFieldCount:     15,
 			},
 		},
 	}
@@ -681,8 +681,8 @@ func newTestExtractor(
 			features: flightfeatures.GeographicalFeatures{
 				Evidence: flightfeatures.GroupEvidence{
 					Status:              flightfeatures.AvailabilityStatusAvailable,
-					TotalFieldCount:     11,
-					AvailableFieldCount: 11,
+					TotalFieldCount:     15,
+					AvailableFieldCount: 15,
 				},
 			},
 		},

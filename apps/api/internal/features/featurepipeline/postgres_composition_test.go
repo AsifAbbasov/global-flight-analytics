@@ -143,9 +143,9 @@ func TestCurrentPostgresVersionsRemainStable(
 ) {
 	want := Versions{
 		Composition:         "flight-feature-postgres-pipeline-composition-v1",
-		Pipeline:            "flight-feature-processing-pipeline-v6",
+		Pipeline:            "flight-feature-processing-pipeline-v7",
 		ExtractorComponents: extractorcomposition.CurrentVersions(),
-		Validator:           "flight-feature-validator-v2",
+		Validator:           "flight-feature-validator-v3",
 		Store:               "flight-feature-postgres-store-v2",
 	}
 

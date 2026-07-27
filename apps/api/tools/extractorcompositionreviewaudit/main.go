@@ -58,7 +58,7 @@ func main() {
 		"apps/api/internal/features/flightfeatures/model.go",
 		"ProcessingIdentityFingerprint",
 		"ProcessingIdentity              ProcessingIdentity",
-		`flight-feature-processing-pipeline-v6`,
+		`flight-feature-processing-pipeline-v7`,
 	)
 	require(
 		"apps/api/internal/features/extractorcomposition/contracts.go",

@@ -8,7 +8,7 @@ type ProcessingVersion string
 const SchemaVersionV1 SchemaVersion = "flight-features-v1"
 
 const (
-	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v6"
+	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v7"
 	LegacyProcessingVersion  ProcessingVersion = "flight-feature-processing-legacy-v1"
 )
 
@@ -114,7 +114,11 @@ type GeographicalFeatures struct {
 	MaximumDisplacementKM     float64
 	CrossesAntimeridian       bool
 	UniqueGeographicCellCount int
-	GeographicCellPrecision   int
+	// GeographicCellPrecision records the processing-configuration mirror
+	// used to derive geographic-cell aggregation. The authoritative value is
+	// Provenance.ProcessingIdentity.GeographicCellPrecision, and this mirror is
+	// intentionally excluded from analytical schema field counts.
+	GeographicCellPrecision int
 }
 
 type OperationalFeatures struct {

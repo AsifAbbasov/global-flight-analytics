@@ -130,6 +130,38 @@ var currentDefinitions = []FeatureDefinition{
 		Description: "Longitude of the final usable trajectory point.",
 	},
 	{
+		Name:        "geographical.minimum_latitude",
+		Group:       FeatureGroupGeographical,
+		ValueType:   FeatureValueTypeFloat64,
+		Unit:        "degrees",
+		Required:    true,
+		Description: "Minimum latitude among usable trajectory points.",
+	},
+	{
+		Name:        "geographical.maximum_latitude",
+		Group:       FeatureGroupGeographical,
+		ValueType:   FeatureValueTypeFloat64,
+		Unit:        "degrees",
+		Required:    true,
+		Description: "Maximum latitude among usable trajectory points.",
+	},
+	{
+		Name:        "geographical.minimum_longitude",
+		Group:       FeatureGroupGeographical,
+		ValueType:   FeatureValueTypeFloat64,
+		Unit:        "degrees",
+		Required:    true,
+		Description: "Western circular longitude bound for usable trajectory points.",
+	},
+	{
+		Name:        "geographical.maximum_longitude",
+		Group:       FeatureGroupGeographical,
+		ValueType:   FeatureValueTypeFloat64,
+		Unit:        "degrees",
+		Required:    true,
+		Description: "Eastern circular longitude bound for usable trajectory points.",
+	},
+	{
 		Name:        "geographical.latitude_span_degrees",
 		Group:       FeatureGroupGeographical,
 		ValueType:   FeatureValueTypeFloat64,
@@ -445,23 +477,18 @@ var currentDefinitions = []FeatureDefinition{
 }
 
 func CurrentSchema() Schema {
-	return Schema{
-		Version: SchemaVersionV1,
-		Definitions: append(
-			[]FeatureDefinition(nil),
-			currentDefinitions...,
-		),
+	schema, found := SchemaForVersion(SchemaVersionV1)
+	if !found {
+		panic("current flight feature schema is not registered")
 	}
+	return schema
 }
 
 func DefinitionByName(
 	name string,
 ) (FeatureDefinition, bool) {
-	for _, definition := range currentDefinitions {
-		if definition.Name == name {
-			return definition, true
-		}
-	}
-
-	return FeatureDefinition{}, false
+	return DefinitionByNameForVersion(
+		SchemaVersionV1,
+		name,
+	)
 }

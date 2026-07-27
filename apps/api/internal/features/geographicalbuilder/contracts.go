@@ -1,9 +1,11 @@
 package geographicalbuilder
 
-const Version = "geographical-feature-builder-v1"
+import "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/features/flightfeatures"
+
+const Version = "geographical-feature-builder-v2"
 
 const (
-	GeographicalFeatureFieldCount  = 11
+	GeographicalFeatureFieldCount  = flightfeatures.GeographicalRequiredFeatureFieldCount
 	DefaultGeographicCellPrecision = 2
 )
 

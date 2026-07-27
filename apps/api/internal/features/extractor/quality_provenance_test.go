@@ -12,7 +12,7 @@ import (
 func TestBuildInitialQualitySeparatesOptionalCoverage(t *testing.T) {
 	features := flightfeatures.FlightFeatures{
 		Temporal:     flightfeatures.TemporalFeatures{Evidence: qualityProvenanceEvidence(8)},
-		Geographical: flightfeatures.GeographicalFeatures{Evidence: qualityProvenanceEvidence(11)},
+		Geographical: flightfeatures.GeographicalFeatures{Evidence: qualityProvenanceEvidence(flightfeatures.GeographicalRequiredFeatureFieldCount)},
 		Operational:  flightfeatures.OperationalFeatures{Evidence: qualityProvenanceEvidence(11)},
 		Trajectory: flightfeatures.TrajectoryFeatures{
 			Evidence:               qualityProvenanceEvidence(16),

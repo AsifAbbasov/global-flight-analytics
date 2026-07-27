@@ -209,7 +209,7 @@ func TestNewBuildsCompleteProductionExtractor(
 		t,
 		"geographical",
 		features.Geographical.Evidence,
-		11,
+		flightfeatures.GeographicalRequiredFeatureFieldCount,
 		3,
 	)
 	assertCompleteEvidence(
@@ -302,7 +302,7 @@ func TestCurrentVersionsRemainStable(t *testing.T) {
 		Extractor:           "flight-feature-extractor-v6",
 		AircraftProvider:    "aircraft-feature-provider-v4",
 		TemporalBuilder:     "temporal-feature-builder-v1",
-		GeographicalBuilder: "geographical-feature-builder-v1",
+		GeographicalBuilder: "geographical-feature-builder-v2",
 		OperationalBuilder:  "operational-feature-builder-v1",
 		TrajectoryBuilder:   "trajectory-feature-builder-v1",
 	}

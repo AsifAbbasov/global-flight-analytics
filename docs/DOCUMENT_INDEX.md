@@ -1029,3 +1029,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 117 — Feature Store Review Hardening
 
 `117_FEATURE_STORE_REVIEW_HARDENING.md` records semantic output fingerprinting, versioned persistence data transfer objects, strict Store implementation conformance, complete validation proof, bounded Memory Store capacity, permanent tests and Continuous Integration audit closure.
+
+
+<!-- FLIGHT-FEATURES-SCHEMA-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 118 — Flight Features Schema Review Hardening
+
+`118_FLIGHT_FEATURES_SCHEMA_REVIEW_HARDENING.md` records geographical schema-model alignment, the fifteen-field completeness denominator, centralized group-count ownership, version-aware schema lookup, processing generation seven, stale and rejected finding classifications, permanent tests and Continuous Integration audit closure.

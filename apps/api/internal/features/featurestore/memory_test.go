@@ -790,8 +790,8 @@ func validStoredFeatures(
 		Geographical: flightfeatures.GeographicalFeatures{
 			Evidence: flightfeatures.GroupEvidence{
 				Status:               flightfeatures.AvailabilityStatusAvailable,
-				AvailableFieldCount:  11,
-				TotalFieldCount:      11,
+				AvailableFieldCount:  15,
+				TotalFieldCount:      15,
 				SupportingPointCount: 4,
 			},
 		},

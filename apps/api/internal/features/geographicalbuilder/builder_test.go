@@ -604,10 +604,10 @@ func TestCloneFeaturesDoesNotShareLimitations(t *testing.T) {
 func TestGeographicalBuilderContractConstantsRemainStable(
 	t *testing.T,
 ) {
-	if Version != "geographical-feature-builder-v1" {
+	if Version != "geographical-feature-builder-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
-	if GeographicalFeatureFieldCount != 11 {
+	if GeographicalFeatureFieldCount != flightfeatures.GeographicalRequiredFeatureFieldCount {
 		t.Fatalf(
 			"GeographicalFeatureFieldCount = %d",
 			GeographicalFeatureFieldCount,

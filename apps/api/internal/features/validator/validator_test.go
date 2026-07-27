@@ -245,7 +245,7 @@ func TestValidatorTreatsPartialRelationshipFailureAsWarning(
 		flightfeatures.AvailabilityStatusPartial
 	input.Temporal.Evidence.AvailableFieldCount = 7
 	input.Temporal.StartHourUTC = 4
-	input.Quality.CompletenessScore = float64(45) / 46
+	input.Quality.CompletenessScore = float64(49) / 50
 
 	result, report, err := validator.Validate(
 		context.Background(),
@@ -516,7 +516,7 @@ func validFeatures() flightfeatures.FlightFeatures {
 			CrossesUTCMidnight:  false,
 		},
 		Geographical: flightfeatures.GeographicalFeatures{
-			Evidence:                  availableEvidence(11, 4),
+			Evidence:                  availableEvidence(15, 4),
 			StartLatitude:             40,
 			StartLongitude:            50,
 			EndLatitude:               41,

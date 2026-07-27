@@ -95,11 +95,26 @@ func TestCurrentSchemaDefinitionsAreUniqueAndComplete(
 		FeatureGroupTrajectory,
 		FeatureGroupAircraft,
 	}
+	expectedCounts := map[FeatureGroup]int{
+		FeatureGroupTemporal:     TemporalRequiredFeatureFieldCount,
+		FeatureGroupGeographical: GeographicalRequiredFeatureFieldCount,
+		FeatureGroupOperational:  OperationalRequiredFeatureFieldCount,
+		FeatureGroupTrajectory:   TrajectoryRequiredFeatureFieldCount,
+		FeatureGroupAircraft:     AircraftOptionalFeatureFieldCount,
+	}
 	for _, group := range expectedGroups {
 		if groupCounts[group] == 0 {
 			t.Fatalf(
 				"schema has no definitions for group %q",
 				group,
+			)
+		}
+		if groupCounts[group] != expectedCounts[group] {
+			t.Fatalf(
+				"schema group %q count = %d, want %d",
+				group,
+				groupCounts[group],
+				expectedCounts[group],
 			)
 		}
 	}

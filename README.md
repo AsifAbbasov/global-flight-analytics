@@ -494,3 +494,9 @@ Aircraft metadata lookup now uses atomic cache and in-flight acquisition, caller
 ## Feature Store Review Hardening
 
 Feature snapshots now require matching input and semantic output fingerprints, use a versioned persistence payload, enforce shared Memory/PostgreSQL identity contracts, reject incomplete validation proof, and bound in-memory storage.
+
+<!-- FLIGHT-FEATURES-SCHEMA-REVIEW-HARDENING:README -->
+
+## Flight Features Schema Review Hardening
+
+The version-one registry now includes every geographical analytical field, completeness uses a fifteen-field geographical denominator, builder counts share the central schema contract, schema lookup is version-aware, and processing generation seven isolates the corrected semantics.

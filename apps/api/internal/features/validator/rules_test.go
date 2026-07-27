@@ -12,7 +12,7 @@ func TestSchemaFieldCountsMatchVersionOneContract(t *testing.T) {
 	got := schemaFieldCounts()
 	want := map[flightfeatures.FeatureGroup]int{
 		flightfeatures.FeatureGroupTemporal:     8,
-		flightfeatures.FeatureGroupGeographical: 11,
+		flightfeatures.FeatureGroupGeographical: flightfeatures.GeographicalRequiredFeatureFieldCount,
 		flightfeatures.FeatureGroupOperational:  11,
 		flightfeatures.FeatureGroupTrajectory:   16,
 		flightfeatures.FeatureGroupAircraft:     6,

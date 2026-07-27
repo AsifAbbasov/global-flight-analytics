@@ -6,10 +6,10 @@ func TestCurrentGroupRequirementCountsRemainExplicit(t *testing.T) {
 	counts := CurrentGroupRequirementCounts()
 
 	wantRequired := map[FeatureGroup]int{
-		FeatureGroupTemporal:     8,
-		FeatureGroupGeographical: 11,
-		FeatureGroupOperational:  11,
-		FeatureGroupTrajectory:   16,
+		FeatureGroupTemporal:     TemporalRequiredFeatureFieldCount,
+		FeatureGroupGeographical: GeographicalRequiredFeatureFieldCount,
+		FeatureGroupOperational:  OperationalRequiredFeatureFieldCount,
+		FeatureGroupTrajectory:   TrajectoryRequiredFeatureFieldCount,
 		FeatureGroupAircraft:     0,
 	}
 	wantOptional := map[FeatureGroup]int{
@@ -17,7 +17,7 @@ func TestCurrentGroupRequirementCountsRemainExplicit(t *testing.T) {
 		FeatureGroupGeographical: 0,
 		FeatureGroupOperational:  0,
 		FeatureGroupTrajectory:   0,
-		FeatureGroupAircraft:     6,
+		FeatureGroupAircraft:     AircraftOptionalFeatureFieldCount,
 	}
 
 	for group, required := range wantRequired {
