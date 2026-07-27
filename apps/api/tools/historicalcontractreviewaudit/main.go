@@ -29,7 +29,20 @@ func main() {
 		{path: "apps/api/internal/historicalintelligence/historicalcontract/historical_validation_evidence.go", contains: []string{"confidence_reason_contribution_mismatch", "contributionCompensation"}},
 		{path: "apps/api/internal/historicalintelligence/historicalcontract/schema.go", contains: []string{"schema_version", "points.confidence", "comparison.current_value", "provenance.source_names"}},
 		{path: "apps/api/internal/historicalintelligence/historicalseries/builder.go", contains: []string{"representedPointCount", "historical_data_unavailable"}},
-		{path: "apps/api/internal/historicalintelligence/historicalseries/builder_test.go", contains: []string{"TestBuildZeroCoverageSeriesIsUnavailable"}},
+		{
+			path: "apps/api/internal/historicalintelligence/historicalseries/builder_test.go",
+			contains: []string{
+				"TestBuildUsesBucketSpecificIncompleteCoverage",
+				"TestBuildZeroRepresentedCoverageIsUnavailable",
+				"TestBuildCompleteEmptyBucketsRemainComplete",
+				"TestBuildRequiresRealProvenanceTimestamps",
+				"TestBuildRejectsMalformedAndDuplicateLimitations",
+				"TestBuildRejectsSampleCountOverflow",
+			},
+			excludes: []string{
+				"TestBuildZeroCoverageSeriesIsUnavailable",
+			},
+		},
 		{path: "apps/api/internal/historicalintelligence/historicalmaterialization/materializer.go", contains: []string{"MetricSpecFor", "metricScopeAllowed"}, excludes: []string{"func scopeAllowed("}},
 		{path: "apps/api/internal/historicalintelligence/historicalairport/builder.go", contains: []string{"MetricSpecFor"}, excludes: []string{"airportMetricDefinition", "type airportMetricSpec"}},
 		{path: "apps/api/internal/historicalintelligence/historicalroute/builder.go", contains: []string{"MetricSpecFor"}, excludes: []string{"routeMetricDefinition", "type routeMetricSpec"}},
