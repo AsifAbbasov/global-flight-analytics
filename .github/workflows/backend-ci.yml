@@ -145,6 +145,9 @@ jobs:
       - name: Run historical window review audit
         run: go run ./tools/historicalwindowreviewaudit -strict
 
+      - name: Run historical read review audit
+        run: go run ./tools/historicalreadreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
@@ -500,7 +503,8 @@ jobs:
             ./internal/repository/postgres \
             ./internal/features/featurestore \
             ./internal/routeintelligence/routestore \
-            ./internal/historicalintelligence/historicalaggregate
+            ./internal/historicalintelligence/historicalaggregate \
+            ./internal/historicalintelligence/historicalread
 
       - name: Verify PostgreSQL feature pipeline
         env:

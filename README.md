@@ -543,3 +543,10 @@ Historical Intelligence now uses one production metric catalog for metric identi
 ## Historical Window Review Hardening
 
 Historical Intelligence window planning now enforces bucket limits during generation, preserves cancellation on every iteration, constructs previous windows without saturated `time.Duration`, canonicalizes mutable plans before analytics and fingerprinting, binds all derived evidence into fingerprint generation two, and keeps execution limits outside semantic identity. Custom one-bucket planning and optional absent windows remain intentional domain contracts.
+
+
+<!-- HISTORICAL-READ-REVIEW-HARDENING:README -->
+
+## Historical Read Review Hardening
+
+Historical Intelligence PostgreSQL reads now use one repository-owned read-only repeatable-read snapshot, reconstruct mutable flight and trajectory state from append-only version history, enforce correct half-open overlap semantics, select the latest route version by trajectory event time before bounded output, use exact matched-row coverage denominators, cap route payload bytes, preserve nullable identifier provenance, validate repository records, and enforce query-aligned indexes through migration `028`.

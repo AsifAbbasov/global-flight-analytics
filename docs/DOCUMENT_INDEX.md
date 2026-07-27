@@ -1082,3 +1082,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 125 — Historical Window Review Hardening
 
 `125_HISTORICAL_WINDOW_REVIEW_HARDENING.md` records calendar-safe bucket generation, exact previous-window construction, plan canonicalization and validation, semantic fingerprint generation two, cancellation hardening, accepted review findings, and intentionally retained custom and optional-window contracts.
+
+
+<!-- HISTORICAL-READ-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 126 — Historical Read Review Hardening
+
+`126_HISTORICAL_READ_REVIEW_HARDENING.md` records repository-owned repeatable-read snapshot consistency, half-open temporal predicates, append-only flight and trajectory version history, event-time route selection with pre-limit latest-version deduplication, exact matched-row coverage, bounded route payload bytes, nullable provenance preservation, explicit numeric rounding, record validation, query-aligned PostgreSQL indexes, permanent tests, and Continuous Integration enforcement.

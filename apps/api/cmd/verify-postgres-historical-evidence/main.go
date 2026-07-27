@@ -152,7 +152,7 @@ func run(
 	}
 
 	readRepository, err :=
-		historicalread.NewPostgresWithExecutor(
+		historicalread.NewPostgresInTransaction(
 			tx,
 		)
 	if err != nil {

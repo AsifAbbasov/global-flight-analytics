@@ -136,14 +136,16 @@ func Build(
 	)
 	coverageRatio := conservativeCoverage(
 		relevantCount,
-		limitReached,
+		request.Snapshot.TotalForSource(
+			definition.sourceName,
+		),
 	)
 	if limitReached {
 		limitations = append(
 			limitations,
 			historicalcontract.Limitation{
 				Code:    "historical_dataset_limit_reached",
-				Message: "The bounded historical read reached its dataset limit; represented coverage is a conservative lower bound.",
+				Message: "The bounded historical read reached its dataset limit; represented coverage uses the exact matched-row denominator.",
 				Scope:   "series",
 			},
 		)
@@ -397,17 +399,12 @@ func bucketIndex(
 
 func conservativeCoverage(
 	recordCount int,
-	limitReached bool,
+	matchedCount int64,
 ) float64 {
-	if !limitReached {
-		return 1
-	}
-	if recordCount <= 0 {
-		return 0.5
-	}
-
-	return float64(recordCount) /
-		float64(recordCount+1)
+	return historicalread.RepresentedCoverage(
+		recordCount,
+		matchedCount,
+	)
 }
 
 func latestFlightUpdate(
@@ -485,12 +482,22 @@ func boundedLatest(
 func trafficFingerprint(
 	request Request,
 ) string {
+	sourceName := ""
+	if definition, exists := metricDefinition(
+		request.MetricName,
+	); exists {
+		sourceName = definition.sourceName
+	}
 	records := []string{
 		Version,
 		string(request.MetricName),
 		request.Plan.Fingerprint,
 		request.Plan.AsOfTime.UTC().
 			Format(time.RFC3339Nano),
+		fmt.Sprintf(
+			"matched_count|%d",
+			request.Snapshot.TotalForSource(sourceName),
+		),
 	}
 
 	switch request.MetricName {

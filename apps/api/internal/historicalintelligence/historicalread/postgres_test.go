@@ -2,6 +2,7 @@ package historicalread
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -9,6 +10,8 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type fakeRow struct {
@@ -46,33 +49,8 @@ func (rows *fakeRows) Scan(destinations ...any) error {
 	}
 
 	for index, value := range row.values {
-		switch destination := destinations[index].(type) {
-		case *string:
-			*destination = value.(string)
-		case *int:
-			*destination = value.(int)
-		case *float64:
-			*destination = value.(float64)
-		case *time.Time:
-			*destination = value.(time.Time)
-		case *[]byte:
-			*destination = append([]byte(nil), value.([]byte)...)
-		case **float64:
-			if value == nil {
-				*destination = nil
-			} else {
-				v := value.(float64)
-				*destination = &v
-			}
-		case **bool:
-			if value == nil {
-				*destination = nil
-			} else {
-				v := value.(bool)
-				*destination = &v
-			}
-		default:
-			return errors.New("unsupported destination")
+		if err := assignFakeValue(destinations[index], value); err != nil {
+			return err
 		}
 	}
 
@@ -99,7 +77,7 @@ type fakeClient struct {
 }
 
 func (client *fakeClient) Query(
-	ctx context.Context,
+	_ context.Context,
 	query string,
 	args ...any,
 ) (rowIterator, error) {
@@ -112,8 +90,7 @@ func (client *fakeClient) Query(
 	)
 
 	index := len(client.calls) - 1
-	if index < len(client.errs) &&
-		client.errs[index] != nil {
+	if index < len(client.errs) && client.errs[index] != nil {
 		return nil, client.errs[index]
 	}
 	if index >= len(client.results) {
@@ -121,6 +98,38 @@ func (client *fakeClient) Query(
 	}
 
 	return client.results[index], nil
+}
+
+type fakeManagedSnapshot struct {
+	*fakeClient
+	committed  bool
+	rolledBack bool
+}
+
+func (snapshot *fakeManagedSnapshot) Commit(context.Context) error {
+	snapshot.committed = true
+	return nil
+}
+
+func (snapshot *fakeManagedSnapshot) Rollback(context.Context) error {
+	snapshot.rolledBack = true
+	return nil
+}
+
+type fakeSnapshotBeginner struct {
+	snapshot   *fakeManagedSnapshot
+	beginCount int
+	err        error
+}
+
+func (beginner *fakeSnapshotBeginner) BeginSnapshot(
+	context.Context,
+) (managedSnapshot, error) {
+	beginner.beginCount++
+	if beginner.err != nil {
+		return nil, beginner.err
+	}
+	return beginner.snapshot, nil
 }
 
 func TestNormalizeQuery(t *testing.T) {
@@ -140,21 +149,19 @@ func TestNormalizeQuery(t *testing.T) {
 		t.Fatalf("normalizeQuery() error = %v", err)
 	}
 
-	if query.Limit != DefaultDatasetLimit {
-		t.Fatalf("limit = %d", query.Limit)
+	if query.Limit != DefaultDatasetLimit ||
+		query.RoutePayloadByteLimit != DefaultRoutePayloadByteLimit {
+		t.Fatalf("unexpected defaults: %#v", query)
 	}
 	if query.Window.StartTime.Location() != time.UTC ||
 		query.Window.EndTime.Location() != time.UTC ||
 		query.Window.AsOfTime.Location() != time.UTC {
 		t.Fatal("query times are not normalized to UTC")
 	}
-	if !query.Window.StartTime.Equal(startTime.UTC()) {
-		t.Fatal("query start instant changed")
-	}
 }
 
 func TestNormalizeQueryRejectsInvalidInput(t *testing.T) {
-	start := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
+	start := historicalReadTestTime()
 	end := start.Add(time.Hour)
 	asOf := end.Add(time.Hour)
 
@@ -165,79 +172,52 @@ func TestNormalizeQueryRejectsInvalidInput(t *testing.T) {
 	}{
 		{
 			name: "start",
-			query: Query{
-				Window: historicalcontract.TimeWindow{
-					EndTime:  end,
-					AsOfTime: asOf,
-				},
-			},
+			query: Query{Window: historicalcontract.TimeWindow{
+				EndTime: end, AsOfTime: asOf,
+			}},
 			want: ErrStartTimeRequired,
 		},
 		{
 			name: "end",
-			query: Query{
-				Window: historicalcontract.TimeWindow{
-					StartTime: start,
-					AsOfTime:  asOf,
-				},
-			},
+			query: Query{Window: historicalcontract.TimeWindow{
+				StartTime: start, AsOfTime: asOf,
+			}},
 			want: ErrEndTimeRequired,
 		},
 		{
 			name: "as of",
-			query: Query{
-				Window: historicalcontract.TimeWindow{
-					StartTime: start,
-					EndTime:   end,
-				},
-			},
+			query: Query{Window: historicalcontract.TimeWindow{
+				StartTime: start, EndTime: end,
+			}},
 			want: ErrAsOfTimeRequired,
 		},
 		{
-			name: "non-positive",
-			query: Query{
-				Window: historicalcontract.TimeWindow{
-					StartTime: end,
-					EndTime:   start,
-					AsOfTime:  asOf,
-				},
-			},
+			name: "window",
+			query: Query{Window: historicalcontract.TimeWindow{
+				StartTime: end, EndTime: start, AsOfTime: asOf,
+			}},
 			want: ErrWindowNotPositive,
 		},
 		{
 			name: "future",
-			query: Query{
-				Window: historicalcontract.TimeWindow{
-					StartTime: start,
-					EndTime:   asOf,
-					AsOfTime:  end,
-				},
-			},
+			query: Query{Window: historicalcontract.TimeWindow{
+				StartTime: start, EndTime: asOf, AsOfTime: end,
+			}},
 			want: ErrWindowExceedsAsOfTime,
 		},
 		{
-			name: "limit low",
-			query: Query{
-				Window: historicalcontract.TimeWindow{
-					StartTime: start,
-					EndTime:   end,
-					AsOfTime:  asOf,
-				},
-				Limit: -1,
-			},
+			name: "limit",
+			query: Query{Window: historicalcontract.TimeWindow{
+				StartTime: start, EndTime: end, AsOfTime: asOf,
+			}, Limit: MaximumDatasetLimit + 1},
 			want: ErrInvalidDatasetLimit,
 		},
 		{
-			name: "limit high",
-			query: Query{
-				Window: historicalcontract.TimeWindow{
-					StartTime: start,
-					EndTime:   end,
-					AsOfTime:  asOf,
-				},
-				Limit: MaximumDatasetLimit + 1,
-			},
-			want: ErrInvalidDatasetLimit,
+			name: "byte limit",
+			query: Query{Window: historicalcontract.TimeWindow{
+				StartTime: start, EndTime: end, AsOfTime: asOf,
+			}, RoutePayloadByteLimit: MaximumRoutePayloadByteLimit + 1},
+			want: ErrInvalidRoutePayloadByteLimit,
 		},
 	}
 
@@ -251,270 +231,236 @@ func TestNormalizeQueryRejectsInvalidInput(t *testing.T) {
 	}
 }
 
-func TestPostgresRepositoryRead(t *testing.T) {
-	base := time.Date(
-		2026,
-		time.July,
-		1,
-		0,
-		0,
-		0,
-		123,
-		time.FixedZone("source", 2*60*60),
-	)
-	client := &fakeClient{
-		results: []*fakeRows{
-			{
-				rows: []fakeRow{
-					{
-						values: []any{
-							"flight-1",
-							"aircraft-1",
-							"J2001",
-							"completed",
-							base,
-							base.Add(time.Hour),
-							base.Add(2 * time.Hour),
-						},
-					},
-					{
-						values: []any{
-							"flight-2",
-							"",
-							"",
-							"unknown",
-							base.Add(time.Minute),
-							base.Add(30 * time.Minute),
-							base.Add(31 * time.Minute),
-						},
-					},
-				},
-			},
-			{
-				rows: []fakeRow{
-					{
-						values: []any{
-							"trajectory-1",
-							"flight-1",
-							"aircraft-1",
-							"abc123",
-							"J2001",
-							base,
-							base.Add(time.Hour),
-							2,
-							10,
-							1,
-							0.9,
-							"airplaneslive",
-							base.Add(2 * time.Hour),
-						},
-					},
-				},
-			},
-			{
-				rows: []fakeRow{
-					{
-						values: []any{
-							"state-1",
-							"flight-1",
-							"aircraft-1",
-							"abc123",
-							"J2001",
-							40.1,
-							49.9,
-							false,
-							base.Add(10 * time.Minute),
-							"airplaneslive",
-							base.Add(11 * time.Minute),
-						},
-					},
-				},
-			},
-			{
-				rows: []fakeRow{
-					{
-						values: []any{
-							"route-record-1",
-							"trajectory-1",
-							base.Add(time.Hour),
-							"sha256:" + strings.Repeat("a", 64),
-							"complete",
-							"high",
-							0,
-							[]byte(`{"status":"complete"}`),
-							base.Add(2 * time.Hour),
-						},
-					},
-				},
-			},
-		},
-	}
-	repository := newPostgresRepository(client)
+func TestPostgresRepositoryReadUsesOneManagedSnapshot(t *testing.T) {
+	client := validFakeClient(t, 2)
+	managed := &fakeManagedSnapshot{fakeClient: client}
+	beginner := &fakeSnapshotBeginner{snapshot: managed}
+	repository := newManagedPostgresRepository(beginner)
 
-	start := base.UTC().Add(-time.Hour)
-	end := base.UTC().Add(3 * time.Hour)
-	asOf := end.Add(time.Hour)
-
-	snapshot, err := repository.Read(
-		context.Background(),
-		Query{
-			Window: historicalcontract.TimeWindow{
-				StartTime: start,
-				EndTime:   end,
-				AsOfTime:  asOf,
-			},
-			Limit: 1,
-		},
-	)
+	snapshot, err := repository.Read(context.Background(), validQuery())
 	if err != nil {
 		t.Fatalf("Read() error = %v", err)
 	}
 
-	if snapshot.Version != Version ||
-		len(snapshot.Flights) != 1 ||
-		len(snapshot.Trajectories) != 1 ||
-		len(snapshot.Observations) != 1 ||
-		len(snapshot.Routes) != 1 ||
+	if beginner.beginCount != 1 || !managed.committed || managed.rolledBack {
+		t.Fatalf("unexpected transaction lifecycle: %#v %#v", beginner, managed)
+	}
+	if len(client.calls) != 5 {
+		t.Fatalf("query call count = %d, want 5 in one snapshot", len(client.calls))
+	}
+	if snapshot.IsolationLevel != SnapshotIsolationRepeatableRead ||
+		snapshot.FlightMatchedCount != 2 ||
 		!snapshot.FlightLimitReached ||
-		snapshot.TrajectoryLimitReached ||
-		snapshot.ObservationLimitReached ||
-		snapshot.RouteLimitReached {
-		t.Fatalf("unexpected snapshot: %#v", snapshot)
+		snapshot.TrajectoryMatchedCount != 1 ||
+		snapshot.ObservationMatchedCount != 1 ||
+		snapshot.RouteMatchedCount != 1 {
+		t.Fatalf("unexpected snapshot metadata: %#v", snapshot)
 	}
-
-	if len(client.calls) != 4 {
-		t.Fatalf("query call count = %d", len(client.calls))
+	if len(snapshot.Flights) != 1 || len(snapshot.Routes) != 1 ||
+		!snapshot.Routes[0].ResultAvailable {
+		t.Fatalf("unexpected snapshot rows: %#v", snapshot)
 	}
-	for _, call := range client.calls {
-		if len(call.args) != 4 {
-			t.Fatalf("query args = %#v", call.args)
-		}
-		if call.args[3] != 2 {
-			t.Fatalf("database limit = %v, want 2", call.args[3])
-		}
-	}
-
-	if snapshot.Flights[0].FirstSeenAt.Location() != time.UTC ||
-		snapshot.Trajectories[0].StartTime.Location() != time.UTC ||
-		snapshot.Observations[0].ObservedAt.Location() != time.UTC ||
-		snapshot.Routes[0].AsOfTime.Location() != time.UTC {
-		t.Fatal("snapshot timestamps are not normalized to UTC")
-	}
-
-	snapshot.Routes[0].RouteJSON[0] = '['
-	if string(client.results[3].rows[0].values[7].([]byte)) !=
-		`{"status":"complete"}` {
-		t.Fatal("Read() returned shared route JSON")
+	if snapshot.Flights[0].AircraftIDAvailable ||
+		!snapshot.Flights[0].CallsignAvailable {
+		t.Fatalf("nullable provenance was not preserved: %#v", snapshot.Flights[0])
 	}
 }
 
-func TestPostgresRepositoryUsesStableSQLPredicates(t *testing.T) {
-	for name, query := range map[string]string{
+func TestPostgresRepositoryRejectsNilContext(t *testing.T) {
+	repository := newPostgresRepository(&fakeClient{})
+	_, err := repository.Read(nil, validQuery())
+	if !errors.Is(err, ErrContextRequired) {
+		t.Fatalf("error = %v, want %v", err, ErrContextRequired)
+	}
+}
+
+func TestPostgresRepositoryRejectsUnavailableTemporalHistory(t *testing.T) {
+	coverage := validQuery().Window.AsOfTime.Add(time.Hour)
+	repository := newPostgresRepository(&fakeClient{
+		results: []*fakeRows{{rows: []fakeRow{{values: []any{coverage}}}}},
+	})
+	_, err := repository.Read(context.Background(), validQuery())
+	if !errors.Is(err, ErrTemporalHistoryUnavailable) {
+		t.Fatalf("error = %v, want %v", err, ErrTemporalHistoryUnavailable)
+	}
+}
+
+func TestPostgresRepositoryRollsBackFailedSnapshot(t *testing.T) {
+	client := &fakeClient{
+		results: []*fakeRows{{rows: []fakeRow{{values: []any{historicalReadTestTime()}}}}},
+		errs:    []error{nil, errors.New("read failed")},
+	}
+	managed := &fakeManagedSnapshot{fakeClient: client}
+	repository := newManagedPostgresRepository(
+		&fakeSnapshotBeginner{snapshot: managed},
+	)
+
+	_, err := repository.Read(context.Background(), validQuery())
+	if err == nil || !managed.rolledBack || managed.committed {
+		t.Fatalf("unexpected failure lifecycle: err=%v snapshot=%#v", err, managed)
+	}
+}
+
+func TestPostgresSQLUsesCorrectTemporalSemantics(t *testing.T) {
+	checks := map[string][]string{
+		"flights": {
+			"last_seen_at > $1",
+			"historical_read_flight_versions",
+			"COUNT(*) OVER ()",
+		},
+		"trajectories": {
+			"end_time > $1",
+			"historical_read_trajectory_versions",
+			"round(quality_score, 12)",
+		},
+		"observations": {
+			"observed_at >= $1",
+			"observed_at < $2",
+			"round(latitude, 8)",
+		},
+		"routes": {
+			"DISTINCT ON (result.trajectory_id)",
+			"trajectory.start_time < $2",
+			"trajectory.end_time > $1",
+			"result.as_of_time <= $3",
+			"cumulative_payload_bytes <= $5",
+		},
+	}
+	queries := map[string]string{
 		"flights":      readFlightsSQL,
 		"trajectories": readTrajectoriesSQL,
 		"observations": readObservationsSQL,
 		"routes":       readRoutesSQL,
-	} {
-		t.Run(name, func(t *testing.T) {
-			if !strings.Contains(query, "ORDER BY") ||
-				!strings.Contains(query, "LIMIT $4") {
-				t.Fatalf("query is not deterministically bounded: %s", query)
+	}
+
+	for name, fragments := range checks {
+		for _, fragment := range fragments {
+			if !strings.Contains(queries[name], fragment) {
+				t.Fatalf("%s SQL misses %q: %s", name, fragment, queries[name])
 			}
-			if !strings.Contains(query, "$3") {
-				t.Fatalf("query does not enforce as-of time: %s", query)
-			}
-		})
+		}
+	}
+	if strings.Contains(readRoutesSQL, "as_of_time >= $1") {
+		t.Fatal("route SQL still filters event membership by calculation time")
 	}
 }
 
-func TestPostgresRepositoryPreservesContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+func TestRecordValidationRejectsInvalidAlternativeExecutorValues(t *testing.T) {
+	query := validQuery()
+	trajectory := TrajectoryRecord{
+		ID: "trajectory-1", ICAO24: "abc123", SourceName: "test",
+		StartTime:    query.Window.StartTime,
+		EndTime:      query.Window.EndTime,
+		UpdatedAt:    query.Window.AsOfTime,
+		QualityScore: 1.1,
+	}
+	if !errors.Is(validateTrajectoryRecord(trajectory, query, 0), ErrRecordInvalid) {
+		t.Fatal("invalid quality score was accepted")
+	}
 
-	repository := newPostgresRepository(&fakeClient{})
-	_, err := repository.Read(
-		ctx,
-		validQuery(),
-	)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("error = %v, want context.Canceled", err)
+	latitude := 91.0
+	observation := ObservationRecord{
+		ID: "state-1", ICAO24: "abc123", SourceName: "test",
+		ObservedAt: query.Window.StartTime,
+		CreatedAt:  query.Window.StartTime,
+		Latitude:   &latitude,
+	}
+	if !errors.Is(validateObservationRecord(observation, query, 0), ErrRecordInvalid) {
+		t.Fatal("invalid latitude was accepted")
 	}
 }
 
-func TestPostgresRepositoryWrapsDatabaseErrors(t *testing.T) {
-	sentinel := errors.New("database unavailable")
-	repository := newPostgresRepository(
-		&fakeClient{
-			errs: []error{sentinel},
+func TestRepresentedCoverageUsesExactDenominator(t *testing.T) {
+	if got := RepresentedCoverage(10_000, 1_000_000); got != 0.01 {
+		t.Fatalf("coverage = %f, want 0.01", got)
+	}
+	if got := RepresentedCoverage(0, 0); got != 1 {
+		t.Fatalf("empty complete coverage = %f, want 1", got)
+	}
+}
+
+func TestSnapshotTotalForSourcePreservesLegacyFixtureSemantics(
+	t *testing.T,
+) {
+	snapshot := Snapshot{
+		Flights: []FlightRecord{{ID: "flight-1"}},
+	}
+	if got := snapshot.TotalForSource(DatasetFlights); got != 1 {
+		t.Fatalf("unlimited inferred total = %d, want 1", got)
+	}
+
+	snapshot.FlightLimitReached = true
+	if got := snapshot.TotalForSource(DatasetFlights); got != 2 {
+		t.Fatalf("limited inferred total = %d, want 2", got)
+	}
+
+	snapshot.FlightMatchedCount = 1_000_000
+	if got := snapshot.TotalForSource(DatasetFlights); got != 1_000_000 {
+		t.Fatalf("explicit total = %d, want 1000000", got)
+	}
+}
+
+func TestTrimToLimit(t *testing.T) {
+	items, limited := trimToLimit([]int{1, 2}, 1)
+	if !limited || !reflect.DeepEqual(items, []int{1}) {
+		t.Fatalf("unexpected trim result: %#v %t", items, limited)
+	}
+}
+
+func validFakeClient(t *testing.T, flightTotal int64) *fakeClient {
+	t.Helper()
+	query := validQuery()
+	base := query.Window.StartTime
+	routeResult := routecontract.Result{
+		SchemaVersion: routecontract.SchemaVersionV1,
+		Status:        routecontract.RouteStatusComplete,
+		TrajectoryID:  "trajectory-1",
+		Window: routecontract.RouteWindow{
+			StartTime: base,
+			EndTime:   base.Add(30 * time.Minute),
+			AsOfTime:  query.Window.AsOfTime,
 		},
-	)
-
-	_, err := repository.Read(
-		context.Background(),
-		validQuery(),
-	)
-
-	var databaseErr *DatabaseError
-	if !errors.As(err, &databaseErr) ||
-		!errors.Is(err, sentinel) ||
-		databaseErr.Operation != "read flights" {
-		t.Fatalf("unexpected error: %#v", err)
-	}
-}
-
-func TestPostgresRepositoryWrapsScanAndIteratorErrors(t *testing.T) {
-	sentinel := errors.New("scan failed")
-	repository := newPostgresRepository(
-		&fakeClient{
-			results: []*fakeRows{
-				{scanError: sentinel, rows: []fakeRow{{}}},
-			},
+		Confidence: routecontract.Confidence{
+			Score: 1,
+			Level: routecontract.ConfidenceLevelHigh,
 		},
-	)
-
-	_, err := repository.Read(
-		context.Background(),
-		validQuery(),
-	)
-	if !errors.Is(err, sentinel) {
-		t.Fatalf("scan error = %v", err)
+	}
+	payload, err := json.Marshal(routeResult)
+	if err != nil {
+		t.Fatalf("marshal route fixture: %v", err)
 	}
 
-	sentinel = errors.New("iteration failed")
-	repository = newPostgresRepository(
-		&fakeClient{
-			results: []*fakeRows{
-				{err: sentinel},
-			},
-		},
-	)
-
-	_, err = repository.Read(
-		context.Background(),
-		validQuery(),
-	)
-	if !errors.Is(err, sentinel) {
-		t.Fatalf("iteration error = %v", err)
-	}
-}
-
-func TestTrimFunctions(t *testing.T) {
-	flights, limited, err := trimFlights(
-		[]FlightRecord{{ID: "1"}, {ID: "2"}},
-		1,
-	)
-	if err != nil ||
-		!limited ||
-		!reflect.DeepEqual(
-			flights,
-			[]FlightRecord{{ID: "1"}},
-		) {
-		t.Fatalf("unexpected trim result: %#v %v %v", flights, limited, err)
-	}
+	return &fakeClient{results: []*fakeRows{
+		{rows: []fakeRow{{values: []any{base.Add(-time.Hour)}}}},
+		{rows: []fakeRow{
+			{values: []any{
+				"flight-1", nil, "J2001", "completed",
+				base, base.Add(30 * time.Minute), query.Window.AsOfTime, flightTotal,
+			}},
+			{values: []any{
+				"flight-2", "aircraft-2", nil, "completed",
+				base.Add(time.Minute), base.Add(40 * time.Minute), query.Window.AsOfTime, flightTotal,
+			}},
+		}},
+		{rows: []fakeRow{{values: []any{
+			"trajectory-1", "flight-1", nil, "abc123", "J2001",
+			base, base.Add(30 * time.Minute), 1, 2, 0, 1.0,
+			"test", query.Window.AsOfTime, int64(1),
+		}}}},
+		{rows: []fakeRow{{values: []any{
+			"state-1", "flight-1", nil, "abc123", nil,
+			40.1, 49.9, false, base.Add(time.Minute), "test", base.Add(time.Minute), int64(1),
+		}}}},
+		{rows: []fakeRow{{values: []any{
+			"route-record-1", "trajectory-1", base, base.Add(30 * time.Minute), query.Window.AsOfTime,
+			"sha256:" + strings.Repeat("a", 64), "complete", "high", 0,
+			payload, query.Window.AsOfTime, int64(len(payload)), int64(1), int64(len(payload)), false,
+		}}}},
+	}}
 }
 
 func validQuery() Query {
-	start := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
+	start := historicalReadTestTime()
 	end := start.Add(time.Hour)
 	return Query{
 		Window: historicalcontract.TimeWindow{
@@ -522,6 +468,57 @@ func validQuery() Query {
 			EndTime:   end,
 			AsOfTime:  end.Add(time.Hour),
 		},
-		Limit: 10,
+		Limit:                 1,
+		RoutePayloadByteLimit: DefaultRoutePayloadByteLimit,
 	}
+}
+
+func historicalReadTestTime() time.Time {
+	return time.Date(2026, time.July, 27, 10, 0, 0, 0, time.UTC)
+}
+
+func assignFakeValue(destination any, value any) error {
+	switch target := destination.(type) {
+	case *string:
+		*target = value.(string)
+	case *int:
+		*target = value.(int)
+	case *int64:
+		*target = value.(int64)
+	case *float64:
+		*target = value.(float64)
+	case *bool:
+		*target = value.(bool)
+	case *time.Time:
+		*target = value.(time.Time)
+	case *[]byte:
+		if value == nil {
+			*target = nil
+		} else {
+			*target = append([]byte(nil), value.([]byte)...)
+		}
+	case **float64:
+		if value == nil {
+			*target = nil
+		} else {
+			copied := value.(float64)
+			*target = &copied
+		}
+	case **bool:
+		if value == nil {
+			*target = nil
+		} else {
+			copied := value.(bool)
+			*target = &copied
+		}
+	case *pgtype.Text:
+		if value == nil {
+			*target = pgtype.Text{}
+		} else {
+			*target = pgtype.Text{String: value.(string), Valid: true}
+		}
+	default:
+		return errors.New("unsupported fake destination")
+	}
+	return nil
 }

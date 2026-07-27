@@ -3,7 +3,6 @@ package historicalroute
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
@@ -95,7 +94,9 @@ func Build(
 	coverageRatio := routeCoverage(
 		len(selected),
 		len(selected)-invalidPayloadCount,
-		request.Snapshot.RouteLimitReached,
+		request.Snapshot.TotalForSource(
+			historicalread.DatasetRoutes,
+		),
 	)
 	limitations := []historicalcontract.Limitation{
 		{
@@ -123,7 +124,17 @@ func Build(
 			limitations,
 			historicalcontract.Limitation{
 				Code:    "historical_route_dataset_limit_reached",
-				Message: "The bounded historical route read reached its dataset limit; represented route coverage is a conservative lower bound.",
+				Message: "The bounded historical route read reached its dataset limit; represented route coverage uses the exact matched-route denominator.",
+				Scope:   "series",
+			},
+		)
+	}
+	if request.Snapshot.RouteByteLimitReached {
+		limitations = append(
+			limitations,
+			historicalcontract.Limitation{
+				Code:    "historical_route_payload_byte_limit_reached",
+				Message: "The bounded historical route read reached its payload byte budget; unrepresented routes remain explicitly incomplete.",
 				Scope:   "series",
 			},
 		)
@@ -207,44 +218,7 @@ func decodeRouteResult(
 	record historicalread.RouteRecord,
 	asOfTime time.Time,
 ) (routecontract.Result, bool) {
-	var result routecontract.Result
-	if err := json.Unmarshal(
-		record.RouteJSON,
-		&result,
-	); err != nil {
-		return routecontract.Result{}, false
-	}
-
-	if result.SchemaVersion !=
-		routecontract.SchemaVersionV1 ||
-		!knownRouteStatus(result.Status) ||
-		result.Window.StartTime.IsZero() ||
-		result.Window.EndTime.IsZero() ||
-		result.Window.AsOfTime.IsZero() ||
-		!result.Window.StartTime.Before(
-			result.Window.EndTime,
-		) ||
-		result.Window.EndTime.After(
-			result.Window.AsOfTime,
-		) ||
-		result.Window.AsOfTime.After(
-			asOfTime.UTC(),
-		) ||
-		math.IsNaN(result.Confidence.Score) ||
-		math.IsInf(result.Confidence.Score, 0) ||
-		result.Confidence.Score < 0 ||
-		result.Confidence.Score > 1 {
-		return routecontract.Result{}, false
-	}
-
-	result.Window.StartTime =
-		result.Window.StartTime.UTC()
-	result.Window.EndTime =
-		result.Window.EndTime.UTC()
-	result.Window.AsOfTime =
-		result.Window.AsOfTime.UTC()
-
-	return result, true
+	return record.ResultAt(asOfTime)
 }
 
 func knownRouteStatus(
@@ -485,6 +459,7 @@ func latestRouteRecords(
 		len(latest),
 	)
 	for _, record := range latest {
+		record.Result = record.Result.Clone()
 		record.RouteJSON = append(
 			[]byte(nil),
 			record.RouteJSON...,
@@ -537,30 +512,15 @@ func routeBucketIndex(
 func routeCoverage(
 	selectedCount int,
 	decodedCount int,
-	limitReached bool,
+	matchedCount int64,
 ) float64 {
-	if selectedCount == 0 {
-		if limitReached {
-			return 0.5
-		}
-		return 1
-	}
-
-	ratio := float64(decodedCount) /
-		float64(selectedCount)
-	if limitReached {
-		ratio *= float64(selectedCount) /
-			float64(selectedCount+1)
-	}
-
-	switch {
-	case ratio < 0:
+	if decodedCount < 0 || decodedCount > selectedCount {
 		return 0
-	case ratio > 1:
-		return 1
-	default:
-		return ratio
 	}
+	return historicalread.RepresentedCoverage(
+		decodedCount,
+		matchedCount,
+	)
 }
 
 func latestRouteUpdate(
@@ -604,12 +564,28 @@ func routeFingerprint(
 		request.Plan.Fingerprint,
 		request.Plan.AsOfTime.UTC().
 			Format(time.RFC3339Nano),
+		fmt.Sprintf(
+			"route_limit_reached|%t",
+			request.Snapshot.RouteLimitReached,
+		),
+		fmt.Sprintf(
+			"route_byte_limit_reached|%t",
+			request.Snapshot.RouteByteLimitReached,
+		),
+		fmt.Sprintf(
+			"route_matched_count|%d",
+			request.Snapshot.TotalForSource(
+				historicalread.DatasetRoutes,
+			),
+		),
+		fmt.Sprintf(
+			"route_payload_bytes|%d|%d",
+			request.Snapshot.RoutePayloadBytes,
+			request.Snapshot.RouteTotalPayloadBytes,
+		),
 	}
 
 	for _, record := range request.Snapshot.Routes {
-		payloadHash := sha256.Sum256(
-			record.RouteJSON,
-		)
 		records = append(
 			records,
 			fmt.Sprintf(
@@ -619,7 +595,7 @@ func routeFingerprint(
 				record.AsOfTime.UTC().
 					Format(time.RFC3339Nano),
 				record.InputFingerprint,
-				hex.EncodeToString(payloadHash[:]),
+				record.PayloadDigest(),
 			),
 		)
 	}

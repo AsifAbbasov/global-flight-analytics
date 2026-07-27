@@ -65,7 +65,7 @@ func TestSnapshotCloneDoesNotShareMutableState(t *testing.T) {
 }
 
 func TestRepositoryContractVersionAndLimits(t *testing.T) {
-	if Version != "historical-read-repository-v1" {
+	if Version != "historical-read-repository-v2" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if DefaultDatasetLimit != 10_000 {
@@ -73,5 +73,29 @@ func TestRepositoryContractVersionAndLimits(t *testing.T) {
 	}
 	if MaximumDatasetLimit != 100_000 {
 		t.Fatalf("MaximumDatasetLimit = %d", MaximumDatasetLimit)
+	}
+	if DefaultRoutePayloadByteLimit != 16*1024*1024 {
+		t.Fatalf(
+			"DefaultRoutePayloadByteLimit = %d",
+			DefaultRoutePayloadByteLimit,
+		)
+	}
+	if MaximumRoutePayloadByteLimit != 64*1024*1024 {
+		t.Fatalf(
+			"MaximumRoutePayloadByteLimit = %d",
+			MaximumRoutePayloadByteLimit,
+		)
+	}
+	if QualityScoreDecimalPlaces != 12 {
+		t.Fatalf(
+			"QualityScoreDecimalPlaces = %d",
+			QualityScoreDecimalPlaces,
+		)
+	}
+	if CoordinateDecimalPlaces != 8 {
+		t.Fatalf(
+			"CoordinateDecimalPlaces = %d",
+			CoordinateDecimalPlaces,
+		)
 	}
 }

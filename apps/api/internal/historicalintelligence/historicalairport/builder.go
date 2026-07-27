@@ -3,7 +3,6 @@ package historicalairport
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -66,18 +65,10 @@ func Build(
 	)
 	invalidPayloadCount := 0
 	for _, record := range selected {
-		var result routecontract.Result
-		if err := json.Unmarshal(
-			record.RouteJSON,
-			&result,
-		); err != nil {
-			invalidPayloadCount++
-			continue
-		}
-
-		if result.Window.AsOfTime.After(
+		result, valid := record.ResultAt(
 			request.Plan.AsOfTime,
-		) {
+		)
+		if !valid {
 			invalidPayloadCount++
 			continue
 		}
@@ -95,7 +86,9 @@ func Build(
 	coverageRatio := routeCoverage(
 		len(selected),
 		len(decoded),
-		request.Snapshot.RouteLimitReached,
+		request.Snapshot.TotalForSource(
+			historicalread.DatasetRoutes,
+		),
 	)
 	limitations := []historicalcontract.Limitation{
 		{
@@ -123,7 +116,17 @@ func Build(
 			limitations,
 			historicalcontract.Limitation{
 				Code:    "historical_route_dataset_limit_reached",
-				Message: "The bounded historical route read reached its dataset limit; airport activity coverage is a conservative lower bound.",
+				Message: "The bounded historical route read reached its dataset limit; airport activity coverage uses the exact matched-route denominator.",
+				Scope:   "series",
+			},
+		)
+	}
+	if request.Snapshot.RouteByteLimitReached {
+		limitations = append(
+			limitations,
+			historicalcontract.Limitation{
+				Code:    "historical_route_payload_byte_limit_reached",
+				Message: "The bounded historical route read reached its payload byte budget; unrepresented routes remain explicitly incomplete.",
 				Scope:   "series",
 			},
 		)
@@ -332,6 +335,7 @@ func latestRouteRecords(
 		len(latest),
 	)
 	for _, record := range latest {
+		record.Result = record.Result.Clone()
 		record.RouteJSON = append(
 			[]byte(nil),
 			record.RouteJSON...,
@@ -384,29 +388,15 @@ func airportBucketIndex(
 func routeCoverage(
 	selectedCount int,
 	decodedCount int,
-	limitReached bool,
+	matchedCount int64,
 ) float64 {
-	if selectedCount == 0 {
-		if limitReached {
-			return 0.5
-		}
-		return 1
-	}
-
-	ratio := float64(decodedCount) /
-		float64(selectedCount)
-	if limitReached {
-		ratio *= float64(selectedCount) /
-			float64(selectedCount+1)
-	}
-
-	if ratio < 0 {
+	if decodedCount < 0 || decodedCount > selectedCount {
 		return 0
 	}
-	if ratio > 1 {
-		return 1
-	}
-	return ratio
+	return historicalread.RepresentedCoverage(
+		decodedCount,
+		matchedCount,
+	)
 }
 
 func latestRouteUpdate(
@@ -452,12 +442,24 @@ func airportFingerprint(
 			"route_limit_reached|%t",
 			request.Snapshot.RouteLimitReached,
 		),
+		fmt.Sprintf(
+			"route_byte_limit_reached|%t",
+			request.Snapshot.RouteByteLimitReached,
+		),
+		fmt.Sprintf(
+			"route_matched_count|%d",
+			request.Snapshot.TotalForSource(
+				historicalread.DatasetRoutes,
+			),
+		),
+		fmt.Sprintf(
+			"route_payload_bytes|%d|%d",
+			request.Snapshot.RoutePayloadBytes,
+			request.Snapshot.RouteTotalPayloadBytes,
+		),
 	}
 
 	for _, record := range request.Snapshot.Routes {
-		payloadHash := sha256.Sum256(
-			record.RouteJSON,
-		)
 		records = append(
 			records,
 			fmt.Sprintf(
@@ -467,7 +469,7 @@ func airportFingerprint(
 				record.AsOfTime.UTC().
 					Format(time.RFC3339Nano),
 				record.InputFingerprint,
-				hex.EncodeToString(payloadHash[:]),
+				record.PayloadDigest(),
 			),
 		)
 	}
