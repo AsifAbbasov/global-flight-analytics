@@ -26,7 +26,8 @@ func Build(
 	definition, ok := metricDefinition(
 		request.MetricName,
 	)
-	if !ok {
+	metricSpecification, catalogued := historicalcontract.MetricSpecFor(request.MetricName)
+	if !ok || !catalogued || metricSpecification.Family != historicalcontract.MetricFamilyTraffic {
 		return historicalcontract.Result{},
 			ErrMetricUnsupported
 	}
@@ -144,8 +145,8 @@ func Build(
 		historicalseries.BuildRequest{
 			Metric: historicalcontract.Metric{
 				Name:        request.MetricName,
-				Unit:        definition.unit,
-				Aggregation: definition.aggregation,
+				Unit:        metricSpecification.Unit,
+				Aggregation: metricSpecification.Aggregation,
 			},
 			Scope: historicalcontract.Scope{
 				Type: historicalcontract.ScopeTypeGlobal,
@@ -164,8 +165,6 @@ func Build(
 }
 
 type metricSpec struct {
-	unit         string
-	aggregation  historicalcontract.Aggregation
 	sourceName   string
 	limitReached func(historicalread.Snapshot) bool
 }
@@ -176,9 +175,7 @@ func metricDefinition(
 	switch name {
 	case historicalcontract.MetricNameFlightCount:
 		return metricSpec{
-			unit:        "flights",
-			aggregation: historicalcontract.AggregationCount,
-			sourceName:  "flights",
+			sourceName: "flights",
 			limitReached: func(
 				snapshot historicalread.Snapshot,
 			) bool {
@@ -188,9 +185,7 @@ func metricDefinition(
 
 	case historicalcontract.MetricNameTrajectoryCount:
 		return metricSpec{
-			unit:        "trajectories",
-			aggregation: historicalcontract.AggregationCount,
-			sourceName:  "flight_trajectories",
+			sourceName: "flight_trajectories",
 			limitReached: func(
 				snapshot historicalread.Snapshot,
 			) bool {
@@ -200,9 +195,7 @@ func metricDefinition(
 
 	case historicalcontract.MetricNameObservationCount:
 		return metricSpec{
-			unit:        "observations",
-			aggregation: historicalcontract.AggregationCount,
-			sourceName:  "flight_states",
+			sourceName: "flight_states",
 			limitReached: func(
 				snapshot historicalread.Snapshot,
 			) bool {
@@ -212,9 +205,7 @@ func metricDefinition(
 
 	case historicalcontract.MetricNameActiveAircraft:
 		return metricSpec{
-			unit:        "aircraft",
-			aggregation: historicalcontract.AggregationCount,
-			sourceName:  "flight_states",
+			sourceName: "flight_states",
 			limitReached: func(
 				snapshot historicalread.Snapshot,
 			) bool {
@@ -224,9 +215,6 @@ func metricDefinition(
 
 	case historicalcontract.MetricNameTrafficDensity:
 		return metricSpec{
-			unit: "observations_per_hour",
-			aggregation: historicalcontract.
-				AggregationAverage,
 			sourceName: "flight_states",
 			limitReached: func(
 				snapshot historicalread.Snapshot,

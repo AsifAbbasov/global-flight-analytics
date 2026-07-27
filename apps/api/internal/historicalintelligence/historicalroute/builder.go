@@ -40,10 +40,8 @@ func Build(
 		return historicalcontract.Result{}, err
 	}
 
-	definition, ok := routeMetricDefinition(
-		request.MetricName,
-	)
-	if !ok {
+	definition, ok := historicalcontract.MetricSpecFor(request.MetricName)
+	if !ok || definition.Family != historicalcontract.MetricFamilyRoute {
 		return historicalcontract.Result{},
 			ErrMetricUnsupported
 	}
@@ -127,8 +125,8 @@ func Build(
 		historicalseries.BuildRequest{
 			Metric: historicalcontract.Metric{
 				Name:        request.MetricName,
-				Unit:        definition.unit,
-				Aggregation: definition.aggregation,
+				Unit:        definition.Unit,
+				Aggregation: definition.Aggregation,
 			},
 			Scope:                 scope,
 			Plan:                  request.Plan,
@@ -142,52 +140,6 @@ func Build(
 			Limitations:           limitations,
 		},
 	)
-}
-
-type routeMetricSpec struct {
-	unit        string
-	aggregation historicalcontract.Aggregation
-}
-
-func routeMetricDefinition(
-	name historicalcontract.MetricName,
-) (routeMetricSpec, bool) {
-	switch name {
-	case historicalcontract.MetricNameActiveRoutes:
-		return routeMetricSpec{
-			unit:        "routes",
-			aggregation: historicalcontract.AggregationCount,
-		}, true
-
-	case historicalcontract.MetricNameRouteObservations:
-		return routeMetricSpec{
-			unit:        "route_results",
-			aggregation: historicalcontract.AggregationCount,
-		}, true
-
-	case historicalcontract.MetricNameRouteConfidence:
-		return routeMetricSpec{
-			unit:        "ratio",
-			aggregation: historicalcontract.AggregationAverage,
-		}, true
-
-	case historicalcontract.MetricNameCompleteRouteRatio,
-		historicalcontract.MetricNamePartialRouteRatio,
-		historicalcontract.MetricNameUnavailableRouteRatio:
-		return routeMetricSpec{
-			unit:        "ratio",
-			aggregation: historicalcontract.AggregationRatio,
-		}, true
-
-	case historicalcontract.MetricNameGreatCircleDistanceKM:
-		return routeMetricSpec{
-			unit:        "kilometres",
-			aggregation: historicalcontract.AggregationAverage,
-		}, true
-
-	default:
-		return routeMetricSpec{}, false
-	}
 }
 
 func normalizeScope(

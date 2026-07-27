@@ -14,9 +14,9 @@ func TestCurrentSchemaIsStableAndDefensive(
 			first.Version,
 		)
 	}
-	if len(first.Definitions) != 36 {
+	if len(first.Definitions) != 46 {
 		t.Fatalf(
-			"definition count = %d, want 36",
+			"definition count = %d, want 46",
 			len(first.Definitions),
 		)
 	}

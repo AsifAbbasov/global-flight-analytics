@@ -54,6 +54,8 @@ func validateConfidence(
 	}
 
 	seenCodes := make(map[string]struct{})
+	contributionTotal := 0.0
+	contributionCompensation := 0.0
 	for index, reason := range confidence.Reasons {
 		reasonPrefix := fmt.Sprintf(
 			"%s.reasons[%d]",
@@ -98,7 +100,29 @@ func validateConfidence(
 				reasonPrefix+".contribution",
 				"Confidence reason contribution must be between negative one and one.",
 			)
+			continue
 		}
+		corrected := reason.Contribution - contributionCompensation
+		next := contributionTotal + corrected
+		contributionCompensation = (next - contributionTotal) - corrected
+		contributionTotal = next
+	}
+	if confidence.Score > 0 && len(confidence.Reasons) == 0 {
+		collector.add(
+			ValidationSeverityError,
+			"confidence_reason_required",
+			fieldPrefix+".reasons",
+			"Positive confidence requires at least one explanatory reason.",
+		)
+	}
+	if isFinite(confidence.Score) && isFinite(contributionTotal) &&
+		!almostEqual(contributionTotal, confidence.Score) {
+		collector.add(
+			ValidationSeverityError,
+			"confidence_reason_contribution_mismatch",
+			fieldPrefix+".reasons",
+			"Confidence reason contributions must sum to the declared confidence score.",
+		)
 	}
 }
 

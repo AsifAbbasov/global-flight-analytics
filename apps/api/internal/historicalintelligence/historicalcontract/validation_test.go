@@ -620,11 +620,10 @@ func validUnavailableResult() Result {
 		Metric: Metric{
 			Name:        MetricNameActiveAircraft,
 			Unit:        "aircraft",
-			Aggregation: AggregationMaximum,
+			Aggregation: AggregationCount,
 		},
 		Scope: Scope{
-			Type:       ScopeTypeRegion,
-			RegionCode: "azerbaijan",
+			Type: ScopeTypeGlobal,
 		},
 		Window: TimeWindow{
 			StartTime: startTime,
@@ -702,8 +701,7 @@ func validPartialResult() Result {
 			Aggregation: AggregationCount,
 		},
 		Scope: Scope{
-			Type:            ScopeTypeAirport,
-			AirportICAOCode: "UBBB",
+			Type: ScopeTypeGlobal,
 		},
 		Window: TimeWindow{
 			StartTime: startTime,
@@ -760,9 +758,7 @@ func validSingleBucketResult(
 			Aggregation: AggregationCount,
 		},
 		Scope: Scope{
-			Type:                ScopeTypeRoute,
-			OriginICAOCode:      "UBBB",
-			DestinationICAOCode: "UGTB",
+			Type: ScopeTypeGlobal,
 		},
 		Window: TimeWindow{
 			StartTime: startTime,

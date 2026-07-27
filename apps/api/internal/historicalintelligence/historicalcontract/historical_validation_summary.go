@@ -135,6 +135,16 @@ func validateComparison(
 			"comparison.current_value",
 			"Current comparison value must be a finite non-negative number.",
 		)
+	} else if expectedCurrentValue, available := comparisonValueForMetric(result.Metric, result.Summary); available {
+		if specification, exists := MetricSpecFor(result.Metric.Name); exists &&
+			!metricValuesEqual(specification, comparison.CurrentValue, expectedCurrentValue) {
+			collector.add(
+				ValidationSeverityError,
+				"comparison_current_summary_mismatch",
+				"comparison.current_value",
+				"Current comparison value must match the metric aggregation selected from the current summary.",
+			)
+		}
 	}
 	if !isFinite(comparison.PreviousValue) ||
 		comparison.PreviousValue < 0 {

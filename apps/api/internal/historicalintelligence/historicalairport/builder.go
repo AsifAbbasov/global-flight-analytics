@@ -40,10 +40,8 @@ func Build(
 			ErrAirportICAOInvalid
 	}
 
-	definition, ok := airportMetricDefinition(
-		request.MetricName,
-	)
-	if !ok {
+	definition, ok := historicalcontract.MetricSpecFor(request.MetricName)
+	if !ok || definition.Family != historicalcontract.MetricFamilyAirport {
 		return historicalcontract.Result{},
 			ErrMetricUnsupported
 	}
@@ -142,8 +140,8 @@ func Build(
 		historicalseries.BuildRequest{
 			Metric: historicalcontract.Metric{
 				Name:        request.MetricName,
-				Unit:        definition.unit,
-				Aggregation: definition.aggregation,
+				Unit:        definition.Unit,
+				Aggregation: definition.Aggregation,
 			},
 			Scope: historicalcontract.Scope{
 				Type:            historicalcontract.ScopeTypeAirport,
@@ -166,44 +164,6 @@ func Build(
 			Limitations: limitations,
 		},
 	)
-}
-
-type airportMetricSpec struct {
-	unit        string
-	aggregation historicalcontract.Aggregation
-}
-
-func airportMetricDefinition(
-	name historicalcontract.MetricName,
-) (airportMetricSpec, bool) {
-	switch name {
-	case historicalcontract.MetricNameAirportDepartures:
-		return airportMetricSpec{
-			unit:        "departures",
-			aggregation: historicalcontract.AggregationCount,
-		}, true
-
-	case historicalcontract.MetricNameAirportArrivals:
-		return airportMetricSpec{
-			unit:        "arrivals",
-			aggregation: historicalcontract.AggregationCount,
-		}, true
-
-	case historicalcontract.MetricNameAirportOperations:
-		return airportMetricSpec{
-			unit:        "operations",
-			aggregation: historicalcontract.AggregationCount,
-		}, true
-
-	case historicalcontract.MetricNameUniqueAircraft:
-		return airportMetricSpec{
-			unit:        "aircraft",
-			aggregation: historicalcontract.AggregationCount,
-		}, true
-
-	default:
-		return airportMetricSpec{}, false
-	}
 }
 
 type airportEvent struct {

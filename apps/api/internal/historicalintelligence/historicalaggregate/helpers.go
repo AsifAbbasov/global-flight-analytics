@@ -22,7 +22,7 @@ func normalizeResult(
 
 	normalized.Metric.Unit =
 		strings.TrimSpace(normalized.Metric.Unit)
-	normalized.Scope.RegionCode = strings.ToUpper(
+	normalized.Scope.RegionCode = strings.ToLower(
 		strings.TrimSpace(normalized.Scope.RegionCode),
 	)
 	normalized.Scope.AirportICAOCode = strings.ToUpper(
@@ -218,7 +218,7 @@ func normalizeScope(
 ) (historicalcontract.Scope, error) {
 	normalized := historicalcontract.Scope{
 		Type: scope.Type,
-		RegionCode: strings.ToUpper(
+		RegionCode: strings.ToLower(
 			strings.TrimSpace(scope.RegionCode),
 		),
 		AirportICAOCode: strings.ToUpper(

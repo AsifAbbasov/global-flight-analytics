@@ -2,46 +2,40 @@ package historicalcontract
 
 import "sort"
 
-func Summarize(
-	points []Point,
-) Summary {
-	values := make(
-		[]float64,
-		0,
-		len(points),
-	)
-
+// Summarize aggregates represented partial and complete buckets. Contract
+// validation owns the invariant that unavailable buckets carry a zero payload;
+// unavailable buckets never contribute to analytical statistics.
+func Summarize(points []Point) Summary {
+	values := make([]float64, 0, len(points))
 	for _, point := range points {
-		if point.Status ==
-			BucketStatusUnavailable {
+		if point.Status == BucketStatusUnavailable {
 			continue
 		}
-
 		values = append(values, point.Value)
 	}
-
 	if len(values) == 0 {
 		return Summary{}
 	}
 
-	sortedValues := append(
-		[]float64(nil),
-		values...,
-	)
+	sortedValues := append([]float64(nil), values...)
 	sort.Float64s(sortedValues)
-
 	total := 0.0
-	minimum := sortedValues[0]
-	maximum := sortedValues[len(sortedValues)-1]
+	compensation := 0.0
 	for _, value := range sortedValues {
-		total += value
+		corrected := value - compensation
+		next := total + corrected
+		compensation = (next - total) - corrected
+		total = next
 	}
 
+	minimum := sortedValues[0]
+	maximum := sortedValues[len(sortedValues)-1]
 	median := sortedValues[len(sortedValues)/2]
 	if len(sortedValues)%2 == 0 {
 		middle := len(sortedValues) / 2
-		median = (sortedValues[middle-1] +
-			sortedValues[middle]) / 2
+		left := sortedValues[middle-1]
+		right := sortedValues[middle]
+		median = left + (right-left)/2
 	}
 
 	return Summary{
@@ -49,8 +43,7 @@ func Summarize(
 		Total:      total,
 		Minimum:    minimum,
 		Maximum:    maximum,
-		Average: total /
-			float64(len(sortedValues)),
-		Median: median,
+		Average:    total / float64(len(sortedValues)),
+		Median:     median,
 	}
 }

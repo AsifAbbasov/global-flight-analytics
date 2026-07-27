@@ -82,6 +82,7 @@ func validatePoints(
 		)
 		validatePointValue(
 			point,
+			result.Metric,
 			fieldPrefix,
 			collector,
 		)
@@ -190,6 +191,7 @@ func validateBucketAlignment(
 
 func validatePointValue(
 	point Point,
+	metric Metric,
 	fieldPrefix string,
 	collector *validationCollector,
 ) {
@@ -231,6 +233,7 @@ func validatePointValue(
 			"Bucket coverage ratio must be between zero and one.",
 		)
 	}
+	validateMetricPointValue(point, metric, fieldPrefix, collector)
 
 	switch point.Status {
 	case BucketStatusUnavailable:
@@ -244,6 +247,16 @@ func validatePointValue(
 				"Unavailable bucket must have zero value, samples, and coverage.",
 			)
 		}
+		if point.Confidence.Score != 0 ||
+			point.Confidence.Level != ConfidenceLevelNone ||
+			point.Confidence.SampleCount != 0 {
+			collector.add(
+				ValidationSeverityError,
+				"unavailable_bucket_confidence_invalid",
+				fieldPrefix+".confidence",
+				"Unavailable bucket confidence must be zero with level none and no samples.",
+			)
+		}
 
 	case BucketStatusPartial:
 		if point.CoverageRatio <= 0 ||
@@ -253,6 +266,14 @@ func validatePointValue(
 				"partial_bucket_coverage_invalid",
 				fieldPrefix+".coverage_ratio",
 				"Partial bucket coverage must be greater than zero and less than one.",
+			)
+		}
+		if len(point.Limitations) == 0 {
+			collector.add(
+				ValidationSeverityError,
+				"partial_bucket_without_limitation",
+				fieldPrefix+".limitations",
+				"Partial bucket must explain its incomplete evidence.",
 			)
 		}
 
@@ -284,10 +305,10 @@ func validateSeriesStatus(
 		}
 		if len(result.Limitations) == 0 {
 			collector.add(
-				ValidationSeverityWarning,
+				ValidationSeverityError,
 				"unavailable_series_without_limitation",
 				"limitations",
-				"Unavailable series should explain why historical data is unavailable.",
+				"Unavailable series must explain why historical data is unavailable.",
 			)
 		}
 
@@ -300,6 +321,21 @@ func validateSeriesStatus(
 				"Partial series must contain at least one point.",
 			)
 		}
+		representedPoint := false
+		for _, point := range result.Points {
+			if point.Status == BucketStatusPartial || point.Status == BucketStatusComplete {
+				representedPoint = true
+				break
+			}
+		}
+		if len(result.Points) > 0 && !representedPoint {
+			collector.add(
+				ValidationSeverityError,
+				"partial_series_without_represented_bucket",
+				"points",
+				"Partial series must contain at least one partial or complete bucket.",
+			)
+		}
 		if isCompleteCoverage(result) {
 			collector.add(
 				ValidationSeverityError,
@@ -310,10 +346,10 @@ func validateSeriesStatus(
 		}
 		if len(result.Limitations) == 0 {
 			collector.add(
-				ValidationSeverityWarning,
+				ValidationSeverityError,
 				"partial_series_without_limitation",
 				"limitations",
-				"Partial series should explain incomplete historical coverage.",
+				"Partial series must explain incomplete historical coverage.",
 			)
 		}
 

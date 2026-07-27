@@ -167,11 +167,19 @@ func Build(
 		)
 	}
 
+	representedPointCount := 0
+	for _, point := range result.Points {
+		if point.Status !=
+			historicalcontract.BucketStatusUnavailable {
+			representedPointCount++
+		}
+	}
+
 	switch {
 	case request.DataCoverageRatio == 1:
 		result.Status =
 			historicalcontract.SeriesStatusComplete
-	case len(result.Points) > 0:
+	case representedPointCount > 0:
 		result.Status =
 			historicalcontract.SeriesStatusPartial
 		result.Limitations = normalizeLimitations(
@@ -187,6 +195,17 @@ func Build(
 	default:
 		result.Status =
 			historicalcontract.SeriesStatusUnavailable
+		result.Points = []historicalcontract.Point{}
+		result.Limitations = normalizeLimitations(
+			append(
+				result.Limitations,
+				historicalcontract.Limitation{
+					Code:    "historical_data_unavailable",
+					Message: "No historical bucket contains represented source evidence.",
+					Scope:   "series",
+				},
+			),
+		)
 	}
 
 	result.Summary = historicalcontract.Summarize(

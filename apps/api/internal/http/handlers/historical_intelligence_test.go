@@ -269,6 +269,14 @@ func TestHistoricalIntelligenceRequestValidation(
 			name: "global scope rejects identifiers",
 			path: "?metric=flight_count&scope=global&granularity=hour&airport_icao=UBBB",
 		},
+		{
+			name: "metric scope catalog",
+			path: "?metric=flight_count&scope=airport&airport_icao=UBBB&granularity=hour",
+		},
+		{
+			name: "reserved metric rejected",
+			path: "?metric=peak_activity&scope=global&granularity=hour",
+		},
 	}
 
 	for _, test := range tests {

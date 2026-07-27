@@ -281,6 +281,12 @@ func parseHistoricalQueryBase(
 			err
 	}
 
+	specification, exists := historicalcontract.MetricSpecFor(metricName)
+	if !exists || !specification.AllowsScope(scope.Type) {
+		return historicalaggregatecontract.ListQuery{},
+			errHistoricalScopeInvalid
+	}
+
 	granularity, err := parseHistoricalGranularity(
 		values.Granularity,
 	)
@@ -322,7 +328,7 @@ func parseHistoricalScope(
 			strings.TrimSpace(values.Scope),
 		),
 	)
-	regionCode := strings.ToUpper(
+	regionCode := strings.ToLower(
 		strings.TrimSpace(values.RegionCode),
 	)
 	airportICAO := strings.ToUpper(

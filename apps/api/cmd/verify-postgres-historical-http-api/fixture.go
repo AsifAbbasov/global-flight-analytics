@@ -81,7 +81,7 @@ func buildVerificationResults(
 	routeResult, err := buildVerificationResult(
 		historicalcontract.Metric{
 			Name:        historicalcontract.MetricNameRouteObservations,
-			Unit:        "routes",
+			Unit:        "route_results",
 			Aggregation: historicalcontract.AggregationCount,
 		},
 		historicalcontract.Scope{

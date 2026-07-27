@@ -140,9 +140,9 @@ func TestSupportedMetricNamesAreSortedAndDefensive(
 	first := SupportedMetricNames()
 	second := SupportedMetricNames()
 
-	if len(first) != 20 {
+	if len(first) != 16 {
 		t.Fatalf(
-			"supported metric count = %d, want 20",
+			"supported metric count = %d, want 16",
 			len(first),
 		)
 	}

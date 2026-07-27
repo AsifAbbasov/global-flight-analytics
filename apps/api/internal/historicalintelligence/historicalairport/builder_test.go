@@ -122,7 +122,7 @@ func TestBuildHistoricalAirportMetrics(
 	}
 }
 
-func TestBuildHistoricalAirportMetricMarksInvalidPayloadPartial(
+func TestBuildHistoricalAirportMetricMarksInvalidPayloadUnavailable(
 	t *testing.T,
 ) {
 	plan := airportTestPlan()
@@ -149,22 +149,22 @@ func TestBuildHistoricalAirportMetricMarksInvalidPayloadPartial(
 	)
 	if err != nil {
 		t.Fatalf(
-			"build partial airport metric: %v",
+			"build unavailable airport metric: %v",
 			err,
 		)
 	}
 
 	if result.Status !=
-		historicalcontract.SeriesStatusPartial {
+		historicalcontract.SeriesStatusUnavailable {
 		t.Fatalf(
-			"expected partial result, got %s",
+			"expected unavailable result, got %s",
 			result.Status,
 		)
 	}
-	if result.Points[0].CoverageRatio != 0 {
+	if len(result.Points) != 0 {
 		t.Fatalf(
-			"expected zero decoded coverage, got %f",
-			result.Points[0].CoverageRatio,
+			"expected no represented points, got %d",
+			len(result.Points),
 		)
 	}
 }

@@ -135,6 +135,52 @@ func TestBuildPartialSeries(
 	}
 }
 
+func TestBuildZeroCoverageSeriesIsUnavailable(
+	t *testing.T,
+) {
+	plan := seriesTestPlan()
+	result, err := Build(
+		BuildRequest{
+			Metric: historicalcontract.Metric{
+				Name: historicalcontract.
+					MetricNameFlightCount,
+				Unit: "flights",
+				Aggregation: historicalcontract.
+					AggregationCount,
+			},
+			Scope: historicalcontract.Scope{
+				Type: historicalcontract.ScopeTypeGlobal,
+			},
+			Plan: plan,
+			Values: []BucketValue{
+				{Bucket: plan.Buckets[0]},
+				{Bucket: plan.Buckets[1]},
+			},
+			DataCoverageRatio: 0,
+			BuilderVersion:    Version,
+			InputFingerprint: "sha256:" +
+				strings.Repeat("d", 64),
+			SourceNames: []string{"flights"},
+			GeneratedAt: plan.AsOfTime,
+		},
+	)
+	if err != nil {
+		t.Fatalf("build unavailable series: %v", err)
+	}
+	if result.Status !=
+		historicalcontract.SeriesStatusUnavailable {
+		t.Fatalf("status = %s, want unavailable", result.Status)
+	}
+	if len(result.Points) != 0 {
+		t.Fatalf("unavailable points = %d, want 0", len(result.Points))
+	}
+	if result.Summary.PointCount != 0 ||
+		result.Confidence.Score != 0 ||
+		result.Confidence.SampleCount != 0 {
+		t.Fatalf("unexpected unavailable evidence: %#v", result)
+	}
+}
+
 func TestBuildRejectsMismatchedBucketOrder(
 	t *testing.T,
 ) {

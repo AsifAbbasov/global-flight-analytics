@@ -1068,3 +1068,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 123 — Validator Review Hardening
 
 `123_VALIDATOR_REVIEW_HARDENING.md` records strict integrity severity independent of feature availability, explainable partial and unavailable evidence, canonical unavailable payloads, current-evidence quality limitation reconstruction, observation-support ownership, dimensionless relative tolerance semantics, validator generation six, processing generation twelve, permanent regression tests, and Continuous Integration enforcement.
+
+
+<!-- HISTORICAL-CONTRACT-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 124 — Historical Contract Review Hardening
+
+`124_HISTORICAL_CONTRACT_REVIEW_HARDENING.md` records the single production metric catalog, exact count semantics over the heterogeneous float64 transport, metric-aware precision, confidence and availability reconciliation, comparison-to-summary integrity, complete schema registry coverage, lowercase region normalization, deliberately retained zero-event coverage semantics, permanent regression tests, and Continuous Integration enforcement.

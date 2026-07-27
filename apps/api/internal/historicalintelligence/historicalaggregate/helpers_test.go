@@ -30,7 +30,7 @@ func TestScopeKeyNormalizesSupportedScopes(
 				Type:       historicalcontract.ScopeTypeRegion,
 				RegionCode: " az ",
 			},
-			want: "region:AZ",
+			want: "region:az",
 		},
 		{
 			name: "airport",

@@ -1,11 +1,12 @@
 package historicalcontract
 
 import (
+	"math"
 	"sort"
 	"time"
 )
 
-const Version = "historical-intelligence-contract-v1"
+const Version = "historical-intelligence-contract-v2"
 
 type SchemaVersion string
 
@@ -283,15 +284,16 @@ func cloneConfidence(
 func ConfidenceLevelForScore(
 	score float64,
 ) ConfidenceLevel {
+	if math.IsNaN(score) || math.IsInf(score, 0) || score <= 0 {
+		return ConfidenceLevelNone
+	}
 	switch {
 	case score >= 0.8:
 		return ConfidenceLevelHigh
 	case score >= 0.6:
 		return ConfidenceLevelMedium
-	case score > 0:
-		return ConfidenceLevelLow
 	default:
-		return ConfidenceLevelNone
+		return ConfidenceLevelLow
 	}
 }
 
@@ -299,7 +301,9 @@ func TrendDirectionForChange(
 	absoluteChange float64,
 ) TrendDirection {
 	const flatTolerance = 1e-9
-
+	if math.IsNaN(absoluteChange) || math.IsInf(absoluteChange, 0) {
+		return TrendDirectionUnavailable
+	}
 	switch {
 	case absoluteChange > flatTolerance:
 		return TrendDirectionUp
@@ -311,39 +315,12 @@ func TrendDirectionForChange(
 }
 
 func SupportedMetricNames() []MetricName {
-	result := append(
-		[]MetricName(nil),
-		supportedMetricNames...,
-	)
-	sort.Slice(
-		result,
-		func(left int, right int) bool {
-			return result[left] < result[right]
-		},
-	)
-
+	result := make([]MetricName, 0, len(metricCatalog))
+	for _, specification := range metricCatalog {
+		result = append(result, specification.Name)
+	}
+	sort.Slice(result, func(left int, right int) bool {
+		return result[left] < result[right]
+	})
 	return result
-}
-
-var supportedMetricNames = []MetricName{
-	MetricNameActiveAircraft,
-	MetricNameFlightCount,
-	MetricNameTrajectoryCount,
-	MetricNameObservationCount,
-	MetricNamePeakActivity,
-	MetricNameAverageActivity,
-	MetricNameTrafficDensity,
-	MetricNameDataFreshness,
-	MetricNameCoverageScore,
-	MetricNameAirportDepartures,
-	MetricNameAirportArrivals,
-	MetricNameAirportOperations,
-	MetricNameUniqueAircraft,
-	MetricNameActiveRoutes,
-	MetricNameRouteObservations,
-	MetricNameRouteConfidence,
-	MetricNameCompleteRouteRatio,
-	MetricNamePartialRouteRatio,
-	MetricNameUnavailableRouteRatio,
-	MetricNameGreatCircleDistanceKM,
 }

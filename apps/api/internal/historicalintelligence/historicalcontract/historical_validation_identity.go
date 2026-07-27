@@ -1,6 +1,6 @@
 package historicalcontract
 
-import "strings"
+import "fmt"
 
 func validateContractIdentity(
 	result Result,
@@ -31,48 +31,41 @@ func validateContractIdentity(
 
 func validateMetric(
 	metric Metric,
+	scope Scope,
 	collector *validationCollector,
 ) {
-	if !isSupportedMetricName(metric.Name) {
+	specification, exists := MetricSpecFor(metric.Name)
+	if !exists {
 		collector.add(
 			ValidationSeverityError,
 			"metric_name_unsupported",
 			"metric.name",
-			"Metric name is not part of historical-intelligence-v1.",
+			"Metric name is not materializable by historical-intelligence-v1.",
+		)
+		return
+	}
+	if metric.Unit != specification.Unit {
+		collector.add(
+			ValidationSeverityError,
+			"metric_unit_mismatch",
+			"metric.unit",
+			fmt.Sprintf("Metric unit %q does not match catalog unit %q.", metric.Unit, specification.Unit),
 		)
 	}
-
-	if strings.TrimSpace(metric.Unit) == "" {
+	if metric.Aggregation != specification.Aggregation {
 		collector.add(
 			ValidationSeverityError,
-			"metric_unit_required",
-			"metric.unit",
-			"Metric unit is required.",
-		)
-	} else if metric.Unit !=
-		strings.TrimSpace(metric.Unit) {
-		collector.add(
-			ValidationSeverityError,
-			"metric_unit_not_normalized",
-			"metric.unit",
-			"Metric unit must not contain surrounding whitespace.",
-		)
-	}
-
-	switch metric.Aggregation {
-	case AggregationCount,
-		AggregationSum,
-		AggregationMinimum,
-		AggregationMaximum,
-		AggregationAverage,
-		AggregationMedian,
-		AggregationRatio:
-	default:
-		collector.add(
-			ValidationSeverityError,
-			"metric_aggregation_invalid",
+			"metric_aggregation_mismatch",
 			"metric.aggregation",
-			"Metric aggregation is unsupported.",
+			fmt.Sprintf("Metric aggregation %q does not match catalog aggregation %q.", metric.Aggregation, specification.Aggregation),
+		)
+	}
+	if !specification.AllowsScope(scope.Type) {
+		collector.add(
+			ValidationSeverityError,
+			"metric_scope_mismatch",
+			"scope.type",
+			fmt.Sprintf("Metric %q does not support scope %q.", metric.Name, scope.Type),
 		)
 	}
 }
@@ -80,11 +73,6 @@ func validateMetric(
 func isSupportedMetricName(
 	value MetricName,
 ) bool {
-	for _, candidate := range supportedMetricNames {
-		if candidate == value {
-			return true
-		}
-	}
-
-	return false
+	_, exists := MetricSpecFor(value)
+	return exists
 }

@@ -214,8 +214,8 @@ func (materializer *Materializer) normalizeRequest(
 	if err != nil {
 		return Request{}, "", err
 	}
-	if !scopeAllowed(
-		family,
+	if !metricScopeAllowed(
+		request.MetricName,
 		scope.Type,
 	) {
 		return Request{},
@@ -282,53 +282,19 @@ func (request Request) DatasetLimitOr(
 func classifyMetric(
 	name historicalcontract.MetricName,
 ) (metricFamily, bool) {
-	switch name {
-	case historicalcontract.MetricNameActiveAircraft,
-		historicalcontract.MetricNameFlightCount,
-		historicalcontract.MetricNameTrajectoryCount,
-		historicalcontract.MetricNameObservationCount,
-		historicalcontract.MetricNameTrafficDensity:
-		return metricFamilyTraffic, true
-
-	case historicalcontract.MetricNameAirportDepartures,
-		historicalcontract.MetricNameAirportArrivals,
-		historicalcontract.MetricNameAirportOperations,
-		historicalcontract.MetricNameUniqueAircraft:
-		return metricFamilyAirport, true
-
-	case historicalcontract.MetricNameActiveRoutes,
-		historicalcontract.MetricNameRouteObservations,
-		historicalcontract.MetricNameRouteConfidence,
-		historicalcontract.MetricNameCompleteRouteRatio,
-		historicalcontract.MetricNamePartialRouteRatio,
-		historicalcontract.MetricNameUnavailableRouteRatio,
-		historicalcontract.MetricNameGreatCircleDistanceKM:
-		return metricFamilyRoute, true
-
-	default:
+	specification, exists := historicalcontract.MetricSpecFor(name)
+	if !exists {
 		return "", false
 	}
+	return metricFamily(specification.Family), true
 }
 
-func scopeAllowed(
-	family metricFamily,
+func metricScopeAllowed(
+	name historicalcontract.MetricName,
 	scopeType historicalcontract.ScopeType,
 ) bool {
-	switch family {
-	case metricFamilyTraffic:
-		return scopeType ==
-			historicalcontract.ScopeTypeGlobal
-	case metricFamilyAirport:
-		return scopeType ==
-			historicalcontract.ScopeTypeAirport
-	case metricFamilyRoute:
-		return scopeType ==
-			historicalcontract.ScopeTypeGlobal ||
-			scopeType ==
-				historicalcontract.ScopeTypeRoute
-	default:
-		return false
-	}
+	specification, exists := historicalcontract.MetricSpecFor(name)
+	return exists && specification.AllowsScope(scopeType)
 }
 
 func normalizeScope(

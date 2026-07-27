@@ -3,6 +3,7 @@ package historicalcontract
 type FieldGroup string
 
 const (
+	FieldGroupContract   FieldGroup = "contract"
 	FieldGroupMetric     FieldGroup = "metric"
 	FieldGroupScope      FieldGroup = "scope"
 	FieldGroupWindow     FieldGroup = "window"
@@ -296,6 +297,76 @@ var currentDefinitions = []FieldDefinition{
 		ValueType:   FieldValueTypeTime,
 		Required:    true,
 		Description: "UTC time at which the Historical Intelligence result was generated.",
+	},
+	{
+		Name:        "schema_version",
+		Group:       FieldGroupContract,
+		ValueType:   FieldValueTypeString,
+		Required:    true,
+		Description: "Versioned Historical Intelligence schema identifier.",
+	},
+	{
+		Name:        "status",
+		Group:       FieldGroupSeries,
+		ValueType:   FieldValueTypeString,
+		Required:    true,
+		Description: "Unavailable, partial, or complete series status.",
+	},
+	{
+		Name:        "points.confidence",
+		Group:       FieldGroupSeries,
+		ValueType:   FieldValueTypeObject,
+		Required:    true,
+		Description: "Confidence evidence attached to one historical bucket.",
+	},
+	{
+		Name:        "points.limitations",
+		Group:       FieldGroupSeries,
+		ValueType:   FieldValueTypeObject,
+		Required:    true,
+		Description: "Bucket-level evidence limitations.",
+	},
+	{
+		Name:        "comparison.previous_window",
+		Group:       FieldGroupComparison,
+		ValueType:   FieldValueTypeObject,
+		Required:    false,
+		Description: "Immediately preceding comparison window.",
+	},
+	{
+		Name:        "comparison.current_value",
+		Group:       FieldGroupComparison,
+		ValueType:   FieldValueTypeFloat64,
+		Required:    false,
+		Description: "Current aggregation-selected comparison value.",
+	},
+	{
+		Name:        "comparison.previous_value",
+		Group:       FieldGroupComparison,
+		ValueType:   FieldValueTypeFloat64,
+		Required:    false,
+		Description: "Previous-period aggregation-selected comparison value.",
+	},
+	{
+		Name:        "confidence.reasons",
+		Group:       FieldGroupConfidence,
+		ValueType:   FieldValueTypeObject,
+		Required:    true,
+		Description: "Deterministic confidence contributions and explanations.",
+	},
+	{
+		Name:        "limitations",
+		Group:       FieldGroupSeries,
+		ValueType:   FieldValueTypeObject,
+		Required:    true,
+		Description: "Series-level, window-level, and source-level limitations.",
+	},
+	{
+		Name:        "provenance.source_names",
+		Group:       FieldGroupProvenance,
+		ValueType:   FieldValueTypeObject,
+		Required:    true,
+		Description: "Sorted unique provenance source names.",
 	},
 }
 

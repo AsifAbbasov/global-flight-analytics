@@ -529,3 +529,10 @@ Trajectory feature extraction now uses one canonical point-evidence sequence for
 ## Validator Review Hardening
 
 Flight Feature validation now separates evidence incompleteness from mathematical integrity: partial groups may remain limited only when their evidence is explainable and internally valid, while non-finite values, impossible ranges, inconsistent relationships, residual unavailable payloads, and unsupported zero-evidence claims are rejected. Quality limitations are rebuilt from current group evidence on every validation pass, and all tolerance comparisons use a dimensionless relative policy. Validator generation six and processing generation twelve isolate the corrected trust-gate semantics.
+
+
+<!-- HISTORICAL-CONTRACT-REVIEW-HARDENING:README -->
+
+## Historical Contract Review Hardening
+
+Historical Intelligence now uses one production metric catalog for metric identity, unit, aggregation, value kind, builder ownership, and scope; rejects fractional count values and contradictory confidence/status evidence; binds comparisons to current summaries; completes the versioned schema registry; and aligns aggregate region normalization with the contract. Contract generation two isolates the corrected trust boundary.

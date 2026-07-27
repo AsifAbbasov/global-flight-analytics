@@ -2,7 +2,7 @@ package historicalcontract
 
 import "sort"
 
-const ValidationVersion = "historical-intelligence-contract-validation-v1"
+const ValidationVersion = "historical-intelligence-contract-validation-v2"
 
 type ValidationIssue struct {
 	Severity ValidationSeverity
@@ -35,7 +35,7 @@ func Validate(
 	collector := validationCollector{}
 
 	validateContractIdentity(result, &collector)
-	validateMetric(result.Metric, &collector)
+	validateMetric(result.Metric, result.Scope, &collector)
 	validateScope(result.Scope, &collector)
 	validateTimeWindow(
 		result.Window,
