@@ -80,7 +80,7 @@ func TestPostgresHistoricalReadIntegration(
 			created_at, updated_at
 		) VALUES (
 			$1, $2, 'abc123', $3, $4,
-			1800, 1, 2, 0, 0.987654321098765,
+			1800, 0, 0, 0, 0.987654321098765,
 			'integration', $5, $5
 		)`,
 		trajectoryID,
@@ -277,7 +277,7 @@ func TestPostgresHistoricalReadRepeatableReadConsistency(
 			created_at, updated_at
 		) VALUES (
 			$1, $2, 'abc123', $3, $4,
-			1800, 1, 2, 0, 0.25, 'integration', $5, $5
+			1800, 0, 0, 0, 0.25, 'integration', $5, $5
 		)`,
 		trajectoryID,
 		flightID,
