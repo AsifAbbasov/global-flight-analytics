@@ -31,6 +31,14 @@ func Build(
 			ErrSnapshotVersionInvalid
 	}
 
+	canonicalPlan, err := historicalwindow.CanonicalizePlan(
+		request.Plan,
+	)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
+	request.Plan = canonicalPlan
+
 	scope, originICAOCode, destinationICAOCode, err :=
 		normalizeScope(
 			request.OriginICAOCode,

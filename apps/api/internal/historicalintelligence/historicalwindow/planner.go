@@ -7,12 +7,17 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 )
 
+const (
+	maximumInt64 = int64(1<<63 - 1)
+	minimumInt64 = int64(-1 << 63)
+)
+
 func Build(
 	ctx context.Context,
 	request Request,
 ) (Plan, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Plan{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Plan{}, err
@@ -23,36 +28,50 @@ func Build(
 		return Plan{}, err
 	}
 
+	plan, err := buildNormalizedPlan(ctx, normalized)
+	if err != nil {
+		return Plan{}, err
+	}
+
+	return plan.Clone(), nil
+}
+
+func buildNormalizedPlan(
+	ctx context.Context,
+	request Request,
+) (Plan, error) {
 	plan := Plan{
 		Version: Version,
 
-		RequestedStartTime: normalized.StartTime,
-		RequestedEndTime:   normalized.EndTime,
-		AsOfTime:           normalized.AsOfTime,
+		RequestedStartTime: request.StartTime,
+		RequestedEndTime:   request.EndTime,
+		AsOfTime:           request.AsOfTime,
 
-		Granularity: normalized.Granularity,
+		Granularity: request.Granularity,
 
-		TruncatedByAsOfTime: normalized.EndTime.After(
-			normalized.AsOfTime,
+		TruncatedByAsOfTime: request.EndTime.After(
+			request.AsOfTime,
 		),
-		MaximumBucketCount: normalized.MaximumBucketCount,
+		MaximumBucketCount: request.MaximumBucketCount,
 	}
 
-	if normalized.Granularity ==
+	var err error
+	if request.Granularity ==
 		historicalcontract.GranularityCustom {
-		buildCustomPlan(&plan)
+		err = buildCustomPlan(ctx, &plan)
 	} else {
-		if err := buildClosedCalendarPlan(
-			ctx,
-			&plan,
-		); err != nil {
-			return Plan{}, err
-		}
+		err = buildClosedCalendarPlan(ctx, &plan)
+	}
+	if err != nil {
+		return Plan{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return Plan{}, err
 	}
 
 	plan.Fingerprint = planFingerprint(plan)
 
-	return plan.Clone(), nil
+	return plan, nil
 }
 
 func normalizeRequest(
@@ -107,8 +126,9 @@ func normalizeRequest(
 }
 
 func buildCustomPlan(
+	ctx context.Context,
 	plan *Plan,
-) {
+) error {
 	cutoff := earlierTime(
 		plan.RequestedEndTime,
 		plan.AsOfTime,
@@ -117,15 +137,8 @@ func buildCustomPlan(
 	if !plan.RequestedStartTime.Before(
 		cutoff,
 	) {
-		plan.Exclusions = append(
-			plan.Exclusions,
-			Exclusion{
-				Reason:    ExclusionReasonFutureAfterAsOfTime,
-				StartTime: plan.RequestedStartTime,
-				EndTime:   plan.RequestedEndTime,
-			},
-		)
-		return
+		appendEntireFutureExclusion(plan)
+		return ctx.Err()
 	}
 
 	plan.Buckets = []Bucket{
@@ -136,24 +149,22 @@ func buildCustomPlan(
 			cutoff,
 		),
 	}
-	setEffectiveAndPreviousWindows(
+	assignEffectiveWindow(
 		plan,
 		plan.RequestedStartTime,
 		cutoff,
 	)
-
-	if cutoff.Before(
-		plan.RequestedEndTime,
-	) {
-		plan.Exclusions = append(
-			plan.Exclusions,
-			Exclusion{
-				Reason:    ExclusionReasonFutureAfterAsOfTime,
-				StartTime: cutoff,
-				EndTime:   plan.RequestedEndTime,
-			},
-		)
+	if err := assignPreviousCustomWindow(
+		plan,
+		plan.RequestedStartTime,
+		cutoff,
+	); err != nil {
+		return err
 	}
+
+	appendFutureExclusion(plan, cutoff)
+
+	return ctx.Err()
 }
 
 func buildClosedCalendarPlan(
@@ -168,113 +179,123 @@ func buildClosedCalendarPlan(
 	if !plan.RequestedStartTime.Before(
 		cutoff,
 	) {
-		plan.Exclusions = append(
-			plan.Exclusions,
-			Exclusion{
-				Reason:    ExclusionReasonFutureAfterAsOfTime,
-				StartTime: plan.RequestedStartTime,
-				EndTime:   plan.RequestedEndTime,
-			},
-		)
-		return nil
+		appendEntireFutureExclusion(plan)
+		return ctx.Err()
 	}
 
+	effectiveStart, effectiveEnd, err :=
+		closedCalendarBounds(plan, cutoff)
+	if err != nil {
+		return err
+	}
+	if !effectiveStart.Before(effectiveEnd) {
+		appendNoCompleteBucketExclusion(
+			plan,
+			cutoff,
+		)
+		appendFutureExclusion(plan, cutoff)
+		return ctx.Err()
+	}
+
+	appendLeadingExclusion(
+		plan,
+		effectiveStart,
+	)
+
+	plan.Buckets, err = generateBuckets(
+		ctx,
+		plan.Granularity,
+		effectiveStart,
+		effectiveEnd,
+		plan.MaximumBucketCount,
+	)
+	if err != nil {
+		return err
+	}
+
+	assignEffectiveWindow(
+		plan,
+		effectiveStart,
+		effectiveEnd,
+	)
+	if err := assignPreviousCalendarWindow(
+		plan,
+		effectiveStart,
+	); err != nil {
+		return err
+	}
+
+	appendTrailingExclusion(
+		plan,
+		effectiveEnd,
+		cutoff,
+	)
+	appendFutureExclusion(plan, cutoff)
+
+	return ctx.Err()
+}
+
+func closedCalendarBounds(
+	plan *Plan,
+	cutoff time.Time,
+) (time.Time, time.Time, error) {
 	effectiveStart, err := CeilBoundary(
 		plan.RequestedStartTime,
 		plan.Granularity,
 	)
 	if err != nil {
-		return err
+		return time.Time{}, time.Time{}, err
 	}
 	effectiveEnd, err := FloorBoundary(
 		cutoff,
 		plan.Granularity,
 	)
 	if err != nil {
-		return err
+		return time.Time{}, time.Time{}, err
 	}
 
-	if !effectiveStart.Before(
-		effectiveEnd,
-	) {
-		plan.Exclusions = append(
-			plan.Exclusions,
-			Exclusion{
-				Reason:    ExclusionReasonNoCompleteBucket,
-				StartTime: plan.RequestedStartTime,
-				EndTime:   cutoff,
-			},
-		)
-		appendFutureExclusion(
-			plan,
-			cutoff,
-		)
+	return effectiveStart, effectiveEnd, nil
+}
 
-		return nil
-	}
+func generateBuckets(
+	ctx context.Context,
+	granularity historicalcontract.Granularity,
+	startTime time.Time,
+	endTime time.Time,
+	maximum int,
+) ([]Bucket, error) {
+	buckets := make([]Bucket, 0)
+	current := startTime
 
-	if plan.RequestedStartTime.Before(
-		effectiveStart,
-	) {
-		plan.Exclusions = append(
-			plan.Exclusions,
-			Exclusion{
-				Reason:    ExclusionReasonLeadingIncompleteBucket,
-				StartTime: plan.RequestedStartTime,
-				EndTime:   effectiveStart,
-			},
-		)
-	}
-
-	duration, err := boundaryDuration(
-		plan.Granularity,
-	)
-	if err != nil {
-		return err
-	}
-	bucketCount := int(
-		effectiveEnd.Sub(effectiveStart) /
-			duration,
-	)
-	if bucketCount >
-		plan.MaximumBucketCount {
-		return &BucketCountExceededError{
-			Granularity: plan.Granularity,
-			Count:       bucketCount,
-			Maximum:     plan.MaximumBucketCount,
+	for current.Before(endTime) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
-	}
-
-	plan.Buckets = make(
-		[]Bucket,
-		0,
-		bucketCount,
-	)
-
-	current := effectiveStart
-	for sequence := 1; current.Before(effectiveEnd); sequence++ {
-		if sequence%1_024 == 0 {
-			if err := ctx.Err(); err != nil {
-				return err
+		if len(buckets) >= maximum {
+			return nil, &BucketCountExceededError{
+				Granularity: granularity,
+				Count:       len(buckets) + 1,
+				Maximum:     maximum,
 			}
 		}
 
 		next, err := NextBoundary(
 			current,
-			plan.Granularity,
+			granularity,
 		)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if next.After(effectiveEnd) {
-			return ErrBoundarySequenceInvalid
+		if !next.After(current) ||
+			next.After(endTime) {
+			return nil, ErrBoundarySequenceInvalid
 		}
 
-		plan.Buckets = append(
-			plan.Buckets,
+		buckets = append(
+			buckets,
 			newBucket(
-				sequence,
-				plan.Granularity,
+				len(buckets)+1,
+				granularity,
 				current,
 				next,
 			),
@@ -282,47 +303,14 @@ func buildClosedCalendarPlan(
 		current = next
 	}
 
-	setEffectiveAndPreviousWindows(
-		plan,
-		effectiveStart,
-		effectiveEnd,
-	)
-
-	if effectiveEnd.Before(cutoff) {
-		plan.Exclusions = append(
-			plan.Exclusions,
-			Exclusion{
-				Reason:    ExclusionReasonTrailingIncompleteBucket,
-				StartTime: effectiveEnd,
-				EndTime:   cutoff,
-			},
-		)
+	if !current.Equal(endTime) {
+		return nil, ErrBoundarySequenceInvalid
 	}
 
-	appendFutureExclusion(plan, cutoff)
-
-	return nil
+	return buckets, nil
 }
 
-func appendFutureExclusion(
-	plan *Plan,
-	cutoff time.Time,
-) {
-	if cutoff.Before(
-		plan.RequestedEndTime,
-	) {
-		plan.Exclusions = append(
-			plan.Exclusions,
-			Exclusion{
-				Reason:    ExclusionReasonFutureAfterAsOfTime,
-				StartTime: cutoff,
-				EndTime:   plan.RequestedEndTime,
-			},
-		)
-	}
-}
-
-func setEffectiveAndPreviousWindows(
+func assignEffectiveWindow(
 	plan *Plan,
 	startTime time.Time,
 	endTime time.Time,
@@ -333,18 +321,246 @@ func setEffectiveAndPreviousWindows(
 			EndTime:   endTime,
 			AsOfTime:  plan.AsOfTime,
 		}
-	plan.EffectiveWindow =
-		&effectiveWindow
+	plan.EffectiveWindow = &effectiveWindow
+}
 
-	duration := endTime.Sub(startTime)
+func assignPreviousCalendarWindow(
+	plan *Plan,
+	startTime time.Time,
+) error {
+	previousStart, err := shiftBoundary(
+		startTime,
+		plan.Granularity,
+		-len(plan.Buckets),
+	)
+	if err != nil {
+		return err
+	}
+
+	assignPreviousWindow(
+		plan,
+		previousStart,
+		startTime,
+	)
+	return nil
+}
+
+func assignPreviousCustomWindow(
+	plan *Plan,
+	startTime time.Time,
+	endTime time.Time,
+) error {
+	previousStart, err := previousStartForSpan(
+		startTime,
+		endTime,
+	)
+	if err != nil {
+		return err
+	}
+
+	assignPreviousWindow(
+		plan,
+		previousStart,
+		startTime,
+	)
+	return nil
+}
+
+func assignPreviousWindow(
+	plan *Plan,
+	startTime time.Time,
+	endTime time.Time,
+) {
 	previousWindow :=
 		historicalcontract.TimeWindow{
-			StartTime: startTime.Add(-duration),
-			EndTime:   startTime,
+			StartTime: startTime,
+			EndTime:   endTime,
 			AsOfTime:  plan.AsOfTime,
 		}
-	plan.PreviousWindow =
-		&previousWindow
+	plan.PreviousWindow = &previousWindow
+}
+
+func previousStartForSpan(
+	startTime time.Time,
+	endTime time.Time,
+) (time.Time, error) {
+	seconds, nanoseconds, err := exactSpan(
+		startTime,
+		endTime,
+	)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	previousSeconds, ok := checkedSubtractInt64(
+		startTime.Unix(),
+		seconds,
+	)
+	if !ok {
+		return time.Time{},
+			ErrPreviousWindowOutOfRange
+	}
+	previousNanoseconds := int64(
+		startTime.Nanosecond(),
+	) - nanoseconds
+	if previousNanoseconds < 0 {
+		previousSeconds, ok = checkedSubtractInt64(
+			previousSeconds,
+			1,
+		)
+		if !ok {
+			return time.Time{},
+				ErrPreviousWindowOutOfRange
+		}
+		previousNanoseconds += int64(time.Second)
+	}
+
+	previousStart := time.Unix(
+		previousSeconds,
+		previousNanoseconds,
+	).UTC()
+	if !previousStart.Before(startTime) {
+		return time.Time{},
+			ErrPreviousWindowOutOfRange
+	}
+
+	return previousStart, nil
+}
+
+func exactSpan(
+	startTime time.Time,
+	endTime time.Time,
+) (int64, int64, error) {
+	seconds, ok := checkedSubtractInt64(
+		endTime.Unix(),
+		startTime.Unix(),
+	)
+	if !ok {
+		return 0, 0,
+			ErrPreviousWindowOutOfRange
+	}
+	nanoseconds := int64(
+		endTime.Nanosecond(),
+	) - int64(startTime.Nanosecond())
+	if nanoseconds < 0 {
+		seconds, ok = checkedSubtractInt64(
+			seconds,
+			1,
+		)
+		if !ok {
+			return 0, 0,
+				ErrPreviousWindowOutOfRange
+		}
+		nanoseconds += int64(time.Second)
+	}
+	if seconds < 0 ||
+		(seconds == 0 && nanoseconds <= 0) {
+		return 0, 0, ErrWindowNotPositive
+	}
+
+	return seconds, nanoseconds, nil
+}
+
+func checkedSubtractInt64(
+	left int64,
+	right int64,
+) (int64, bool) {
+	if right > 0 &&
+		left < minimumInt64+right {
+		return 0, false
+	}
+	if right < 0 &&
+		left > maximumInt64+right {
+		return 0, false
+	}
+
+	return left - right, true
+}
+
+func appendLeadingExclusion(
+	plan *Plan,
+	effectiveStart time.Time,
+) {
+	if !plan.RequestedStartTime.Before(
+		effectiveStart,
+	) {
+		return
+	}
+
+	plan.Exclusions = append(
+		plan.Exclusions,
+		Exclusion{
+			Reason:    ExclusionReasonLeadingIncompleteBucket,
+			StartTime: plan.RequestedStartTime,
+			EndTime:   effectiveStart,
+		},
+	)
+}
+
+func appendTrailingExclusion(
+	plan *Plan,
+	effectiveEnd time.Time,
+	cutoff time.Time,
+) {
+	if !effectiveEnd.Before(cutoff) {
+		return
+	}
+
+	plan.Exclusions = append(
+		plan.Exclusions,
+		Exclusion{
+			Reason:    ExclusionReasonTrailingIncompleteBucket,
+			StartTime: effectiveEnd,
+			EndTime:   cutoff,
+		},
+	)
+}
+
+func appendNoCompleteBucketExclusion(
+	plan *Plan,
+	cutoff time.Time,
+) {
+	plan.Exclusions = append(
+		plan.Exclusions,
+		Exclusion{
+			Reason:    ExclusionReasonNoCompleteBucket,
+			StartTime: plan.RequestedStartTime,
+			EndTime:   cutoff,
+		},
+	)
+}
+
+func appendEntireFutureExclusion(
+	plan *Plan,
+) {
+	plan.Exclusions = append(
+		plan.Exclusions,
+		Exclusion{
+			Reason:    ExclusionReasonFutureAfterAsOfTime,
+			StartTime: plan.RequestedStartTime,
+			EndTime:   plan.RequestedEndTime,
+		},
+	)
+}
+
+func appendFutureExclusion(
+	plan *Plan,
+	cutoff time.Time,
+) {
+	if !cutoff.Before(
+		plan.RequestedEndTime,
+	) {
+		return
+	}
+
+	plan.Exclusions = append(
+		plan.Exclusions,
+		Exclusion{
+			Reason:    ExclusionReasonFutureAfterAsOfTime,
+			StartTime: cutoff,
+			EndTime:   plan.RequestedEndTime,
+		},
+	)
 }
 
 func newBucket(

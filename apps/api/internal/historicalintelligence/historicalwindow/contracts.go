@@ -9,7 +9,8 @@ import (
 const (
 	Version = "historical-time-window-v1"
 
-	FingerprintVersion = "historical-time-window-fingerprint-v1"
+	FingerprintVersion = "historical-time-window-fingerprint-v2"
+	ValidationVersion  = "historical-time-window-validation-v1"
 
 	BucketKeyPrefix = "historical-bucket-"
 
@@ -46,7 +47,8 @@ type Bucket struct {
 
 func (bucket Bucket) Duration() time.Duration {
 	if bucket.StartTime.IsZero() ||
-		bucket.EndTime.IsZero() {
+		bucket.EndTime.IsZero() ||
+		!bucket.StartTime.Before(bucket.EndTime) {
 		return 0
 	}
 
@@ -57,7 +59,8 @@ func (bucket Bucket) Contains(
 	value time.Time,
 ) bool {
 	if bucket.StartTime.IsZero() ||
-		bucket.EndTime.IsZero() {
+		bucket.EndTime.IsZero() ||
+		!bucket.StartTime.Before(bucket.EndTime) {
 		return false
 	}
 
@@ -76,7 +79,8 @@ type Exclusion struct {
 
 func (exclusion Exclusion) Duration() time.Duration {
 	if exclusion.StartTime.IsZero() ||
-		exclusion.EndTime.IsZero() {
+		exclusion.EndTime.IsZero() ||
+		!exclusion.StartTime.Before(exclusion.EndTime) {
 		return 0
 	}
 

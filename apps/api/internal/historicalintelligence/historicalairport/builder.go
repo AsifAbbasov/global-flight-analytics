@@ -30,6 +30,14 @@ func Build(
 			ErrSnapshotVersionInvalid
 	}
 
+	canonicalPlan, err := historicalwindow.CanonicalizePlan(
+		request.Plan,
+	)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
+	request.Plan = canonicalPlan
+
 	airportICAOCode := strings.ToUpper(
 		strings.TrimSpace(request.AirportICAOCode),
 	)

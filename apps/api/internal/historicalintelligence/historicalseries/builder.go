@@ -17,6 +17,14 @@ var fingerprintPattern = regexp.MustCompile(
 func Build(
 	request BuildRequest,
 ) (historicalcontract.Result, error) {
+	canonicalPlan, err := historicalwindow.CanonicalizePlan(
+		request.Plan,
+	)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
+	request.Plan = canonicalPlan
+
 	window, available, err := resolveWindow(
 		request.Plan,
 	)
@@ -31,13 +39,12 @@ func Build(
 
 	for index, value := range request.Values {
 		planned := request.Plan.Buckets[index]
-		if value.Bucket.Sequence != planned.Sequence ||
-			value.Bucket.Key != planned.Key ||
-			!value.Bucket.StartTime.Equal(planned.StartTime) ||
+		if !value.Bucket.StartTime.Equal(planned.StartTime) ||
 			!value.Bucket.EndTime.Equal(planned.EndTime) {
 			return historicalcontract.Result{},
 				ErrBucketValueOrderInvalid
 		}
+		request.Values[index].Bucket = planned
 	}
 
 	if math.IsNaN(request.DataCoverageRatio) ||

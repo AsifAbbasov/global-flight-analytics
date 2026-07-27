@@ -536,3 +536,10 @@ Flight Feature validation now separates evidence incompleteness from mathematica
 ## Historical Contract Review Hardening
 
 Historical Intelligence now uses one production metric catalog for metric identity, unit, aggregation, value kind, builder ownership, and scope; rejects fractional count values and contradictory confidence/status evidence; binds comparisons to current summaries; completes the versioned schema registry; and aligns aggregate region normalization with the contract. Contract generation two isolates the corrected trust boundary.
+
+
+<!-- HISTORICAL-WINDOW-REVIEW-HARDENING:README -->
+
+## Historical Window Review Hardening
+
+Historical Intelligence window planning now enforces bucket limits during generation, preserves cancellation on every iteration, constructs previous windows without saturated `time.Duration`, canonicalizes mutable plans before analytics and fingerprinting, binds all derived evidence into fingerprint generation two, and keeps execution limits outside semantic identity. Custom one-bucket planning and optional absent windows remain intentional domain contracts.

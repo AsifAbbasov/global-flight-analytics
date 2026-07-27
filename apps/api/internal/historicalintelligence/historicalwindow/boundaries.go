@@ -6,6 +6,86 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 )
 
+type granularityPolicy struct {
+	floor func(time.Time) time.Time
+	shift func(time.Time, int) time.Time
+}
+
+func granularityPolicyFor(
+	granularity historicalcontract.Granularity,
+) (granularityPolicy, bool) {
+	switch granularity {
+	case historicalcontract.GranularityHour:
+		return granularityPolicy{
+			floor: func(value time.Time) time.Time {
+				return value.Truncate(time.Hour)
+			},
+			shift: func(value time.Time, steps int) time.Time {
+				return value.Add(
+					time.Duration(steps) * time.Hour,
+				)
+			},
+		}, true
+
+	case historicalcontract.GranularityDay:
+		return granularityPolicy{
+			floor: func(value time.Time) time.Time {
+				return time.Date(
+					value.Year(),
+					value.Month(),
+					value.Day(),
+					0,
+					0,
+					0,
+					0,
+					time.UTC,
+				)
+			},
+			shift: func(value time.Time, steps int) time.Time {
+				return value.AddDate(0, 0, steps)
+			},
+		}, true
+
+	case historicalcontract.GranularityWeek:
+		return granularityPolicy{
+			floor: func(value time.Time) time.Time {
+				dayBoundary := time.Date(
+					value.Year(),
+					value.Month(),
+					value.Day(),
+					0,
+					0,
+					0,
+					0,
+					time.UTC,
+				)
+				daysSinceMonday := (int(dayBoundary.Weekday()) -
+					int(time.Monday) +
+					7) % 7
+
+				return dayBoundary.AddDate(
+					0,
+					0,
+					-daysSinceMonday,
+				)
+			},
+			shift: func(value time.Time, steps int) time.Time {
+				return value.AddDate(0, 0, 7*steps)
+			},
+		}, true
+
+	case historicalcontract.GranularityCustom:
+		return granularityPolicy{
+			floor: func(value time.Time) time.Time {
+				return value
+			},
+		}, true
+
+	default:
+		return granularityPolicy{}, false
+	}
+}
+
 func FloorBoundary(
 	value time.Time,
 	granularity historicalcontract.Granularity,
@@ -14,52 +94,12 @@ func FloorBoundary(
 		return time.Time{}, ErrStartTimeRequired
 	}
 
-	normalized := value.UTC()
-
-	switch granularity {
-	case historicalcontract.GranularityHour:
-		return normalized.Truncate(time.Hour), nil
-
-	case historicalcontract.GranularityDay:
-		return time.Date(
-			normalized.Year(),
-			normalized.Month(),
-			normalized.Day(),
-			0,
-			0,
-			0,
-			0,
-			time.UTC,
-		), nil
-
-	case historicalcontract.GranularityWeek:
-		dayBoundary := time.Date(
-			normalized.Year(),
-			normalized.Month(),
-			normalized.Day(),
-			0,
-			0,
-			0,
-			0,
-			time.UTC,
-		)
-		daysSinceMonday := (int(dayBoundary.Weekday()) -
-			int(time.Monday) +
-			7) % 7
-
-		return dayBoundary.AddDate(
-			0,
-			0,
-			-daysSinceMonday,
-		), nil
-
-	case historicalcontract.GranularityCustom:
-		return normalized, nil
-
-	default:
-		return time.Time{},
-			ErrUnsupportedGranularity
+	policy, exists := granularityPolicyFor(granularity)
+	if !exists {
+		return time.Time{}, ErrUnsupportedGranularity
 	}
+
+	return policy.floor(value.UTC()), nil
 }
 
 func CeilBoundary(
@@ -90,53 +130,55 @@ func NextBoundary(
 		return time.Time{}, ErrStartTimeRequired
 	}
 
-	normalized := value.UTC()
-
-	switch granularity {
-	case historicalcontract.GranularityHour:
-		return normalized.Add(time.Hour), nil
-
-	case historicalcontract.GranularityDay:
-		return normalized.AddDate(0, 0, 1), nil
-
-	case historicalcontract.GranularityWeek:
-		return normalized.AddDate(0, 0, 7), nil
-
-	case historicalcontract.GranularityCustom:
-		return time.Time{},
-			ErrUnsupportedGranularity
-
-	default:
-		return time.Time{},
-			ErrUnsupportedGranularity
+	policy, exists := granularityPolicyFor(granularity)
+	if !exists || policy.shift == nil {
+		return time.Time{}, ErrUnsupportedGranularity
 	}
+
+	normalized := value.UTC()
+	floor := policy.floor(normalized)
+	if !floor.Equal(normalized) {
+		return time.Time{}, ErrBoundarySequenceInvalid
+	}
+
+	next := policy.shift(normalized, 1)
+	if !next.After(normalized) {
+		return time.Time{}, ErrBoundarySequenceInvalid
+	}
+
+	return next, nil
 }
 
-func boundaryDuration(
+func shiftBoundary(
+	value time.Time,
 	granularity historicalcontract.Granularity,
-) (time.Duration, error) {
-	switch granularity {
-	case historicalcontract.GranularityHour:
-		return time.Hour, nil
-	case historicalcontract.GranularityDay:
-		return 24 * time.Hour, nil
-	case historicalcontract.GranularityWeek:
-		return 7 * 24 * time.Hour, nil
-	default:
-		return 0, ErrUnsupportedGranularity
+	steps int,
+) (time.Time, error) {
+	policy, exists := granularityPolicyFor(granularity)
+	if !exists || policy.shift == nil {
+		return time.Time{}, ErrUnsupportedGranularity
 	}
+
+	normalized := value.UTC()
+	floor := policy.floor(normalized)
+	if !floor.Equal(normalized) {
+		return time.Time{}, ErrBoundarySequenceInvalid
+	}
+
+	shifted := policy.shift(normalized, steps)
+	if steps < 0 && !shifted.Before(normalized) {
+		return time.Time{}, ErrBoundarySequenceInvalid
+	}
+	if steps > 0 && !shifted.After(normalized) {
+		return time.Time{}, ErrBoundarySequenceInvalid
+	}
+
+	return shifted, nil
 }
 
 func isSupportedGranularity(
 	granularity historicalcontract.Granularity,
 ) bool {
-	switch granularity {
-	case historicalcontract.GranularityHour,
-		historicalcontract.GranularityDay,
-		historicalcontract.GranularityWeek,
-		historicalcontract.GranularityCustom:
-		return true
-	default:
-		return false
-	}
+	_, exists := granularityPolicyFor(granularity)
+	return exists
 }

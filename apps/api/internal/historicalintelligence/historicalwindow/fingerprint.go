@@ -15,6 +15,7 @@ func planFingerprint(
 ) string {
 	parts := []string{
 		FingerprintVersion,
+		plan.Version,
 		plan.RequestedStartTime.UTC().
 			Format(time.RFC3339Nano),
 		plan.RequestedEndTime.UTC().
@@ -23,28 +24,31 @@ func planFingerprint(
 			Format(time.RFC3339Nano),
 		string(plan.Granularity),
 		fmt.Sprintf(
-			"%d",
-			plan.MaximumBucketCount,
-		),
-		fmt.Sprintf(
-			"%t",
+			"truncated:%t",
 			plan.TruncatedByAsOfTime,
 		),
 	}
 
-	if plan.EffectiveWindow == nil {
+	parts = appendWindowFingerprint(
+		parts,
+		"effective",
+		plan.EffectiveWindow,
+	)
+	parts = appendWindowFingerprint(
+		parts,
+		"previous",
+		plan.PreviousWindow,
+	)
+
+	for _, bucket := range plan.Buckets {
 		parts = append(
 			parts,
-			"effective-window:none",
-		)
-	} else {
-		parts = append(
-			parts,
-			plan.EffectiveWindow.StartTime.
-				UTC().
+			"bucket",
+			bucket.Key,
+			fmt.Sprintf("%d", bucket.Sequence),
+			bucket.StartTime.UTC().
 				Format(time.RFC3339Nano),
-			plan.EffectiveWindow.EndTime.
-				UTC().
+			bucket.EndTime.UTC().
 				Format(time.RFC3339Nano),
 		)
 	}
@@ -52,6 +56,7 @@ func planFingerprint(
 	for _, exclusion := range plan.Exclusions {
 		parts = append(
 			parts,
+			"exclusion",
 			string(exclusion.Reason),
 			exclusion.StartTime.UTC().
 				Format(time.RFC3339Nano),
@@ -66,6 +71,27 @@ func planFingerprint(
 
 	return "sha256:" +
 		hex.EncodeToString(sum[:])
+}
+
+func appendWindowFingerprint(
+	parts []string,
+	label string,
+	window *historicalcontract.TimeWindow,
+) []string {
+	if window == nil {
+		return append(parts, label+":none")
+	}
+
+	return append(
+		parts,
+		label,
+		window.StartTime.UTC().
+			Format(time.RFC3339Nano),
+		window.EndTime.UTC().
+			Format(time.RFC3339Nano),
+		window.AsOfTime.UTC().
+			Format(time.RFC3339Nano),
+	)
 }
 
 func bucketKey(

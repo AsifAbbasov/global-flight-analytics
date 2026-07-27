@@ -23,6 +23,14 @@ func Build(
 			ErrSnapshotVersionInvalid
 	}
 
+	canonicalPlan, err := historicalwindow.CanonicalizePlan(
+		request.Plan,
+	)
+	if err != nil {
+		return historicalcontract.Result{}, err
+	}
+	request.Plan = canonicalPlan
+
 	definition, ok := metricDefinition(
 		request.MetricName,
 	)

@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"historical window context is required",
+	)
 	ErrStartTimeRequired = errors.New(
 		"historical window start time is required",
 	)
@@ -31,6 +34,15 @@ var (
 	)
 	ErrBoundarySequenceInvalid = errors.New(
 		"historical window boundary sequence is invalid",
+	)
+	ErrPreviousWindowOutOfRange = errors.New(
+		"historical previous window is outside the supported time range",
+	)
+	ErrPlanVersionInvalid = errors.New(
+		"historical window plan version is invalid",
+	)
+	ErrPlanIntegrityInvalid = errors.New(
+		"historical window plan integrity is invalid",
 	)
 )
 

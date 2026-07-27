@@ -142,6 +142,9 @@ jobs:
       - name: Run historical contract review audit
         run: go run ./tools/historicalcontractreviewaudit -strict
 
+      - name: Run historical window review audit
+        run: go run ./tools/historicalwindowreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

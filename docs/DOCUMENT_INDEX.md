@@ -1075,3 +1075,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 124 — Historical Contract Review Hardening
 
 `124_HISTORICAL_CONTRACT_REVIEW_HARDENING.md` records the single production metric catalog, exact count semantics over the heterogeneous float64 transport, metric-aware precision, confidence and availability reconciliation, comparison-to-summary integrity, complete schema registry coverage, lowercase region normalization, deliberately retained zero-event coverage semantics, permanent regression tests, and Continuous Integration enforcement.
+
+
+<!-- HISTORICAL-WINDOW-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 125 — Historical Window Review Hardening
+
+`125_HISTORICAL_WINDOW_REVIEW_HARDENING.md` records calendar-safe bucket generation, exact previous-window construction, plan canonicalization and validation, semantic fingerprint generation two, cancellation hardening, accepted review findings, and intentionally retained custom and optional-window contracts.
