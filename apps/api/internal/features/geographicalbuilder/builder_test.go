@@ -204,6 +204,7 @@ func TestBuilderFallsBackToOrderedSegmentEndpoints(
 ) {
 	builder := newTestBuilder(t, Config{})
 	item := trajectory.FlightTrajectory{
+		PointCount: 1,
 		Points: []trajectory.TrackPoint4D{
 			{
 				Latitude:  100,
@@ -258,9 +259,9 @@ func TestBuilderFallsBackToOrderedSegmentEndpoints(
 			features,
 		)
 	}
-	if features.Evidence.SupportingPointCount != 3 {
+	if features.Evidence.SupportingPointCount != 1 {
 		t.Fatalf(
-			"fallback supporting count = %d, want 3",
+			"fallback supporting count = %d, want 1",
 			features.Evidence.SupportingPointCount,
 		)
 	}
@@ -604,7 +605,7 @@ func TestCloneFeaturesDoesNotShareLimitations(t *testing.T) {
 func TestGeographicalBuilderContractConstantsRemainStable(
 	t *testing.T,
 ) {
-	if Version != "geographical-feature-builder-v2" {
+	if Version != "geographical-feature-builder-v3" {
 		t.Fatalf("Version = %q", Version)
 	}
 	if GeographicalFeatureFieldCount != flightfeatures.GeographicalRequiredFeatureFieldCount {

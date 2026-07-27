@@ -8,7 +8,7 @@ type ProcessingVersion string
 const SchemaVersionV1 SchemaVersion = "flight-features-v1"
 
 const (
-	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v8"
+	CurrentProcessingVersion ProcessingVersion = "flight-feature-processing-pipeline-v9"
 	LegacyProcessingVersion  ProcessingVersion = "flight-feature-processing-legacy-v1"
 )
 
@@ -98,14 +98,18 @@ type TemporalFeatures struct {
 }
 
 type GeographicalFeatures struct {
-	Evidence                  GroupEvidence
-	StartLatitude             float64
-	StartLongitude            float64
-	EndLatitude               float64
-	EndLongitude              float64
-	MinimumLatitude           float64
-	MaximumLatitude           float64
-	MinimumLongitude          float64
+	Evidence        GroupEvidence
+	StartLatitude   float64
+	StartLongitude  float64
+	EndLatitude     float64
+	EndLongitude    float64
+	MinimumLatitude float64
+	MaximumLatitude float64
+	// MinimumLongitude is the western circular envelope bound. It may be
+	// greater than MaximumLongitude when the envelope wraps the antimeridian.
+	MinimumLongitude float64
+	// MaximumLongitude is the eastern circular envelope bound and is
+	// independent from chronological path-crossing semantics.
 	MaximumLongitude          float64
 	LatitudeSpanDegrees       float64
 	LongitudeSpanDegrees      float64

@@ -183,7 +183,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "kilometres",
 		Required:    true,
-		Description: "Great-circle distance between the first and final usable points.",
+		Description: "Mean-Earth spherical Haversine distance between the first and final usable points.",
 	},
 	{
 		Name:        "geographical.observed_path_distance_km",
@@ -191,7 +191,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeFloat64,
 		Unit:        "kilometres",
 		Required:    true,
-		Description: "Cumulative distance along usable observed movement.",
+		Description: "Cumulative distance along temporally ordered usable point movement; segment fallback sums only movement within each usable segment and excludes unobserved discontinuities.",
 	},
 	{
 		Name:        "geographical.maximum_displacement_km",
@@ -214,7 +214,7 @@ var currentDefinitions = []FeatureDefinition{
 		ValueType:   FeatureValueTypeInteger,
 		Unit:        "cells",
 		Required:    true,
-		Description: "Number of unique geographic cells occupied by usable points.",
+		Description: "Number of decimal-degree geographic buckets occupied by usable coordinates under the versioned half-away-from-zero rounding policy.",
 	},
 	{
 		Name:        "operational.minimum_altitude_m",

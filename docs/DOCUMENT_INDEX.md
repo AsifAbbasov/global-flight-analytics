@@ -1043,3 +1043,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 119 — Temporal Builder Review Hardening
 
 `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` records production segment-boundary temporal evidence fallback, centralized fractional-second duration policy, zero-duration metadata mismatch detection, strict context and cancellation contracts, exact evidence diagnostics, stale as-of finding classification, processing generation eight, permanent tests and Continuous Integration audit closure.
+
+
+<!-- GEOGRAPHICAL-BUILDER-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 120 — Geographical Builder Review Hardening
+
+`120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` records chronological point-window filtering, order-independent point snapshots, disconnected segment-path semantics, circular longitude envelope validation, metadata-based fallback support counts, versioned Haversine and decimal-degree cell policies, compensated distance summation, processing generation nine, permanent tests and Continuous Integration closure.

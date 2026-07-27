@@ -120,13 +120,13 @@ func main() {
 		{
 			path: "apps/api/internal/features/flightfeatures/model.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v8`,
+				`flight-feature-processing-pipeline-v9`,
 			},
 		},
 		{
 			path: "apps/api/internal/features/featurepipeline/contracts.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v8`,
+				`flight-feature-processing-pipeline-v9`,
 			},
 		},
 		{

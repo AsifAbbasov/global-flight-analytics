@@ -506,3 +506,9 @@ The version-one registry now includes every geographical analytical field, compl
 ## Temporal Builder Review Hardening
 
 Temporal feature extraction now rejects nil contexts, observes cancellation during evidence scans, uses a centralized whole-second duration policy, detects zero-valued duration mismatches, and reconstructs production temporal support from unique persisted segment-boundary timestamps when raw point records are not materialized. Processing generation eight isolates the corrected output semantics.
+
+<!-- GEOGRAPHICAL-BUILDER-REVIEW-HARDENING:README -->
+
+## Geographical Builder Review Hardening
+
+Geographical feature extraction now filters and chronologically orders production point evidence, separates circular longitude envelopes from path crossing, excludes disconnected segment gaps from observed distance, uses metadata-based fallback support counts, applies compensated distance summation, and records versioned distance and geographic-cell policies. Processing generation nine isolates the corrected output semantics.

@@ -647,19 +647,6 @@ func validateGeographicalFeatures(
 			"Minimum latitude exceeds maximum latitude.",
 		)
 	}
-	if finite(item.MinimumLongitude) &&
-		finite(item.MaximumLongitude) &&
-		item.MinimumLongitude > item.MaximumLongitude &&
-		!item.CrossesAntimeridian {
-		addBySeverity(
-			collector,
-			severity,
-			group,
-			"geographical.longitude_bounds",
-			issueCodePrefix+"longitude_bounds_reversed",
-			"Minimum longitude exceeds maximum longitude without an antimeridian crossing.",
-		)
-	}
 
 	validateNonNegativeFinite(
 		collector,
@@ -697,6 +684,7 @@ func validateGeographicalFeatures(
 			"Longitude span must not exceed 360 degrees.",
 		)
 	}
+	validateGeographicalLongitudeEnvelope(collector, severity, item)
 	if finite(item.MinimumLatitude) &&
 		finite(item.MaximumLatitude) &&
 		!approximatelyEqual(
@@ -735,32 +723,7 @@ func validateGeographicalFeatures(
 		"geographical.maximum_displacement_km",
 		item.MaximumDisplacementKM,
 	)
-	if finite(item.GreatCircleDistanceKM) &&
-		finite(item.ObservedPathDistanceKM) &&
-		item.GreatCircleDistanceKM >
-			item.ObservedPathDistanceKM+collector.tolerance {
-		addBySeverity(
-			collector,
-			severity,
-			group,
-			"geographical.observed_path_distance_km",
-			issueCodePrefix+"path_shorter_than_great_circle",
-			"Observed path distance is shorter than the endpoint great-circle distance.",
-		)
-	}
-	if finite(item.MaximumDisplacementKM) &&
-		finite(item.ObservedPathDistanceKM) &&
-		item.MaximumDisplacementKM >
-			item.ObservedPathDistanceKM+collector.tolerance {
-		addBySeverity(
-			collector,
-			severity,
-			group,
-			"geographical.maximum_displacement_km",
-			issueCodePrefix+"displacement_exceeds_path",
-			"Maximum displacement exceeds observed path distance.",
-		)
-	}
+	validateGeographicalDistanceRelationships(collector, severity, item)
 	if item.UniqueGeographicCellCount <= 0 {
 		addBySeverity(
 			collector,
@@ -1166,6 +1129,10 @@ func validateTrajectoryFeatures(
 	if features.Geographical.Evidence.Status !=
 		flightfeatures.AvailabilityStatusUnavailable &&
 		features.Geographical.ObservedPathDistanceKM > 0 &&
+		!flightfeatures.HasLimitationCode(
+			features.Geographical.Evidence.Limitations,
+			flightfeatures.GeographicalLimitationSegmentEndpointFallback,
+		) &&
 		finite(item.PathEfficiencyRatio) {
 		expectedRatio :=
 			features.Geographical.GreatCircleDistanceKM /

@@ -61,7 +61,7 @@ func main() {
 		{
 			path: "apps/api/internal/features/flightfeatures/model.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v8`,
+				`flight-feature-processing-pipeline-v9`,
 				"processing-configuration mirror",
 				"ProcessingIdentityFingerprint",
 				"AircraftMetadataProviderVersion",
@@ -71,7 +71,7 @@ func main() {
 		{
 			path: "apps/api/internal/features/geographicalbuilder/contracts.go",
 			required: []string{
-				`geographical-feature-builder-v2`,
+				`geographical-feature-builder-v3`,
 				"flightfeatures.GeographicalRequiredFeatureFieldCount",
 			},
 			forbidden: []string{
@@ -99,13 +99,13 @@ func main() {
 		{
 			path: "apps/api/internal/features/validator/contracts.go",
 			required: []string{
-				`flight-feature-validator-v3`,
+				`flight-feature-validator-v4`,
 			},
 		},
 		{
 			path: "apps/api/internal/features/featurepipeline/contracts.go",
 			required: []string{
-				`flight-feature-processing-pipeline-v8`,
+				`flight-feature-processing-pipeline-v9`,
 			},
 		},
 		{
