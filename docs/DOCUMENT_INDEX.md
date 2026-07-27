@@ -1094,4 +1094,4 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 
 ## Document 127 — Historical Series Review Hardening
 
-`127_HISTORICAL_SERIES_REVIEW_HARDENING.md` records bucket-level coverage evidence, fail-closed provenance timestamps and limitations, unique exclusion evidence, checked sample accumulation, focused builder responsibilities, accepted findings, rejected stale findings, permanent tests, and Continuous Integration enforcement.
+`127_HISTORICAL_SERIES_REVIEW_HARDENING.md` records bucket-level coverage evidence, fail-closed provenance timestamps and limitations, unique exclusion evidence, checked sample accumulation, focused builder responsibilities, accepted findings, rejected stale findings, permanent tests, Continuous Integration enforcement, exact engineering commits, GitHub Actions run `30305541816`, and formal closure with zero open, unclassified, or deferred findings.

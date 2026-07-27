@@ -104,6 +104,26 @@ func main() {
 				"DataCoverageRatio:",
 			},
 		},
+		{
+			path: "../../docs/127_HISTORICAL_SERIES_REVIEW_HARDENING.md",
+			fragments: []string{
+				"Status: closed",
+				"02bee5fd59d13927d0ffb995844c83d07327a2f9",
+				"c863d03e5de711b78ab94027dbf951129665c110",
+				"30305541816",
+				"Backend Quality=SUCCESS",
+				"Backend Race Safety=SUCCESS",
+				"PostgreSQL 16 Integration=SUCCESS",
+				"Backend Container=SUCCESS",
+				"OPEN_CONFIRMED_FINDINGS=0",
+				"UNCLASSIFIED_FINDINGS=0",
+				"DEFERRED_FINDINGS=0",
+				"HISTORICAL_SERIES_ENGINEERING_DEBT=CLOSED",
+				"HISTORICAL_SERIES_ADDITIONAL_CODE_FIXES_REQUIRED=NO",
+				"FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO",
+				"HISTORICAL_SERIES_REVIEW_STATUS=CLOSED",
+			},
+		},
 	}
 
 	failures := make([]string, 0)

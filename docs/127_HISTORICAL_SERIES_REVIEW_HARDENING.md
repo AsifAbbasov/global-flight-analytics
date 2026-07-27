@@ -1,6 +1,6 @@
 # Historical Series Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -38,3 +38,32 @@ This change hardens `apps/api/internal/historicalintelligence/historicalseries` 
 - A complete, fully observed empty bucket may legitimately have confidence `1` with sample count `0`; sample count is not source completeness.
 - Nil-safe error formatting remains idiomatic Go and is not treated as a domain null state.
 - Direct access to the canonical `historicalwindow.Plan` value object is an intentional adjacent-domain contract, not a Law of Demeter violation.
+
+## Formal closure evidence
+
+The Historical Series engineering remediation was completed by:
+
+- Baseline commit: `0cc0dc7be96860120d69c8dd53158b36ac72d9c6`.
+- Hardening commit: `02bee5fd59d13927d0ffb995844c83d07327a2f9` (`fix: harden historical series integrity`).
+- Final engineering compatibility commit: `c863d03e5de711b78ab94027dbf951129665c110` (`fix: align historical contract audit with series hardening`).
+
+GitHub Actions run `30305541816` for commit `c863d03e5de711b78ab94027dbf951129665c110` completed with all required jobs successful:
+
+```text
+Backend Quality=SUCCESS
+Backend Race Safety=SUCCESS
+PostgreSQL 16 Integration=SUCCESS
+Backend Container=SUCCESS
+```
+
+Backend Quality executed the Historical Contract, Historical Window, Historical Read, and Historical Series strict audits successfully. The repository-level tests, Go vet analysis, race-safety checks, PostgreSQL integration checks, and backend container build were successful.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_SERIES_ENGINEERING_DEBT=CLOSED
+HISTORICAL_SERIES_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+HISTORICAL_SERIES_REVIEW_STATUS=CLOSED
+```
