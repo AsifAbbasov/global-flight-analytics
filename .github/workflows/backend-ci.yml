@@ -172,6 +172,9 @@ jobs:
       - name: Run projection contract review audit
         run: go run ./tools/projectioncontractreviewaudit -strict
 
+      - name: Run projection horizon review audit
+        run: go run ./tools/projectionhorizonreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

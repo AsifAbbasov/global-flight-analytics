@@ -261,15 +261,34 @@ forecast step: 30 seconds
 forecast point count: 6
 ```
 
-The horizon planner prevents:
+The hardened horizon planner enforces:
 
 ```text
-zero or negative duration
-duration below the configured minimum
-duration above the configured maximum
-point-count overflow
-invalid as-of time
-inconsistent horizon end time
+omitted HTTP duration resolves to the configured default
+negative requested duration is rejected
+positive requested duration below the configured minimum is rejected
+requests above the configured maximum carry explicit truncation evidence
+effective duration is exactly divisible by Step
+forecast points occupy every fixed-step slot through EndTime
+point count is bounded before schedule allocation
+all timestamps are canonical UTC
+consumer modules reject invalid planner output
+the complete plan has a deterministic SHA-256 fingerprint
+```
+
+The permanent audit is implemented in:
+
+```text
+apps/api/tools/projectionhorizonreviewaudit
+```
+
+```text
+PROJECTION_HORIZON_POLICY_VERSION=projection-horizon-policy-v2
+PROJECTION_HORIZON_FIXED_STEP_GRID=ENFORCED
+PROJECTION_HORIZON_PLAN_VALIDATION=ENFORCED
+PROJECTION_HORIZON_PLAN_FINGERPRINT=SHA256
+PROJECTION_HORIZON_DEFAULT_HTTP_DURATION=SUPPORTED
+PROJECTION_HORIZON_POINT_COUNT_BOUNDED=ENFORCED
 ```
 
 ---
