@@ -49,6 +49,10 @@ func inputFingerprint(
 		digest,
 		plan.Fingerprint,
 	)
+	writeEligibilityPolicyFingerprintEvidence(
+		digest,
+		config,
+	)
 	writeTrajectoryFingerprintEvidence(
 		digest,
 		item,
@@ -151,6 +155,12 @@ func inputFingerprint(
 	writeFingerprintFloat(
 		digest,
 		config.HighConfidenceMinimum,
+	)
+	writeFingerprintString(
+		digest,
+		string(
+			config.effectiveHorizontalFallbackPolicy(),
+		),
 	)
 	writeFingerprintString(
 		digest,

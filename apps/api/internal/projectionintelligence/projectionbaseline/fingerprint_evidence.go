@@ -7,7 +7,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
-const FingerprintVersion = "projection-baseline-input-fingerprint-v3"
+const FingerprintVersion = "projection-baseline-input-fingerprint-v4"
 
 func writeTrajectoryFingerprintEvidence(
 	digest hash.Hash,

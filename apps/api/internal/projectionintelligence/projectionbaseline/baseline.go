@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	Version    = "short-horizon-kinematic-baseline-v2"
+	Version    = "short-horizon-kinematic-baseline-v3"
 	MethodName = "short_horizon_kinematic_baseline"
 )
 
@@ -29,6 +29,9 @@ var (
 	)
 	ErrHorizonPlanInvalid = errors.New(
 		"projection horizon planner returned an invalid plan",
+	)
+	ErrEligibilityEvaluationInvalid = errors.New(
+		"projection eligibility evaluator returned an invalid evaluation",
 	)
 	ErrProjectionContractInvalid = errors.New(
 		"generated projection contract is invalid",
@@ -139,33 +142,34 @@ func (
 		snapshot,
 		plan.AsOfTime,
 	)
-	decision, exists := evaluation.Decision(
-		trajectoryeligibility.
-			CapabilityProjection,
+	decision, err := validateProjectionEligibilityEvaluation(
+		evaluation,
 	)
-	if !exists {
-		return baseline.validatedUnavailable(
-			snapshot,
-			plan,
-			generatedAt,
-			[]projectioncontract.Limitation{
-				{
-					Code:    "projection_eligibility_decision_missing",
-					Message: "Projection eligibility did not return a projection decision.",
-					Scope:   "result",
-				},
-			},
-		)
+	if err != nil {
+		return projectioncontract.Result{},
+			fmt.Errorf(
+				"%w: %v",
+				ErrEligibilityEvaluationInvalid,
+				err,
+			)
 	}
+
+	eligibilityFallback := false
 	if !decision.Allowed {
-		return baseline.validatedUnavailable(
-			snapshot,
-			plan,
-			generatedAt,
-			eligibilityLimitations(
-				decision.Reasons,
-			),
-		)
+		if baseline.config.
+			effectiveHorizontalFallbackPolicy().
+			allows(decision) {
+			eligibilityFallback = true
+		} else {
+			return baseline.validatedUnavailable(
+				snapshot,
+				plan,
+				generatedAt,
+				eligibilityLimitations(
+					decision.Reasons,
+				),
+			)
+		}
 	}
 
 	if len(snapshot.Points) == 0 {
@@ -183,7 +187,21 @@ func (
 		)
 	}
 
-	latestPoint := snapshot.Points[len(snapshot.Points)-1]
+	latestPoint, ambiguity, selected :=
+		selectLatestProjectionPoint(
+			snapshot.Points,
+		)
+	if !selected {
+		return baseline.validatedUnavailable(
+			snapshot,
+			plan,
+			generatedAt,
+			[]projectioncontract.Limitation{
+				ambiguity,
+			},
+		)
+	}
+
 	kinematics := kinematicPolicy{
 		AllowOnGround: baseline.config.AllowOnGround,
 	}
@@ -215,7 +233,33 @@ func (
 
 	status := projectioncontract.
 		ResultStatusComplete
-	limitations := baselineLimitations()
+	limitations := baselineLimitations(
+		latestPoint.OnGround,
+	)
+	if eligibilityFallback {
+		status = projectioncontract.
+			ResultStatusLimited
+		limitations = append(
+			limitations,
+			projectioncontract.Limitation{
+				Code:    "projection_eligibility_altitude_fallback",
+				Message: "Projection eligibility required altitude, but the configured baseline policy allows a limited horizontal-only result.",
+				Scope:   "eligibility",
+			},
+		)
+	}
+	if latestPoint.OnGround {
+		status = projectioncontract.
+			ResultStatusLimited
+		limitations = append(
+			limitations,
+			projectioncontract.Limitation{
+				Code:    "projection_on_ground_stationary_model",
+				Message: "The allowed on-ground observation is projected with a stationary conservative model.",
+				Scope:   "position",
+			},
+		)
+	}
 	if plan.Truncated {
 		status = projectioncontract.
 			ResultStatusLimited
@@ -271,6 +315,13 @@ func (
 		latestPoint,
 		altitude,
 	)
+	inputs = append(
+		inputs,
+		eligibilityPolicyInputReference(
+			baseline.config,
+			latestPoint.ObservedAt,
+		),
+	)
 
 	result := projectioncontract.Result{
 		SchemaVersion: projectioncontract.SchemaVersionV1,
@@ -296,20 +347,9 @@ func (
 			[]projectioncontract.Limitation(nil),
 			limitations...,
 		),
-		Explanations: []projectioncontract.Explanation{
-			{
-				Code:    "constant_ground_track_propagation",
-				Message: "Each forecast point propagates the latest observed ground speed and heading over a spherical direct-geodesic step.",
-			},
-			{
-				Code:    "linear_vertical_rate_propagation",
-				Message: "When altitude is available, the selected geometric or barometric altitude reference is propagated using the latest observed vertical rate.",
-			},
-			{
-				Code:    "explicit_uncertainty_growth",
-				Message: "Horizontal and vertical uncertainty grow from caller-provided baseline values and rates.",
-			},
-		},
+		Explanations: baselineExplanations(
+			latestPoint.OnGround,
+		),
 		ScopeGuard: projectioncontract.
 			ScopeGuardResearchOnly,
 		Provenance: projectioncontract.Provenance{
@@ -350,6 +390,9 @@ func (
 
 		distanceM := latestPoint.
 			VelocityMPS * motionSeconds
+		if latestPoint.OnGround {
+			distanceM = 0
+		}
 		latitude, longitude, valid :=
 			destinationPoint(
 				latestPoint.Latitude,
@@ -376,11 +419,11 @@ func (
 			}
 
 		if altitude.Available {
-			projectedAltitude :=
-				altitude.ValueM +
-					latestPoint.
-						VerticalRateMPS*
-						motionSeconds
+			projectedAltitude := altitude.ValueM
+			if !latestPoint.OnGround {
+				projectedAltitude += latestPoint.
+					VerticalRateMPS * motionSeconds
+			}
 			verticalUncertainty :=
 				baseline.config.
 					InitialVerticalUncertaintyM +
@@ -594,13 +637,10 @@ func eligibilityLimitations(
 	return result
 }
 
-func baselineLimitations() []projectioncontract.Limitation {
-	return []projectioncontract.Limitation{
-		{
-			Code:    "constant_ground_track_assumption",
-			Message: "Ground speed and heading are held constant across the short projection horizon.",
-			Scope:   "method",
-		},
+func baselineLimitations(
+	onGround bool,
+) []projectioncontract.Limitation {
+	result := []projectioncontract.Limitation{
 		{
 			Code:    "no_wind_adjustment",
 			Message: "Wind and weather are not applied by this baseline.",
@@ -617,6 +657,19 @@ func baselineLimitations() []projectioncontract.Limitation {
 			Scope:   "result",
 		},
 	}
+	if !onGround {
+		result = append(
+			[]projectioncontract.Limitation{
+				{
+					Code:    "constant_ground_track_assumption",
+					Message: "Ground speed and heading are held constant across the short projection horizon.",
+					Scope:   "method",
+				},
+			},
+			result...,
+		)
+	}
+	return result
 }
 
 func projectionInputs(

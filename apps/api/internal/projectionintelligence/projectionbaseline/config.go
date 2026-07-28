@@ -32,6 +32,9 @@ var (
 	ErrMaximumObservationAgeInvalid = errors.New(
 		"maximum observation age must not be negative",
 	)
+	ErrHorizontalFallbackPolicyInvalid = errors.New(
+		"horizontal fallback policy is invalid",
+	)
 	ErrConfidenceThresholdInvalid = errors.New(
 		"confidence thresholds must satisfy zero < medium <= high <= one",
 	)
@@ -65,7 +68,8 @@ type Config struct {
 	MediumConfidenceMinimum float64
 	HighConfidenceMinimum   float64
 
-	AllowOnGround bool
+	AllowOnGround            bool
+	HorizontalFallbackPolicy HorizontalFallbackPolicy
 }
 
 func (config Config) Validate() error {
@@ -115,6 +119,13 @@ func (config Config) Validate() error {
 	}
 	if config.MaximumObservationAge < 0 {
 		return ErrMaximumObservationAgeInvalid
+	}
+	if !config.effectiveHorizontalFallbackPolicy().IsKnown() {
+		return fmt.Errorf(
+			"%w: %q",
+			ErrHorizontalFallbackPolicyInvalid,
+			config.HorizontalFallbackPolicy,
+		)
 	}
 
 	if !positiveFinite(
