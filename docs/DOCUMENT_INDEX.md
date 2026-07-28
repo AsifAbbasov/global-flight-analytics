@@ -1095,3 +1095,9 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 127 — Historical Series Review Hardening
 
 `127_HISTORICAL_SERIES_REVIEW_HARDENING.md` records bucket-level coverage evidence, fail-closed provenance timestamps and limitations, unique exclusion evidence, checked sample accumulation, focused builder responsibilities, accepted findings, rejected stale findings, permanent tests, Continuous Integration enforcement, exact engineering commits, GitHub Actions run `30305541816`, and formal closure with zero open, unclassified, or deferred findings.
+
+<!-- HISTORICAL-ROUTE-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 128 — Historical Route Review Hardening
+
+`128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` records global-only route status ratios, complete Route Contract validation, persistence metadata reconciliation, snapshot-plan containment, exact incomplete global coverage, rejection of incomplete route-pair coverage, `StoredAt` fingerprint identity, coordinate-derived distance, scoped provenance, active directional route-pair semantics, compensated arithmetic, accepted findings, deliberately retained contracts, permanent regression tests, and Continuous Integration enforcement.

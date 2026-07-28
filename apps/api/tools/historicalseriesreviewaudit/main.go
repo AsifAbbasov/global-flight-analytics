@@ -98,7 +98,22 @@ func main() {
 			path: "internal/historicalintelligence/historicalroute/builder.go",
 			fragments: []string{
 				"BindDatasetCoverage",
+				"routeDatasetCoverage",
+			},
+			forbidden: []string{
+				"DataCoverageRatio:",
 				"DatasetReadIncomplete",
+			},
+		},
+		{
+			path: "internal/historicalintelligence/historicalroute/snapshot.go",
+			fragments: []string{
+				"func routeDatasetCoverage(",
+				"DatasetReadComplete",
+				"DatasetReadIncomplete",
+				"ErrRouteScopeCoverageUnavailable",
+				"ErrRouteMatchedCountRequired",
+				"ErrRouteMatchedCountInvalid",
 			},
 			forbidden: []string{
 				"DataCoverageRatio:",
@@ -128,117 +143,55 @@ func main() {
 
 	failures := make([]string, 0)
 	for _, item := range requirements {
-		content, err := os.ReadFile(
-			filepath.Clean(item.path),
-		)
+		content, err := os.ReadFile(filepath.Clean(item.path))
 		if err != nil {
-			failures = append(
-				failures,
-				fmt.Sprintf(
-					"read %s: %v",
-					item.path,
-					err,
-				),
-			)
+			failures = append(failures, fmt.Sprintf("read %s: %v", item.path, err))
 			continue
 		}
 		text := string(content)
 		for _, fragment := range item.fragments {
 			if !strings.Contains(text, fragment) {
-				failures = append(
-					failures,
-					fmt.Sprintf(
-						"%s misses %q",
-						item.path,
-						fragment,
-					),
-				)
+				failures = append(failures, fmt.Sprintf("%s misses %q", item.path, fragment))
 			}
 		}
 		for _, pattern := range item.patterns {
 			if !pattern.MatchString(text) {
-				failures = append(
-					failures,
-					fmt.Sprintf(
-						"%s misses pattern %q",
-						item.path,
-						pattern.String(),
-					),
-				)
+				failures = append(failures, fmt.Sprintf("%s misses pattern %q", item.path, pattern.String()))
 			}
 		}
 		for _, fragment := range item.forbidden {
 			if strings.Contains(text, fragment) {
-				failures = append(
-					failures,
-					fmt.Sprintf(
-						"%s retains forbidden %q",
-						item.path,
-						fragment,
-					),
-				)
+				failures = append(failures, fmt.Sprintf("%s retains forbidden %q", item.path, fragment))
 			}
 		}
 	}
 
-	walkErr := filepath.Walk(
-		".",
-		func(
-			path string,
-			info os.FileInfo,
-			walkError error,
-		) error {
-			if walkError != nil {
-				return walkError
-			}
-			if info.IsDir() ||
-				filepath.Ext(path) != ".go" {
-				return nil
-			}
-
-			content, readError := os.ReadFile(
-				filepath.Clean(path),
-			)
-			if readError != nil {
-				return readError
-			}
-			if legacyCoverageFieldPattern.Match(
-				content,
-			) {
-				failures = append(
-					failures,
-					fmt.Sprintf(
-						"%s retains legacy DataCoverageRatio field assignment",
-						path,
-					),
-				)
-			}
+	walkErr := filepath.Walk(".", func(path string, info os.FileInfo, walkError error) error {
+		if walkError != nil {
+			return walkError
+		}
+		if info.IsDir() || filepath.Ext(path) != ".go" {
 			return nil
-		},
-	)
+		}
+		content, readError := os.ReadFile(filepath.Clean(path))
+		if readError != nil {
+			return readError
+		}
+		if legacyCoverageFieldPattern.Match(content) {
+			failures = append(failures, fmt.Sprintf("%s retains legacy DataCoverageRatio field assignment", path))
+		}
+		return nil
+	})
 	if walkErr != nil {
-		failures = append(
-			failures,
-			fmt.Sprintf(
-				"scan Go sources for legacy coverage fields: %v",
-				walkErr,
-			),
-		)
+		failures = append(failures, fmt.Sprintf("scan Go sources for legacy coverage fields: %v", walkErr))
 	}
 
 	if len(failures) == 0 {
-		fmt.Println(
-			"Historical series review audit: PASS",
-		)
+		fmt.Println("Historical series review audit: PASS")
 		return
 	}
-
 	for _, failure := range failures {
-		fmt.Fprintf(
-			os.Stderr,
-			"Historical series review audit: %s\n",
-			failure,
-		)
+		fmt.Fprintf(os.Stderr, "Historical series review audit: %s\n", failure)
 	}
 	if *strict {
 		os.Exit(1)

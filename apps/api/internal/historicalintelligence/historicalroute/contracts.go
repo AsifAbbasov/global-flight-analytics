@@ -8,7 +8,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalwindow"
 )
 
-const Version = "historical-route-intelligence-v1"
+const Version = "historical-route-intelligence-v2"
 
 type Request struct {
 	Snapshot historicalread.Snapshot

@@ -48,6 +48,27 @@ var (
 	ErrRecordInvalid = errors.New(
 		"historical read record is invalid",
 	)
+	ErrRouteResultInvalid = errors.New(
+		"historical read route result is invalid",
+	)
+	ErrRoutePayloadUnavailable = errors.New(
+		"historical read route payload is unavailable",
+	)
+	ErrRoutePayloadDecode = errors.New(
+		"historical read route payload cannot be decoded",
+	)
+	ErrRouteContractInvalid = errors.New(
+		"historical read route payload violates the Route Intelligence contract",
+	)
+	ErrRouteMetadataMismatch = errors.New(
+		"historical read route persistence metadata does not match the payload",
+	)
+	ErrRouteEvidenceAfterCutoff = errors.New(
+		"historical read route evidence exceeds the analytical cutoff",
+	)
+	ErrRoutePayloadFingerprintMismatch = errors.New(
+		"historical read route payload fingerprint does not match the persisted payload",
+	)
 )
 
 type DatabaseError struct {
@@ -59,19 +80,13 @@ func (err *DatabaseError) Error() string {
 	if err == nil {
 		return "historical read database operation failed"
 	}
-
-	return fmt.Sprintf(
-		"historical read %s: %v",
-		err.Operation,
-		err.Err,
-	)
+	return fmt.Sprintf("historical read %s: %v", err.Operation, err.Err)
 }
 
 func (err *DatabaseError) Unwrap() error {
 	if err == nil {
 		return nil
 	}
-
 	return err.Err
 }
 
@@ -98,4 +113,41 @@ func (err *RecordValidationError) Unwrap() error {
 		return nil
 	}
 	return ErrRecordInvalid
+}
+
+type RouteResultValidationError struct {
+	RecordID string
+	Reason   string
+	Err      error
+}
+
+func (err *RouteResultValidationError) Error() string {
+	if err == nil {
+		return "historical read route result is invalid"
+	}
+	return fmt.Sprintf(
+		"historical read route record %q is invalid: %s: %v",
+		err.RecordID,
+		err.Reason,
+		err.Err,
+	)
+}
+
+func (err *RouteResultValidationError) Unwrap() error {
+	if err == nil || err.Err == nil {
+		return ErrRouteResultInvalid
+	}
+	return errors.Join(ErrRouteResultInvalid, err.Err)
+}
+
+func routeResultError(
+	recordID string,
+	reason string,
+	err error,
+) error {
+	return &RouteResultValidationError{
+		RecordID: recordID,
+		Reason:   reason,
+		Err:      err,
+	}
 }

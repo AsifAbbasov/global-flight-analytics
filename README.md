@@ -556,3 +556,15 @@ Historical Intelligence PostgreSQL reads now use one repository-owned read-only 
 ## Historical Series Review Hardening
 
 Historical Intelligence series construction now binds explicit coverage evidence to every bucket, derives series status from bucket states, requires real provenance timestamps, rejects malformed or duplicate limitations, preserves distinct exclusion intervals, uses checked sample accumulation, and keeps sample volume separate from source-completeness confidence. Historical Traffic, Airport, and Route builders use the version-two series contract.
+
+<!-- HISTORICAL-ROUTE-REVIEW-HARDENING:README -->
+
+## Historical Route Review Hardening
+
+Historical Route analytics now requires the complete Route Intelligence contract,
+reconciles persistence metadata with payload evidence, limits route status ratios
+to global scope, rejects incomplete route-pair coverage without a pair-specific
+denominator, recomputes complete-route distance from validated coordinates, binds
+`StoredAt` into semantic identity, derives scoped provenance from actual sources,
+and defines active routes as unique directional route pairs. A permanent strict
+audit protects the version-two builder boundary in Backend Continuous Integration.
