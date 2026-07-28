@@ -14,7 +14,7 @@ func unavailableProvenance(
 	config Config,
 ) projectioncontract.Provenance {
 	latestPoint := trajectory.TrackPoint4D{}
-	altitudeAvailable := false
+	altitude := altitudeSelection{Reference: altitudeReferenceUnavailable}
 	inputs := []projectioncontract.InputReference(nil)
 	latestObservedAt := latestPoint.ObservedAt
 
@@ -22,11 +22,11 @@ func unavailableProvenance(
 		latestPoint = item.Points[len(item.Points)-1]
 		if !latestPoint.ObservedAt.IsZero() &&
 			strings.TrimSpace(latestPoint.SourceName) != "" {
-			_, altitudeAvailable = usableAltitude(latestPoint)
+			altitude = selectAltitude(latestPoint)
 			inputs = projectionInputs(
 				item,
 				latestPoint,
-				altitudeAvailable,
+				altitude,
 			)
 			latestObservedAt = latestPoint.ObservedAt.UTC()
 		}

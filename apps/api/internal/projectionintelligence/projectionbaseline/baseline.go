@@ -3,23 +3,24 @@ package projectionbaseline
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/analytics/trajectoryeligibility"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 )
 
 const (
-	Version    = "short-horizon-kinematic-baseline-v1"
+	Version    = "short-horizon-kinematic-baseline-v2"
 	MethodName = "short_horizon_kinematic_baseline"
 )
 
 var (
+	ErrBaselineUnavailable = errors.New(
+		"projection baseline is unavailable",
+	)
 	ErrTrajectoryIDRequired = errors.New(
 		"projection trajectory id is required",
 	)
@@ -71,7 +72,7 @@ func (
 ) (projectioncontract.Result, error) {
 	if baseline == nil {
 		return projectioncontract.Result{},
-			ErrHorizonPlannerRequired
+			ErrBaselineUnavailable
 	}
 	if strings.TrimSpace(
 		request.Trajectory.ID,
@@ -183,11 +184,12 @@ func (
 	}
 
 	latestPoint := snapshot.Points[len(snapshot.Points)-1]
-	if limitation, valid :=
-		validateLatestKinematics(
-			latestPoint,
-			baseline.config.AllowOnGround,
-		); !valid {
+	kinematics := kinematicPolicy{
+		AllowOnGround: baseline.config.AllowOnGround,
+	}
+	if limitation, valid := kinematics.validate(
+		latestPoint,
+	); !valid {
 		return baseline.validatedUnavailable(
 			snapshot,
 			plan,
@@ -198,14 +200,12 @@ func (
 		)
 	}
 
-	altitudeM, altitudeAvailable :=
-		usableAltitude(latestPoint)
+	altitude := selectAltitude(latestPoint)
 
 	points, err := baseline.projectPoints(
 		snapshot,
 		latestPoint,
-		altitudeM,
-		altitudeAvailable,
+		altitude,
 		plan,
 	)
 	if err != nil {
@@ -228,7 +228,7 @@ func (
 			},
 		)
 	}
-	if !altitudeAvailable {
+	if !altitude.Available {
 		status = projectioncontract.
 			ResultStatusLimited
 		limitations = append(
@@ -269,7 +269,7 @@ func (
 	inputs := projectionInputs(
 		snapshot,
 		latestPoint,
-		altitudeAvailable,
+		altitude,
 	)
 
 	result := projectioncontract.Result{
@@ -303,7 +303,7 @@ func (
 			},
 			{
 				Code:    "linear_vertical_rate_propagation",
-				Message: "When altitude is available, altitude is propagated using the latest observed vertical rate.",
+				Message: "When altitude is available, the selected geometric or barometric altitude reference is propagated using the latest observed vertical rate.",
 			},
 			{
 				Code:    "explicit_uncertainty_growth",
@@ -329,8 +329,7 @@ func (
 ) projectPoints(
 	item trajectory.FlightTrajectory,
 	latestPoint trajectory.TrackPoint4D,
-	altitudeM float64,
-	altitudeAvailable bool,
+	altitude altitudeSelection,
 	plan projectionhorizon.Plan,
 ) ([]projectioncontract.ProjectionPoint, error) {
 	result := make(
@@ -338,15 +337,6 @@ func (
 		0,
 		len(plan.ForecastTimes),
 	)
-
-	horizonDurationSeconds :=
-		plan.EffectiveDuration.Seconds()
-	if !positiveFinite(
-		horizonDurationSeconds,
-	) {
-		return nil,
-			ErrProjectionComputationInvalid
-	}
 
 	for index, forecastTime := range plan.ForecastTimes {
 		motionSeconds := forecastTime.Sub(
@@ -385,9 +375,9 @@ func (
 						motionSeconds,
 			}
 
-		if altitudeAvailable {
+		if altitude.Available {
 			projectedAltitude :=
-				altitudeM +
+				altitude.ValueM +
 					latestPoint.
 						VerticalRateMPS*
 						motionSeconds
@@ -423,16 +413,20 @@ func (
 				ErrProjectionComputationInvalid
 		}
 
-		progress := forecastTime.Sub(
-			plan.AsOfTime,
-		).Seconds() /
-			horizonDurationSeconds
-		score := item.QualityScore *
-			(1 -
-				baseline.config.
-					MaximumConfidenceLoss*
-					progress)
-		score = clampUnit(score)
+		score, confidenceValid := calculatePointConfidence(
+			pointConfidenceInput{
+				TrajectoryQuality:     item.QualityScore,
+				LatestObservedAt:      latestPoint.ObservedAt,
+				AsOfTime:              plan.AsOfTime,
+				ForecastTime:          forecastTime,
+				MaximumObservationAge: baseline.config.effectiveMaximumObservationAge(),
+				EffectiveHorizon:      plan.EffectiveDuration,
+				MaximumHorizonLoss:    baseline.config.MaximumConfidenceLoss,
+			},
+		)
+		if !confidenceValid {
+			return nil, ErrProjectionComputationInvalid
+		}
 
 		result = append(
 			result,
@@ -447,8 +441,8 @@ func (
 						confidenceLevel(score),
 					Reasons: []projectioncontract.ConfidenceReason{
 						{
-							Code:         "trajectory_quality_and_horizon_decay",
-							Message:      "Point confidence starts from trajectory quality and decreases with forecast horizon according to the configured maximum loss.",
+							Code:         "trajectory_quality_observation_age_and_horizon_decay",
+							Message:      "Point confidence combines cutoff-safe trajectory quality, latest-observation age, and forecast-horizon decay.",
 							Contribution: score,
 						},
 					},
@@ -561,95 +555,6 @@ func validateResult(
 	return result.Clone(), nil
 }
 
-func validateLatestKinematics(
-	point trajectory.TrackPoint4D,
-	allowOnGround bool,
-) (projectioncontract.Limitation, bool) {
-	switch {
-	case !finiteLatitude(point.Latitude) ||
-		!finiteLongitude(point.Longitude):
-		return projectioncontract.Limitation{
-			Code:    "projection_position_invalid",
-			Message: "Latest trajectory position is invalid.",
-			Scope:   "input",
-		}, false
-
-	case !nonNegativeFinite(
-		point.VelocityMPS,
-	):
-		return projectioncontract.Limitation{
-			Code:    "projection_velocity_invalid",
-			Message: "Latest trajectory velocity is invalid.",
-			Scope:   "input",
-		}, false
-
-	case !finite(point.HeadingDegrees):
-		return projectioncontract.Limitation{
-			Code:    "projection_heading_invalid",
-			Message: "Latest trajectory heading is invalid.",
-			Scope:   "input",
-		}, false
-
-	case !finite(point.VerticalRateMPS):
-		return projectioncontract.Limitation{
-			Code:    "projection_vertical_rate_invalid",
-			Message: "Latest trajectory vertical rate is invalid.",
-			Scope:   "input",
-		}, false
-
-	case point.OnGround && !allowOnGround:
-		return projectioncontract.Limitation{
-			Code:    "projection_on_ground_not_allowed",
-			Message: "Configured projection policy does not allow an on-ground baseline.",
-			Scope:   "input",
-		}, false
-
-	default:
-		return projectioncontract.Limitation{}, true
-	}
-}
-
-func usableAltitude(
-	point trajectory.TrackPoint4D,
-) (float64, bool) {
-	geometricStatus :=
-		flightstate.ResolveAltitudeStatus(
-			point.GeometricAltitudeM,
-			point.GeometricAltitudeStatus,
-		)
-	if usableAltitudeStatus(
-		geometricStatus,
-	) &&
-		finite(point.GeometricAltitudeM) {
-		return point.GeometricAltitudeM,
-			true
-	}
-
-	barometricStatus :=
-		flightstate.ResolveAltitudeStatus(
-			point.BarometricAltitudeM,
-			point.BarometricAltitudeStatus,
-		)
-	if usableAltitudeStatus(
-		barometricStatus,
-	) &&
-		finite(point.BarometricAltitudeM) {
-		return point.BarometricAltitudeM,
-			true
-	}
-
-	return 0, false
-}
-
-func usableAltitudeStatus(
-	status flightstate.AltitudeStatus,
-) bool {
-	return status ==
-		flightstate.AltitudeStatusObserved ||
-		status ==
-			flightstate.AltitudeStatusGround
-}
-
 func eligibilityLimitations(
 	reasons []trajectoryeligibility.ReasonCode,
 ) []projectioncontract.Limitation {
@@ -717,7 +622,7 @@ func baselineLimitations() []projectioncontract.Limitation {
 func projectionInputs(
 	item trajectory.FlightTrajectory,
 	point trajectory.TrackPoint4D,
-	altitudeAvailable bool,
+	altitude altitudeSelection,
 ) []projectioncontract.InputReference {
 	sourceName := strings.TrimSpace(
 		point.SourceName,
@@ -752,6 +657,7 @@ func projectionInputs(
 				InputClassificationObserved,
 			SourceName: sourceName,
 			ObservedAt: observedAt,
+			Limitation: "Source telemetry does not identify whether vertical rate uses the selected geometric or barometric altitude reference.",
 		},
 		{
 			Name: "trajectory_quality",
@@ -762,7 +668,7 @@ func projectionInputs(
 		},
 	}
 
-	if altitudeAvailable {
+	if altitude.Available {
 		result = append(
 			result,
 			projectioncontract.InputReference{
@@ -771,6 +677,7 @@ func projectionInputs(
 					InputClassificationObserved,
 				SourceName: sourceName,
 				ObservedAt: observedAt,
+				Limitation: altitude.provenanceLimitation(),
 			},
 		)
 	}
@@ -806,21 +713,6 @@ func minimumPointConfidence(
 	}
 
 	return minimum
-}
-
-func clampUnit(
-	value float64,
-) float64 {
-	if math.IsNaN(value) ||
-		math.IsInf(value, 0) ||
-		value <= 0 {
-		return 0
-	}
-	if value >= 1 {
-		return 1
-	}
-
-	return value
 }
 
 func float64Pointer(

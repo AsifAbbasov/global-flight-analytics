@@ -11,6 +11,8 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 )
 
+const DefaultMaximumObservationAge = 2 * time.Minute
+
 var (
 	ErrHorizonPlannerRequired = errors.New(
 		"projection horizon planner is required",
@@ -26,6 +28,9 @@ var (
 	)
 	ErrMaximumConfidenceLossInvalid = errors.New(
 		"maximum confidence loss must be finite and between zero and one",
+	)
+	ErrMaximumObservationAgeInvalid = errors.New(
+		"maximum observation age must not be negative",
 	)
 	ErrConfidenceThresholdInvalid = errors.New(
 		"confidence thresholds must satisfy zero < medium <= high <= one",
@@ -55,6 +60,7 @@ type Config struct {
 	VerticalUncertaintyGrowthMPS   float64
 
 	MaximumConfidenceLoss float64
+	MaximumObservationAge time.Duration
 
 	MediumConfidenceMinimum float64
 	HighConfidenceMinimum   float64
@@ -107,6 +113,9 @@ func (config Config) Validate() error {
 			config.MaximumConfidenceLoss,
 		)
 	}
+	if config.MaximumObservationAge < 0 {
+		return ErrMaximumObservationAgeInvalid
+	}
 
 	if !positiveFinite(
 		config.MediumConfidenceMinimum,
@@ -126,6 +135,13 @@ func (config Config) Validate() error {
 	}
 
 	return nil
+}
+
+func (config Config) effectiveMaximumObservationAge() time.Duration {
+	if config.MaximumObservationAge > 0 {
+		return config.MaximumObservationAge
+	}
+	return DefaultMaximumObservationAge
 }
 
 func positiveFinite(

@@ -53,6 +53,11 @@ func inputFingerprint(
 		digest,
 		item,
 	)
+	altitude := selectAltitude(point)
+	writeFingerprintString(
+		digest,
+		altitude.normalizedReference(),
+	)
 	writeFingerprintTime(
 		digest,
 		point.ObservedAt,
@@ -125,6 +130,20 @@ func inputFingerprint(
 		digest,
 		config.MaximumConfidenceLoss,
 	)
+	writeFingerprintString(
+		digest,
+		fmt.Sprintf(
+			"%d",
+			config.effectiveMaximumObservationAge().Nanoseconds(),
+		),
+	)
+	writeFingerprintFloat(digest, maximumObservationAgeConfidenceLoss)
+	writeFingerprintFloat(digest, maximumSupportedGroundSpeedMPS)
+	writeFingerprintFloat(digest, maximumSupportedAbsoluteVerticalRateMPS)
+	writeFingerprintFloat(digest, minimumSupportedAltitudeM)
+	writeFingerprintFloat(digest, maximumSupportedAltitudeM)
+	writeFingerprintFloat(digest, maximumSupportedOnGroundSpeedMPS)
+	writeFingerprintFloat(digest, maximumSupportedOnGroundVerticalRateMPS)
 	writeFingerprintFloat(
 		digest,
 		config.MediumConfidenceMinimum,
