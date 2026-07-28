@@ -1188,3 +1188,16 @@ contracts, permanent regression tests, engineering commits
 `7249aa7625dd306bbd769dade6ce3262edca01ab` and
 `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`, GitHub Actions run `30402249129`,
 and formal closure with zero open, unclassified, or deferred findings.
+
+## Document 136 — Projection Baseline Review Hardening
+
+`136_PROJECTION_BASELINE_REVIEW_HARDENING.md` records cutoff-safe quality recomputation,
+completed segment and coverage-gap isolation, PostgreSQL cutoff alignment,
+unavailable-result provenance, observation-age confidence, conservative physical
+bounds, explicit altitude and eligibility policy evidence, deterministic rejection of
+conflicting latest observations, explicit horizontal fallback, stationary limited
+on-ground behavior, qualified review findings, engineering commits
+`0f2c1b2c6f91f104b8e0880e85dc8144fed6a910`,
+`af9c377193c21c048721e9cc28bf885d6ad276ec`, and
+`560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`, plus the permanent Projection Baseline
+review audit and its pending final Continuous Integration closure evidence.

@@ -175,6 +175,9 @@ jobs:
       - name: Run projection horizon review audit
         run: go run ./tools/projectionhorizonreviewaudit -strict
 
+      - name: Run projection baseline review audit
+        run: go run ./tools/projectionbaselinereviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

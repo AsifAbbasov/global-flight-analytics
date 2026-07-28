@@ -1212,3 +1212,43 @@ clean every runtime fixture without persistent residue
 The project may now proceed to Stage 10 — Weather Context.
 
 This completion does not convert research estimates into operational aviation claims.
+
+---
+
+## 28. Projection Baseline Review Hardening
+
+The conservative kinematic fallback has completed a dedicated static-review
+hardening cycle. The review closes historical cutoff leakage, cutoff-safe quality
+recomputation, PostgreSQL hydration alignment, observation-age confidence,
+physical kinematic bounds, altitude-reference provenance, collaborator validation,
+explicit horizontal fallback, deterministic latest-observation handling, and a
+stationary limited on-ground model.
+
+Permanent review enforcement is implemented in:
+
+```text
+apps/api/tools/projectionbaselinereviewaudit
+```
+
+The authoritative review record is:
+
+```text
+docs/136_PROJECTION_BASELINE_REVIEW_HARDENING.md
+```
+
+```text
+PROJECTION_BASELINE_METHOD_VERSION=short-horizon-kinematic-baseline-v3
+PROJECTION_BASELINE_INPUT_FINGERPRINT_VERSION=projection-baseline-input-fingerprint-v4
+PROJECTION_BASELINE_CUTOFF_ISOLATION=ENFORCED
+PROJECTION_BASELINE_QUALITY_RECOMPUTATION=ENFORCED
+PROJECTION_BASELINE_POSTGRES_CUTOFF_ALIGNMENT=ENFORCED
+PROJECTION_BASELINE_UNAVAILABLE_PROVENANCE=ENFORCED
+PROJECTION_BASELINE_OBSERVATION_AGE_CONFIDENCE=ENFORCED
+PROJECTION_BASELINE_PHYSICAL_BOUNDS=ENFORCED
+PROJECTION_BASELINE_ALTITUDE_REFERENCE=EXPLICIT
+PROJECTION_BASELINE_LATEST_OBSERVATION_AMBIGUITY=REJECTED
+PROJECTION_BASELINE_ON_GROUND_MODEL=STATIONARY_LIMITED
+PROJECTION_BASELINE_HORIZONTAL_FALLBACK=EXPLICIT_POLICY
+PROJECTION_BASELINE_ELIGIBILITY_OUTPUT_VALIDATION=ENFORCED
+PROJECTION_BASELINE_ELIGIBILITY_POLICY_PROVENANCE=ENFORCED
+```
