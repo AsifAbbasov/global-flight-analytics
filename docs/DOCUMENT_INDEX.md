@@ -1171,4 +1171,7 @@ validation, explicit limited-status evidence, bounded confidence reasons,
 weakest-evidence reconciliation, shared ordinal confidence vocabulary, strict
 SHA-256 and ICAO formats, provenance chronology and uniqueness, typed result
 validation, deliberately retained optional pointers and producer-owned physical
-policies, permanent regression tests, and Continuous Integration enforcement.
+policies, permanent regression tests, engineering commit
+`964556d0ca8a1ce9aa74c37c55961cdd006b3de8`, GitHub Actions run
+`30396070318`, and formal closure with zero open, unclassified, or deferred
+findings.

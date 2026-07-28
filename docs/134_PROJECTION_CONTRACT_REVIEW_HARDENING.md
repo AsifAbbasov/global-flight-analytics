@@ -1,6 +1,6 @@
 # Projection Contract Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -152,3 +152,36 @@ evidence, confidence reason integrity, weakest-evidence reconciliation, SHA-256
 fingerprints, ICAO identifiers, provenance chronology and uniqueness,
 `Result.Validate`, regression tests, this review record, and Backend Continuous
 Integration enforcement.
+
+## Formal closure evidence
+
+The Projection Contract engineering remediation was committed and validated before
+this administrative closure:
+
+```text
+ENGINEERING_BASELINE_COMMIT=405b141c431b7cd3e8b8150e88ac238924992e15
+ENGINEERING_REMEDIATION_COMMIT=964556d0ca8a1ce9aa74c37c55961cdd006b3de8
+ENGINEERING_GITHUB_ACTIONS_RUN=30396070318
+Backend Quality=SUCCESS
+Backend Quality Job=90399157528
+PostgreSQL 16 Integration=SUCCESS
+PostgreSQL 16 Integration Job=90399157430
+Backend Race Safety=SUCCESS
+Backend Race Safety Job=90399157564
+Backend Container=SUCCESS
+Backend Container Job=90399476002
+```
+
+All accepted findings are implemented. Qualified and rejected findings retain the
+rationale recorded in this review. No Projection Contract review item remains
+open, unclassified, or deferred.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+PROJECTION_CONTRACT_ENGINEERING_DEBT=CLOSED
+PROJECTION_CONTRACT_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_CONTRACT_REVIEW_STATUS=CLOSED
+```
