@@ -1,6 +1,6 @@
 # Historical Route Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -66,3 +66,36 @@ HISTORICAL_ROUTE_ENGINEERING_REMEDIATION=IMPLEMENTED
 ## Permanent verification
 
 `apps/api/tools/historicalroutereviewaudit` enforces the version-two builder boundary, global-only status-ratio scopes, strict Route Contract validation, metadata reconciliation, exact incomplete coverage, `StoredAt` fingerprint identity, scoped provenance, compensated arithmetic, focused calculators, regression tests, and this engineering remediation record in Backend Continuous Integration.
+
+## Formal closure evidence
+
+The Historical Route engineering remediation was committed and validated before
+this administrative closure:
+
+```text
+ENGINEERING_BASELINE_COMMIT=9741c4fce04e2b2c06ee0236cf13b5c384f38ffd
+ENGINEERING_REMEDIATION_COMMIT=513fa1efc7f3b81b895cdc5f881e294d80362e2e
+ENGINEERING_GITHUB_ACTIONS_RUN=30334131538
+Backend Quality=SUCCESS
+Backend Quality Job=90195300495
+PostgreSQL 16 Integration=SUCCESS
+PostgreSQL 16 Integration Job=90195300516
+Backend Race Safety=SUCCESS
+Backend Race Safety Job=90195300546
+Backend Container=SUCCESS
+Backend Container Job=90195525282
+```
+
+The accepted findings are fully implemented, stale or rejected findings retain
+their documented disposition, and no Historical Route review item remains open,
+unclassified, or deferred.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_ROUTE_ENGINEERING_DEBT=CLOSED
+HISTORICAL_ROUTE_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+HISTORICAL_ROUTE_REVIEW_STATUS=CLOSED
+```
