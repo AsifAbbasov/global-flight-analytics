@@ -14,6 +14,12 @@ var (
 	ErrPreviousResultInvalid = errors.New(
 		"previous historical result is invalid",
 	)
+	ErrComparisonResultInvalid = errors.New(
+		"derived historical comparison result is invalid",
+	)
+	ErrNestedComparisonUnsupported = errors.New(
+		"historical comparison source results must not already contain a comparison",
+	)
 	ErrSchemaMismatch = errors.New(
 		"historical comparison schema versions do not match",
 	)
@@ -38,8 +44,14 @@ var (
 	ErrSeriesUnavailable = errors.New(
 		"historical comparison requires available current and previous series",
 	)
+	ErrCoverageMismatch = errors.New(
+		"historical comparison requires equivalent current and previous coverage profiles",
+	)
 	ErrAggregationUnsupported = errors.New(
 		"historical comparison aggregation is unsupported",
+	)
+	ErrComparisonArithmeticInvalid = errors.New(
+		"historical comparison arithmetic produced a non-finite value",
 	)
 )
 
@@ -66,4 +78,23 @@ func (err *ResultValidationError) Unwrap() error {
 		return nil
 	}
 	return err.Kind
+}
+
+type ArithmeticError struct {
+	Operation string
+}
+
+func (err *ArithmeticError) Error() string {
+	if err == nil {
+		return ErrComparisonArithmeticInvalid.Error()
+	}
+	return fmt.Sprintf(
+		"%v: operation=%s",
+		ErrComparisonArithmeticInvalid,
+		err.Operation,
+	)
+}
+
+func (err *ArithmeticError) Unwrap() error {
+	return ErrComparisonArithmeticInvalid
 }

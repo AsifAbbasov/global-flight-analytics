@@ -568,3 +568,10 @@ denominator, recomputes complete-route distance from validated coordinates, bind
 `StoredAt` into semantic identity, derives scoped provenance from actual sources,
 and defines active routes as unique directional route pairs. A permanent strict
 audit protects the version-two builder boundary in Backend Continuous Integration.
+
+
+<!-- HISTORICAL-COMPARISON-REVIEW-HARDENING:README -->
+
+## Historical Comparison Review Hardening
+
+Historical Comparison now rejects unequal per-bucket coverage profiles, binds explicit current-and-previous quality evidence and previous-period limitations into accepted partial comparisons, constructs both-period provenance and fingerprints atomically inside `Attach`, uses explicit `Scope.Equal`, rejects non-finite percentage arithmetic with a comparison-owned error, and protects the version-two boundary with permanent tests and Backend Continuous Integration audit enforcement.

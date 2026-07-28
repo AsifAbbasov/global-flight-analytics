@@ -234,7 +234,7 @@ func TestMaterializeBuildsComparisonAndPersistsAggregate(
 		Version,
 	) || !strings.Contains(
 		store.results[0].Provenance.BuilderVersion,
-		"historical-period-comparison-v1",
+		"historical-period-comparison-v2",
 	) {
 		t.Fatalf(
 			"unexpected materialized builder version: %q",

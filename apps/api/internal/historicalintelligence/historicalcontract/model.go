@@ -183,6 +183,9 @@ type Summary struct {
 	Median     float64
 }
 
+// PeriodComparison compares the metric-level temporal summary selected by the
+// metric aggregation contract. PercentageChange is nil exactly when the
+// previous value is zero and a percentage has no finite mathematical meaning.
 type PeriodComparison struct {
 	PreviousWindow   TimeWindow
 	CurrentValue     float64

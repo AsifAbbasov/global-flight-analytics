@@ -2,9 +2,12 @@ package historicalcontract
 
 import "sort"
 
-// Summarize aggregates represented partial and complete buckets. Contract
-// validation owns the invariant that unavailable buckets carry a zero payload;
-// unavailable buckets never contribute to analytical statistics.
+// Summarize aggregates represented partial and complete buckets. Summary
+// statistics are temporal bucket-level statistics: Average is the unweighted
+// mean of represented bucket values and Median is the median of represented
+// bucket values. They do not claim observation-weighted or raw-observation
+// semantics. Contract validation owns the invariant that unavailable buckets
+// carry a zero payload; unavailable buckets never contribute to statistics.
 func Summarize(points []Point) Summary {
 	values := make([]float64, 0, len(points))
 	for _, point := range points {
