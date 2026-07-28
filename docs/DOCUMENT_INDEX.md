@@ -1126,5 +1126,7 @@ persistence, the pre-existing full tuple cursor, complete JSON-versus-column
 consistency, deterministic record identity, canonical payload idempotency,
 writer-interface segregation, raw validation before storage canonicalization,
 nil-context rejection, StoredAt causality, timestamp-mirror database guards,
-migration 029, deliberately rejected mechanical findings, regression tests, and
-Continuous Integration enforcement.
+migration 029, deliberately rejected mechanical findings, permanent regression
+tests, engineering commit `18dde73b2d122d00476ea21accb256b33fc23527`,
+GitHub Actions run `30374964285`, and formal closure with zero open,
+unclassified, or deferred findings.

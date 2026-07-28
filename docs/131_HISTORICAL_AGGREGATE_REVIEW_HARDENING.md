@@ -1,6 +1,6 @@
 # Historical Aggregate Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -114,3 +114,36 @@ stored-row consistency, deterministic identifier reconstruction, canonical
 payload idempotency, raw validation order, nil-context rejection, StoredAt
 causality, migration 029, regression tests, and this review record in Backend
 Continuous Integration.
+
+## Formal closure evidence
+
+The Historical Aggregate engineering remediation was committed and validated
+before this administrative closure:
+
+```text
+ENGINEERING_BASELINE_COMMIT=82ebd68d0372c885d724308d2291c61dab2de378
+ENGINEERING_REMEDIATION_COMMIT=18dde73b2d122d00476ea21accb256b33fc23527
+ENGINEERING_GITHUB_ACTIONS_RUN=30374964285
+Backend Quality=SUCCESS
+Backend Quality Job=90328145394
+Backend Race Safety=SUCCESS
+Backend Race Safety Job=90328145512
+PostgreSQL 16 Integration=SUCCESS
+PostgreSQL 16 Integration Job=90328145602
+Backend Container=SUCCESS
+Backend Container Job=90328492165
+```
+
+All accepted findings are implemented. Qualified, rejected, or pre-resolved
+findings retain their documented rationale, and no Historical Aggregate review
+item remains open, unclassified, or deferred.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_AGGREGATE_ENGINEERING_DEBT=CLOSED
+HISTORICAL_AGGREGATE_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+HISTORICAL_AGGREGATE_REVIEW_STATUS=CLOSED
+```
