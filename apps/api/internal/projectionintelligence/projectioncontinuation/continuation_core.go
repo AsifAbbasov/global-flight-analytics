@@ -27,6 +27,9 @@ var (
 	ErrGeneratedAtInvalid = errors.New(
 		"projection generated-at time must not be before the as-of time",
 	)
+	ErrHorizonPlanInvalid = errors.New(
+		"historical continuation horizon planner returned an invalid plan",
+	)
 	ErrCurrentTrajectoryUnavailable = errors.New(
 		"current trajectory does not contain a usable as-of endpoint",
 	)
@@ -94,6 +97,14 @@ func (
 		return projectioncontract.Result{},
 			fmt.Errorf(
 				"build historical continuation horizon: %w",
+				err,
+			)
+	}
+	if err := plan.Validate(); err != nil {
+		return projectioncontract.Result{},
+			fmt.Errorf(
+				"%w: %v",
+				ErrHorizonPlanInvalid,
 				err,
 			)
 	}

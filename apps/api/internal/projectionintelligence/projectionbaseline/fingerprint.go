@@ -45,17 +45,9 @@ func inputFingerprint(
 		digest,
 		item.Callsign,
 	)
-	writeFingerprintTime(
+	writeFingerprintString(
 		digest,
-		plan.AsOfTime,
-	)
-	writeFingerprintTime(
-		digest,
-		plan.EndTime,
-	)
-	writeFingerprintDuration(
-		digest,
-		plan.Step,
+		plan.Fingerprint,
 	)
 	writeFingerprintTime(
 		digest,
@@ -183,16 +175,5 @@ func writeFingerprintTime(
 		value.UTC().Format(
 			time.RFC3339Nano,
 		),
-	)
-}
-
-func writeFingerprintDuration(
-	digest hash.Hash,
-	value time.Duration,
-) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%d|",
-		value.Nanoseconds(),
 	)
 }

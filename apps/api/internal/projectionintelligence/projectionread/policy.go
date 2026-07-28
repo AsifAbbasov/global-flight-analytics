@@ -3,6 +3,8 @@ package projectionread
 import (
 	"fmt"
 	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 )
 
 const (
@@ -254,7 +256,33 @@ func DefaultPolicy() Policy {
 	}
 }
 
+func (policy Policy) horizonConfig() projectionhorizon.Config {
+	return projectionhorizon.Config{
+		Name:              policy.Horizon.Name,
+		MinimumDuration:   policy.Horizon.MinimumDuration,
+		DefaultDuration:   policy.Horizon.DefaultDuration,
+		MaximumDuration:   policy.Horizon.MaximumDuration,
+		Step:              policy.Horizon.Step,
+		MaximumPointCount: policy.Horizon.MaximumPointCount,
+	}
+}
+
+func (policy Policy) validateRequestedDuration(
+	requestedDuration time.Duration,
+) error {
+	_, err := policy.horizonConfig().ResolveRequestedDuration(
+		requestedDuration,
+	)
+	return err
+}
+
 func (policy Policy) Validate() error {
+	if err := policy.horizonConfig().Validate(); err != nil {
+		return fmt.Errorf(
+			"validate projection horizon policy: %w",
+			err,
+		)
+	}
 	if policy.DataSource.MaximumTrajectoryPointCount < 2 {
 		return fmt.Errorf(
 			"maximum trajectory point count must be at least two",

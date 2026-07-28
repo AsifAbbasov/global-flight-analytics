@@ -186,18 +186,23 @@ type productionFixture struct {
 
 func newProductionFixture() productionFixture {
 	asOfTime := productionTestAsOfTime()
-	plan := projectionhorizon.Plan{
-		Version:           projectionhorizon.Version,
-		PolicyName:        "production-test-policy",
-		AsOfTime:          asOfTime,
-		EndTime:           asOfTime.Add(2 * time.Minute),
-		Step:              time.Minute,
-		RequestedDuration: 2 * time.Minute,
-		EffectiveDuration: 2 * time.Minute,
-		ForecastTimes: []time.Time{
-			asOfTime.Add(time.Minute),
-			asOfTime.Add(2 * time.Minute),
+	plan, err := projectionhorizon.FinalizePlan(
+		projectionhorizon.Plan{
+			Version:           projectionhorizon.Version,
+			PolicyName:        "production-test-policy",
+			AsOfTime:          asOfTime,
+			EndTime:           asOfTime.Add(2 * time.Minute),
+			Step:              time.Minute,
+			RequestedDuration: 2 * time.Minute,
+			EffectiveDuration: 2 * time.Minute,
+			ForecastTimes: []time.Time{
+				asOfTime.Add(time.Minute),
+				asOfTime.Add(2 * time.Minute),
+			},
 		},
+	)
+	if err != nil {
+		panic(err)
 	}
 
 	kinematic := &fakeKinematicProjector{

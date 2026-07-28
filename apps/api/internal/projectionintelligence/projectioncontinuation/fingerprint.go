@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash"
-	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
@@ -40,17 +39,9 @@ func continuationFingerprint(
 		digest,
 		pattern.InputFingerprint,
 	)
-	writeFingerprintTime(
+	writeFingerprintString(
 		digest,
-		plan.AsOfTime,
-	)
-	writeFingerprintTime(
-		digest,
-		plan.EndTime,
-	)
-	writeFingerprintDuration(
-		digest,
-		plan.Step,
+		plan.Fingerprint,
 	)
 	writeFingerprintInt(
 		digest,
@@ -165,28 +156,5 @@ func writeFingerprintFloat(
 		digest,
 		"%.17g|",
 		value,
-	)
-}
-
-func writeFingerprintTime(
-	digest hash.Hash,
-	value time.Time,
-) {
-	writeFingerprintString(
-		digest,
-		value.UTC().Format(
-			time.RFC3339Nano,
-		),
-	)
-}
-
-func writeFingerprintDuration(
-	digest hash.Hash,
-	value time.Duration,
-) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%d|",
-		value.Nanoseconds(),
 	)
 }

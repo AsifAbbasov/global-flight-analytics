@@ -27,6 +27,9 @@ var (
 	ErrGeneratedAtInvalid = errors.New(
 		"projection generated-at time must not be before the as-of time",
 	)
+	ErrHorizonPlanInvalid = errors.New(
+		"projection horizon planner returned an invalid plan",
+	)
 	ErrProjectionContractInvalid = errors.New(
 		"generated projection contract is invalid",
 	)
@@ -90,6 +93,14 @@ func (
 		return projectioncontract.Result{},
 			fmt.Errorf(
 				"build projection horizon: %w",
+				err,
+			)
+	}
+	if err := plan.Validate(); err != nil {
+		return projectioncontract.Result{},
+			fmt.Errorf(
+				"%w: %v",
+				ErrHorizonPlanInvalid,
 				err,
 			)
 	}

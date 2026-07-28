@@ -211,8 +211,7 @@ func parseProjectionIntelligenceDuration(
 ) (time.Duration, error) {
 	normalized := strings.TrimSpace(value)
 	if normalized == "" {
-		return 0,
-			errProjectionDurationInvalid
+		return 0, nil
 	}
 
 	seconds, err := strconv.ParseInt(

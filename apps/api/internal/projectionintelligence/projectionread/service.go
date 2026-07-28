@@ -81,9 +81,19 @@ func (
 	asOfTime := request.AsOfTime.UTC()
 	if trajectoryID == "" ||
 		asOfTime.IsZero() ||
-		request.RequestedDuration <= 0 {
+		request.RequestedDuration < 0 {
 		return projectionproduction.Result{},
 			ErrInvalidRequest
+	}
+	if err := service.policy.validateRequestedDuration(
+		request.RequestedDuration,
+	); err != nil {
+		return projectionproduction.Result{},
+			fmt.Errorf(
+				"%w: %v",
+				ErrInvalidRequest,
+				err,
+			)
 	}
 
 	generatedAt := service.now().UTC()

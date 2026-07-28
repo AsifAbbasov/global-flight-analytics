@@ -207,19 +207,10 @@ func TestBuildTruncatesAboveMaximumDuration(
 	}
 }
 
-func TestBuildIncludesUnalignedFinalEndpoint(
+func TestBuildRejectsUnalignedRequestedDuration(
 	t *testing.T,
 ) {
-	config := validPolicyConfig()
-	config.MinimumDuration = 30 * time.Second
-	config.DefaultDuration =
-		90 * time.Second
-	config.MaximumDuration =
-		90 * time.Second
-	config.Step = time.Minute
-	config.MaximumPointCount = 2
-
-	policy, err := New(config)
+	policy, err := New(validPolicyConfig())
 	if err != nil {
 		t.Fatalf(
 			"New() error = %v",
@@ -227,31 +218,20 @@ func TestBuildIncludesUnalignedFinalEndpoint(
 		)
 	}
 
-	asOfTime := horizonTestAsOfTime()
-	plan, err := policy.Build(
+	_, err = policy.Build(
 		Request{
-			AsOfTime: asOfTime,
+			AsOfTime:          horizonTestAsOfTime(),
+			RequestedDuration: 90 * time.Second,
 		},
 	)
-	if err != nil {
+	if !errors.Is(
+		err,
+		ErrRequestedDurationGridInvalid,
+	) {
 		t.Fatalf(
-			"Build() error = %v",
+			"error = %v, want %v",
 			err,
-		)
-	}
-
-	if len(plan.ForecastTimes) != 2 ||
-		!plan.ForecastTimes[0].Equal(
-			asOfTime.Add(time.Minute),
-		) ||
-		!plan.ForecastTimes[1].Equal(
-			asOfTime.Add(
-				90*time.Second,
-			),
-		) {
-		t.Fatalf(
-			"forecast times = %#v",
-			plan.ForecastTimes,
+			ErrRequestedDurationGridInvalid,
 		)
 	}
 }

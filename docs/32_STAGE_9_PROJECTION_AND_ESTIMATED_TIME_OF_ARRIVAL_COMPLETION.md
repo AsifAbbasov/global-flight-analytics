@@ -963,6 +963,12 @@ The Route Intelligence fixture uses production-compatible deterministic route-re
 
 Inputs are normalized before fingerprints are produced.
 
+The horizon plan fingerprint is owned by `projectionhorizon` and covers the
+policy version and name, canonical UTC times, fixed step, requested and
+effective durations, truncation evidence, and the complete canonical forecast
+time grid. Kinematic and historical continuation fingerprints consume this
+single horizon fingerprint instead of rebuilding a partial horizon identity.
+
 Published provenance identifies:
 
 ```text

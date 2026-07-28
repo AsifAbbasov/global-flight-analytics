@@ -3,14 +3,22 @@ package projectionhorizon
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
-
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 )
 
-const Version = "projection-horizon-policy-v1"
+const (
+	Version                    = "projection-horizon-policy-v2"
+	MaximumSupportedPointCount = 10000
+)
 
 var (
+	ErrPolicyUnavailable = errors.New(
+		"projection horizon policy is unavailable",
+	)
+	ErrPolicyNameRequired = errors.New(
+		"projection horizon policy name is required and must be normalized",
+	)
 	ErrMinimumDurationInvalid = errors.New(
 		"minimum projection duration must be greater than zero",
 	)
@@ -21,7 +29,10 @@ var (
 		"maximum projection duration must not be below the minimum duration",
 	)
 	ErrStepInvalid = errors.New(
-		"projection step must be greater than zero",
+		"projection step must be greater than zero and must not exceed the minimum duration",
+	)
+	ErrDurationGridInvalid = errors.New(
+		"configured projection durations must be exactly divisible by the projection step",
 	)
 	ErrMaximumPointCountInvalid = errors.New(
 		"maximum projection point count is invalid",
@@ -31,6 +42,9 @@ var (
 	)
 	ErrRequestedDurationBelowMinimum = errors.New(
 		"requested projection duration is below the configured minimum",
+	)
+	ErrRequestedDurationGridInvalid = errors.New(
+		"requested projection duration must be exactly divisible by the projection step",
 	)
 )
 
@@ -45,51 +59,68 @@ type Config struct {
 	MaximumPointCount int
 }
 
+func (config Config) Validate() error {
+	normalizedName := strings.TrimSpace(config.Name)
+	if normalizedName == "" || normalizedName != config.Name {
+		return ErrPolicyNameRequired
+	}
+	if config.MinimumDuration <= 0 {
+		return ErrMinimumDurationInvalid
+	}
+	if config.MaximumDuration < config.MinimumDuration {
+		return ErrMaximumDurationInvalid
+	}
+	if config.DefaultDuration < config.MinimumDuration ||
+		config.DefaultDuration > config.MaximumDuration {
+		return ErrDefaultDurationInvalid
+	}
+	if config.Step <= 0 || config.Step > config.MinimumDuration {
+		return ErrStepInvalid
+	}
+	if config.MinimumDuration%config.Step != 0 ||
+		config.DefaultDuration%config.Step != 0 ||
+		config.MaximumDuration%config.Step != 0 {
+		return ErrDurationGridInvalid
+	}
+	if config.MaximumPointCount < 1 ||
+		config.MaximumPointCount > MaximumSupportedPointCount {
+		return fmt.Errorf(
+			"%w: configured=%d supported_range=1..%d",
+			ErrMaximumPointCountInvalid,
+			config.MaximumPointCount,
+			MaximumSupportedPointCount,
+		)
+	}
+
+	requiredPointCountValue := config.MaximumDuration / config.Step
+	if requiredPointCountValue > time.Duration(MaximumSupportedPointCount) {
+		return fmt.Errorf(
+			"%w: maximum duration requires %d points, supported maximum is %d",
+			ErrMaximumPointCountInvalid,
+			requiredPointCountValue,
+			MaximumSupportedPointCount,
+		)
+	}
+	requiredPointCount := int(requiredPointCountValue)
+	if requiredPointCount > config.MaximumPointCount {
+		return fmt.Errorf(
+			"%w: maximum duration requires %d points, configured maximum is %d",
+			ErrMaximumPointCountInvalid,
+			requiredPointCount,
+			config.MaximumPointCount,
+		)
+	}
+
+	return nil
+}
+
 type Policy struct {
 	config Config
 }
 
-func New(
-	config Config,
-) (*Policy, error) {
-	if config.MinimumDuration <= 0 {
-		return nil,
-			ErrMinimumDurationInvalid
-	}
-	if config.MaximumDuration <
-		config.MinimumDuration {
-		return nil,
-			ErrMaximumDurationInvalid
-	}
-	if config.DefaultDuration <
-		config.MinimumDuration ||
-		config.DefaultDuration >
-			config.MaximumDuration {
-		return nil,
-			ErrDefaultDurationInvalid
-	}
-	if config.Step <= 0 {
-		return nil,
-			ErrStepInvalid
-	}
-	if config.MaximumPointCount < 1 {
-		return nil,
-			ErrMaximumPointCountInvalid
-	}
-
-	requiredPointCount := forecastPointCount(
-		config.MaximumDuration,
-		config.Step,
-	)
-	if requiredPointCount >
-		config.MaximumPointCount {
-		return nil,
-			fmt.Errorf(
-				"%w: maximum duration requires %d points, configured maximum is %d",
-				ErrMaximumPointCountInvalid,
-				requiredPointCount,
-				config.MaximumPointCount,
-			)
+func New(config Config) (*Policy, error) {
+	if err := config.Validate(); err != nil {
+		return nil, err
 	}
 
 	return &Policy{
@@ -117,118 +148,121 @@ const (
 	TruncationReasonMaximumDuration TruncationReason = "maximum_duration"
 )
 
-type Plan struct {
-	Version    string
-	PolicyName string
-
-	AsOfTime time.Time
-	EndTime  time.Time
-	Step     time.Duration
-
+type DurationResolution struct {
 	RequestedDuration time.Duration
 	EffectiveDuration time.Duration
-
-	ForecastTimes []time.Time
-
-	Truncated        bool
-	TruncationReason TruncationReason
+	Truncated         bool
+	TruncationReason  TruncationReason
 }
 
-func (plan Plan) Clone() Plan {
-	cloned := plan
-	cloned.ForecastTimes = append(
-		[]time.Time(nil),
-		plan.ForecastTimes...,
-	)
-
-	return cloned
-}
-
-func (plan Plan) ContractHorizon() projectioncontract.Horizon {
-	return projectioncontract.Horizon{
-		AsOfTime: plan.AsOfTime,
-		EndTime:  plan.EndTime,
-		Step:     plan.Step,
-	}
-}
-
-func (policy *Policy) Build(
-	request Request,
-) (Plan, error) {
-	if policy == nil {
-		return Plan{},
-			ErrMaximumPointCountInvalid
-	}
-	if request.AsOfTime.IsZero() {
-		return Plan{},
-			ErrAsOfTimeRequired
+func (config Config) ResolveRequestedDuration(
+	requestedDuration time.Duration,
+) (DurationResolution, error) {
+	if err := config.Validate(); err != nil {
+		return DurationResolution{}, err
 	}
 
-	requestedDuration :=
-		request.RequestedDuration
 	if requestedDuration == 0 {
-		requestedDuration =
-			policy.config.DefaultDuration
+		requestedDuration = config.DefaultDuration
 	}
-	if requestedDuration <
-		policy.config.MinimumDuration {
-		return Plan{},
+	if requestedDuration < config.MinimumDuration {
+		return DurationResolution{},
 			&DurationBelowMinimumError{
 				Requested: requestedDuration,
-				Minimum: policy.config.
-					MinimumDuration,
+				Minimum:   config.MinimumDuration,
 			}
 	}
 
 	effectiveDuration := requestedDuration
 	truncated := false
-	truncationReason :=
-		TruncationReasonNone
-	if effectiveDuration >
-		policy.config.MaximumDuration {
-		effectiveDuration =
-			policy.config.MaximumDuration
+	truncationReason := TruncationReasonNone
+	if effectiveDuration > config.MaximumDuration {
+		effectiveDuration = config.MaximumDuration
 		truncated = true
-		truncationReason =
-			TruncationReasonMaximumDuration
+		truncationReason = TruncationReasonMaximumDuration
+	}
+	if effectiveDuration%config.Step != 0 {
+		return DurationResolution{}, fmt.Errorf(
+			"%w: requested=%s effective=%s step=%s",
+			ErrRequestedDurationGridInvalid,
+			requestedDuration,
+			effectiveDuration,
+			config.Step,
+		)
+	}
+
+	return DurationResolution{
+		RequestedDuration: requestedDuration,
+		EffectiveDuration: effectiveDuration,
+		Truncated:         truncated,
+		TruncationReason:  truncationReason,
+	}, nil
+}
+
+func (policy *Policy) BuildDefault(
+	asOfTime time.Time,
+) (Plan, error) {
+	if policy == nil {
+		return Plan{}, ErrPolicyUnavailable
+	}
+
+	return policy.Build(
+		Request{
+			AsOfTime:          asOfTime,
+			RequestedDuration: policy.config.DefaultDuration,
+		},
+	)
+}
+
+func (policy *Policy) Build(request Request) (Plan, error) {
+	if policy == nil {
+		return Plan{}, ErrPolicyUnavailable
+	}
+	if request.AsOfTime.IsZero() {
+		return Plan{}, ErrAsOfTimeRequired
+	}
+
+	resolution, err := policy.config.ResolveRequestedDuration(
+		request.RequestedDuration,
+	)
+	if err != nil {
+		return Plan{}, err
 	}
 
 	asOfTime := request.AsOfTime.UTC()
 	forecastTimes := buildForecastTimes(
 		asOfTime,
-		effectiveDuration,
+		resolution.EffectiveDuration,
 		policy.config.Step,
 	)
-	if len(forecastTimes) >
-		policy.config.MaximumPointCount {
-		return Plan{},
-			fmt.Errorf(
-				"%w: planned %d points, maximum is %d",
-				ErrMaximumPointCountInvalid,
-				len(forecastTimes),
-				policy.config.
-					MaximumPointCount,
-			)
+	if len(forecastTimes) > policy.config.MaximumPointCount {
+		return Plan{}, fmt.Errorf(
+			"%w: planned %d points, maximum is %d",
+			ErrMaximumPointCountInvalid,
+			len(forecastTimes),
+			policy.config.MaximumPointCount,
+		)
 	}
 
-	return Plan{
-		Version:    Version,
-		PolicyName: policy.config.Name,
-
-		AsOfTime: asOfTime,
-		EndTime: asOfTime.Add(
-			effectiveDuration,
-		),
-		Step: policy.config.Step,
-
-		RequestedDuration: requestedDuration,
-		EffectiveDuration: effectiveDuration,
-
-		ForecastTimes: forecastTimes,
-
-		Truncated:        truncated,
-		TruncationReason: truncationReason,
-	}.Clone(), nil
+	return FinalizePlan(
+		Plan{
+			Version:    Version,
+			PolicyName: policy.config.Name,
+			AsOfTime:   asOfTime,
+			EndTime: asOfTime.Add(
+				resolution.EffectiveDuration,
+			),
+			Step: policy.config.Step,
+			RequestedDuration: resolution.
+				RequestedDuration,
+			EffectiveDuration: resolution.
+				EffectiveDuration,
+			ForecastTimes: forecastTimes,
+			Truncated:     resolution.Truncated,
+			TruncationReason: resolution.
+				TruncationReason,
+		},
+	)
 }
 
 type DurationBelowMinimumError struct {
@@ -236,9 +270,7 @@ type DurationBelowMinimumError struct {
 	Minimum   time.Duration
 }
 
-func (
-	err *DurationBelowMinimumError,
-) Error() string {
+func (err *DurationBelowMinimumError) Error() string {
 	return fmt.Sprintf(
 		"requested projection duration %s is below minimum %s",
 		err.Requested,
@@ -246,29 +278,24 @@ func (
 	)
 }
 
-func (
-	err *DurationBelowMinimumError,
-) Unwrap() error {
+func (err *DurationBelowMinimumError) Unwrap() error {
 	return ErrRequestedDurationBelowMinimum
 }
 
-func forecastPointCount(
+func exactForecastPointCount(
 	duration time.Duration,
 	step time.Duration,
 ) int {
-	if duration <= 0 ||
-		step <= 0 {
+	if duration <= 0 || step <= 0 || duration%step != 0 {
 		return 0
 	}
 
-	count := int(
-		duration / step,
-	)
-	if duration%step != 0 {
-		count++
+	count := duration / step
+	if count > time.Duration(MaximumSupportedPointCount) {
+		return MaximumSupportedPointCount + 1
 	}
 
-	return count
+	return int(count)
 }
 
 func buildForecastTimes(
@@ -276,29 +303,12 @@ func buildForecastTimes(
 	duration time.Duration,
 	step time.Duration,
 ) []time.Time {
-	pointCount := forecastPointCount(
-		duration,
-		step,
-	)
-	result := make(
-		[]time.Time,
-		0,
-		pointCount,
-	)
-	endTime := asOfTime.Add(
-		duration,
-	)
-
-	for offset := step; offset < duration; offset += step {
-		result = append(
-			result,
-			asOfTime.Add(offset),
-		)
+	pointCount := exactForecastPointCount(duration, step)
+	result := make([]time.Time, pointCount)
+	for index := range result {
+		offset := time.Duration(index+1) * step
+		result[index] = asOfTime.Add(offset)
 	}
-	result = append(
-		result,
-		endTime,
-	)
 
 	return result
 }

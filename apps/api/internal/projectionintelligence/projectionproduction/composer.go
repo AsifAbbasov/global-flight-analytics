@@ -23,6 +23,9 @@ var (
 	ErrComposerUnavailable = errors.New(
 		"production projection composer is unavailable",
 	)
+	ErrHorizonPlanInvalid = errors.New(
+		"production projection horizon plan is invalid",
+	)
 	ErrTrajectoryIDRequired = errors.New(
 		"production projection trajectory identifier is required",
 	)
@@ -131,6 +134,13 @@ func (
 	if err != nil {
 		return Result{}, fmt.Errorf(
 			"build production projection horizon: %w",
+			err,
+		)
+	}
+	if err := plan.Validate(); err != nil {
+		return Result{}, fmt.Errorf(
+			"%w: %v",
+			ErrHorizonPlanInvalid,
 			err,
 		)
 	}
