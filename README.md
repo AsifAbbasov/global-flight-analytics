@@ -575,3 +575,10 @@ audit protects the version-two builder boundary in Backend Continuous Integratio
 ## Historical Comparison Review Hardening
 
 Historical Comparison now rejects unequal per-bucket coverage profiles, binds explicit current-and-previous quality evidence and previous-period limitations into accepted partial comparisons, constructs both-period provenance and fingerprints atomically inside `Attach`, uses explicit `Scope.Equal`, rejects non-finite percentage arithmetic with a comparison-owned error, and protects the version-two boundary with permanent tests and Backend Continuous Integration audit enforcement.
+
+
+<!-- HISTORICAL-SIMILARITY-REVIEW-HARDENING:README -->
+
+## Historical Similarity Review Hardening
+
+Historical Similarity now separates route-shape similarity from evidence confidence, binds trajectory quality, segment status, coverage gaps, point retention, and observation cadence, bounds sampling and input points, removes the duplicate public Rank workflow, canonicalizes equal timestamps, fingerprints the exact prepared representation, verifies all component and confidence mathematics, uses worst-endpoint scoring and great-circle resampling, and installs a permanent strict Backend Continuous Integration audit.

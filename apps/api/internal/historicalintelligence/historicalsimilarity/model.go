@@ -1,19 +1,30 @@
 package historicalsimilarity
 
 import (
-	"fmt"
 	"math"
 	"regexp"
-	"strings"
 )
 
 const (
-	Version            = "historical-trajectory-similarity-v1"
-	FingerprintVersion = "historical-trajectory-similarity-fingerprint-v1"
+	Version            = "historical-trajectory-similarity-v2"
+	FingerprintVersion = "historical-trajectory-similarity-fingerprint-v2"
 
 	DefaultMinimumPointCount = 4
 	DefaultSampleCount       = 16
-	MaximumRankLimit         = 100
+	MaximumSampleCount       = 4096
+	MaximumInputPointCount   = 100000
+
+	// MaximumRankLimit is retained only as the shared projection-neighbor
+	// selection limit. Historical Similarity no longer owns a public Rank API.
+	MaximumRankLimit = 100
+)
+
+const (
+	componentCount    = 4
+	numericTolerance  = 1e-12
+	weightTolerance   = 1e-9
+	earthRadiusKM     = 6371.0088
+	coordinateEpsilon = 1e-12
 )
 
 type Level string
@@ -23,6 +34,15 @@ const (
 	LevelLow    Level = "low"
 	LevelMedium Level = "medium"
 	LevelHigh   Level = "high"
+)
+
+type ConfidenceLevel string
+
+const (
+	ConfidenceLevelNone   ConfidenceLevel = "none"
+	ConfidenceLevelLow    ConfidenceLevel = "low"
+	ConfidenceLevelMedium ConfidenceLevel = "medium"
+	ConfidenceLevelHigh   ConfidenceLevel = "high"
 )
 
 type ComponentName string
@@ -47,14 +67,56 @@ type Notice struct {
 	Message string
 }
 
+type ScoringPolicy struct {
+	GeometryScoreScaleKM float64
+	EndpointScoreScaleKM float64
+
+	GeometryWeight   float64
+	EndpointsWeight  float64
+	PathLengthWeight float64
+	DurationWeight   float64
+}
+
+type EvidenceQuality struct {
+	Score float64
+
+	DeclaredQualityScore     float64
+	SegmentQualityScore      float64
+	CoverageContinuityScore  float64
+	ObservationCadenceScore  float64
+	PointRetentionScore      float64
+	InputPointCount          int
+	UsablePointCount         int
+	ExcludedPointCount       int
+	EqualTimestampPointCount int
+	CoverageGapCount         int
+	RelevantSegmentCount     int
+	NonObservedSegmentCount  int
+	InvalidSegmentCount      int
+	SourceName               string
+}
+
+type EvidenceConfidence struct {
+	Score     float64
+	Level     ConfidenceLevel
+	Reference EvidenceQuality
+	Candidate EvidenceQuality
+	Reasons   []Notice
+}
+
 type Result struct {
 	Version string
 
 	ReferenceTrajectoryID string
 	CandidateTrajectoryID string
 
+	// Score and Level represent route-shape similarity only. They are not
+	// confidence values. Confidence is published separately below.
 	Score float64
 	Level Level
+
+	Confidence EvidenceConfidence
+	Policy     ScoringPolicy
 
 	ReferencePointCount int
 	CandidatePointCount int
@@ -90,141 +152,16 @@ func (result Result) Clone() Result {
 		[]Notice(nil),
 		result.Limitations...,
 	)
-
+	cloned.Confidence.Reasons = append(
+		[]Notice(nil),
+		result.Confidence.Reasons...,
+	)
 	return cloned
 }
 
 var fingerprintPattern = regexp.MustCompile(
 	`^sha256:[0-9a-f]{64}$`,
 )
-
-func (result Result) Validate() error {
-	if result.Version != Version {
-		return fmt.Errorf(
-			"%w: version=%q",
-			ErrResultInvalid,
-			result.Version,
-		)
-	}
-	if strings.TrimSpace(
-		result.ReferenceTrajectoryID,
-	) == "" ||
-		strings.TrimSpace(
-			result.CandidateTrajectoryID,
-		) == "" ||
-		result.ReferenceTrajectoryID ==
-			result.CandidateTrajectoryID {
-		return fmt.Errorf(
-			"%w: trajectory identifiers",
-			ErrResultInvalid,
-		)
-	}
-	if !ratio(result.Score) ||
-		result.Level != LevelForScore(
-			result.Score,
-		) {
-		return fmt.Errorf(
-			"%w: score or level",
-			ErrResultInvalid,
-		)
-	}
-	if result.ReferencePointCount < 2 ||
-		result.CandidatePointCount < 2 ||
-		result.SampleCount < 2 {
-		return fmt.Errorf(
-			"%w: point counts",
-			ErrResultInvalid,
-		)
-	}
-
-	for _, value := range []float64{
-		result.MeanDistanceKM,
-		result.MaximumDistanceKM,
-		result.StartEndpointDistanceKM,
-		result.EndEndpointDistanceKM,
-		result.ReferencePathLengthKM,
-		result.CandidatePathLengthKM,
-		result.ReferenceDurationSeconds,
-		result.CandidateDurationSeconds,
-	} {
-		if !finite(value) || value < 0 {
-			return fmt.Errorf(
-				"%w: non-negative measurement",
-				ErrResultInvalid,
-			)
-		}
-	}
-
-	if len(result.Components) != 4 {
-		return fmt.Errorf(
-			"%w: component count",
-			ErrResultInvalid,
-		)
-	}
-	weightTotal := 0.0
-	seen := make(map[ComponentName]struct{})
-	for _, component := range result.Components {
-		if _, exists := seen[component.Name]; exists {
-			return fmt.Errorf(
-				"%w: duplicate component",
-				ErrResultInvalid,
-			)
-		}
-		seen[component.Name] = struct{}{}
-
-		if !ratio(component.Score) ||
-			!finite(component.Weight) ||
-			component.Weight < 0 ||
-			!finite(component.ObservedValue) ||
-			component.ObservedValue < 0 ||
-			strings.TrimSpace(component.Unit) == "" {
-			return fmt.Errorf(
-				"%w: component",
-				ErrResultInvalid,
-			)
-		}
-		weightTotal += component.Weight
-	}
-	if math.Abs(weightTotal-1) > 1e-9 {
-		return fmt.Errorf(
-			"%w: component weights",
-			ErrResultInvalid,
-		)
-	}
-	if len(result.Reasons) == 0 {
-		return fmt.Errorf(
-			"%w: reasons",
-			ErrResultInvalid,
-		)
-	}
-	for _, reason := range result.Reasons {
-		if strings.TrimSpace(reason) == "" {
-			return fmt.Errorf(
-				"%w: reason",
-				ErrResultInvalid,
-			)
-		}
-	}
-	for _, limitation := range result.Limitations {
-		if strings.TrimSpace(limitation.Code) == "" ||
-			strings.TrimSpace(limitation.Message) == "" {
-			return fmt.Errorf(
-				"%w: limitation",
-				ErrResultInvalid,
-			)
-		}
-	}
-	if !fingerprintPattern.MatchString(
-		result.InputFingerprint,
-	) {
-		return fmt.Errorf(
-			"%w: input fingerprint",
-			ErrResultInvalid,
-		)
-	}
-
-	return nil
-}
 
 func LevelForScore(score float64) Level {
 	switch {
@@ -236,6 +173,21 @@ func LevelForScore(score float64) Level {
 		return LevelLow
 	default:
 		return LevelNone
+	}
+}
+
+func ConfidenceLevelForScore(
+	score float64,
+) ConfidenceLevel {
+	switch {
+	case score >= 0.8:
+		return ConfidenceLevelHigh
+	case score >= 0.6:
+		return ConfidenceLevelMedium
+	case score > 0:
+		return ConfidenceLevelLow
+	default:
+		return ConfidenceLevelNone
 	}
 }
 

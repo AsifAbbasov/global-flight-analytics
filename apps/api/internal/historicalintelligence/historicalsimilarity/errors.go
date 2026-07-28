@@ -3,14 +3,17 @@ package historicalsimilarity
 import "errors"
 
 var (
+	ErrEngineRequired = errors.New(
+		"historical similarity engine is required",
+	)
 	ErrMinimumPointCountInvalid = errors.New(
-		"historical similarity minimum point count must be at least two",
+		"historical similarity minimum point count must be between two and the maximum input point count",
 	)
 	ErrSampleCountInvalid = errors.New(
-		"historical similarity sample count must be at least two",
+		"historical similarity sample count must be between two and the configured hard maximum",
 	)
-	ErrDistanceThresholdInvalid = errors.New(
-		"historical similarity distance threshold must be finite and positive",
+	ErrDistanceScaleInvalid = errors.New(
+		"historical similarity distance score scales must be finite and positive",
 	)
 	ErrWeightInvalid = errors.New(
 		"historical similarity weights must be finite, non-negative, and sum to one",
@@ -24,8 +27,17 @@ var (
 	ErrSameTrajectory = errors.New(
 		"historical similarity requires two different trajectories",
 	)
-	ErrRankLimitInvalid = errors.New(
-		"historical similarity rank limit must be between one and one hundred",
+	ErrTrajectoryPointLimitExceeded = errors.New(
+		"historical similarity trajectory point count exceeds the hard maximum",
+	)
+	ErrTrajectoryQualityInvalid = errors.New(
+		"historical similarity trajectory quality evidence is invalid",
+	)
+	ErrTrajectorySegmentInvalid = errors.New(
+		"historical similarity trajectory segment evidence is invalid",
+	)
+	ErrTrajectoryGapInvalid = errors.New(
+		"historical similarity trajectory coverage-gap evidence is invalid",
 	)
 	ErrResultInvalid = errors.New(
 		"historical similarity result is invalid",

@@ -157,6 +157,9 @@ jobs:
       - name: Run historical comparison review audit
         run: go run ./tools/historicalcomparisonreviewaudit -strict
 
+      - name: Run historical similarity review audit
+        run: go run ./tools/historicalsimilarityreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

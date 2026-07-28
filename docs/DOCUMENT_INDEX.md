@@ -1108,3 +1108,10 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 129 — Historical Comparison Review Hardening
 
 `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` records coverage-profile comparability, explicit two-period quality evidence, atomic provenance, both-period semantic fingerprinting, explicit scope equality, finite percentage arithmetic, temporal bucket-summary semantics, deliberately retained `float64` and undefined-percentage contracts, permanent regression tests, engineering commit `21734b85b9f50ae717dca031c798866161895989`, GitHub Actions run `30341011740`, and formal closure with zero open, unclassified, or deferred findings.
+
+
+<!-- HISTORICAL-SIMILARITY-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 130 — Historical Similarity Review Hardening
+
+`130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` records explicit similarity-versus-confidence semantics, trajectory quality evidence, bounded sampling and input size, removal of the duplicate Rank API, canonical equal-timestamp ordering, exact prepared fingerprints, mathematical result validation, worst-endpoint scoring, exact relative difference, great-circle resampling, deliberately retained Go and floating-point contracts, permanent regression tests, and Continuous Integration enforcement.
