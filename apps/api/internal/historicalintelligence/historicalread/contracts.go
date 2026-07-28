@@ -40,6 +40,21 @@ type Query struct {
 	RoutePayloadByteLimit int64
 }
 
+func (query Query) Equal(other Query) bool {
+	return query.Window.StartTime.UTC().Equal(
+		other.Window.StartTime.UTC(),
+	) &&
+		query.Window.EndTime.UTC().Equal(
+			other.Window.EndTime.UTC(),
+		) &&
+		query.Window.AsOfTime.UTC().Equal(
+			other.Window.AsOfTime.UTC(),
+		) &&
+		query.Limit == other.Limit &&
+		query.RoutePayloadByteLimit ==
+			other.RoutePayloadByteLimit
+}
+
 type FlightRecord struct {
 	ID string
 
@@ -253,6 +268,30 @@ func cloneRoutes(items []RouteRecord) []RouteRecord {
 	return cloned
 }
 
+type PeriodQueries struct {
+	Previous Query
+	Current  Query
+}
+
+type PeriodSnapshots struct {
+	Previous Snapshot
+	Current  Snapshot
+}
+
+func (snapshots PeriodSnapshots) Clone() PeriodSnapshots {
+	return PeriodSnapshots{
+		Previous: snapshots.Previous.Clone(),
+		Current:  snapshots.Current.Clone(),
+	}
+}
+
 type Repository interface {
 	Read(context.Context, Query) (Snapshot, error)
+}
+
+type PeriodRepository interface {
+	ReadPeriods(
+		context.Context,
+		PeriodQueries,
+	) (PeriodSnapshots, error)
 }

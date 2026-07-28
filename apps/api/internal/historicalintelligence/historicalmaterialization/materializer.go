@@ -2,11 +2,7 @@ package historicalmaterialization
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -25,7 +21,7 @@ var airportICAOPattern = regexp.MustCompile(
 )
 
 type Materializer struct {
-	repository historicalread.Repository
+	repository historicalread.PeriodRepository
 	store      historicalaggregate.Writer
 	now        func() time.Time
 }
@@ -36,6 +32,11 @@ func New(
 	if config.Repository == nil {
 		return nil, ErrReadRepositoryRequired
 	}
+	repository, supported := config.Repository.(historicalread.PeriodRepository)
+	if !supported {
+		return nil,
+			ErrPeriodReadRepositoryRequired
+	}
 	if config.Store == nil {
 		return nil, ErrAggregateStoreRequired
 	}
@@ -44,7 +45,7 @@ func New(
 	}
 
 	return &Materializer{
-		repository: config.Repository,
+		repository: repository,
 		store:      config.Store,
 		now:        config.Now,
 	}, nil
@@ -55,115 +56,103 @@ func (materializer *Materializer) Materialize(
 	request Request,
 ) (Outcome, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Outcome{},
+			stageError(
+				StageRequestValidation,
+				ErrContextRequired,
+			)
 	}
 	if err := ctx.Err(); err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(
+				StageRequestValidation,
+				err,
+			)
 	}
 
 	normalized, family, err :=
 		materializer.normalizeRequest(request)
 	if err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(
+				StageRequestValidation,
+				err,
+			)
 	}
 
-	currentPlan, err := historicalwindow.Build(
+	plans, err := buildAdjacentPlans(
 		ctx,
-		historicalwindow.Request{
-			StartTime: normalized.StartTime,
-			EndTime:   normalized.EndTime,
-			AsOfTime:  normalized.AsOfTime,
-			Granularity: normalized.
-				Granularity,
-			MaximumBucketCount: normalized.
-				MaximumBucketCount,
-		},
+		normalized,
 	)
 	if err != nil {
 		return Outcome{}, err
 	}
-	if currentPlan.EffectiveWindow == nil ||
-		currentPlan.PreviousWindow == nil ||
-		!currentPlan.HasBuckets() {
-		return Outcome{}, ErrNoEffectiveWindow
-	}
-
-	previousPlan, err := historicalwindow.Build(
-		ctx,
-		historicalwindow.Request{
-			StartTime: currentPlan.
-				PreviousWindow.StartTime,
-			EndTime: currentPlan.
-				PreviousWindow.EndTime,
-			AsOfTime: normalized.AsOfTime,
-			Granularity: normalized.
-				Granularity,
-			MaximumBucketCount: normalized.
-				MaximumBucketCount,
-		},
+	queries := buildPeriodQueries(
+		plans,
+		normalized.DatasetLimit,
 	)
-	if err != nil {
-		return Outcome{}, err
-	}
-	if previousPlan.EffectiveWindow == nil ||
-		!previousPlan.HasBuckets() {
-		return Outcome{}, ErrNoEffectiveWindow
-	}
 
-	readWindow := historicalcontract.TimeWindow{
-		StartTime: previousPlan.
-			EffectiveWindow.StartTime,
-		EndTime: currentPlan.
-			EffectiveWindow.EndTime,
-		AsOfTime: normalized.AsOfTime,
-	}
-	snapshot, err := materializer.repository.Read(
-		ctx,
-		historicalread.Query{
-			Window: readWindow,
-			Limit:  normalized.DatasetLimit,
-		},
-	)
+	snapshots, err :=
+		materializer.repository.ReadPeriods(
+			ctx,
+			queries,
+		)
 	if err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(StagePeriodRead, err)
 	}
 	if err := ctx.Err(); err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(StagePeriodRead, err)
+	}
+	if err := validatePeriodSnapshots(
+		snapshots,
+		queries,
+	); err != nil {
+		return Outcome{},
+			stageError(
+				StageSnapshotContract,
+				err,
+			)
 	}
 
 	previousResult, err := buildResult(
 		family,
-		snapshot,
-		previousPlan,
+		snapshots.Previous,
+		plans.Previous,
 		normalized,
 	)
 	if err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(
+				StagePreviousBuild,
+				err,
+			)
 	}
-	currentResult, err := buildResult(
+	currentPeriodResult, err := buildResult(
 		family,
-		snapshot,
-		currentPlan,
+		snapshots.Current,
+		plans.Current,
 		normalized,
 	)
 	if err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(
+				StageCurrentBuild,
+				err,
+			)
 	}
 
 	compared, err := historicalcomparison.Attach(
-		currentResult,
+		currentPeriodResult,
 		previousResult,
 	)
 	if err != nil {
-		return Outcome{}, err
-	}
-	compared, err = finalizeComparedResult(
-		compared,
-		currentResult,
-		previousResult,
-	)
-	if err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(
+				StageComparison,
+				err,
+			)
 	}
 
 	record, err := materializer.store.Put(
@@ -171,21 +160,139 @@ func (materializer *Materializer) Materialize(
 		compared,
 	)
 	if err != nil {
-		return Outcome{}, err
+		return Outcome{},
+			stageError(
+				StagePersistence,
+				err,
+			)
+	}
+	if err := validatePersistedRecord(
+		record,
+		compared,
+	); err != nil {
+		return Outcome{},
+			stageError(
+				StagePersistenceContract,
+				err,
+			)
 	}
 
 	return Outcome{
 		Version:      Version,
-		Plan:         currentPlan.Clone(),
-		PreviousPlan: previousPlan.Clone(),
-		ReadSummary: summarizeRead(
-			readWindow,
-			snapshot,
+		Plan:         plans.Current.Clone(),
+		PreviousPlan: plans.Previous.Clone(),
+		ReadSummaries: PeriodReadSummaries{
+			Previous: summarizeRead(
+				snapshots.Previous,
+			),
+			Current: summarizeRead(
+				snapshots.Current,
+			),
+		},
+		ReadSummary: summarizeCombinedRead(
+			snapshots,
 		),
-		CurrentResult:  compared.Clone(),
-		PreviousResult: previousResult.Clone(),
-		Record:         record.Clone(),
+		CurrentPeriodResult: currentPeriodResult.Clone(),
+		CurrentResult:       record.Result.Clone(),
+		PreviousResult:      previousResult.Clone(),
+		Record:              record.Clone(),
 	}.Clone(), nil
+}
+
+type adjacentPlans struct {
+	Previous historicalwindow.Plan
+	Current  historicalwindow.Plan
+}
+
+func buildAdjacentPlans(
+	ctx context.Context,
+	request Request,
+) (adjacentPlans, error) {
+	current, err := historicalwindow.Build(
+		ctx,
+		historicalwindow.Request{
+			StartTime: request.StartTime,
+			EndTime:   request.EndTime,
+			AsOfTime:  request.AsOfTime,
+			Granularity: request.
+				Granularity,
+			MaximumBucketCount: request.
+				MaximumBucketCount,
+		},
+	)
+	if err != nil {
+		return adjacentPlans{},
+			stageError(
+				StageCurrentPlanning,
+				err,
+			)
+	}
+	if current.EffectiveWindow == nil ||
+		current.PreviousWindow == nil ||
+		!current.HasBuckets() {
+		return adjacentPlans{},
+			stageError(
+				StageCurrentPlanning,
+				ErrNoEffectiveWindow,
+			)
+	}
+
+	previous, err := historicalwindow.Build(
+		ctx,
+		historicalwindow.Request{
+			StartTime: current.
+				PreviousWindow.StartTime,
+			EndTime: current.
+				PreviousWindow.EndTime,
+			AsOfTime: request.AsOfTime,
+			Granularity: request.
+				Granularity,
+			MaximumBucketCount: request.
+				MaximumBucketCount,
+		},
+	)
+	if err != nil {
+		return adjacentPlans{},
+			stageError(
+				StagePreviousPlanning,
+				err,
+			)
+	}
+	if previous.EffectiveWindow == nil ||
+		!previous.HasBuckets() {
+		return adjacentPlans{},
+			stageError(
+				StagePreviousPlanning,
+				ErrNoEffectiveWindow,
+			)
+	}
+
+	return adjacentPlans{
+		Previous: previous.Clone(),
+		Current:  current.Clone(),
+	}, nil
+}
+
+func buildPeriodQueries(
+	plans adjacentPlans,
+	datasetLimit int,
+) historicalread.PeriodQueries {
+	return historicalread.PeriodQueries{
+		Previous: historicalread.Query{
+			Window: *plans.Previous.
+				EffectiveWindow,
+			Limit: datasetLimit,
+			RoutePayloadByteLimit: historicalread.
+				DefaultRoutePayloadByteLimit,
+		},
+		Current: historicalread.Query{
+			Window: *plans.Current.
+				EffectiveWindow,
+			Limit: datasetLimit,
+			RoutePayloadByteLimit: historicalread.
+				DefaultRoutePayloadByteLimit,
+		},
+	}
 }
 
 type metricFamily string
@@ -261,22 +368,11 @@ func (materializer *Materializer) normalizeRequest(
 		MetricName:  request.MetricName,
 		Scope:       scope,
 
-		DatasetLimit: request.DatasetLimitOr(
-			datasetLimit,
-		),
+		DatasetLimit: datasetLimit,
 		MaximumBucketCount: request.
 			MaximumBucketCount,
 		GeneratedAt: generatedAt,
 	}, family, nil
-}
-
-func (request Request) DatasetLimitOr(
-	fallback int,
-) int {
-	if request.DatasetLimit == 0 {
-		return fallback
-	}
-	return request.DatasetLimit
 }
 
 func classifyMetric(
@@ -414,16 +510,32 @@ func buildResult(
 }
 
 func summarizeRead(
-	window historicalcontract.TimeWindow,
 	snapshot historicalread.Snapshot,
 ) ReadSummary {
 	return ReadSummary{
-		Window: window,
+		Window: snapshot.Query.Window,
+		IsolationLevel: snapshot.
+			IsolationLevel,
+		DatasetLimit: snapshot.Query.Limit,
 
 		FlightCount:      len(snapshot.Flights),
 		TrajectoryCount:  len(snapshot.Trajectories),
 		ObservationCount: len(snapshot.Observations),
 		RouteCount:       len(snapshot.Routes),
+
+		FlightMatchedCount: snapshot.
+			FlightMatchedCount,
+		TrajectoryMatchedCount: snapshot.
+			TrajectoryMatchedCount,
+		ObservationMatchedCount: snapshot.
+			ObservationMatchedCount,
+		RouteMatchedCount: snapshot.
+			RouteMatchedCount,
+
+		RoutePayloadBytes: snapshot.
+			RoutePayloadBytes,
+		RouteTotalPayloadBytes: snapshot.
+			RouteTotalPayloadBytes,
 
 		FlightLimitReached: snapshot.
 			FlightLimitReached,
@@ -433,145 +545,280 @@ func summarizeRead(
 			ObservationLimitReached,
 		RouteLimitReached: snapshot.
 			RouteLimitReached,
+		RouteByteLimitReached: snapshot.
+			RouteByteLimitReached,
 	}
 }
 
-func finalizeComparedResult(
-	compared historicalcontract.Result,
-	current historicalcontract.Result,
-	previous historicalcontract.Result,
-) (historicalcontract.Result, error) {
-	result := compared.Clone()
-	result.Provenance.BuilderVersion = strings.Join(
-		[]string{
-			Version,
-			historicalcomparison.Version,
-			strings.TrimSpace(
-				current.Provenance.BuilderVersion,
-			),
-			strings.TrimSpace(
-				previous.Provenance.BuilderVersion,
-			),
+func summarizeCombinedRead(
+	snapshots historicalread.PeriodSnapshots,
+) ReadSummary {
+	previous := summarizeRead(
+		snapshots.Previous,
+	)
+	current := summarizeRead(
+		snapshots.Current,
+	)
+	return ReadSummary{
+		Window: historicalcontract.TimeWindow{
+			StartTime: previous.Window.StartTime,
+			EndTime:   current.Window.EndTime,
+			AsOfTime:  current.Window.AsOfTime,
 		},
-		"+",
-	)
-	result.Provenance.InputFingerprint =
-		materializationFingerprint(
-			current,
-			previous,
-		)
-	result.Provenance.SourceNames = mergeSourceNames(
-		current.Provenance.SourceNames,
-		previous.Provenance.SourceNames,
-	)
-	result.Provenance.LatestSourceUpdatedAt = laterTime(
-		current.Provenance.LatestSourceUpdatedAt,
-		previous.Provenance.LatestSourceUpdatedAt,
-	)
+		IsolationLevel: current.IsolationLevel,
+		DatasetLimit:   current.DatasetLimit,
 
-	report := historicalcontract.Validate(result)
+		FlightCount: previous.FlightCount +
+			current.FlightCount,
+		TrajectoryCount: previous.TrajectoryCount +
+			current.TrajectoryCount,
+		ObservationCount: previous.ObservationCount +
+			current.ObservationCount,
+		RouteCount: previous.RouteCount +
+			current.RouteCount,
+
+		FlightMatchedCount: previous.FlightMatchedCount +
+			current.FlightMatchedCount,
+		TrajectoryMatchedCount: previous.TrajectoryMatchedCount +
+			current.TrajectoryMatchedCount,
+		ObservationMatchedCount: previous.ObservationMatchedCount +
+			current.ObservationMatchedCount,
+		RouteMatchedCount: previous.RouteMatchedCount +
+			current.RouteMatchedCount,
+
+		RoutePayloadBytes: previous.RoutePayloadBytes +
+			current.RoutePayloadBytes,
+		RouteTotalPayloadBytes: previous.RouteTotalPayloadBytes +
+			current.RouteTotalPayloadBytes,
+
+		FlightLimitReached: previous.FlightLimitReached ||
+			current.FlightLimitReached,
+		TrajectoryLimitReached: previous.TrajectoryLimitReached ||
+			current.TrajectoryLimitReached,
+		ObservationLimitReached: previous.ObservationLimitReached ||
+			current.ObservationLimitReached,
+		RouteLimitReached: previous.RouteLimitReached ||
+			current.RouteLimitReached,
+		RouteByteLimitReached: previous.RouteByteLimitReached ||
+			current.RouteByteLimitReached,
+	}
+}
+
+func validatePeriodSnapshots(
+	snapshots historicalread.PeriodSnapshots,
+	queries historicalread.PeriodQueries,
+) error {
+	if err := validateSnapshot(
+		"previous",
+		snapshots.Previous,
+		queries.Previous,
+	); err != nil {
+		return err
+	}
+	if err := validateSnapshot(
+		"current",
+		snapshots.Current,
+		queries.Current,
+	); err != nil {
+		return err
+	}
+	if snapshots.Previous.IsolationLevel !=
+		snapshots.Current.IsolationLevel {
+		return contractError(
+			ErrSnapshotIsolationMismatch,
+			"both",
+			"isolation_level",
+		)
+	}
+	return nil
+}
+
+func validateSnapshot(
+	period string,
+	snapshot historicalread.Snapshot,
+	expected historicalread.Query,
+) error {
+	if snapshot.Version != historicalread.Version {
+		return contractError(
+			ErrSnapshotVersionMismatch,
+			period,
+			"version",
+		)
+	}
+	if !snapshot.Query.Equal(expected) {
+		return contractError(
+			ErrSnapshotQueryMismatch,
+			period,
+			"query",
+		)
+	}
+	switch snapshot.IsolationLevel {
+	case historicalread.
+		SnapshotIsolationRepeatableRead,
+		historicalread.
+			SnapshotIsolationCallerTransaction:
+		return nil
+	default:
+		return contractError(
+			ErrSnapshotIsolationMismatch,
+			period,
+			"isolation_level",
+		)
+	}
+}
+
+func validatePersistedRecord(
+	record historicalaggregate.Record,
+	expected historicalcontract.Result,
+) error {
+	if strings.TrimSpace(record.ID) == "" {
+		return contractError(
+			ErrPersistedRecordMismatch,
+			"current",
+			"id",
+		)
+	}
+	if record.InputFingerprint !=
+		expected.Provenance.InputFingerprint {
+		return contractError(
+			ErrPersistedRecordMismatch,
+			"current",
+			"input_fingerprint",
+		)
+	}
+	if record.Result.Provenance.
+		InputFingerprint !=
+		expected.Provenance.InputFingerprint {
+		return contractError(
+			ErrPersistedRecordMismatch,
+			"current",
+			"result_input_fingerprint",
+		)
+	}
+	if !resultKeyMatches(
+		record.Key,
+		expected,
+	) {
+		return contractError(
+			ErrPersistedRecordMismatch,
+			"current",
+			"key",
+		)
+	}
+	if !resultIdentityMatches(
+		record.Result,
+		expected,
+	) {
+		return contractError(
+			ErrPersistedRecordMismatch,
+			"current",
+			"result_identity",
+		)
+	}
+	if record.StoredAt.IsZero() ||
+		record.StoredAt.UTC().Before(
+			record.Result.GeneratedAt.UTC(),
+		) {
+		return contractError(
+			ErrPersistedRecordMismatch,
+			"current",
+			"stored_at",
+		)
+	}
+
+	report := historicalcontract.Validate(
+		record.Result,
+	)
 	if report.Status !=
 		historicalcontract.ValidationStatusValid {
-		return historicalcontract.Result{},
-			&ResultValidationError{
-				Report: report.Clone(),
-			}
-	}
-
-	return result.Clone(), nil
-}
-
-func materializationFingerprint(
-	current historicalcontract.Result,
-	previous historicalcontract.Result,
-) string {
-	records := []string{
-		Version,
-		historicalcomparison.Version,
-		string(current.SchemaVersion),
-		string(current.Metric.Name),
-		string(current.Granularity),
-		scopeFingerprint(current.Scope),
-		current.Window.StartTime.UTC().
-			Format(time.RFC3339Nano),
-		current.Window.EndTime.UTC().
-			Format(time.RFC3339Nano),
-		current.Window.AsOfTime.UTC().
-			Format(time.RFC3339Nano),
-		previous.Window.StartTime.UTC().
-			Format(time.RFC3339Nano),
-		previous.Window.EndTime.UTC().
-			Format(time.RFC3339Nano),
-		previous.Window.AsOfTime.UTC().
-			Format(time.RFC3339Nano),
-		strings.TrimSpace(
-			current.Provenance.BuilderVersion,
-		),
-		strings.TrimSpace(
-			current.Provenance.InputFingerprint,
-		),
-		strings.TrimSpace(
-			previous.Provenance.BuilderVersion,
-		),
-		strings.TrimSpace(
-			previous.Provenance.InputFingerprint,
-		),
-	}
-
-	sum := sha256.Sum256(
-		[]byte(strings.Join(records, "\n")),
-	)
-	return "sha256:" +
-		hex.EncodeToString(sum[:])
-}
-
-func scopeFingerprint(
-	scope historicalcontract.Scope,
-) string {
-	return fmt.Sprintf(
-		"%s|%s|%s|%s|%s",
-		scope.Type,
-		scope.RegionCode,
-		scope.AirportICAOCode,
-		scope.OriginICAOCode,
-		scope.DestinationICAOCode,
-	)
-}
-
-func mergeSourceNames(
-	groups ...[]string,
-) []string {
-	seen := make(map[string]struct{})
-	result := make([]string, 0)
-
-	for _, group := range groups {
-		for _, sourceName := range group {
-			normalized := strings.TrimSpace(
-				sourceName,
-			)
-			if normalized == "" {
-				continue
-			}
-			if _, exists := seen[normalized]; exists {
-				continue
-			}
-			seen[normalized] = struct{}{}
-			result = append(result, normalized)
+		return &ResultValidationError{
+			Report: report.Clone(),
 		}
 	}
-
-	sort.Strings(result)
-	return result
+	return nil
 }
 
-func laterTime(
-	left time.Time,
-	right time.Time,
-) time.Time {
-	left = left.UTC()
-	right = right.UTC()
-	if right.After(left) {
-		return right
+func resultKeyMatches(
+	key historicalaggregate.ResultKey,
+	result historicalcontract.Result,
+) bool {
+	return key.SchemaVersion ==
+		result.SchemaVersion &&
+		key.MetricName == result.Metric.Name &&
+		key.Scope.Equal(result.Scope) &&
+		key.Granularity ==
+			result.Granularity &&
+		windowsEqual(
+			key.Window,
+			result.Window,
+		)
+}
+
+func resultIdentityMatches(
+	actual historicalcontract.Result,
+	expected historicalcontract.Result,
+) bool {
+	return actual.SchemaVersion ==
+		expected.SchemaVersion &&
+		actual.Status == expected.Status &&
+		actual.Metric == expected.Metric &&
+		actual.Scope.Equal(expected.Scope) &&
+		actual.Granularity ==
+			expected.Granularity &&
+		windowsEqual(
+			actual.Window,
+			expected.Window,
+		) &&
+		actual.Summary == expected.Summary &&
+		comparisonsEqual(
+			actual.Comparison,
+			expected.Comparison,
+		) &&
+		actual.GeneratedAt.UTC().Equal(
+			expected.GeneratedAt.UTC(),
+		)
+}
+
+func comparisonsEqual(
+	left *historicalcontract.PeriodComparison,
+	right *historicalcontract.PeriodComparison,
+) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
 	}
-	return left
+	if !windowsEqual(
+		left.PreviousWindow,
+		right.PreviousWindow,
+	) ||
+		left.CurrentValue !=
+			right.CurrentValue ||
+		left.PreviousValue !=
+			right.PreviousValue ||
+		left.AbsoluteChange !=
+			right.AbsoluteChange ||
+		left.Direction != right.Direction {
+		return false
+	}
+	if left.PercentageChange == nil ||
+		right.PercentageChange == nil {
+		return left.PercentageChange == nil &&
+			right.PercentageChange == nil
+	}
+	return *left.PercentageChange ==
+		*right.PercentageChange
+}
+
+func windowsEqual(
+	left historicalcontract.TimeWindow,
+	right historicalcontract.TimeWindow,
+) bool {
+	return left.StartTime.UTC().Equal(
+		right.StartTime.UTC(),
+	) &&
+		left.EndTime.UTC().Equal(
+			right.EndTime.UTC(),
+		) &&
+		left.AsOfTime.UTC().Equal(
+			right.AsOfTime.UTC(),
+		)
 }

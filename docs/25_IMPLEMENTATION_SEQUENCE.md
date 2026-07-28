@@ -912,3 +912,14 @@ scope, timestamp mirrors, and JSON metadata with the immutable aggregate store.
 The Store validates raw domain input before canonical storage representation,
 checks full row identity on reads, and requires canonical payload equality for
 idempotent replay.
+
+
+<!-- HISTORICAL-MATERIALIZATION-REVIEW-HARDENING:SEQUENCE -->
+
+## Historical Materialization integrity hardening
+
+Historical Materialization version two replaces the combined bounded read with
+one atomic two-period read carrying independent limits. Snapshot metadata,
+period summaries, persisted-result identity, generated-time fingerprinting,
+caller context, stage diagnostics, tests, and permanent audit enforcement are
+now explicit.

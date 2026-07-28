@@ -594,3 +594,15 @@ deterministic record identifiers, requires canonical payload equality for
 idempotent replay, exposes a narrow Writer interface to materialization, rejects
 nil contexts and causally invalid storage timestamps, and protects migration 029
 with permanent tests and Backend Continuous Integration audit enforcement.
+
+
+<!-- HISTORICAL-MATERIALIZATION-REVIEW-HARDENING:README -->
+
+## Historical Materialization Review Hardening
+
+Historical Materialization now reads adjacent periods with independent limits
+inside one repeatable-read PostgreSQL transaction, validates exact snapshot
+metadata, exposes period-specific read summaries, preserves Historical
+Comparison provenance ownership, returns the canonical persisted result, rejects
+nil context, identifies orchestration failure stages, and is protected by a
+permanent strict Backend Continuous Integration audit.

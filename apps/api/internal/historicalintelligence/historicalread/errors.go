@@ -39,6 +39,12 @@ var (
 	ErrInvalidRoutePayloadByteLimit = errors.New(
 		"historical read route payload byte limit is invalid",
 	)
+	ErrPeriodAsOfTimeMismatch = errors.New(
+		"historical read period queries must share one as-of time",
+	)
+	ErrPeriodWindowsNotAdjacent = errors.New(
+		"historical read previous and current windows must be adjacent",
+	)
 	ErrTemporalHistoryUnavailable = errors.New(
 		"historical read temporal history is unavailable for the requested as-of time",
 	)

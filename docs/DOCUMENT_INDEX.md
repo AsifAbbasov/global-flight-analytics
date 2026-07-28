@@ -1130,3 +1130,15 @@ migration 029, deliberately rejected mechanical findings, permanent regression
 tests, engineering commit `18dde73b2d122d00476ea21accb256b33fc23527`,
 GitHub Actions run `30374964285`, and formal closure with zero open,
 unclassified, or deferred findings.
+
+
+<!-- HISTORICAL-MATERIALIZATION-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 132 — Historical Materialization Review Hardening
+
+`132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` records independent
+previous/current dataset limits, one-transaction two-period reads, exact snapshot
+query and version validation, period-specific summaries, isolated builder
+inputs, Historical Comparison provenance ownership, canonical persisted Outcome,
+generated-time fingerprint identity, nil-context rejection, typed stage errors,
+expanded regression tests, and Continuous Integration enforcement.
