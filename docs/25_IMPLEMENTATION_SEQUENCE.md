@@ -901,3 +901,14 @@ The durable feature payload now owns the complete validation report, legacy
 snapshots disclose unavailable audit evidence, PostgreSQL enforces the report
 contract, and the remaining composition observations have explicit final
 dispositions.
+
+
+<!-- HISTORICAL-AGGREGATE-REVIEW-HARDENING:SEQUENCE -->
+
+## Historical Aggregate integrity hardening
+
+Migration `029_harden_historical_aggregate_integrity.sql` aligns lowercase region
+scope, timestamp mirrors, and JSON metadata with the immutable aggregate store.
+The Store validates raw domain input before canonical storage representation,
+checks full row identity on reads, and requires canonical payload equality for
+idempotent replay.

@@ -90,14 +90,14 @@ func TestVerificationResultProducesValidHistoricalContract(
 func TestMigrationIdentityIsPinned(
 	t *testing.T,
 ) {
-	if expectedMigrationVersion != "015" {
+	if expectedMigrationVersion != "029" {
 		t.Fatalf(
 			"unexpected migration version: %s",
 			expectedMigrationVersion,
 		)
 	}
 	if expectedMigrationName !=
-		"create_historical_aggregate_results" {
+		"harden_historical_aggregate_integrity" {
 		t.Fatalf(
 			"unexpected migration name: %s",
 			expectedMigrationName,

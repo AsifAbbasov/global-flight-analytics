@@ -2,14 +2,37 @@ package historicalaggregate
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/jackc/pgx/v5"
 )
+
+const storedRecordColumns = `
+			id,
+			schema_version,
+			metric_name,
+			scope_type,
+			scope_key,
+			region_code,
+			airport_icao_code,
+			origin_icao_code,
+			destination_icao_code,
+			granularity,
+			input_fingerprint,
+			series_status,
+			confidence_level,
+			result_json,
+			window_start,
+			window_start_unix_nano,
+			window_end,
+			window_end_unix_nano,
+			as_of_time,
+			as_of_time_unix_nano,
+			stored_at,
+			stored_at_unix_nano
+	`
 
 const (
 	insertResultSQL = `
@@ -71,33 +94,11 @@ const (
 			as_of_time_unix_nano
 		)
 		DO NOTHING
-		RETURNING
-			id,
-			input_fingerprint,
-			result_json,
-			window_start,
-			window_start_unix_nano,
-			window_end,
-			window_end_unix_nano,
-			as_of_time,
-			as_of_time_unix_nano,
-			stored_at,
-			stored_at_unix_nano;
+		RETURNING ` + storedRecordColumns + `;
 	`
 
 	getResultSQL = `
-		SELECT
-			id,
-			input_fingerprint,
-			result_json,
-			window_start,
-			window_start_unix_nano,
-			window_end,
-			window_end_unix_nano,
-			as_of_time,
-			as_of_time_unix_nano,
-			stored_at,
-			stored_at_unix_nano
+		SELECT ` + storedRecordColumns + `
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
 		  AND metric_name = $2
@@ -109,18 +110,7 @@ const (
 	`
 
 	getLatestResultSQL = `
-		SELECT
-			id,
-			input_fingerprint,
-			result_json,
-			window_start,
-			window_start_unix_nano,
-			window_end,
-			window_end_unix_nano,
-			as_of_time,
-			as_of_time_unix_nano,
-			stored_at,
-			stored_at_unix_nano
+		SELECT ` + storedRecordColumns + `
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
 		  AND metric_name = $2
@@ -135,18 +125,7 @@ const (
 	`
 
 	listResultsSQL = `
-		SELECT
-			id,
-			input_fingerprint,
-			result_json,
-			window_start,
-			window_start_unix_nano,
-			window_end,
-			window_end_unix_nano,
-			as_of_time,
-			as_of_time_unix_nano,
-			stored_at,
-			stored_at_unix_nano
+		SELECT ` + storedRecordColumns + `
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
 		  AND metric_name = $2
@@ -161,18 +140,7 @@ const (
 	`
 
 	listResultsAfterCursorSQL = `
-		SELECT
-			id,
-			input_fingerprint,
-			result_json,
-			window_start,
-			window_start_unix_nano,
-			window_end,
-			window_end_unix_nano,
-			as_of_time,
-			as_of_time_unix_nano,
-			stored_at,
-			stored_at_unix_nano
+		SELECT ` + storedRecordColumns + `
 		FROM historical_aggregate_results
 		WHERE schema_version = $1
 		  AND metric_name = $2
@@ -316,8 +284,12 @@ func (store *PostgresStore) Put(
 	ctx context.Context,
 	result historicalcontract.Result,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireContext(ctx); err != nil {
+		return Record{}, err
+	}
+	if _, err := validateStorableResult(
+		result,
+	); err != nil {
 		return Record{}, err
 	}
 
@@ -346,13 +318,11 @@ func (store *PostgresStore) Put(
 		return Record{}, err
 	}
 
-	payload, err := json.Marshal(normalized)
+	payload, err := canonicalResultPayload(
+		normalized,
+	)
 	if err != nil {
-		return Record{},
-			fmt.Errorf(
-				"marshal historical aggregate result: %w",
-				err,
-			)
+		return Record{}, err
 	}
 
 	fingerprint := normalized.Provenance.
@@ -362,6 +332,12 @@ func (store *PostgresStore) Put(
 		fingerprint,
 	)
 	storedAt := store.now().UTC()
+	if err := validateStoredAt(
+		storedAt,
+		normalized.GeneratedAt,
+	); err != nil {
+		return Record{}, err
+	}
 
 	record, err := scanRecord(
 		store.client.QueryRow(
@@ -415,6 +391,19 @@ func (store *PostgresStore) Put(
 		return Record{}, ErrResultConflict
 	}
 
+	samePayload, err :=
+		resultsHaveSameCanonicalPayload(
+			existing.Result,
+			normalized,
+		)
+	if err != nil {
+		return Record{}, err
+	}
+	if !samePayload {
+		return Record{},
+			ErrResultPayloadConflict
+	}
+
 	return existing.Clone(), nil
 }
 
@@ -422,8 +411,7 @@ func (store *PostgresStore) Get(
 	ctx context.Context,
 	key ResultKey,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireContext(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -479,8 +467,7 @@ func (store *PostgresStore) GetLatest(
 	ctx context.Context,
 	query ListQuery,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireContext(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -526,8 +513,7 @@ func (store *PostgresStore) List(
 	ctx context.Context,
 	query ListQuery,
 ) (Page, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := requireContext(ctx); err != nil {
 		return Page{}, err
 	}
 
@@ -632,106 +618,11 @@ func (store *PostgresStore) List(
 func scanRecord(
 	scanner rowScanner,
 ) (Record, error) {
-	var (
-		id                  string
-		inputFingerprint    string
-		payload             []byte
-		windowStartMirror   time.Time
-		windowStartUnixNano int64
-		windowEndMirror     time.Time
-		windowEndUnixNano   int64
-		asOfTimeMirror      time.Time
-		asOfTimeUnixNano    int64
-		storedAtMirror      time.Time
-		storedAtUnixNano    int64
-	)
-
-	if err := scanner.Scan(
-		&id,
-		&inputFingerprint,
-		&payload,
-		&windowStartMirror,
-		&windowStartUnixNano,
-		&windowEndMirror,
-		&windowEndUnixNano,
-		&asOfTimeMirror,
-		&asOfTimeUnixNano,
-		&storedAtMirror,
-		&storedAtUnixNano,
-	); err != nil {
+	row, err := scanStoredRow(scanner)
+	if err != nil {
 		return Record{}, err
 	}
-
-	exactWindowStart := time.Unix(0, windowStartUnixNano).UTC()
-	exactWindowEnd := time.Unix(0, windowEndUnixNano).UTC()
-	exactAsOfTime := time.Unix(0, asOfTimeUnixNano).UTC()
-	exactStoredAt := time.Unix(0, storedAtUnixNano).UTC()
-
-	for _, timestamp := range []struct {
-		field  string
-		mirror time.Time
-		exact  time.Time
-	}{
-		{field: "window_start", mirror: windowStartMirror, exact: exactWindowStart},
-		{field: "window_end", mirror: windowEndMirror, exact: exactWindowEnd},
-		{field: "as_of_time", mirror: asOfTimeMirror, exact: exactAsOfTime},
-		{field: "stored_at", mirror: storedAtMirror, exact: exactStoredAt},
-	} {
-		if err := validateTimestampMirror(
-			timestamp.field,
-			timestamp.mirror,
-			timestamp.exact,
-		); err != nil {
-			return Record{}, err
-		}
-	}
-
-	var result historicalcontract.Result
-	if err := json.Unmarshal(
-		payload,
-		&result,
-	); err != nil {
-		return Record{},
-			fmt.Errorf(
-				"unmarshal historical aggregate result: %w",
-				err,
-			)
-	}
-
-	result = normalizeResult(result)
-	for _, identity := range []struct {
-		field string
-		value time.Time
-		exact time.Time
-	}{
-		{field: "window_start_unix_nano", value: result.Window.StartTime, exact: exactWindowStart},
-		{field: "window_end_unix_nano", value: result.Window.EndTime, exact: exactWindowEnd},
-		{field: "as_of_time_unix_nano", value: result.Window.AsOfTime, exact: exactAsOfTime},
-	} {
-		if !identity.value.UTC().Equal(identity.exact) {
-			return Record{}, &CorruptResultError{Field: identity.field}
-		}
-	}
-	if _, err := validateStorableResult(
-		result,
-	); err != nil {
-		return Record{}, err
-	}
-	if result.Provenance.InputFingerprint !=
-		inputFingerprint {
-		return Record{},
-			fmt.Errorf(
-				"historical aggregate fingerprint mismatch",
-			)
-	}
-
-	return Record{
-		ID:               id,
-		Key:              resultKey(result),
-		InputFingerprint: inputFingerprint,
-		Result:           result,
-		StoredAt:         exactStoredAt,
-	}, nil
+	return recordFromStoredRow(row)
 }
 
 func databaseFailure(

@@ -21,10 +21,26 @@ func TestScanRecordRejectsHistoricalTimestampMirrorDrift(t *testing.T) {
 		index int
 		field string
 	}{
-		{name: "window start", index: 3, field: "window_start"},
-		{name: "window end", index: 5, field: "window_end"},
-		{name: "as of time", index: 7, field: "as_of_time"},
-		{name: "stored at", index: 9, field: "stored_at"},
+		{
+			name:  "window start",
+			index: 14,
+			field: "window_start",
+		},
+		{
+			name:  "window end",
+			index: 16,
+			field: "window_end",
+		},
+		{
+			name:  "as of time",
+			index: 18,
+			field: "as_of_time",
+		},
+		{
+			name:  "stored at",
+			index: 20,
+			field: "stored_at",
+		},
 	}
 
 	for _, test := range tests {

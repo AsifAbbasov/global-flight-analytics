@@ -27,6 +27,12 @@ var (
 				ErrResultNotFound
 	ErrResultConflict = historicalaggregatecontract.
 				ErrResultConflict
+	ErrResultPayloadConflict = historicalaggregatecontract.
+					ErrResultPayloadConflict
+	ErrContextRequired = historicalaggregatecontract.
+				ErrContextRequired
+	ErrStoredAtInvalid = historicalaggregatecontract.
+				ErrStoredAtInvalid
 	ErrScopeInvalid = historicalaggregatecontract.
 			ErrScopeInvalid
 	ErrWindowRequired = historicalaggregatecontract.

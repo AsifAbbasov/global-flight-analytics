@@ -1115,3 +1115,16 @@ filtering, advances processing generation 6, and installs a permanent audit gate
 ## Document 130 — Historical Similarity Review Hardening
 
 `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` records explicit similarity-versus-confidence semantics, trajectory quality evidence, bounded sampling and input size, removal of the duplicate Rank API, canonical equal-timestamp ordering, exact prepared fingerprints, mathematical result validation, worst-endpoint scoring, exact relative difference, great-circle resampling, deliberately retained Go and floating-point contracts, permanent regression tests, engineering commit `6dbae4e6fe00295af0f7ba5303855736b76e8bde`, GitHub Actions run `30360637718`, and formal closure with zero open, unclassified, or deferred findings.
+
+
+<!-- HISTORICAL-AGGREGATE-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 131 — Historical Aggregate Review Hardening
+
+`131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` records lowercase regional
+persistence, the pre-existing full tuple cursor, complete JSON-versus-column
+consistency, deterministic record identity, canonical payload idempotency,
+writer-interface segregation, raw validation before storage canonicalization,
+nil-context rejection, StoredAt causality, timestamp-mirror database guards,
+migration 029, deliberately rejected mechanical findings, regression tests, and
+Continuous Integration enforcement.

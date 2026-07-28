@@ -84,6 +84,7 @@ func TestProductionMigrationCatalogHasUniqueVersions(
 		26: "026_flight_feature_processing_identity.sql",
 		27: "027_flight_feature_validation_audit.sql",
 		28: "028_harden_historical_read_snapshot.sql",
+		29: "029_harden_historical_aggregate_integrity.sql",
 	}
 	for version, filename := range expectedCanonical {
 		if actual := versions[version]; actual != filename {
@@ -96,9 +97,9 @@ func TestProductionMigrationCatalogHasUniqueVersions(
 		}
 	}
 
-	if len(orderedVersions) != 28 {
+	if len(orderedVersions) != 29 {
 		t.Fatalf(
-			"production migration count = %d, want 28 (%s)",
+			"production migration count = %d, want 29 (%s)",
 			len(orderedVersions),
 			fmt.Sprint(orderedVersions),
 		)

@@ -1,7 +1,6 @@
 package historicalaggregate
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -347,13 +346,4 @@ func makeRecordID(
 
 	return recordIDPrefix +
 		hex.EncodeToString(sum[:])
-}
-
-func nonNilContext(
-	ctx context.Context,
-) context.Context {
-	if ctx == nil {
-		return context.Background()
-	}
-	return ctx
 }

@@ -13,7 +13,7 @@ const Version = "historical-materialization-v1"
 
 type Config struct {
 	Repository historicalread.Repository
-	Store      historicalaggregate.Store
+	Store      historicalaggregate.Writer
 	Now        func() time.Time
 }
 

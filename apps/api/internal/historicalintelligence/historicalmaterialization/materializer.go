@@ -26,7 +26,7 @@ var airportICAOPattern = regexp.MustCompile(
 
 type Materializer struct {
 	repository historicalread.Repository
-	store      historicalaggregate.Store
+	store      historicalaggregate.Writer
 	now        func() time.Time
 }
 

@@ -582,3 +582,15 @@ Historical Comparison now rejects unequal per-bucket coverage profiles, binds ex
 ## Historical Similarity Review Hardening
 
 Historical Similarity now separates route-shape similarity from evidence confidence, binds trajectory quality, segment status, coverage gaps, point retention, and observation cadence, bounds sampling and input points, removes the duplicate public Rank workflow, canonicalizes equal timestamps, fingerprints the exact prepared representation, verifies all component and confidence mathematics, uses worst-endpoint scoring and great-circle resampling, and installs a permanent strict Backend Continuous Integration audit.
+
+
+<!-- HISTORICAL-AGGREGATE-REVIEW-HARDENING:README -->
+
+## Historical Aggregate Review Hardening
+
+Historical Aggregate now aligns lowercase regional scope with PostgreSQL,
+verifies every denormalized row field against the JSON contract, reconstructs
+deterministic record identifiers, requires canonical payload equality for
+idempotent replay, exposes a narrow Writer interface to materialization, rejects
+nil contexts and causally invalid storage timestamps, and protects migration 029
+with permanent tests and Backend Continuous Integration audit enforcement.

@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	expectedMigrationVersion  = "015"
-	expectedMigrationName     = "create_historical_aggregate_results"
-	expectedMigrationChecksum = "1f6d0243ee42d57f377dfc9ec0b6af88f7c2512fd662691e75b72dbc681149a7"
+	expectedMigrationVersion  = "029"
+	expectedMigrationName     = "harden_historical_aggregate_integrity"
+	expectedMigrationChecksum = "4759cbb11050faa2a5b47be762f46be3a898e481e6e0fee9cfe7cdf0138c696d"
 )
 
 func main() {
@@ -72,7 +72,7 @@ func run(
 	); err != nil {
 		fmt.Fprintf(
 			stderr,
-			"ERROR: verify migration 015 and historical aggregate schema: %v\n",
+			"ERROR: verify migration 029 and historical aggregate schema: %v\n",
 			err,
 		)
 		return 1
@@ -232,6 +232,22 @@ func run(
 		return 1
 	}
 
+	payloadConflict := result.Clone()
+	payloadConflict.Provenance.BuilderVersion =
+		"historical-aggregate-runtime-verification-payload-conflict"
+	_, err = store.Put(ctx, payloadConflict)
+	if !errors.Is(
+		err,
+		historicalaggregate.ErrResultPayloadConflict,
+	) {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: same-fingerprint payload replay returned %v instead of ErrResultPayloadConflict\n",
+			err,
+		)
+		return 1
+	}
+
 	var resultCount int
 	if err := tx.QueryRow(
 		ctx,
@@ -335,6 +351,7 @@ func run(
 	fmt.Fprintln(stdout, "Put: PASS")
 	fmt.Fprintln(stdout, "Idempotent replay: PASS")
 	fmt.Fprintln(stdout, "Conflict detection: PASS")
+	fmt.Fprintln(stdout, "Payload identity conflict detection: PASS")
 	fmt.Fprintln(stdout, "Get: PASS")
 	fmt.Fprintln(stdout, "GetLatest: PASS")
 	fmt.Fprintln(stdout, "List: PASS")
@@ -424,6 +441,9 @@ func verifyMigrationAndSchema(
 			      'historical_aggregate_results_series_status_check',
 			      'historical_aggregate_results_confidence_level_check',
 			      'historical_aggregate_results_json_check',
+			      'historical_aggregate_results_timestamp_mirror_check',
+			      'historical_aggregate_results_json_metadata_check',
+			      'historical_aggregate_results_stored_at_causality_check',
 			      'historical_aggregate_results_key_unique'
 			  );
 		`,
@@ -433,9 +453,9 @@ func verifyMigrationAndSchema(
 			err,
 		)
 	}
-	if requiredConstraintCount != 11 {
+	if requiredConstraintCount != 14 {
 		return fmt.Errorf(
-			"historical aggregate required constraint count = %d, want 11",
+			"historical aggregate required constraint count = %d, want 14",
 			requiredConstraintCount,
 		)
 	}

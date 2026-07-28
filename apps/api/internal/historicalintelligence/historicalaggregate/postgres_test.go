@@ -75,17 +75,35 @@ func (rows *fakeRows) Err() error {
 
 func (rows *fakeRows) Close() {}
 
+type fakeQueryCall struct {
+	query string
+	args  []any
+}
+
 type fakePostgresClient struct {
 	queryRows []rowScanner
 	rows      rowIterator
 	queryErr  error
+
+	rowCalls   []fakeQueryCall
+	queryCalls []fakeQueryCall
 }
 
 func (client *fakePostgresClient) QueryRow(
 	_ context.Context,
-	_ string,
-	_ ...any,
+	query string,
+	args ...any,
 ) rowScanner {
+	client.rowCalls = append(
+		client.rowCalls,
+		fakeQueryCall{
+			query: query,
+			args: append(
+				[]any(nil),
+				args...,
+			),
+		},
+	)
 	if len(client.queryRows) == 0 {
 		return fakeScanner{err: pgx.ErrNoRows}
 	}
@@ -97,9 +115,19 @@ func (client *fakePostgresClient) QueryRow(
 
 func (client *fakePostgresClient) Query(
 	_ context.Context,
-	_ string,
-	_ ...any,
+	query string,
+	args ...any,
 ) (rowIterator, error) {
+	client.queryCalls = append(
+		client.queryCalls,
+		fakeQueryCall{
+			query: query,
+			args: append(
+				[]any(nil),
+				args...,
+			),
+		},
+	)
 	if client.queryErr != nil {
 		return nil, client.queryErr
 	}
@@ -384,7 +412,19 @@ func aggregateRowAt(
 		resultKey(result),
 	)
 	if err != nil {
-		t.Fatalf("encode aggregate key: %v", err)
+		t.Fatalf(
+			"encode aggregate key: %v",
+			err,
+		)
+	}
+	encodedScope, err := scopeKey(
+		result.Scope,
+	)
+	if err != nil {
+		t.Fatalf(
+			"encode aggregate scope: %v",
+			err,
+		)
 	}
 
 	return []any{
@@ -392,7 +432,18 @@ func aggregateRowAt(
 			encoded,
 			result.Provenance.InputFingerprint,
 		),
+		string(result.SchemaVersion),
+		string(result.Metric.Name),
+		string(result.Scope.Type),
+		encodedScope,
+		result.Scope.RegionCode,
+		result.Scope.AirportICAOCode,
+		result.Scope.OriginICAOCode,
+		result.Scope.DestinationICAOCode,
+		string(result.Granularity),
 		result.Provenance.InputFingerprint,
+		string(result.Status),
+		string(result.Confidence.Level),
 		aggregatePayload(t, result),
 		result.Window.StartTime,
 		result.Window.StartTime.UnixNano(),
@@ -458,6 +509,285 @@ func assignFakeValue(
 		return fmt.Errorf(
 			"unsupported destination %T",
 			destination,
+		)
+	}
+}
+
+func TestPostgresStoreRejectsNilContext(
+	t *testing.T,
+) {
+	store := newPostgresStore(
+		&fakePostgresClient{},
+		aggregateTestTime,
+	)
+	_, err := store.Get(
+		nil,
+		ResultKey{},
+	)
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected context error, got %v",
+			err,
+		)
+	}
+}
+
+func TestPostgresStoreValidatesBeforeCanonicalization(
+	t *testing.T,
+) {
+	result := aggregateFixture(
+		t,
+		"a",
+		aggregateTestTime().Add(-time.Hour),
+		aggregateTestTime(),
+	)
+	result.Metric.Unit = " flights "
+
+	client := &fakePostgresClient{}
+	store := newPostgresStore(
+		client,
+		aggregateTestTime,
+	)
+	_, err := store.Put(
+		context.Background(),
+		result,
+	)
+	var validationError *ValidationError
+	if !errors.As(
+		err,
+		&validationError,
+	) {
+		t.Fatalf(
+			"expected raw validation error, got %v",
+			err,
+		)
+	}
+	if len(client.rowCalls) != 0 {
+		t.Fatalf(
+			"database was called for invalid raw result: %#v",
+			client.rowCalls,
+		)
+	}
+}
+
+func TestPostgresStoreRejectsSameFingerprintDifferentPayload(
+	t *testing.T,
+) {
+	incoming := aggregateFixture(
+		t,
+		"a",
+		aggregateTestTime().Add(-time.Hour),
+		aggregateTestTime(),
+	)
+	existing := incoming.Clone()
+	existing.Provenance.BuilderVersion =
+		"different-valid-builder"
+
+	client := &fakePostgresClient{
+		queryRows: []rowScanner{
+			fakeScanner{err: pgx.ErrNoRows},
+			fakeScanner{
+				values: aggregateRow(
+					t,
+					existing,
+				),
+			},
+		},
+	}
+	store := newPostgresStore(
+		client,
+		aggregateTestTime,
+	)
+
+	_, err := store.Put(
+		context.Background(),
+		incoming,
+	)
+	if !errors.Is(
+		err,
+		ErrResultPayloadConflict,
+	) {
+		t.Fatalf(
+			"expected payload conflict, got %v",
+			err,
+		)
+	}
+}
+
+func TestScanRecordRejectsStoredMetadataMismatch(
+	t *testing.T,
+) {
+	result := aggregateFixture(
+		t,
+		"a",
+		aggregateTestTime().Add(-time.Hour),
+		aggregateTestTime(),
+	)
+	row := aggregateRow(t, result)
+	row[2] = string(
+		historicalcontract.
+			MetricNameActiveAircraft,
+	)
+
+	_, err := scanRecord(
+		fakeScanner{values: row},
+	)
+	if !errors.Is(
+		err,
+		ErrCorruptResult,
+	) {
+		t.Fatalf(
+			"expected corrupt metadata error, got %v",
+			err,
+		)
+	}
+}
+
+func TestScanRecordRejectsStoredIdentifierMismatch(
+	t *testing.T,
+) {
+	result := aggregateFixture(
+		t,
+		"a",
+		aggregateTestTime().Add(-time.Hour),
+		aggregateTestTime(),
+	)
+	row := aggregateRow(t, result)
+	row[0] = recordIDPrefix +
+		strings.Repeat("f", 64)
+
+	_, err := scanRecord(
+		fakeScanner{values: row},
+	)
+	if !errors.Is(
+		err,
+		ErrCorruptResult,
+	) {
+		t.Fatalf(
+			"expected corrupt identifier error, got %v",
+			err,
+		)
+	}
+}
+
+func TestPostgresStoreListUsesFullTupleCursorSQL(
+	t *testing.T,
+) {
+	result := aggregateFixture(
+		t,
+		"a",
+		aggregateTestTime().Add(-time.Hour),
+		aggregateTestTime(),
+	)
+	encoded, err := encodeResultKey(
+		resultKey(result),
+	)
+	if err != nil {
+		t.Fatalf(
+			"encode cursor fixture key: %v",
+			err,
+		)
+	}
+	cursorID := makeRecordID(
+		encoded,
+		result.Provenance.InputFingerprint,
+	)
+	client := &fakePostgresClient{
+		rows: &fakeRows{},
+	}
+	store := newPostgresStore(
+		client,
+		aggregateTestTime,
+	)
+
+	_, err = store.List(
+		context.Background(),
+		ListQuery{
+			SchemaVersion: result.SchemaVersion,
+			MetricName:    result.Metric.Name,
+			Scope:         result.Scope,
+			Granularity:   result.Granularity,
+			Cursor: &ListCursor{
+				WindowEnd: result.Window.EndTime,
+				WindowStart: result.
+					Window.StartTime,
+				AsOfTime: result.Window.AsOfTime,
+				ID:       cursorID,
+			},
+			Limit: 3,
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"list with full cursor: %v",
+			err,
+		)
+	}
+	if len(client.queryCalls) != 1 {
+		t.Fatalf(
+			"query calls=%d want=1",
+			len(client.queryCalls),
+		)
+	}
+	call := client.queryCalls[0]
+	for _, fragment := range []string{
+		"window_end_unix_nano = $5",
+		"window_start_unix_nano = $6",
+		"as_of_time_unix_nano = $7",
+		"id > $8",
+		"LIMIT $9",
+	} {
+		if !strings.Contains(
+			call.query,
+			fragment,
+		) {
+			t.Fatalf(
+				"cursor SQL misses %q",
+				fragment,
+			)
+		}
+	}
+	if len(call.args) != 9 ||
+		call.args[7] != cursorID ||
+		call.args[8] != 4 {
+		t.Fatalf(
+			"unexpected cursor arguments: %#v",
+			call.args,
+		)
+	}
+}
+
+func TestPostgresStoreRejectsInvalidStoredAt(
+	t *testing.T,
+) {
+	result := aggregateFixture(
+		t,
+		"a",
+		aggregateTestTime().Add(-time.Hour),
+		aggregateTestTime(),
+	)
+	store := newPostgresStore(
+		&fakePostgresClient{},
+		func() time.Time {
+			return result.GeneratedAt.
+				Add(-time.Nanosecond)
+		},
+	)
+
+	_, err := store.Put(
+		context.Background(),
+		result,
+	)
+	if !errors.Is(
+		err,
+		ErrStoredAtInvalid,
+	) {
+		t.Fatalf(
+			"expected stored-at error, got %v",
+			err,
 		)
 	}
 }

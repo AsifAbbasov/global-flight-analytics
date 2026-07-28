@@ -16,5 +16,6 @@ type Record = historicalaggregatecontract.Record
 type ListCursor = historicalaggregatecontract.ListCursor
 type ListQuery = historicalaggregatecontract.ListQuery
 type Page = historicalaggregatecontract.Page
+type Writer = historicalaggregatecontract.Writer
 type Reader = historicalaggregatecontract.Reader
 type Store = historicalaggregatecontract.Store

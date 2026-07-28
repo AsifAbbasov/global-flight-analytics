@@ -35,6 +35,15 @@ var (
 	ErrResultConflict = errors.New(
 		"historical aggregate result key already exists with a different input fingerprint",
 	)
+	ErrResultPayloadConflict = errors.New(
+		"historical aggregate result key and input fingerprint already exist with a different canonical payload",
+	)
+	ErrContextRequired = errors.New(
+		"historical aggregate context is required",
+	)
+	ErrStoredAtInvalid = errors.New(
+		"historical aggregate storage time must be non-zero and not precede generation time",
+	)
 	ErrScopeInvalid = errors.New(
 		"historical aggregate scope is invalid",
 	)
@@ -104,6 +113,13 @@ func (page Page) Clone() Page {
 	return cloned
 }
 
+type Writer interface {
+	Put(
+		ctx context.Context,
+		result historicalcontract.Result,
+	) (Record, error)
+}
+
 type Reader interface {
 	GetLatest(
 		ctx context.Context,
@@ -116,11 +132,8 @@ type Reader interface {
 }
 
 type Store interface {
+	Writer
 	Reader
-	Put(
-		ctx context.Context,
-		result historicalcontract.Result,
-	) (Record, error)
 	Get(
 		ctx context.Context,
 		key ResultKey,
