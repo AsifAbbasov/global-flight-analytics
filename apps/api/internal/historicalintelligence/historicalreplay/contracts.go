@@ -10,11 +10,31 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalwindow"
 )
 
-const Version = "historical-replay-v1"
+const Version = "historical-replay-v2"
+
+const FingerprintVersion = "historical-replay-input-fingerprint-v1"
 
 const (
 	DefaultMaximumWindowCount = 1_000
 	MaximumWindowCount        = 10_000
+)
+
+type Status string
+
+const (
+	StatusComplete Status = "complete"
+	StatusPartial  Status = "partial"
+	StatusFailed   Status = "failed"
+)
+
+type FailureCode string
+
+const (
+	FailureCodeNoReplayWindow     FailureCode = "no_replay_window"
+	FailureCodeContextCanceled    FailureCode = "context_canceled"
+	FailureCodeMaterialization    FailureCode = "materialization_failed"
+	FailureCodeOutcomeContract    FailureCode = "outcome_contract_invalid"
+	FailureCodeContinuityMismatch FailureCode = "continuity_mismatch"
 )
 
 type Materializer interface {
@@ -44,9 +64,22 @@ type Request struct {
 	GeneratedAt        time.Time
 }
 
+type Failure struct {
+	Sequence int
+
+	StartTime time.Time
+	EndTime   time.Time
+
+	Code    FailureCode
+	Message string
+}
+
 type WindowResult struct {
 	Bucket historicalwindow.Bucket
 	Record historicalaggregate.Record
+
+	PreviousPeriodInputFingerprint string
+	CurrentPeriodInputFingerprint  string
 }
 
 func (result WindowResult) Clone() WindowResult {
@@ -57,8 +90,30 @@ func (result WindowResult) Clone() WindowResult {
 
 type Result struct {
 	Version string
-	Plan    historicalwindow.Plan
-	Windows []WindowResult
+	Status  Status
+
+	Plan historicalwindow.Plan
+
+	MetricName  historicalcontract.MetricName
+	Scope       historicalcontract.Scope
+	Granularity historicalcontract.Granularity
+
+	DatasetLimit       int
+	MaximumBucketCount int
+	MaximumWindowCount int
+
+	PlannedWindowCount   int
+	CompletedWindowCount int
+	Windows              []WindowResult
+
+	HasFailure bool
+	Failure    Failure
+
+	GeneratedAt time.Time
+	StartedAt   time.Time
+	CompletedAt time.Time
+
+	InputFingerprint string
 }
 
 func (result Result) Clone() Result {
@@ -75,6 +130,9 @@ func (result Result) Clone() Result {
 			window.Clone(),
 		)
 	}
-
 	return cloned
+}
+
+func (result Result) Validate() error {
+	return validateResult(result)
 }

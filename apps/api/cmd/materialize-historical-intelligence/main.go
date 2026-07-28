@@ -170,30 +170,62 @@ func runCommand(
 	)
 	defer cancel()
 
-	report, err := operation.Execute(
+	report, executeErr := operation.Execute(
 		ctx,
 		options,
 	)
-	if err != nil {
+	return writeCommandOutcome(
+		stdout,
+		stderr,
+		options.Mode,
+		report,
+		executeErr,
+	)
+}
+
+func writeCommandOutcome(
+	stdout io.Writer,
+	stderr io.Writer,
+	mode operationMode,
+	report commandReport,
+	executeErr error,
+) int {
+	if report.Version != "" {
+		encoder := json.NewEncoder(stdout)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(report); err != nil {
+			fmt.Fprintf(
+				stderr,
+				"ERROR: encode command report: %v\n",
+				err,
+			)
+			if executeErr != nil {
+				fmt.Fprintf(
+					stderr,
+					"ERROR: execute Historical Intelligence %s: %v\n",
+					mode,
+					executeErr,
+				)
+			}
+			return 1
+		}
+	}
+
+	if executeErr != nil {
 		fmt.Fprintf(
 			stderr,
 			"ERROR: execute Historical Intelligence %s: %v\n",
-			options.Mode,
-			err,
+			mode,
+			executeErr,
 		)
 		return 1
 	}
-
-	encoder := json.NewEncoder(stdout)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(report); err != nil {
-		fmt.Fprintf(
+	if report.Version == "" {
+		fmt.Fprintln(
 			stderr,
-			"ERROR: encode command report: %v\n",
-			err,
+			"ERROR: Historical Intelligence command returned an empty report",
 		)
 		return 1
 	}
-
 	return 0
 }

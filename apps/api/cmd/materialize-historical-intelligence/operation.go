@@ -23,6 +23,9 @@ var (
 	errOperationModeUnsupported = errors.New(
 		"Historical Intelligence operation mode is unsupported",
 	)
+	errCommandContextRequired = errors.New(
+		"Historical Intelligence command context is required",
+	)
 )
 
 type commandMaterializer interface {
@@ -72,7 +75,8 @@ func (operation *commandOperation) Execute(
 	options commandOptions,
 ) (commandReport, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return commandReport{},
+			errCommandContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return commandReport{}, err
@@ -92,67 +96,18 @@ func (operation *commandOperation) Execute(
 
 	switch options.Mode {
 	case operationModeMaterialize:
-		outcome, err :=
-			operation.materializer.Materialize(
-				ctx,
-				historicalmaterialization.Request{
-					StartTime: options.StartTime,
-					EndTime:   options.EndTime,
-					AsOfTime:  options.AsOfTime,
-
-					Granularity: options.
-						Granularity,
-					MetricName: options.
-						MetricName,
-					Scope: options.Scope,
-
-					DatasetLimit: options.
-						DatasetLimit,
-					MaximumBucketCount: options.
-						MaximumBucketCount,
-					GeneratedAt: generatedAt,
-				},
-			)
-		if err != nil {
-			return commandReport{}, err
-		}
-
-		return reportFromMaterialization(
+		return operation.executeMaterialize(
+			ctx,
 			options,
-			outcome,
-			operation.now().UTC(),
-		), nil
+			generatedAt,
+		)
 
 	case operationModeReplay:
-		replayed, err := operation.replayRunner.Run(
+		return operation.executeReplay(
 			ctx,
-			historicalreplay.Request{
-				StartTime: options.StartTime,
-				EndTime:   options.EndTime,
-				AsOfTime:  options.AsOfTime,
-
-				Granularity: options.Granularity,
-				MetricName:  options.MetricName,
-				Scope:       options.Scope,
-
-				DatasetLimit: options.
-					DatasetLimit,
-				MaximumBucketCount: options.
-					MaximumBucketCount,
-				MaximumWindowCount: options.
-					MaximumWindowCount,
-				GeneratedAt: generatedAt,
-			},
-		)
-		if err != nil {
-			return commandReport{}, err
-		}
-
-		return reportFromReplay(
 			options,
-			replayed,
-			operation.now().UTC(),
-		), nil
+			generatedAt,
+		)
 
 	default:
 		return commandReport{},
@@ -160,51 +115,73 @@ func (operation *commandOperation) Execute(
 	}
 }
 
-func reportFromReplay(
+func (operation *commandOperation) executeMaterialize(
+	ctx context.Context,
 	options commandOptions,
-	result historicalreplay.Result,
-	completedAt time.Time,
-) commandReport {
-	records := make(
-		[]reportRecord,
-		0,
-		len(result.Windows),
-	)
-	for _, window := range result.Windows {
-		records = append(
-			records,
-			reportRecordFromAggregate(
-				window.Record,
-			),
-		)
-	}
+	generatedAt time.Time,
+) (commandReport, error) {
+	outcome, err := operation.materializer.Materialize(
+		ctx,
+		historicalmaterialization.Request{
+			StartTime: options.StartTime,
+			EndTime:   options.EndTime,
+			AsOfTime:  options.AsOfTime,
 
-	return commandReport{
-		Version: commandVersion,
-		Mode:    string(options.Mode),
+			Granularity: options.Granularity,
+			MetricName:  options.MetricName,
+			Scope:       options.Scope,
 
-		MetricName: string(options.MetricName),
-		Scope: reportScopeFromContract(
-			options.Scope,
-		),
-		Granularity: string(
-			options.Granularity,
-		),
-		RequestedWindow: reportWindow{
-			StartTime: options.StartTime.UTC(),
-			EndTime:   options.EndTime.UTC(),
-			AsOfTime:  options.AsOfTime.UTC(),
+			DatasetLimit: options.DatasetLimit,
+			MaximumBucketCount: options.
+				MaximumBucketCount,
+			GeneratedAt: generatedAt,
 		},
-		DatasetLimit: options.DatasetLimit,
-		MaximumBucketCount: options.
-			MaximumBucketCount,
-		MaximumWindowCount: options.
-			MaximumWindowCount,
-		MaterializedRecordCount: len(records),
-		ReplayWindowCount:       len(result.Windows),
-		Records:                 records,
-		CompletedAt:             completedAt.UTC(),
+	)
+	if err != nil {
+		return commandReport{}, err
 	}
+
+	return reportFromMaterialization(
+		options,
+		outcome,
+		operation.now().UTC(),
+	), nil
+}
+
+func (operation *commandOperation) executeReplay(
+	ctx context.Context,
+	options commandOptions,
+	generatedAt time.Time,
+) (commandReport, error) {
+	replayed, err := operation.replayRunner.Run(
+		ctx,
+		historicalreplay.Request{
+			StartTime: options.StartTime,
+			EndTime:   options.EndTime,
+			AsOfTime:  options.AsOfTime,
+
+			Granularity: options.Granularity,
+			MetricName:  options.MetricName,
+			Scope:       options.Scope,
+
+			DatasetLimit: options.DatasetLimit,
+			MaximumBucketCount: options.
+				MaximumBucketCount,
+			MaximumWindowCount: options.
+				MaximumWindowCount,
+			GeneratedAt: generatedAt,
+		},
+	)
+	if err != nil && replayed.Version == "" {
+		return commandReport{}, err
+	}
+
+	report := reportFromReplay(
+		options,
+		replayed,
+		operation.now().UTC(),
+	)
+	return report, err
 }
 
 func reportRecordFromAggregate(

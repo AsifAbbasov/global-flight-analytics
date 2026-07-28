@@ -606,3 +606,16 @@ metadata, exposes period-specific read summaries, preserves Historical
 Comparison provenance ownership, returns the canonical persisted result, rejects
 nil context, identifies orchestration failure stages, and is protected by a
 permanent strict Backend Continuous Integration audit.
+
+
+<!-- HISTORICAL-REPLAY-REVIEW-HARDENING:README -->
+
+## Historical Replay Review Hardening
+
+Historical Replay now validates every Materialization outcome before accepting a
+persisted record, exposes self-contained complete, partial, and failed results,
+binds a deterministic replay fingerprint, rejects invalid global requests before
+window execution, bounds planning by the lower operator limit, verifies shared
+period continuity across adjacent Materializations, preserves completed-prefix
+JSON on production failure, rejects nil context, and is protected by a permanent
+strict Backend Continuous Integration audit.

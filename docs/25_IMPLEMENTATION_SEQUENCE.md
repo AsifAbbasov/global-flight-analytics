@@ -923,3 +923,15 @@ one atomic two-period read carrying independent limits. Snapshot metadata,
 period summaries, persisted-result identity, generated-time fingerprinting,
 caller context, stage diagnostics, tests, and permanent audit enforcement are
 now explicit.
+
+
+<!-- HISTORICAL-REPLAY-REVIEW-HARDENING:SEQUENCE -->
+
+## Historical Replay integrity hardening
+
+Historical Replay version two validates Materialization output and persisted
+record identity before accepting each window. Replay status, planned and
+completed counts, structured failure evidence, deterministic input fingerprint,
+shared-period continuity, early request validation, bounded planning, nil-context
+rejection, completed-prefix production reporting, tests, and permanent audit
+enforcement are now explicit.

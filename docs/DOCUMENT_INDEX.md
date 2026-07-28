@@ -1145,3 +1145,16 @@ permanent regression tests, engineering commit
 `2bbbd2439580536ffe17f8827c654c245d9b6b1e`, GitHub Actions run
 `30384357559`, and formal closure with zero open, unclassified, or deferred
 findings.
+
+
+<!-- HISTORICAL-REPLAY-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 133 — Historical Replay Review Hardening
+
+`133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` records strict Materialization outcome
+validation, self-contained complete, partial, and failed replay results,
+structured failure evidence, deterministic replay fingerprinting, early global
+request validation, bounded planning limits, cross-call shared-period continuity,
+production completed-prefix reporting with non-zero failure exit, deliberately
+rejected replay-wide transaction and checkpoint coupling, expanded regression
+tests, and Continuous Integration enforcement.

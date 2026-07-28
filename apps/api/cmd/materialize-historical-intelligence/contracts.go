@@ -5,9 +5,10 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalcontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalmaterialization"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalreplay"
 )
 
-const commandVersion = "historical-intelligence-production-runner-v1"
+const commandVersion = "historical-intelligence-production-runner-v2"
 
 type operationMode string
 
@@ -70,9 +71,20 @@ type reportReadSummary struct {
 	RouteLimitReached       bool `json:"route_limit_reached"`
 }
 
+type reportReplayFailure struct {
+	Sequence int `json:"sequence"`
+
+	StartTime time.Time `json:"start_time,omitempty"`
+	EndTime   time.Time `json:"end_time,omitempty"`
+
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
 type commandReport struct {
 	Version string `json:"version"`
 	Mode    string `json:"mode"`
+	Status  string `json:"status"`
 
 	MetricName  string      `json:"metric_name"`
 	Scope       reportScope `json:"scope"`
@@ -84,12 +96,17 @@ type commandReport struct {
 	MaximumBucketCount int `json:"maximum_bucket_count"`
 	MaximumWindowCount int `json:"maximum_window_count,omitempty"`
 
-	MaterializedRecordCount int            `json:"materialized_record_count"`
-	ReplayWindowCount       int            `json:"replay_window_count,omitempty"`
-	Records                 []reportRecord `json:"records"`
+	MaterializedRecordCount    int            `json:"materialized_record_count"`
+	ReplayWindowCount          int            `json:"replay_window_count,omitempty"`
+	PlannedReplayWindowCount   int            `json:"planned_replay_window_count,omitempty"`
+	CompletedReplayWindowCount int            `json:"completed_replay_window_count,omitempty"`
+	Records                    []reportRecord `json:"records"`
 
-	ReadSummary *reportReadSummary `json:"read_summary,omitempty"`
+	ReplayInputFingerprint string               `json:"replay_input_fingerprint,omitempty"`
+	ReplayFailure          *reportReplayFailure `json:"replay_failure,omitempty"`
+	ReadSummary            *reportReadSummary   `json:"read_summary,omitempty"`
 
+	StartedAt   time.Time `json:"started_at"`
 	CompletedAt time.Time `json:"completed_at"`
 }
 
@@ -123,6 +140,7 @@ func reportFromMaterialization(
 	return commandReport{
 		Version: commandVersion,
 		Mode:    string(options.Mode),
+		Status:  string(historicalreplay.StatusComplete),
 
 		MetricName: string(options.MetricName),
 		Scope: reportScopeFromContract(
@@ -146,7 +164,105 @@ func reportFromMaterialization(
 			),
 		},
 		ReadSummary: &readSummary,
+		StartedAt:   outcome.Record.Result.GeneratedAt.UTC(),
 		CompletedAt: completedAt.UTC(),
+	}
+}
+
+func reportFromReplay(
+	options commandOptions,
+	result historicalreplay.Result,
+	fallbackCompletedAt time.Time,
+) commandReport {
+	records := make(
+		[]reportRecord,
+		0,
+		len(result.Windows),
+	)
+	for _, window := range result.Windows {
+		records = append(
+			records,
+			reportRecordFromAggregate(
+				window.Record,
+			),
+		)
+	}
+
+	status := result.Status
+	if status == "" {
+		if result.HasFailure && len(result.Windows) > 0 {
+			status = historicalreplay.StatusPartial
+		} else if result.HasFailure {
+			status = historicalreplay.StatusFailed
+		} else {
+			status = historicalreplay.StatusComplete
+		}
+	}
+	plannedWindowCount := result.PlannedWindowCount
+	if plannedWindowCount == 0 {
+		plannedWindowCount = len(result.Plan.Buckets)
+	}
+	if plannedWindowCount == 0 {
+		plannedWindowCount = len(result.Windows)
+	}
+	completedWindowCount := result.CompletedWindowCount
+	if completedWindowCount == 0 && len(result.Windows) > 0 {
+		completedWindowCount = len(result.Windows)
+	}
+	startedAt := result.StartedAt.UTC()
+	if startedAt.IsZero() {
+		startedAt = result.GeneratedAt.UTC()
+	}
+	if startedAt.IsZero() {
+		startedAt = fallbackCompletedAt.UTC()
+	}
+	completedAt := result.CompletedAt.UTC()
+	if completedAt.IsZero() {
+		completedAt = fallbackCompletedAt.UTC()
+	}
+
+	var failure *reportReplayFailure
+	if result.HasFailure {
+		failure = &reportReplayFailure{
+			Sequence:  result.Failure.Sequence,
+			StartTime: result.Failure.StartTime.UTC(),
+			EndTime:   result.Failure.EndTime.UTC(),
+			Code:      string(result.Failure.Code),
+			Message:   result.Failure.Message,
+		}
+	}
+
+	return commandReport{
+		Version: commandVersion,
+		Mode:    string(options.Mode),
+		Status:  string(status),
+
+		MetricName: string(options.MetricName),
+		Scope: reportScopeFromContract(
+			options.Scope,
+		),
+		Granularity: string(
+			options.Granularity,
+		),
+		RequestedWindow: reportWindow{
+			StartTime: options.StartTime.UTC(),
+			EndTime:   options.EndTime.UTC(),
+			AsOfTime:  options.AsOfTime.UTC(),
+		},
+		DatasetLimit: options.DatasetLimit,
+		MaximumBucketCount: options.
+			MaximumBucketCount,
+		MaximumWindowCount: options.
+			MaximumWindowCount,
+		MaterializedRecordCount:    len(records),
+		ReplayWindowCount:          completedWindowCount,
+		PlannedReplayWindowCount:   plannedWindowCount,
+		CompletedReplayWindowCount: completedWindowCount,
+		Records:                    records,
+		ReplayInputFingerprint:     result.InputFingerprint,
+		ReplayFailure:              failure,
+		StartedAt:                  startedAt,
+		CompletedAt:                completedAt,
 	}
 }
 
