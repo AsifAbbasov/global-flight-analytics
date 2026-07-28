@@ -664,6 +664,19 @@ func baselineTestTrajectory() trajectory.FlightTrajectory {
 		QualityScore:     0.9,
 		SourceName:       "airplanes.live",
 		Points:           points,
+		Segments: []trajectory.TrajectorySegment{
+			{
+				ID:              "segment-001",
+				SequenceNumber:  1,
+				Status:          trajectory.SegmentStatusObserved,
+				QualityScore:    0.9,
+				StartTime:       points[0].ObservedAt,
+				EndTime:         points[len(points)-1].ObservedAt,
+				DurationSeconds: int64(4 * time.Minute / time.Second),
+				PointCount:      len(points),
+				SourceName:      "airplanes.live",
+			},
+		},
 
 		CreatedAt: points[0].ObservedAt,
 		UpdatedAt: asOfTime,

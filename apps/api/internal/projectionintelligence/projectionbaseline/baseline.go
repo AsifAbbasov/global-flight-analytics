@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 	"time"
 
@@ -114,11 +113,25 @@ func (
 			ErrGeneratedAtInvalid
 	}
 
-	snapshot, futurePointCount :=
-		trajectorySnapshotAt(
-			request.Trajectory,
-			plan.AsOfTime,
+	cutoff := buildCutoffSnapshot(
+		request.Trajectory,
+		plan.AsOfTime,
+	)
+	snapshot := cutoff.Trajectory
+	if !cutoff.QualityEvidenceAvailable {
+		return baseline.validatedUnavailable(
+			snapshot,
+			plan,
+			generatedAt,
+			[]projectioncontract.Limitation{
+				{
+					Code:    "projection_cutoff_quality_unavailable",
+					Message: "Cutoff-safe trajectory quality evidence does not cover the latest included observation.",
+					Scope:   "provenance",
+				},
+			},
 		)
+	}
 
 	evaluation := baseline.config.
 		EligibilityEvaluator.Evaluate(
@@ -227,14 +240,16 @@ func (
 			},
 		)
 	}
-	if futurePointCount > 0 {
+	if cutoff.excludedEvidenceCount() > 0 {
 		limitations = append(
 			limitations,
 			projectioncontract.Limitation{
 				Code: "future_observations_excluded",
 				Message: fmt.Sprintf(
-					"%d trajectory points after the as-of time were excluded from projection inputs.",
-					futurePointCount,
+					"Cutoff isolation excluded %d points, %d segments, and %d coverage gaps that were not fully available at the as-of time.",
+					cutoff.ExcludedPointCount,
+					cutoff.ExcludedSegmentCount,
+					cutoff.ExcludedGapCount,
 				),
 				Scope: "provenance",
 			},
@@ -515,6 +530,11 @@ func (
 		),
 		ScopeGuard: projectioncontract.
 			ScopeGuardResearchOnly,
+		Provenance: unavailableProvenance(
+			item,
+			plan,
+			baseline.config,
+		),
 		GeneratedAt: generatedAt,
 	}
 
@@ -539,100 +559,6 @@ func validateResult(
 	}
 
 	return result.Clone(), nil
-}
-
-func trajectorySnapshotAt(
-	item trajectory.FlightTrajectory,
-	asOfTime time.Time,
-) (trajectory.FlightTrajectory, int) {
-	asOfTime = asOfTime.UTC()
-	points := make(
-		[]trajectory.TrackPoint4D,
-		0,
-		len(item.Points),
-	)
-	futurePointCount := 0
-
-	for _, point := range item.Points {
-		if point.ObservedAt.IsZero() {
-			continue
-		}
-		if point.ObservedAt.UTC().After(
-			asOfTime,
-		) {
-			futurePointCount++
-			continue
-		}
-		points = append(
-			points,
-			point,
-		)
-	}
-
-	sort.SliceStable(
-		points,
-		func(left int, right int) bool {
-			leftTime := points[left].
-				ObservedAt.UTC()
-			rightTime := points[right].
-				ObservedAt.UTC()
-			if leftTime.Equal(rightTime) {
-				return points[left].ID <
-					points[right].ID
-			}
-
-			return leftTime.Before(
-				rightTime,
-			)
-		},
-	)
-
-	gaps := make(
-		[]trajectory.CoverageGap,
-		0,
-		len(item.CoverageGaps),
-	)
-	for _, gap := range item.CoverageGaps {
-		if gap.StartTime.IsZero() ||
-			gap.StartTime.UTC().After(
-				asOfTime,
-			) {
-			continue
-		}
-		gaps = append(
-			gaps,
-			gap,
-		)
-	}
-
-	snapshot := item
-	snapshot.Points = points
-	snapshot.PointCount = len(points)
-	snapshot.CoverageGaps = gaps
-	snapshot.CoverageGapCount = len(gaps)
-
-	if len(points) == 0 {
-		snapshot.StartTime = time.Time{}
-		snapshot.EndTime = time.Time{}
-		snapshot.DurationSeconds = 0
-		return snapshot, futurePointCount
-	}
-
-	snapshot.StartTime =
-		points[0].ObservedAt.UTC()
-	snapshot.EndTime =
-		points[len(points)-1].
-			ObservedAt.UTC()
-	snapshot.DurationSeconds = int64(
-		snapshot.EndTime.Sub(
-			snapshot.StartTime,
-		).Seconds(),
-	)
-	if snapshot.UpdatedAt.After(asOfTime) {
-		snapshot.UpdatedAt = asOfTime
-	}
-
-	return snapshot, futurePointCount
 }
 
 func validateLatestKinematics(

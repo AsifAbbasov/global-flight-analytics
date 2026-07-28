@@ -49,6 +49,10 @@ func inputFingerprint(
 		digest,
 		plan.Fingerprint,
 	)
+	writeTrajectoryFingerprintEvidence(
+		digest,
+		item,
+	)
 	writeFingerprintTime(
 		digest,
 		point.ObservedAt,

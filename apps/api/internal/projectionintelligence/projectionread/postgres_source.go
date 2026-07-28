@@ -16,6 +16,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionroutefrequency"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/trajectoryquality"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -560,6 +561,9 @@ func (
 	item.SegmentCount = len(
 		item.Segments,
 	)
+	item.QualityScore = trajectoryquality.TrajectoryScore(
+		item.Segments,
+	)
 	item.CoverageGaps =
 		filterCoverageGapsAt(
 			item.CoverageGaps,
@@ -751,16 +755,11 @@ func filterSegmentsAt(
 	)
 	for _, item := range items {
 		if item.StartTime.IsZero() ||
-			item.StartTime.After(cutoff) {
+			item.EndTime.IsZero() ||
+			item.StartTime.After(cutoff) ||
+			item.EndTime.After(cutoff) ||
+			item.EndTime.Before(item.StartTime) {
 			continue
-		}
-		if item.EndTime.After(cutoff) {
-			item.EndTime = cutoff
-			item.DurationSeconds = int64(
-				item.EndTime.Sub(
-					item.StartTime,
-				) / time.Second,
-			)
 		}
 		result = append(
 			result,
@@ -782,16 +781,11 @@ func filterCoverageGapsAt(
 	)
 	for _, item := range items {
 		if item.StartTime.IsZero() ||
-			item.StartTime.After(cutoff) {
+			item.EndTime.IsZero() ||
+			item.StartTime.After(cutoff) ||
+			item.EndTime.After(cutoff) ||
+			item.EndTime.Before(item.StartTime) {
 			continue
-		}
-		if item.EndTime.After(cutoff) {
-			item.EndTime = cutoff
-			item.DurationSeconds = int64(
-				item.EndTime.Sub(
-					item.StartTime,
-				) / time.Second,
-			)
 		}
 		result = append(
 			result,
