@@ -99,7 +99,7 @@ func testProjection() projectioncontract.Result {
 			Confidence:      projectioncontract.Confidence{Score: 0.70, Level: projectioncontract.ConfidenceLevelMedium, Reasons: []projectioncontract.ConfidenceReason{{Code: "route_context", Message: "Route context supports arrival.", Contribution: 0.7}}},
 			Limitations:     []projectioncontract.Limitation{{Code: "estimated_arrival", Message: "Arrival is estimated.", Scope: "arrival"}},
 		},
-		Confidence: projectioncontract.Confidence{Score: 0.78, Level: projectioncontract.ConfidenceLevelMedium, Reasons: []projectioncontract.ConfidenceReason{{Code: "projection_method", Message: "Projection method confidence.", Contribution: 0.78}}},
+		Confidence: projectioncontract.Confidence{Score: 0.70, Level: projectioncontract.ConfidenceLevelMedium, Reasons: []projectioncontract.ConfidenceReason{{Code: "projection_method", Message: "Projection confidence is bounded by Estimated Arrival confidence.", Contribution: 0.70}}},
 		Limitations: []projectioncontract.Limitation{
 			{Code: "research_only", Message: "Research only.", Scope: "operational_use"},
 			{Code: "short_horizon", Message: "Short horizon only.", Scope: "horizon"},
@@ -112,8 +112,8 @@ func testProjection() projectioncontract.Result {
 		Provenance: projectioncontract.Provenance{
 			InputFingerprint: fingerprintOf("projection-input"),
 			Inputs: []projectioncontract.InputReference{
-				{Name: "current_trajectory", Classification: projectioncontract.InputClassificationObserved, ObservedAt: asOf.Add(-time.Second)},
-				{Name: "route_context", Classification: projectioncontract.InputClassificationDerived, ObservedAt: asOf.Add(-time.Minute)},
+				{Name: "current_trajectory", Classification: projectioncontract.InputClassificationObserved, SourceName: "forecaststability_fixture", ObservedAt: asOf.Add(-time.Second)},
+				{Name: "route_context", Classification: projectioncontract.InputClassificationDerived, SourceName: "forecaststability_fixture", ObservedAt: asOf.Add(-time.Minute)},
 			},
 			LatestInputObservedAt: asOf.Add(-time.Second),
 		},

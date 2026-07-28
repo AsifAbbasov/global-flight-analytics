@@ -460,7 +460,7 @@ func continuationCurrentTrajectory(
 					),
 				FlightID:   "flight-current",
 				AircraftID: "aircraft-current",
-				ICAO24:     "4K0001",
+				ICAO24:     "4A0001",
 				Callsign:   "AHY001",
 				Latitude: 40.96 +
 					float64(index)*0.01,
@@ -486,7 +486,7 @@ func continuationCurrentTrajectory(
 		ID:           "current",
 		FlightID:     "flight-current",
 		AircraftID:   "aircraft-current",
-		ICAO24:       "4K0001",
+		ICAO24:       "4A0001",
 		Callsign:     "AHY001",
 		StartTime:    points[0].ObservedAt,
 		EndTime:      points[len(points)-1].ObservedAt,
@@ -726,6 +726,13 @@ func validFallbackResult(
 					Score: 0.7,
 					Level: projectioncontract.
 						ConfidenceLevelMedium,
+					Reasons: []projectioncontract.ConfidenceReason{
+						{
+							Code:         "fallback_point_confidence",
+							Message:      "Fallback projection point confidence.",
+							Contribution: 0.7,
+						},
+					},
 				},
 			},
 			{
@@ -746,6 +753,13 @@ func validFallbackResult(
 					Score: 0.6,
 					Level: projectioncontract.
 						ConfidenceLevelMedium,
+					Reasons: []projectioncontract.ConfidenceReason{
+						{
+							Code:         "fallback_point_confidence",
+							Message:      "Fallback projection point confidence.",
+							Contribution: 0.6,
+						},
+					},
 				},
 			},
 		},
@@ -753,6 +767,13 @@ func validFallbackResult(
 			Score: 0.6,
 			Level: projectioncontract.
 				ConfidenceLevelMedium,
+			Reasons: []projectioncontract.ConfidenceReason{
+				{
+					Code:         "fallback_result_confidence",
+					Message:      "Fallback result confidence equals the weakest fallback point.",
+					Contribution: 0.6,
+				},
+			},
 		},
 		Limitations: []projectioncontract.Limitation{
 			{
@@ -777,6 +798,7 @@ func validFallbackResult(
 					Name: "latest_trajectory_point",
 					Classification: projectioncontract.
 						InputClassificationObserved,
+					SourceName: "airplanes.live",
 					ObservedAt: asOfTime,
 				},
 			},

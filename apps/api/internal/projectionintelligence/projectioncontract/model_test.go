@@ -62,7 +62,7 @@ func TestResultCloneDoesNotShareMutableState(
 		)
 	}
 	if result.Confidence.Reasons[0].
-		Contribution != 0.7 {
+		Contribution != 0.61 {
 		t.Fatal(
 			"Result.Clone() shared result confidence reasons",
 		)

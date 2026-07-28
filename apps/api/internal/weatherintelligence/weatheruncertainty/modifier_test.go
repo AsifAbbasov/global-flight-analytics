@@ -457,7 +457,7 @@ func validProjection(asOfTime time.Time) projectioncontract.Result {
 			LatestTime:      asOfTime.Add(18 * time.Minute),
 			Confidence:      projectionConfidence(0.75),
 		},
-		Confidence: projectionConfidence(0.80),
+		Confidence: projectionConfidence(0.75),
 		Explanations: []projectioncontract.Explanation{
 			{
 				Code:    "projection",
@@ -471,6 +471,7 @@ func validProjection(asOfTime time.Time) projectioncontract.Result {
 				{
 					Name:           "trajectory",
 					Classification: projectioncontract.InputClassificationObserved,
+					SourceName:     "weatheruncertainty_fixture",
 					ObservedAt:     asOfTime.Add(-time.Minute),
 					RetrievedAt:    asOfTime,
 				},

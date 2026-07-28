@@ -619,3 +619,13 @@ window execution, bounds planning by the lower operator limit, verifies shared
 period continuity across adjacent Materializations, preserves completed-prefix
 JSON on production failure, rejects nil context, and is protected by a permanent
 strict Backend Continuous Integration audit.
+
+<!-- PROJECTION-CONTRACT-REVIEW-HARDENING:README -->
+
+## Projection Contract Review Hardening
+
+Projection Contract now enforces exact horizon grids, explicit limited-status
+evidence, bounded and explainable confidence, weakest-evidence reconciliation,
+the shared ordinal confidence vocabulary, SHA-256 fingerprints, ICAO identifier
+formats, provenance chronology and uniqueness, typed result validation, expanded
+regression tests, and permanent Backend Continuous Integration audit enforcement.

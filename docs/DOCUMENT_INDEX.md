@@ -1161,3 +1161,14 @@ tests, engineering commit
 `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068`, GitHub Actions run
 `30390451707`, and formal closure with zero open, unclassified, or deferred
 findings.
+
+<!-- PROJECTION-CONTRACT-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 134 — Projection Contract Review Hardening
+
+`134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` records exact horizon-grid
+validation, explicit limited-status evidence, bounded confidence reasons,
+weakest-evidence reconciliation, shared ordinal confidence vocabulary, strict
+SHA-256 and ICAO formats, provenance chronology and uniqueness, typed result
+validation, deliberately retained optional pointers and producer-owned physical
+policies, permanent regression tests, and Continuous Integration enforcement.

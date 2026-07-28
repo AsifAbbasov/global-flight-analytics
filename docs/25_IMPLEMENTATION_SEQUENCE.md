@@ -935,3 +935,14 @@ completed counts, structured failure evidence, deterministic input fingerprint,
 shared-period continuity, early request validation, bounded planning, nil-context
 rejection, completed-prefix production reporting, tests, and permanent audit
 enforcement are now explicit.
+
+<!-- PROJECTION-CONTRACT-REVIEW-HARDENING:SEQUENCE -->
+
+## Projection Contract integrity hardening
+
+Projection Contract version two preserves the version-one payload layout while
+enforcing exact forecast-grid identity, explicit limited-result evidence,
+confidence reasons and evidence bounds, shared ordinal confidence vocabulary,
+cryptographic fingerprint format, ICAO identity, provenance chronology and
+uniqueness, typed result validation, regression tests, and permanent audit
+enforcement.

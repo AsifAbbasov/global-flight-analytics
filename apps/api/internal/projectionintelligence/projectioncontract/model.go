@@ -1,8 +1,12 @@
 package projectioncontract
 
-import "time"
+import (
+	"time"
 
-const Version = "projection-intelligence-contract-v1"
+	domainconfidence "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/confidence"
+)
+
+const Version = "projection-intelligence-contract-v2"
 
 type SchemaVersion string
 
@@ -73,26 +77,14 @@ func (classification InputClassification) IsKnown() bool {
 	}
 }
 
-type ConfidenceLevel string
+type ConfidenceLevel = domainconfidence.Level
 
 const (
-	ConfidenceLevelNone   ConfidenceLevel = "none"
-	ConfidenceLevelLow    ConfidenceLevel = "low"
-	ConfidenceLevelMedium ConfidenceLevel = "medium"
-	ConfidenceLevelHigh   ConfidenceLevel = "high"
+	ConfidenceLevelNone   = domainconfidence.LevelNone
+	ConfidenceLevelLow    = domainconfidence.LevelLow
+	ConfidenceLevelMedium = domainconfidence.LevelMedium
+	ConfidenceLevelHigh   = domainconfidence.LevelHigh
 )
-
-func (level ConfidenceLevel) IsKnown() bool {
-	switch level {
-	case ConfidenceLevelNone,
-		ConfidenceLevelLow,
-		ConfidenceLevelMedium,
-		ConfidenceLevelHigh:
-		return true
-	default:
-		return false
-	}
-}
 
 type ScopeGuard string
 

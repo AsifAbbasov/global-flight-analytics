@@ -240,6 +240,7 @@ func testProjection() projectioncontract.Result {
 					Name: "trajectory",
 					Classification: projectioncontract.
 						InputClassificationObserved,
+					SourceName: "forecastanalysis_fixture",
 					ObservedAt: asOfTime.Add(-time.Second),
 				},
 			},

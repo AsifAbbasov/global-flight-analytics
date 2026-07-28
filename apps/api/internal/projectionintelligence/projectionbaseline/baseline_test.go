@@ -613,7 +613,7 @@ func baselineTestTrajectory() trajectory.FlightTrajectory {
 				FlightStateID: fmtStateID(index),
 				FlightID:      "123e4567-e89b-12d3-a456-426614174000",
 				AircraftID:    "aircraft-001",
-				ICAO24:        "4K1234",
+				ICAO24:        "4A1234",
 				Callsign:      "AHY123",
 
 				Latitude:  0,
@@ -647,7 +647,7 @@ func baselineTestTrajectory() trajectory.FlightTrajectory {
 			FlightSplitReasonInitialObservation,
 		FlightID:   "123e4567-e89b-12d3-a456-426614174000",
 		AircraftID: "aircraft-001",
-		ICAO24:     "4K1234",
+		ICAO24:     "4A1234",
 		Callsign:   "AHY123",
 
 		StartTime: points[0].ObservedAt,

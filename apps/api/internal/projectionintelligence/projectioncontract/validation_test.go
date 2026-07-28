@@ -260,7 +260,7 @@ func validProjectionResult() Result {
 		TrajectoryID: "trajectory-001",
 		FlightID:     "flight-001",
 		AircraftID:   "aircraft-001",
-		ICAO24:       "4K1234",
+		ICAO24:       "4a1234",
 		Callsign:     "AHY123",
 
 		Method: Method{
@@ -360,13 +360,13 @@ func validProjectionResult() Result {
 			},
 		},
 		Confidence: Confidence{
-			Score: 0.7,
+			Score: 0.61,
 			Level: ConfidenceLevelMedium,
 			Reasons: []ConfidenceReason{
 				{
 					Code:         "bounded_short_horizon",
 					Message:      "Projection remains inside the configured short horizon.",
-					Contribution: 0.7,
+					Contribution: 0.61,
 				},
 			},
 		},
@@ -385,7 +385,7 @@ func validProjectionResult() Result {
 		},
 		ScopeGuard: ScopeGuardResearchOnly,
 		Provenance: Provenance{
-			InputFingerprint: "sha256:projection-test",
+			InputFingerprint: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			Inputs: []InputReference{
 				{
 					Name:           "latest_trajectory_point",

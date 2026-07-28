@@ -55,6 +55,10 @@ func (level Level) Validate() error {
 	}
 }
 
+func (level Level) IsKnown() bool {
+	return level.Validate() == nil
+}
+
 func (level Level) Rank() int {
 	switch level {
 	case LevelHigh:

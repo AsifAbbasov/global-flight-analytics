@@ -260,15 +260,15 @@ func testProductionProjection(
 		},
 		Points: points,
 		Confidence: projectioncontract.Confidence{
-			Score: 0.78,
+			Score: 0.71,
 			Level: projectioncontract.
 				ConfidenceLevelMedium,
 			Reasons: []projectioncontract.
 				ConfidenceReason{
 				{
 					Code:         "projection_method",
-					Message:      "Kinematic baseline confidence.",
-					Contribution: 0.78,
+					Message:      "Kinematic baseline confidence is bounded by the weakest point.",
+					Contribution: 0.71,
 				},
 			},
 		},
@@ -298,6 +298,7 @@ func testProductionProjection(
 					Name: "current_trajectory",
 					Classification: projectioncontract.
 						InputClassificationObserved,
+					SourceName: "stabilityproduction_fixture",
 					ObservedAt: asOfTime.Add(
 						-5 * time.Second,
 					),

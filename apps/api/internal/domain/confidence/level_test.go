@@ -43,3 +43,11 @@ func TestMinimumReturnsWeakerLevel(t *testing.T) {
 		)
 	}
 }
+func TestLevelIsKnown(t *testing.T) {
+	if !LevelHigh.IsKnown() {
+		t.Fatal("high confidence level must be known")
+	}
+	if Level("certain").IsKnown() {
+		t.Fatal("unknown confidence level was accepted")
+	}
+}
