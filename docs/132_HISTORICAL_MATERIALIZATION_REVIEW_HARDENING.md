@@ -1,6 +1,6 @@
 # Historical Materialization Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -113,3 +113,37 @@ validation, explicit period summaries, persisted canonical outcome, comparison
 provenance ownership, generated-time identity, nil-context rejection, stage
 errors, regression tests, and this review record in Backend Continuous
 Integration.
+
+## Formal closure evidence
+
+The Historical Materialization engineering remediation was committed and
+validated before this administrative closure:
+
+```text
+ENGINEERING_BASELINE_COMMIT=f723a54414a1ebb2c09aad89adead714a7446e3a
+ENGINEERING_REMEDIATION_COMMIT=2bbbd2439580536ffe17f8827c654c245d9b6b1e
+ENGINEERING_GITHUB_ACTIONS_RUN=30384357559
+PostgreSQL 16 Integration=SUCCESS
+PostgreSQL 16 Integration Job=90359781879
+Backend Race Safety=SUCCESS
+Backend Race Safety Job=90359781892
+Backend Quality=SUCCESS
+Backend Quality Job=90359781932
+Backend Container=SUCCESS
+Backend Container Job=90360092985
+```
+
+All accepted findings are implemented. Findings already resolved before this
+review and qualified or rejected findings retain their documented rationale.
+No Historical Materialization review item remains open, unclassified, or
+deferred.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_MATERIALIZATION_ENGINEERING_DEBT=CLOSED
+HISTORICAL_MATERIALIZATION_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+HISTORICAL_MATERIALIZATION_REVIEW_STATUS=CLOSED
+```
