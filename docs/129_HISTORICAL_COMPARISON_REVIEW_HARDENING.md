@@ -1,6 +1,6 @@
 # Historical Comparison Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -52,3 +52,36 @@ HISTORICAL_COMPARISON_ENGINEERING_REMEDIATION=IMPLEMENTED
 ## Permanent verification
 
 `apps/api/tools/historicalcomparisonreviewaudit` protects the version-two comparison boundary, explicit scope equality, coverage-profile compatibility, explicit two-period quality evidence, atomic provenance, both-period fingerprint identity, finite percentage arithmetic, package-private helper surface, regression tests, and this review record in Backend Continuous Integration.
+
+## Formal closure evidence
+
+The Historical Comparison engineering remediation was committed and validated
+before this administrative closure:
+
+```text
+ENGINEERING_BASELINE_COMMIT=d60af19d87fbbb234bab72fb4389a8d503ae06b9
+ENGINEERING_REMEDIATION_COMMIT=21734b85b9f50ae717dca031c798866161895989
+ENGINEERING_GITHUB_ACTIONS_RUN=30341011740
+Backend Quality=SUCCESS
+Backend Quality Job=90216363225
+PostgreSQL 16 Integration=SUCCESS
+PostgreSQL 16 Integration Job=90216363216
+Backend Race Safety=SUCCESS
+Backend Race Safety Job=90216363189
+Backend Container=SUCCESS
+Backend Container Job=90216611574
+```
+
+All accepted findings are implemented. Deliberately retained contracts preserve
+their documented rationale, and no Historical Comparison review item remains
+open, unclassified, or deferred.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_COMPARISON_ENGINEERING_DEBT=CLOSED
+HISTORICAL_COMPARISON_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+HISTORICAL_COMPARISON_REVIEW_STATUS=CLOSED
+```
