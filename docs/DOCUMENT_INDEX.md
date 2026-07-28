@@ -1156,5 +1156,8 @@ validation, self-contained complete, partial, and failed replay results,
 structured failure evidence, deterministic replay fingerprinting, early global
 request validation, bounded planning limits, cross-call shared-period continuity,
 production completed-prefix reporting with non-zero failure exit, deliberately
-rejected replay-wide transaction and checkpoint coupling, expanded regression
-tests, and Continuous Integration enforcement.
+rejected replay-wide transaction and checkpoint coupling, permanent regression
+tests, engineering commit
+`38b14fbb8649a2e7e875cd4ae7ed73b6a954a068`, GitHub Actions run
+`30390451707`, and formal closure with zero open, unclassified, or deferred
+findings.

@@ -1,6 +1,6 @@
 # Historical Replay Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -126,3 +126,36 @@ strict Materialization outcome validation, cross-call shared-period continuity,
 canonical replay fingerprint, production completed-prefix reporting, nil-context
 rejection, regression tests, and this review record in Backend Continuous
 Integration.
+
+## Formal closure evidence
+
+The Historical Replay engineering remediation was committed and validated before
+this administrative closure:
+
+```text
+ENGINEERING_BASELINE_COMMIT=d73c27b5e54108c7d2b9a009cb157496f7c67bde
+ENGINEERING_REMEDIATION_COMMIT=38b14fbb8649a2e7e875cd4ae7ed73b6a954a068
+ENGINEERING_GITHUB_ACTIONS_RUN=30390451707
+Backend Quality=SUCCESS
+Backend Quality Job=90380396908
+PostgreSQL 16 Integration=SUCCESS
+PostgreSQL 16 Integration Job=90380396909
+Backend Race Safety=SUCCESS
+Backend Race Safety Job=90380396961
+Backend Container=SUCCESS
+Backend Container Job=90380713650
+```
+
+All accepted findings are implemented. Findings already resolved before this
+review and qualified or rejected findings retain their documented rationale.
+No Historical Replay review item remains open, unclassified, or deferred.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_REPLAY_ENGINEERING_DEBT=CLOSED
+HISTORICAL_REPLAY_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+HISTORICAL_REPLAY_REVIEW_STATUS=CLOSED
+```
