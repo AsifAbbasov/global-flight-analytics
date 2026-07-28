@@ -1175,3 +1175,16 @@ policies, permanent regression tests, engineering commit
 `964556d0ca8a1ce9aa74c37c55961cdd006b3de8`, GitHub Actions run
 `30396070318`, and formal closure with zero open, unclassified, or deferred
 findings.
+<!-- PROJECTION-HORIZON-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 135 — Projection Horizon Review Hardening
+
+`135_PROJECTION_HORIZON_REVIEW_HARDENING.md` records exact fixed-step horizon
+semantics, canonical plan validation and finalization, complete SHA-256 horizon
+fingerprinting, reachable default HTTP duration, bounded point allocation,
+normalized policy identity, typed nil-policy lifecycle errors, consumer validation
+of alternative planners, deliberately retained idiomatic constructor and public-plan
+contracts, permanent regression tests, engineering commits
+`7249aa7625dd306bbd769dade6ce3262edca01ab` and
+`d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`, GitHub Actions run `30402249129`,
+and formal closure with zero open, unclassified, or deferred findings.
