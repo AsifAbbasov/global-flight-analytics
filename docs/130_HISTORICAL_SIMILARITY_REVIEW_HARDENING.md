@@ -1,6 +1,6 @@
 # Historical Similarity Review Hardening
 
-Status: implemented review remediation
+Status: closed
 
 ## Scope
 
@@ -61,3 +61,36 @@ HISTORICAL_SIMILARITY_ENGINEERING_REMEDIATION=IMPLEMENTED
 ## Permanent verification
 
 `apps/api/tools/historicalsimilarityreviewaudit` protects the version-two similarity-versus-confidence boundary, bounded inputs, removal of the duplicate Rank API, canonical preparation, exact fingerprint identity, trajectory quality evidence, mathematical result validation, worst-endpoint scoring, exact relative difference, great-circle resampling, regression tests, and this review record in Backend Continuous Integration.
+
+## Formal closure evidence
+
+The Historical Similarity engineering remediation was committed and validated
+before this administrative closure:
+
+```text
+ENGINEERING_BASELINE_COMMIT=2d61a3fa3be100312708d2fae0e5d1ae43f419f5
+ENGINEERING_REMEDIATION_COMMIT=6dbae4e6fe00295af0f7ba5303855736b76e8bde
+ENGINEERING_GITHUB_ACTIONS_RUN=30360637718
+PostgreSQL 16 Integration=SUCCESS
+PostgreSQL 16 Integration Job=90279277488
+Backend Race Safety=SUCCESS
+Backend Race Safety Job=90279277503
+Backend Quality=SUCCESS
+Backend Quality Job=90279277576
+Backend Container=SUCCESS
+Backend Container Job=90279633063
+```
+
+All accepted findings are implemented. Qualified or rejected findings retain
+their documented rationale, and no Historical Similarity review item remains
+open, unclassified, or deferred.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+HISTORICAL_SIMILARITY_ENGINEERING_DEBT=CLOSED
+HISTORICAL_SIMILARITY_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+HISTORICAL_SIMILARITY_REVIEW_STATUS=CLOSED
+```
