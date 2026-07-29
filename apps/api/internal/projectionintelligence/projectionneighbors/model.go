@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	Version            = "projection-historical-neighbor-selection-v3"
-	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v3"
+	Version            = "projection-historical-neighbor-selection-v4"
+	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v4"
 )
 
 type Status string
@@ -45,6 +45,7 @@ const (
 	RejectionInsufficientPoints        RejectionCode = "candidate_insufficient_points"
 	RejectionContinuationUnavailable   RejectionCode = "candidate_continuation_unavailable"
 	RejectionContinuationDiscontinuous RejectionCode = "candidate_continuation_discontinuous"
+	RejectionCrossRoute                RejectionCode = "candidate_cross_route"
 	RejectionAnchorTooDistant          RejectionCode = "candidate_anchor_too_distant"
 	RejectionSimilarityUnavailable     RejectionCode = "candidate_similarity_unavailable"
 	RejectionSimilarityBelowMinimum    RejectionCode = "candidate_similarity_below_minimum"
@@ -60,6 +61,7 @@ func (code RejectionCode) IsKnown() bool {
 		RejectionInsufficientPoints,
 		RejectionContinuationUnavailable,
 		RejectionContinuationDiscontinuous,
+		RejectionCrossRoute,
 		RejectionAnchorTooDistant,
 		RejectionSimilarityUnavailable,
 		RejectionSimilarityBelowMinimum:

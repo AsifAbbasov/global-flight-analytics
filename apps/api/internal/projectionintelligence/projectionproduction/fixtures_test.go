@@ -263,6 +263,11 @@ func newProductionFixture() productionFixture {
 			{ID: "historical-a"},
 			{ID: "historical-b"},
 		},
+		HistoricalCandidateRouteScope: projectionneighbors.UniformRouteScope(
+			"UBBB",
+			"LTBA",
+			"production-test-route-scope-v1",
+		),
 		Route:             validProductionRoute(asOfTime),
 		RouteHistory:      &history,
 		AsOfTime:          asOfTime,

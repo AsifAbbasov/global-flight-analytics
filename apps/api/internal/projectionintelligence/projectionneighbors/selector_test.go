@@ -487,6 +487,11 @@ func selectorTestRequest() Request {
 			),
 			currentTrajectory(asOfTime),
 		},
+		RouteScope: UniformRouteScope(
+			"UBBB",
+			"LTFM",
+			"selector-test-route-scope-v1",
+		),
 		AsOfTime:                     asOfTime,
 		RequiredContinuationDuration: 2 * time.Minute,
 	}

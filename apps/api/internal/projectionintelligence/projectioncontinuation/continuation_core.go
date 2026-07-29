@@ -6,6 +6,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
 	"strings"
 	"time"
 
@@ -64,6 +65,7 @@ type Request struct {
 	CurrentTrajectory trajectory.FlightTrajectory
 	Candidates        []trajectory.FlightTrajectory
 
+	RouteScope        projectionneighbors.RouteScope
 	AsOfTime          time.Time
 	RequestedDuration time.Duration
 	GeneratedAt       time.Time

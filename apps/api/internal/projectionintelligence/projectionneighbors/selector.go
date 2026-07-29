@@ -29,6 +29,9 @@ var (
 	ErrContinuationDurationInvalid = errors.New(
 		"required continuation duration must be greater than zero",
 	)
+	ErrRouteScopeInvalid = errors.New(
+		"historical candidate route scope is invalid",
+	)
 	ErrCurrentTrajectoryNotComparable = errors.New(
 		"current trajectory does not contain enough usable as-of points",
 	)
@@ -60,6 +63,7 @@ type Request struct {
 	CurrentTrajectory trajectory.FlightTrajectory
 	Candidates        []trajectory.FlightTrajectory
 
+	RouteScope                   RouteScope
 	AsOfTime                     time.Time
 	RequiredContinuationDuration time.Duration
 }
@@ -90,6 +94,18 @@ func (
 			ErrContinuationDurationInvalid
 	}
 
+	routeScope, err := prepareRouteScope(
+		request.RouteScope,
+		request.Candidates,
+	)
+	if err != nil {
+		return Result{}, fmt.Errorf(
+			"%w: %v",
+			ErrRouteScopeInvalid,
+			err,
+		)
+	}
+
 	asOfTime := request.AsOfTime.UTC()
 	current, excludedCurrentPointCount :=
 		snapshotAt(
@@ -118,6 +134,7 @@ func (
 		currentStartTime,
 		asOfTime,
 		selector.config,
+		routeScope,
 	)
 	candidates := pool.Candidates
 	truncated := pool.Truncated
@@ -412,6 +429,7 @@ func (
 			request.
 				RequiredContinuationDuration,
 			selector.config,
+			routeScope.scope,
 		),
 	}
 

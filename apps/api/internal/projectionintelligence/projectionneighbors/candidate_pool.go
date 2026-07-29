@@ -29,6 +29,7 @@ func prepareCandidatePool(
 	currentStartTime time.Time,
 	asOfTime time.Time,
 	config Config,
+	routeScope routeScopeIndex,
 ) preparedCandidatePool {
 	ordered := append(
 		[]trajectory.FlightTrajectory(nil),
@@ -94,6 +95,19 @@ func prepareCandidatePool(
 					candidateID,
 					RejectionDuplicateCandidate,
 					"Every historical candidate with a duplicated identifier was rejected.",
+				),
+			)
+			continue
+		}
+
+		routeEvidence := routeScope.evidenceByCandidate[candidateID]
+		if !routeEvidence.Route.Equal(routeScope.scope.Route) {
+			pool.Rejections = append(
+				pool.Rejections,
+				rejection(
+					candidateID,
+					RejectionCrossRoute,
+					"Historical candidate route does not match the current origin-destination scope.",
 				),
 			)
 			continue

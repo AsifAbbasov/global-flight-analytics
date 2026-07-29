@@ -436,6 +436,11 @@ func continuationTestRequest() Request {
 				0.01,
 			),
 		},
+		RouteScope: projectionneighbors.UniformRouteScope(
+			"UBBB",
+			"LTBA",
+			"continuation-test-route-scope-v1",
+		),
 		AsOfTime:          asOfTime,
 		RequestedDuration: 2 * time.Minute,
 		GeneratedAt:       asOfTime.Add(time.Second),

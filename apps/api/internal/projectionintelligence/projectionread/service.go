@@ -129,6 +129,7 @@ func (
 
 	historicalCandidates :=
 		[]trajectory.FlightTrajectory{}
+	historicalCandidateRouteScope := snapshot.CandidateRouteScope()
 	var routeHistoryPointer *projectionroutefrequency.HistorySummary
 	if route.Status == routecontract.RouteStatusComplete {
 		historicalCandidates = append(
@@ -145,10 +146,11 @@ func (
 		projectionproduction.Request{
 			CurrentTrajectory: snapshot.
 				CurrentTrajectory,
-			HistoricalCandidates: historicalCandidates,
-			Route:                route,
-			RouteHistory:         routeHistoryPointer,
-			AsOfTime:             asOfTime,
+			HistoricalCandidates:          historicalCandidates,
+			HistoricalCandidateRouteScope: historicalCandidateRouteScope,
+			Route:                         route,
+			RouteHistory:                  routeHistoryPointer,
+			AsOfTime:                      asOfTime,
 			RequestedDuration: request.
 				RequestedDuration,
 			GeneratedAt: generatedAt,

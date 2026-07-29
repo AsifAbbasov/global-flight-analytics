@@ -38,6 +38,7 @@ func (
 		projectionneighbors.Request{
 			CurrentTrajectory: request.CurrentTrajectory,
 			Candidates:        request.Candidates,
+			RouteScope:        request.RouteScope,
 			AsOfTime:          plan.AsOfTime,
 			RequiredContinuationDuration: plan.
 				EffectiveDuration,

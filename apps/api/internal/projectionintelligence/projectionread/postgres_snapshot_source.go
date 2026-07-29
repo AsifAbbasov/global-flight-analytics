@@ -99,6 +99,18 @@ func (
 		)
 	}
 	snapshot.HistoricalCandidates = candidates
+	routeScope, err := routeScopedHistoricalCandidateEvidence(
+		route,
+		candidates,
+		source.policy.SourceName,
+	)
+	if err != nil {
+		return Snapshot{}, fmt.Errorf(
+			"build route-scoped historical candidate evidence: %w",
+			err,
+		)
+	}
+	snapshot.HistoricalCandidateRouteScope = routeScopePointer(routeScope)
 
 	history, err := source.LoadRouteHistory(
 		ctx,

@@ -87,8 +87,9 @@ type Request struct {
 	CurrentTrajectory    trajectory.FlightTrajectory
 	HistoricalCandidates []trajectory.FlightTrajectory
 
-	Route        routecontract.Result
-	RouteHistory *projectionroutefrequency.HistorySummary
+	HistoricalCandidateRouteScope projectionneighbors.RouteScope
+	Route                         routecontract.Result
+	RouteHistory                  *projectionroutefrequency.HistorySummary
 
 	AsOfTime          time.Time
 	RequestedDuration time.Duration
@@ -96,10 +97,11 @@ type Request struct {
 }
 
 type compositionState struct {
-	selection *projectionneighbors.Result
-	pattern   *projectionpatternconfidence.Result
-	freshness *projectionfreshness.Result
-	frequency *projectionroutefrequency.Result
+	selection  *projectionneighbors.Result
+	pattern    *projectionpatternconfidence.Result
+	freshness  *projectionfreshness.Result
+	frequency  *projectionroutefrequency.Result
+	routeScope *projectionneighbors.RouteScope
 
 	strategy       Strategy
 	fallbackReason string
@@ -291,6 +293,22 @@ func (
 	plan projectionhorizon.Plan,
 	state *compositionState,
 ) error {
+	routeScope := request.HistoricalCandidateRouteScope.Clone()
+	if err := validateHistoricalCandidateRouteScope(
+		request.Route,
+		routeScope,
+		request.HistoricalCandidates,
+	); err != nil {
+		state.fallbackReason =
+			"historical_candidate_route_scope_invalid"
+		return fmt.Errorf(
+			"%w: %v",
+			ErrNeighborSelectionFailed,
+			err,
+		)
+	}
+	state.routeScope = &routeScope
+
 	selection, err := composer.config.
 		NeighborSelector.Select(
 		projectionneighbors.Request{
@@ -298,6 +316,7 @@ func (
 				CurrentTrajectory,
 			Candidates: request.
 				HistoricalCandidates,
+			RouteScope:                   routeScope,
 			AsOfTime:                     plan.AsOfTime,
 			RequiredContinuationDuration: plan.EffectiveDuration,
 		},
@@ -513,7 +532,8 @@ func (
 					CurrentTrajectory,
 				Candidates: request.
 					HistoricalCandidates,
-				AsOfTime: request.AsOfTime,
+				RouteScope: routeScopeFromState(state),
+				AsOfTime:   request.AsOfTime,
 				RequestedDuration: request.
 					RequestedDuration,
 				GeneratedAt: request.GeneratedAt,

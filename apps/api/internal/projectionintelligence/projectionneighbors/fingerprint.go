@@ -20,6 +20,7 @@ func selectionFingerprint(
 	asOfTime time.Time,
 	requiredContinuationDuration time.Duration,
 	config Config,
+	routeScope RouteScope,
 ) string {
 	digest := sha256.New()
 
@@ -30,6 +31,10 @@ func selectionFingerprint(
 	writeFingerprintString(
 		digest,
 		config.SimilarityPolicyKey,
+	)
+	writeFingerprintString(
+		digest,
+		routeScope.InputFingerprint,
 	)
 	writeFingerprintTime(
 		digest,
