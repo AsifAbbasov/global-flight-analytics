@@ -141,29 +141,28 @@ func (
 		candidateEndTime := prepared.EndTime
 		candidateAge := prepared.Age
 
-		anchorIndex, anchorDistanceKM,
-			continuationPointCount,
-			continuationEndTime,
-			found := findAnchor(
+		anchorSearch := findAnchor(
 			latestCurrentPoint,
 			candidate.Points,
-			selector.config.
-				MinimumCurrentPointCount,
-			request.
-				RequiredContinuationDuration,
+			selector.config.MinimumCurrentPointCount,
+			request.RequiredContinuationDuration,
+			selector.config.effectiveMaximumContinuationGap(),
 		)
-		if !found {
+		if !anchorSearch.Found() {
+			code := RejectionContinuationUnavailable
+			message := "Historical candidate does not provide enough observed continuation after a comparable prefix."
+			if anchorSearch.Failure == anchorSearchFailureDiscontinuous {
+				code = RejectionContinuationDiscontinuous
+				message = "Historical candidate continuation crosses an observation gap larger than the configured maximum."
+			}
 			rejections = append(
 				rejections,
-				rejection(
-					candidateID,
-					RejectionContinuationUnavailable,
-					"Historical candidate does not provide enough observed continuation after a comparable prefix.",
-				),
+				rejection(candidateID, code, message),
 			)
 			continue
 		}
-		if anchorDistanceKM >
+		anchor := anchorSearch.Evidence
+		if anchor.DistanceKM >
 			selector.config.
 				MaximumAnchorDistanceKM {
 			rejections = append(
@@ -179,7 +178,7 @@ func (
 
 		prefix := candidatePrefix(
 			candidate,
-			anchorIndex,
+			anchor.PointIndex,
 		)
 		similarityResult, err := selector.config.
 			SimilarityEngine.Compare(
@@ -242,17 +241,17 @@ func (
 				SimilarityInputFingerprint: similarity.
 					InputFingerprint,
 
-				AnchorPointIndex: anchorIndex,
-				AnchorObservedAt: candidate.Points[anchorIndex].ObservedAt.UTC(),
-				AnchorDistanceKM: anchorDistanceKM,
+				AnchorPointIndex: anchor.PointIndex,
+				AnchorObservedAt: anchor.ObservedAt,
+				AnchorDistanceKM: anchor.DistanceKM,
 
 				CandidateStartTime: candidateStartTime,
 				CandidateEndTime:   candidateEndTime,
 				CandidateAge:       candidateAge,
 
-				PrefixPointCount:       anchorIndex + 1,
-				ContinuationPointCount: continuationPointCount,
-				ContinuationEndTime:    continuationEndTime,
+				PrefixPointCount:       anchor.PointIndex + 1,
+				ContinuationPointCount: anchor.ContinuationPointCount,
+				ContinuationEndTime:    anchor.ContinuationEndTime,
 			},
 		)
 	}
@@ -485,92 +484,6 @@ func snapshotAt(
 	}
 
 	return snapshot, excludedFutureCount
-}
-
-func findAnchor(
-	currentEndpoint trajectory.TrackPoint4D,
-	candidatePoints []trajectory.TrackPoint4D,
-	minimumPrefixPointCount int,
-	requiredContinuationDuration time.Duration,
-) (
-	int,
-	float64,
-	int,
-	time.Time,
-	bool,
-) {
-	if len(candidatePoints) <
-		minimumPrefixPointCount+1 {
-		return 0, 0, 0,
-			time.Time{}, false
-	}
-
-	currentGeoPoint := geoPoint{
-		latitude:  currentEndpoint.Latitude,
-		longitude: currentEndpoint.Longitude,
-	}
-
-	bestIndex := -1
-	bestDistance := 0.0
-	bestContinuationPointCount := 0
-	bestContinuationEndTime :=
-		time.Time{}
-
-	for index :=
-		minimumPrefixPointCount - 1; index < len(candidatePoints)-1; index++ {
-		anchorTime := candidatePoints[index].ObservedAt.UTC()
-		requiredEndTime := anchorTime.Add(
-			requiredContinuationDuration,
-		)
-
-		continuationEndIndex := -1
-		for futureIndex :=
-			index + 1; futureIndex <
-			len(candidatePoints); futureIndex++ {
-			if !candidatePoints[futureIndex].ObservedAt.UTC().Before(
-				requiredEndTime,
-			) {
-				continuationEndIndex =
-					futureIndex
-				break
-			}
-		}
-		if continuationEndIndex < 0 {
-			continue
-		}
-
-		distance := haversineKM(
-			currentGeoPoint,
-			geoPoint{
-				latitude:  candidatePoints[index].Latitude,
-				longitude: candidatePoints[index].Longitude,
-			},
-		)
-		if bestIndex < 0 ||
-			distance < bestDistance ||
-			(distance == bestDistance &&
-				anchorTime.Before(
-					candidatePoints[bestIndex].ObservedAt.UTC(),
-				)) {
-			bestIndex = index
-			bestDistance = distance
-			bestContinuationPointCount =
-				continuationEndIndex - index
-			bestContinuationEndTime =
-				candidatePoints[continuationEndIndex].ObservedAt.UTC()
-		}
-	}
-
-	if bestIndex < 0 {
-		return 0, 0, 0,
-			time.Time{}, false
-	}
-
-	return bestIndex,
-		bestDistance,
-		bestContinuationPointCount,
-		bestContinuationEndTime,
-		true
 }
 
 func candidatePrefix(

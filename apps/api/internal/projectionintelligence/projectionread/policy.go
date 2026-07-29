@@ -51,6 +51,7 @@ type NeighborPolicy struct {
 	MinimumSimilarityScore   float64
 	MaximumAnchorDistanceKM  float64
 	MaximumCandidateAge      time.Duration
+	MaximumContinuationGap   time.Duration
 }
 
 type PatternPolicy struct {
@@ -179,6 +180,7 @@ func DefaultPolicy() Policy {
 			MinimumSimilarityScore:   0.60,
 			MaximumAnchorDistanceKM:  100,
 			MaximumCandidateAge:      90 * 24 * time.Hour,
+			MaximumContinuationGap:   2 * time.Minute,
 		},
 		Pattern: PatternPolicy{
 			MinimumNeighborCount:        2,
@@ -317,6 +319,11 @@ func (policy Policy) Validate() error {
 		policy.DataSource.HistoricalCandidateLookback {
 		return fmt.Errorf(
 			"candidate lookback and neighbor maximum age must match",
+		)
+	}
+	if policy.Neighbors.MaximumContinuationGap <= 0 {
+		return fmt.Errorf(
+			"neighbor maximum continuation gap must be positive",
 		)
 	}
 	if policy.RouteFrequency.RecentWindow !=

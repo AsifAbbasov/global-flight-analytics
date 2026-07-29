@@ -181,6 +181,8 @@ func buildAlgorithmComponents(
 					MaximumAnchorDistanceKM,
 				MaximumCandidateAge: policy.Neighbors.
 					MaximumCandidateAge,
+				MaximumContinuationGap: policy.Neighbors.
+					MaximumContinuationGap,
 			},
 		)
 	if err != nil {

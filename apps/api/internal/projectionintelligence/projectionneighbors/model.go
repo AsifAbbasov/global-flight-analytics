@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	Version            = "projection-historical-neighbor-selection-v2"
-	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v2"
+	Version            = "projection-historical-neighbor-selection-v3"
+	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v3"
 )
 
 type Status string
@@ -37,16 +37,17 @@ func (status Status) IsKnown() bool {
 type RejectionCode string
 
 const (
-	RejectionSameTrajectory          RejectionCode = "same_trajectory"
-	RejectionIdentifierMissing       RejectionCode = "candidate_identifier_missing"
-	RejectionDuplicateCandidate      RejectionCode = "duplicate_candidate"
-	RejectionNotHistorical           RejectionCode = "candidate_not_historical"
-	RejectionTooOld                  RejectionCode = "candidate_too_old"
-	RejectionInsufficientPoints      RejectionCode = "candidate_insufficient_points"
-	RejectionContinuationUnavailable RejectionCode = "candidate_continuation_unavailable"
-	RejectionAnchorTooDistant        RejectionCode = "candidate_anchor_too_distant"
-	RejectionSimilarityUnavailable   RejectionCode = "candidate_similarity_unavailable"
-	RejectionSimilarityBelowMinimum  RejectionCode = "candidate_similarity_below_minimum"
+	RejectionSameTrajectory            RejectionCode = "same_trajectory"
+	RejectionIdentifierMissing         RejectionCode = "candidate_identifier_missing"
+	RejectionDuplicateCandidate        RejectionCode = "duplicate_candidate"
+	RejectionNotHistorical             RejectionCode = "candidate_not_historical"
+	RejectionTooOld                    RejectionCode = "candidate_too_old"
+	RejectionInsufficientPoints        RejectionCode = "candidate_insufficient_points"
+	RejectionContinuationUnavailable   RejectionCode = "candidate_continuation_unavailable"
+	RejectionContinuationDiscontinuous RejectionCode = "candidate_continuation_discontinuous"
+	RejectionAnchorTooDistant          RejectionCode = "candidate_anchor_too_distant"
+	RejectionSimilarityUnavailable     RejectionCode = "candidate_similarity_unavailable"
+	RejectionSimilarityBelowMinimum    RejectionCode = "candidate_similarity_below_minimum"
 )
 
 func (code RejectionCode) IsKnown() bool {
@@ -58,6 +59,7 @@ func (code RejectionCode) IsKnown() bool {
 		RejectionTooOld,
 		RejectionInsufficientPoints,
 		RejectionContinuationUnavailable,
+		RejectionContinuationDiscontinuous,
 		RejectionAnchorTooDistant,
 		RejectionSimilarityUnavailable,
 		RejectionSimilarityBelowMinimum:

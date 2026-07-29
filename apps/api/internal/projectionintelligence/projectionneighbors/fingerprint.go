@@ -39,6 +39,10 @@ func selectionFingerprint(
 		digest,
 		requiredContinuationDuration,
 	)
+	writeFingerprintDuration(
+		digest,
+		config.effectiveMaximumContinuationGap(),
+	)
 	writeFingerprintInt(
 		digest,
 		config.MinimumCurrentPointCount,

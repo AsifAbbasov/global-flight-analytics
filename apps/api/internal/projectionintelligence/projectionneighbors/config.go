@@ -11,6 +11,8 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalsimilarity"
 )
 
+const DefaultMaximumContinuationGap = 2 * time.Minute
+
 var (
 	ErrSimilarityEngineRequired = errors.New(
 		"historical similarity engine is required",
@@ -39,6 +41,9 @@ var (
 	ErrMaximumCandidateAgeInvalid = errors.New(
 		"maximum candidate age must be non-negative",
 	)
+	ErrMaximumContinuationGapInvalid = errors.New(
+		"maximum continuation observation gap must be non-negative",
+	)
 )
 
 type SimilarityEngine interface {
@@ -59,6 +64,7 @@ type Config struct {
 	MinimumSimilarityScore  float64
 	MaximumAnchorDistanceKM float64
 	MaximumCandidateAge     time.Duration
+	MaximumContinuationGap  time.Duration
 }
 
 func (config Config) Validate() error {
@@ -127,8 +133,22 @@ func (config Config) Validate() error {
 			config.MaximumCandidateAge,
 		)
 	}
+	if config.MaximumContinuationGap < 0 {
+		return fmt.Errorf(
+			"%w: %s",
+			ErrMaximumContinuationGapInvalid,
+			config.MaximumContinuationGap,
+		)
+	}
 
 	return nil
+}
+
+func (config Config) effectiveMaximumContinuationGap() time.Duration {
+	if config.MaximumContinuationGap == 0 {
+		return DefaultMaximumContinuationGap
+	}
+	return config.MaximumContinuationGap
 }
 
 func finite(value float64) bool {
