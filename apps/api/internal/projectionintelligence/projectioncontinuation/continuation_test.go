@@ -649,7 +649,7 @@ func continuationTestPattern(
 		MeanCandidateAgeSeconds: 24.5 * 60 * 60,
 		MeanAnchorDistanceKM:    1.5,
 
-		Score: 0.85,
+		Score: 0.88750000000000007,
 		Level: projectioncontract.
 			ConfidenceLevelHigh,
 

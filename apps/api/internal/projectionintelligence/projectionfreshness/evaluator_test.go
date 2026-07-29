@@ -349,7 +349,7 @@ func freshnessFixtures(
 		MeanSimilarityScore:     0.85,
 		MeanCandidateAgeSeconds: 48 * 60 * 60,
 		MeanAnchorDistanceKM:    2,
-		Score:                   0.8,
+		Score:                   0.88750000000000007,
 		Level: projectioncontract.
 			ConfidenceLevelHigh,
 		Components: []projectionpatternconfidence.Component{

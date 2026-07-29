@@ -21,13 +21,13 @@ var (
 		"maximum mean anchor distance must be finite and greater than zero",
 	)
 	ErrMinimumUsableScoreInvalid = errors.New(
-		"minimum usable score must be finite and between zero and one",
+		"minimum usable score must be finite, greater than zero, and at most one",
 	)
 	ErrConfidenceThresholdInvalid = errors.New(
 		"confidence thresholds must satisfy zero < medium <= high <= one",
 	)
 	ErrComponentWeightInvalid = errors.New(
-		"pattern confidence component weights must be finite, non-negative, and sum to one",
+		"pattern confidence component weights must be finite, positive, and sum to one",
 	)
 )
 
@@ -57,8 +57,7 @@ func (config Config) Validate() error {
 			config.MinimumNeighborCount,
 		)
 	}
-	if config.TargetNeighborCount <
-		config.MinimumNeighborCount {
+	if config.TargetNeighborCount < config.MinimumNeighborCount {
 		return fmt.Errorf(
 			"%w: minimum=%d target=%d",
 			ErrTargetNeighborCountInvalid,
@@ -73,9 +72,7 @@ func (config Config) Validate() error {
 			config.MaximumCandidateAge,
 		)
 	}
-	if !finite(
-		config.MaximumMeanAnchorDistanceKM,
-	) ||
+	if !finite(config.MaximumMeanAnchorDistanceKM) ||
 		config.MaximumMeanAnchorDistanceKM <= 0 {
 		return fmt.Errorf(
 			"%w: %f",
@@ -83,23 +80,16 @@ func (config Config) Validate() error {
 			config.MaximumMeanAnchorDistanceKM,
 		)
 	}
-	if !unitInterval(
-		config.MinimumUsableScore,
-	) {
+	if !positiveUnitInterval(config.MinimumUsableScore) {
 		return fmt.Errorf(
 			"%w: %f",
 			ErrMinimumUsableScoreInvalid,
 			config.MinimumUsableScore,
 		)
 	}
-	if !positiveFinite(
-		config.MediumConfidenceMinimum,
-	) ||
-		!positiveFinite(
-			config.HighConfidenceMinimum,
-		) ||
-		config.MediumConfidenceMinimum >
-			config.HighConfidenceMinimum ||
+	if !positiveFinite(config.MediumConfidenceMinimum) ||
+		!positiveFinite(config.HighConfidenceMinimum) ||
+		config.MediumConfidenceMinimum > config.HighConfidenceMinimum ||
 		config.HighConfidenceMinimum > 1 {
 		return fmt.Errorf(
 			"%w: medium=%f high=%f",
@@ -117,8 +107,7 @@ func (config Config) Validate() error {
 	}
 	total := 0.0
 	for _, weight := range weights {
-		if !finite(weight) ||
-			weight < 0 {
+		if !positiveFinite(weight) {
 			return fmt.Errorf(
 				"%w: %f",
 				ErrComponentWeightInvalid,
@@ -127,7 +116,7 @@ func (config Config) Validate() error {
 		}
 		total += weight
 	}
-	if math.Abs(total-1) > 1e-9 {
+	if math.Abs(total-1) > scoreComparisonTolerance {
 		return fmt.Errorf(
 			"%w: total=%f",
 			ErrComponentWeightInvalid,
@@ -139,17 +128,17 @@ func (config Config) Validate() error {
 }
 
 func finite(value float64) bool {
-	return !math.IsNaN(value) &&
-		!math.IsInf(value, 0)
+	return !math.IsNaN(value) && !math.IsInf(value, 0)
 }
 
 func positiveFinite(value float64) bool {
-	return finite(value) &&
-		value > 0
+	return finite(value) && value > 0
 }
 
 func unitInterval(value float64) bool {
-	return finite(value) &&
-		value >= 0 &&
-		value <= 1
+	return finite(value) && value >= 0 && value <= 1
+}
+
+func positiveUnitInterval(value float64) bool {
+	return finite(value) && value > 0 && value <= 1
 }

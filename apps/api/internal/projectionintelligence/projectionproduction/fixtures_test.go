@@ -475,7 +475,7 @@ func validProductionPattern() projectionpatternconfidence.Result {
 		MeanSimilarityScore:     0.85,
 		MeanCandidateAgeSeconds: 36 * 60 * 60,
 		MeanAnchorDistanceKM:    1,
-		Score:                   0.8,
+		Score:                   0.88750000000000007,
 		Level:                   projectioncontract.ConfidenceLevelHigh,
 		Components: []projectionpatternconfidence.Component{
 			{Name: projectionpatternconfidence.ComponentSimilarity, Score: 0.85, Weight: 0.25},
