@@ -356,9 +356,11 @@ func (
 		return nil
 	}
 
-	pattern, err := composer.config.
-		PatternConfidenceEvaluator.Evaluate(
+	pattern, err := evaluatePatternConfidence(
+		composer.config.
+			PatternConfidenceEvaluator,
 		selection,
+		request.HistoricalCandidates,
 	)
 	if err != nil {
 		state.fallbackReason =

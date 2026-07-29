@@ -5,11 +5,12 @@ import (
 	"regexp"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
 )
 
 const (
-	Version            = "projection-pattern-confidence-v3"
-	FingerprintVersion = "projection-pattern-confidence-fingerprint-v3"
+	Version            = "projection-pattern-confidence-v4"
+	FingerprintVersion = "projection-pattern-confidence-fingerprint-v4"
 )
 
 const scoreComparisonTolerance = 1e-9
@@ -38,6 +39,7 @@ const (
 	ComponentSupport               ComponentName = "support"
 	ComponentSimilarityConsistency ComponentName = "similarity_consistency"
 	ComponentAnchorProximity       ComponentName = "anchor_proximity"
+	ComponentContinuationAgreement ComponentName = "continuation_agreement"
 
 	// Deprecated compatibility aliases.
 	ComponentSimilarity = ComponentSimilarityStrength
@@ -49,6 +51,7 @@ var canonicalComponentNames = []ComponentName{
 	ComponentSupport,
 	ComponentSimilarityConsistency,
 	ComponentAnchorProximity,
+	ComponentContinuationAgreement,
 }
 
 type Component struct {
@@ -62,10 +65,36 @@ type Notice struct {
 	Message string
 }
 
+type Policy struct {
+	MinimumNeighborCount int
+	TargetNeighborCount  int
+
+	MinimumSimilarityScore             float64
+	MaximumSimilarityStandardDeviation float64
+	AnchorDistanceNormalizationKM      float64
+
+	MinimumUsableScore float64
+
+	MediumConfidenceMinimum float64
+	HighConfidenceMinimum   float64
+
+	ContinuationAgreementSampleCount       int
+	ContinuationDivergenceNormalizationMPS float64
+	MaximumContinuationDivergenceMPS       float64
+
+	SimilarityStrengthWeight    float64
+	SupportWeight               float64
+	SimilarityConsistencyWeight float64
+	AnchorProximityWeight       float64
+	ContinuationAgreementWeight float64
+}
+
 type Result struct {
-	Version string
-	Status  Status
-	Usable  bool
+	Version         string
+	Status          Status
+	SelectionStatus projectionneighbors.Status
+	Usable          bool
+	Policy          Policy
 
 	NeighborCount       int
 	TargetNeighborCount int
@@ -76,6 +105,16 @@ type Result struct {
 	MeanAnchorDistanceKM        float64
 	// Deprecated: retained for source compatibility and always zero for evaluator results.
 	MeanCandidateAgeSeconds float64
+
+	ContinuationAgreementKnown       bool
+	ContinuationAgreementSampleCount int
+	ContinuationAgreementPairCount   int
+	ContinuationComparisonCount      int
+	ContinuationHorizonSeconds       float64
+	MeanContinuationSpreadM          float64
+	MaximumContinuationSpreadM       float64
+	MeanContinuationDivergenceMPS    float64
+	MaximumContinuationDivergenceMPS float64
 
 	Score float64
 	Level projectioncontract.ConfidenceLevel
@@ -101,8 +140,11 @@ func (result Result) Clone() Result {
 var fingerprintPattern = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 
 func (result Result) Validate() error {
-	if result.Version != Version || !result.Status.IsKnown() {
+	if result.Version != Version || !result.Status.IsKnown() || !result.SelectionStatus.IsKnown() {
 		return fmt.Errorf("pattern confidence version or status is invalid")
+	}
+	if err := validatePolicy(result.Policy); err != nil {
+		return err
 	}
 	if err := validateResultCounts(result); err != nil {
 		return err
@@ -110,10 +152,13 @@ func (result Result) Validate() error {
 	if err := validateAggregateMeasurements(result); err != nil {
 		return err
 	}
-	if err := validateScoreAndLevel(result); err != nil {
+	if err := validateContinuationAgreement(result); err != nil {
 		return err
 	}
 	if err := validateComponents(result); err != nil {
+		return err
+	}
+	if err := validateDecisionSemantics(result); err != nil {
 		return err
 	}
 	if err := validateSelectedTrajectoryIDs(result); err != nil {
@@ -124,9 +169,6 @@ func (result Result) Validate() error {
 	}
 	if !fingerprintPattern.MatchString(result.InputFingerprint) {
 		return fmt.Errorf("pattern confidence input fingerprint is invalid")
-	}
-	if err := validateStatusSemantics(result); err != nil {
-		return err
 	}
 	return nil
 }

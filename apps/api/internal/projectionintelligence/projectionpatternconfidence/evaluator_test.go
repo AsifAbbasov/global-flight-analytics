@@ -1,90 +1,202 @@
 package projectionpatternconfidence
 
 import (
+	"errors"
 	"math"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/historicalintelligence/historicalsimilarity"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
 )
 
-func TestEvaluateProducesCompleteDistributionConfidence(t *testing.T) {
+func TestEvaluateWithContinuationsProducesCompleteConfidence(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
-	result, err := evaluator.Evaluate(confidenceSelection(3))
+	selection := confidenceSelection(3)
+	result, err := evaluator.EvaluateWithContinuations(
+		selection,
+		confidenceCandidates(selection),
+	)
 	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
 	}
 	if result.Status != StatusComplete ||
 		!result.Usable ||
 		result.NeighborCount != 3 ||
-		result.Level != projectioncontract.ConfidenceLevelHigh {
+		result.Level != projectioncontract.ConfidenceLevelHigh ||
+		!result.ContinuationAgreementKnown {
 		t.Fatalf("unexpected complete result: %#v", result)
 	}
-	if math.Abs(result.MeanSimilarityScore-0.8) > scoreComparisonTolerance ||
-		math.Abs(result.MinimumSimilarityScore-0.7) > scoreComparisonTolerance ||
-		math.Abs(result.SimilarityStandardDeviation-0.0816496580927726) > 1e-12 {
-		t.Fatalf("unexpected similarity distribution: %#v", result)
+	if result.ContinuationAgreementSampleCount != 4 ||
+		result.ContinuationAgreementPairCount != 3 ||
+		result.ContinuationComparisonCount != 12 ||
+		result.MaximumContinuationDivergenceMPS > 1e-9 {
+		t.Fatalf("unexpected continuation agreement: %#v", result)
 	}
-	if result.MeanCandidateAgeSeconds != 0 {
-		t.Fatalf("pattern confidence retained freshness evidence: %#v", result)
-	}
-	if len(result.Components) != 4 || len(result.SelectedTrajectoryIDs) != 3 {
-		t.Fatalf("unexpected evidence: %#v", result)
+	if len(result.Components) != 5 ||
+		result.Components[4].Name != ComponentContinuationAgreement ||
+		math.Abs(result.Components[4].Score-1) > scoreComparisonTolerance {
+		t.Fatalf("unexpected component catalog: %#v", result.Components)
 	}
 	if err := result.Validate(); err != nil {
 		t.Fatalf("result validation error = %v", err)
 	}
 }
 
-func TestEvaluateProducesLimitedUsablePattern(t *testing.T) {
+func TestEvaluateWithoutContinuationsCannotAuthorize(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
-	selection := confidenceSelection(2)
-	selection.Status = projectionneighbors.StatusPartial
-	selection.SelectionLimit = 3
-	result, err := evaluator.Evaluate(selection)
-	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
-	}
-	if result.Status != StatusLimited ||
-		!result.Usable ||
-		result.Level == projectioncontract.ConfidenceLevelHigh ||
-		!hasConfidenceNotice(result.Limitations, "pattern_support_partial") {
-		t.Fatalf("unexpected limited result: %#v", result)
-	}
-}
-
-func TestEvaluateRejectsInsufficientPatternSupport(t *testing.T) {
-	evaluator := newConfidenceEvaluator(t)
-	selection := confidenceSelection(1)
-	selection.Status = projectionneighbors.StatusPartial
-	selection.SelectionLimit = 3
-	result, err := evaluator.Evaluate(selection)
+	result, err := evaluator.Evaluate(confidenceSelection(3))
 	if err != nil {
 		t.Fatalf("Evaluate() error = %v", err)
 	}
 	if result.Status != StatusUnavailable ||
 		result.Usable ||
 		result.Level != projectioncontract.ConfidenceLevelNone ||
+		result.ContinuationAgreementKnown ||
 		!hasConfidenceNotice(
 			result.Limitations,
-			"insufficient_historical_neighbor_support",
+			"pattern_continuation_agreement_unavailable",
 		) {
-		t.Fatalf("unexpected unavailable result: %#v", result)
+		t.Fatalf("legacy evaluation authorized an unverified continuation: %#v", result)
 	}
 }
 
-func TestEvaluateRejectsWeakSimilarityFloor(t *testing.T) {
+func TestEvaluateWithContinuationsRejectsOpposingRoutes(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	candidates := confidenceCandidates(selection)
+	setContinuationDelta(&candidates[2], -0.10, -0.10)
+
+	result, err := evaluator.EvaluateWithContinuations(selection, candidates)
+	if err != nil {
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
+	}
+	if result.Status != StatusUnavailable ||
+		result.Usable ||
+		result.Level != projectioncontract.ConfidenceLevelNone ||
+		result.MaximumContinuationDivergenceMPS <=
+			result.Policy.MaximumContinuationDivergenceMPS ||
+		!hasConfidenceNotice(
+			result.Limitations,
+			"pattern_continuation_divergence_above_maximum",
+		) {
+		t.Fatalf("opposing continuations were not blocked: %#v", result)
+	}
+}
+
+func TestEvaluateWithContinuationsRejectsIntermediateRouteConflict(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	candidates := confidenceCandidates(selection)
+	anchor := candidates[2].Points[4]
+	candidates[2].Points[5].Latitude = anchor.Latitude + 0.20
+	candidates[2].Points[5].Longitude = anchor.Longitude - 0.20
+	// Rejoin the common endpoint so an endpoint-only policy would miss the conflict.
+	candidates[2].Points[6].Latitude = anchor.Latitude + 0.02
+	candidates[2].Points[6].Longitude = anchor.Longitude + 0.02
+
+	result, err := evaluator.EvaluateWithContinuations(selection, candidates)
+	if err != nil {
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
+	}
+	if result.Usable ||
+		result.Status != StatusUnavailable ||
+		result.MaximumContinuationDivergenceMPS <=
+			result.Policy.MaximumContinuationDivergenceMPS {
+		t.Fatalf("intermediate route conflict was not blocked: %#v", result)
+	}
+}
+
+func TestEvaluateWithContinuationsChangesFingerprintForRouteMutation(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	candidates := confidenceCandidates(selection)
+	first, err := evaluator.EvaluateWithContinuations(selection, candidates)
+	if err != nil {
+		t.Fatalf("first evaluation error = %v", err)
+	}
+
+	setContinuationDelta(&candidates[2], 0.011, 0.009)
+	changed, err := evaluator.EvaluateWithContinuations(selection, candidates)
+	if err != nil {
+		t.Fatalf("changed evaluation error = %v", err)
+	}
+	if changed.InputFingerprint == first.InputFingerprint ||
+		changed.Score == first.Score ||
+		changed.MeanContinuationDivergenceMPS ==
+			first.MeanContinuationDivergenceMPS {
+		t.Fatalf("continuation mutation was ignored: first=%#v changed=%#v", first, changed)
+	}
+}
+
+func TestEvaluateWithContinuationsIgnoresCandidateOrder(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	candidates := confidenceCandidates(selection)
+	first, err := evaluator.EvaluateWithContinuations(selection, candidates)
+	if err != nil {
+		t.Fatalf("first evaluation error = %v", err)
+	}
+	candidates[0], candidates[2] = candidates[2], candidates[0]
+	changed, err := evaluator.EvaluateWithContinuations(selection, candidates)
+	if err != nil {
+		t.Fatalf("reordered evaluation error = %v", err)
+	}
+	if changed.InputFingerprint != first.InputFingerprint ||
+		changed.Score != first.Score {
+		t.Fatalf("candidate order affected deterministic evidence: first=%#v changed=%#v", first, changed)
+	}
+}
+
+func TestEvaluateWithContinuationsRejectsMissingCandidate(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	_, err := evaluator.EvaluateWithContinuations(
+		selection,
+		confidenceCandidates(selection)[:2],
+	)
+	if !errors.Is(err, ErrContinuationCandidatesInvalid) {
+		t.Fatalf("error = %v, want %v", err, ErrContinuationCandidatesInvalid)
+	}
+}
+
+func TestEvaluateWithContinuationsUsesInterpolatedSamples(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	candidates := confidenceCandidates(selection)
+	for index := range candidates {
+		points := candidates[index].Points
+		candidates[index].Points = append(
+			append([]trajectory.TrackPoint4D(nil), points[:5]...),
+			points[6],
+		)
+		candidates[index].PointCount = len(candidates[index].Points)
+	}
+
+	result, err := evaluator.EvaluateWithContinuations(selection, candidates)
+	if err != nil {
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
+	}
+	if !result.Usable || result.MaximumContinuationDivergenceMPS > 1e-9 {
+		t.Fatalf("interpolated continuation samples were inconsistent: %#v", result)
+	}
+}
+
+func TestEvaluateWithContinuationsRejectsWeakSimilarityFloor(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
 	selection := confidenceSelection(3)
 	selection.Neighbors[2].SimilarityScore = 0.54
 	selection.Neighbors[2].SimilarityLevel = historicalsimilarity.LevelForScore(0.54)
 
-	result, err := evaluator.Evaluate(selection)
+	result, err := evaluator.EvaluateWithContinuations(
+		selection,
+		confidenceCandidates(selection),
+	)
 	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
 	}
 	if result.Usable || result.Status != StatusUnavailable ||
 		!hasConfidenceNotice(
@@ -95,7 +207,7 @@ func TestEvaluateRejectsWeakSimilarityFloor(t *testing.T) {
 	}
 }
 
-func TestEvaluateRejectsSimilarityDispersion(t *testing.T) {
+func TestEvaluateWithContinuationsRejectsSimilarityDispersion(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
 	selection := confidenceSelection(3)
 	scores := []float64{1, 1, 0.55}
@@ -104,12 +216,14 @@ func TestEvaluateRejectsSimilarityDispersion(t *testing.T) {
 		selection.Neighbors[index].SimilarityLevel = historicalsimilarity.LevelForScore(score)
 	}
 
-	result, err := evaluator.Evaluate(selection)
+	result, err := evaluator.EvaluateWithContinuations(
+		selection,
+		confidenceCandidates(selection),
+	)
 	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
 	}
 	if result.Usable || result.Status != StatusUnavailable ||
-		result.Level != projectioncontract.ConfidenceLevelNone ||
 		result.SimilarityStandardDeviation <=
 			validConfidenceConfig().MaximumSimilarityStandardDeviation ||
 		!hasConfidenceNotice(
@@ -120,90 +234,52 @@ func TestEvaluateRejectsSimilarityDispersion(t *testing.T) {
 	}
 }
 
-func TestEvaluateFingerprintIsDeterministic(t *testing.T) {
+func TestEvaluateWithContinuationsIgnoresFreshnessEvidence(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
 	selection := confidenceSelection(3)
-	first, err := evaluator.Evaluate(selection)
+	candidates := confidenceCandidates(selection)
+	first, err := evaluator.EvaluateWithContinuations(selection, candidates)
 	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
-	}
-	second, err := evaluator.Evaluate(selection)
-	if err != nil {
-		t.Fatalf("second Evaluate() error = %v", err)
-	}
-	if first.InputFingerprint != second.InputFingerprint {
-		t.Fatal("equal inputs produced different fingerprints")
-	}
-}
-
-func TestEvaluateIgnoresFreshnessEvidence(t *testing.T) {
-	evaluator := newConfidenceEvaluator(t)
-	selection := confidenceSelection(3)
-	first, err := evaluator.Evaluate(selection)
-	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
+		t.Fatalf("first evaluation error = %v", err)
 	}
 
-	selection.Neighbors[0].CandidateAge += 24 * time.Hour
-	selection.Neighbors[0].CandidateStartTime = selection.Neighbors[0].CandidateStartTime.Add(-24 * time.Hour)
-	selection.Neighbors[0].CandidateEndTime = selection.Neighbors[0].CandidateEndTime.Add(-24 * time.Hour)
-	selection.Neighbors[0].AnchorObservedAt = selection.Neighbors[0].AnchorObservedAt.Add(-24 * time.Hour)
-	selection.Neighbors[0].ContinuationEndTime = selection.Neighbors[0].ContinuationEndTime.Add(-24 * time.Hour)
+	for index := range selection.Neighbors {
+		selection.Neighbors[index].CandidateAge += 24 * time.Hour
+		selection.Neighbors[index].CandidateStartTime =
+			selection.Neighbors[index].CandidateStartTime.Add(-24 * time.Hour)
+		selection.Neighbors[index].CandidateEndTime =
+			selection.Neighbors[index].CandidateEndTime.Add(-24 * time.Hour)
+		selection.Neighbors[index].AnchorObservedAt =
+			selection.Neighbors[index].AnchorObservedAt.Add(-24 * time.Hour)
+		selection.Neighbors[index].ContinuationEndTime =
+			selection.Neighbors[index].ContinuationEndTime.Add(-24 * time.Hour)
+		for pointIndex := range candidates[index].Points {
+			candidates[index].Points[pointIndex].ObservedAt =
+				candidates[index].Points[pointIndex].ObservedAt.Add(-24 * time.Hour)
+		}
+		candidates[index].StartTime = candidates[index].StartTime.Add(-24 * time.Hour)
+		candidates[index].EndTime = candidates[index].EndTime.Add(-24 * time.Hour)
+	}
 
-	changed, err := evaluator.Evaluate(selection)
+	changed, err := evaluator.EvaluateWithContinuations(selection, candidates)
 	if err != nil {
-		t.Fatalf("changed Evaluate() error = %v", err)
+		t.Fatalf("changed evaluation error = %v", err)
 	}
 	if changed.InputFingerprint != first.InputFingerprint ||
-		changed.Score != first.Score ||
-		changed.MeanSimilarityScore != first.MeanSimilarityScore {
+		changed.Score != first.Score {
 		t.Fatalf("freshness leaked into pattern confidence: first=%#v changed=%#v", first, changed)
-	}
-}
-
-func TestEvaluateFingerprintChangesWithSimilarityDistribution(t *testing.T) {
-	evaluator := newConfidenceEvaluator(t)
-	selection := confidenceSelection(3)
-	first, err := evaluator.Evaluate(selection)
-	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
-	}
-	selection.Neighbors[0].SimilarityScore = 0.95
-	selection.Neighbors[0].SimilarityLevel = historicalsimilarity.LevelForScore(0.95)
-	changed, err := evaluator.Evaluate(selection)
-	if err != nil {
-		t.Fatalf("changed Evaluate() error = %v", err)
-	}
-	if changed.InputFingerprint == first.InputFingerprint {
-		t.Fatal("changed similarity distribution was ignored by fingerprint")
-	}
-	if changed.SimilarityStandardDeviation == first.SimilarityStandardDeviation {
-		t.Fatal("changed similarity distribution did not change dispersion evidence")
-	}
-}
-
-func TestEvaluateFingerprintChangesWithAnchorEvidence(t *testing.T) {
-	evaluator := newConfidenceEvaluator(t)
-	selection := confidenceSelection(3)
-	first, err := evaluator.Evaluate(selection)
-	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
-	}
-	selection.Neighbors[0].AnchorDistanceKM += 7
-	changed, err := evaluator.Evaluate(selection)
-	if err != nil {
-		t.Fatalf("changed Evaluate() error = %v", err)
-	}
-	if changed.InputFingerprint == first.InputFingerprint || changed.Score == first.Score {
-		t.Fatal("changed anchor-distance evidence was ignored")
 	}
 }
 
 func TestResultCloneDoesNotShareSlices(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
-	result, err := evaluator.Evaluate(confidenceSelection(3))
+	selection := confidenceSelection(3)
+	result, err := evaluator.EvaluateWithContinuations(
+		selection,
+		confidenceCandidates(selection),
+	)
 	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
 	}
 	cloned := result.Clone()
 	cloned.Components[0].Score = 0
@@ -234,7 +310,7 @@ func confidenceSelection(neighborCount int) projectionneighbors.Result {
 	for index := 0; index < neighborCount; index++ {
 		score := 0.9 - float64(index)*0.1
 		age := time.Duration(index+1) * 24 * time.Hour
-		anchorTime := asOfTime.Add(-age - 10*time.Minute)
+		anchorTime := asOfTime.Add(-age - 2*time.Minute)
 		neighbors = append(neighbors, projectionneighbors.Neighbor{
 			TrajectoryID:    "historical-" + string(rune('a'+index)),
 			SimilarityScore: score,
@@ -246,8 +322,8 @@ func confidenceSelection(neighborCount int) projectionneighbors.Result {
 			AnchorPointIndex:       4,
 			AnchorObservedAt:       anchorTime,
 			AnchorDistanceKM:       float64((index + 1) * 5),
-			CandidateStartTime:     anchorTime.Add(-10 * time.Minute),
-			CandidateEndTime:       asOfTime.Add(-age),
+			CandidateStartTime:     anchorTime.Add(-4 * time.Minute),
+			CandidateEndTime:       anchorTime.Add(2 * time.Minute),
 			CandidateAge:           age,
 			PrefixPointCount:       5,
 			ContinuationPointCount: 2,
@@ -280,6 +356,59 @@ func confidenceSelection(neighborCount int) projectionneighbors.Result {
 		Limitations:                  limitations,
 		InputFingerprint:             "sha256:" + strings.Repeat("f", 64),
 	}
+}
+
+func confidenceCandidates(selection projectionneighbors.Result) []trajectory.FlightTrajectory {
+	candidates := make([]trajectory.FlightTrajectory, 0, len(selection.Neighbors))
+	for _, neighbor := range selection.Neighbors {
+		points := make([]trajectory.TrackPoint4D, 0, 7)
+		for index := 0; index < 5; index++ {
+			points = append(points, trajectory.TrackPoint4D{
+				ID:         neighbor.TrajectoryID + "-prefix-" + string(rune('0'+index)),
+				Latitude:   40 - 0.01*float64(4-index),
+				Longitude:  50 - 0.01*float64(4-index),
+				ObservedAt: neighbor.AnchorObservedAt.Add(time.Duration(index-4) * time.Minute),
+				SourceName: "test-source",
+			})
+		}
+		points = append(points,
+			trajectory.TrackPoint4D{
+				ID:         neighbor.TrajectoryID + "-continuation-1",
+				Latitude:   40.01,
+				Longitude:  50.01,
+				ObservedAt: neighbor.AnchorObservedAt.Add(time.Minute),
+				SourceName: "test-source",
+			},
+			trajectory.TrackPoint4D{
+				ID:         neighbor.TrajectoryID + "-continuation-2",
+				Latitude:   40.02,
+				Longitude:  50.02,
+				ObservedAt: neighbor.AnchorObservedAt.Add(2 * time.Minute),
+				SourceName: "test-source",
+			},
+		)
+		candidates = append(candidates, trajectory.FlightTrajectory{
+			ID:         neighbor.TrajectoryID,
+			StartTime:  points[0].ObservedAt,
+			EndTime:    points[len(points)-1].ObservedAt,
+			PointCount: len(points),
+			SourceName: "test-source",
+			Points:     points,
+		})
+	}
+	return candidates
+}
+
+func setContinuationDelta(
+	candidate *trajectory.FlightTrajectory,
+	latitudeDelta float64,
+	longitudeDelta float64,
+) {
+	anchor := candidate.Points[4]
+	candidate.Points[5].Latitude = anchor.Latitude + latitudeDelta
+	candidate.Points[5].Longitude = anchor.Longitude + longitudeDelta
+	candidate.Points[6].Latitude = anchor.Latitude + 2*latitudeDelta
+	candidate.Points[6].Longitude = anchor.Longitude + 2*longitudeDelta
 }
 
 func hasConfidenceNotice(items []Notice, code string) bool {

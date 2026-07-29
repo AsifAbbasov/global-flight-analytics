@@ -33,6 +33,24 @@ func inputFingerprint(
 		writeFingerprintFloat(digest, neighbor.anchorDistanceKM)
 	}
 
+	writeFingerprintBool(digest, evidence.continuation.known)
+	writeFingerprintInt(digest, evidence.continuation.sampleCount)
+	writeFingerprintInt(digest, evidence.continuation.pairCount)
+	writeFingerprintInt(digest, evidence.continuation.comparisonCount)
+	writeFingerprintFloat(digest, evidence.continuation.horizonSeconds)
+	writeFingerprintInt(digest, len(evidence.continuation.vectors))
+	for _, vector := range evidence.continuation.vectors {
+		writeFingerprintString(digest, vector.trajectoryID)
+		writeFingerprintInt(digest, vector.sampleIndex)
+		writeFingerprintFloat(digest, vector.elapsedS)
+		writeFingerprintFloat(digest, vector.anchorLatitude)
+		writeFingerprintFloat(digest, vector.anchorLongitude)
+		writeFingerprintFloat(digest, vector.endpointLatitude)
+		writeFingerprintFloat(digest, vector.endpointLongitude)
+		writeFingerprintFloat(digest, vector.eastM)
+		writeFingerprintFloat(digest, vector.northM)
+	}
+
 	writeFingerprintInt(digest, len(evidence.limitations))
 	for _, limitation := range evidence.limitations {
 		writeFingerprintString(digest, limitation.Code)
@@ -47,10 +65,14 @@ func inputFingerprint(
 	writeFingerprintFloat(digest, config.MinimumUsableScore)
 	writeFingerprintFloat(digest, config.MediumConfidenceMinimum)
 	writeFingerprintFloat(digest, config.HighConfidenceMinimum)
+	writeFingerprintInt(digest, config.ContinuationAgreementSampleCount)
+	writeFingerprintFloat(digest, config.ContinuationDivergenceNormalizationMPS)
+	writeFingerprintFloat(digest, config.MaximumContinuationDivergenceMPS)
 	writeFingerprintFloat(digest, config.SimilarityStrengthWeight)
 	writeFingerprintFloat(digest, config.SupportWeight)
 	writeFingerprintFloat(digest, config.SimilarityConsistencyWeight)
 	writeFingerprintFloat(digest, config.AnchorProximityWeight)
+	writeFingerprintFloat(digest, config.ContinuationAgreementWeight)
 
 	return fingerprintPrefix + hex.EncodeToString(digest.Sum(nil))
 }

@@ -644,13 +644,42 @@ func continuationTestPattern(
 
 		NeighborCount:       2,
 		TargetNeighborCount: 2,
+		SelectionStatus:     projectionneighbors.StatusComplete,
+		Policy: projectionpatternconfidence.Policy{
+			MinimumNeighborCount:                   2,
+			TargetNeighborCount:                    2,
+			MinimumSimilarityScore:                 0.5,
+			MaximumSimilarityStandardDeviation:     0.2,
+			AnchorDistanceNormalizationKM:          50,
+			MinimumUsableScore:                     0.5,
+			MediumConfidenceMinimum:                0.6,
+			HighConfidenceMinimum:                  0.8,
+			ContinuationAgreementSampleCount:       4,
+			ContinuationDivergenceNormalizationMPS: 100,
+			MaximumContinuationDivergenceMPS:       200,
+			SimilarityStrengthWeight:               0.2,
+			SupportWeight:                          0.2,
+			SimilarityConsistencyWeight:            0.2,
+			AnchorProximityWeight:                  0.2,
+			ContinuationAgreementWeight:            0.2,
+		},
+
+		ContinuationAgreementKnown:       true,
+		ContinuationAgreementSampleCount: 4,
+		ContinuationAgreementPairCount:   1,
+		ContinuationComparisonCount:      (1) * 4,
+		ContinuationHorizonSeconds:       120,
+		MeanContinuationSpreadM:          750,
+		MaximumContinuationSpreadM:       1800,
+		MeanContinuationDivergenceMPS:    10,
+		MaximumContinuationDivergenceMPS: 15,
 
 		MeanSimilarityScore:         0.85,
 		MinimumSimilarityScore:      0.8,
 		SimilarityStandardDeviation: 0.05,
 		MeanAnchorDistanceKM:        1.5,
 
-		Score: 0.9125,
+		Score: 0.92400000000000004,
 		Level: projectioncontract.
 			ConfidenceLevelHigh,
 
@@ -659,27 +688,33 @@ func continuationTestPattern(
 				Name: projectionpatternconfidence.
 					ComponentSimilarityStrength,
 				Score:  0.85,
-				Weight: 0.25,
+				Weight: 0.20000000000000001,
 			},
 			{
 				Name: projectionpatternconfidence.
 					ComponentSupport,
 				Score:  1,
-				Weight: 0.25,
+				Weight: 0.20000000000000001,
 			},
 			{
 				Name: projectionpatternconfidence.
 					ComponentSimilarityConsistency,
 				Score:  0.9,
-				Weight: 0.25,
+				Weight: 0.20000000000000001,
 			},
 			{
 				Name: projectionpatternconfidence.
 					ComponentAnchorProximity,
-				Score:  0.9,
-				Weight: 0.25,
+				Score:  0.96999999999999997,
+				Weight: 0.20000000000000001,
 			},
-		},
+
+			{
+				Name: projectionpatternconfidence.
+					ComponentContinuationAgreement,
+				Score:  0.9,
+				Weight: 0.2,
+			}},
 		SelectedTrajectoryIDs: []string{
 			"historical-a",
 			"historical-b",

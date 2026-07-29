@@ -32,16 +32,21 @@ type patternEvidence struct {
 	supportScore               float64
 	similarityConsistencyScore float64
 	anchorProximityScore       float64
+	continuationAgreementScore float64
+
+	continuation continuationAgreementEvidence
 }
 
 func extractPatternEvidence(
 	selection projectionneighbors.Result,
 	config Config,
+	continuation continuationAgreementEvidence,
 ) patternEvidence {
 	evidence := patternEvidence{
 		neighbors:     make([]neighborPatternEvidence, 0, len(selection.Neighbors)),
 		trajectoryIDs: make([]string, 0, len(selection.Neighbors)),
-		limitations:   make([]Notice, 0, len(selection.Limitations)+4),
+		limitations:   make([]Notice, 0, len(selection.Limitations)+6),
+		continuation:  continuation,
 	}
 
 	for _, limitation := range selection.Limitations {
@@ -101,6 +106,9 @@ func extractPatternEvidence(
 		evidence.anchorProximityScore = clampUnit(
 			1 - evidence.meanAnchorDistanceKM/config.AnchorDistanceNormalizationKM,
 		)
+	}
+	if continuation.known {
+		evidence.continuationAgreementScore = continuation.score
 	}
 	evidence.limitations = normalizeNotices(evidence.limitations)
 	return evidence

@@ -186,6 +186,24 @@ func TestEvaluateReturnsLimitedForUsableIncompletePattern(
 	pattern.Level =
 		projectioncontract.
 			ConfidenceLevelMedium
+	pattern.TargetNeighborCount =
+		pattern.NeighborCount + 1
+	pattern.Policy.TargetNeighborCount =
+		pattern.TargetNeighborCount
+	pattern.Components[1].Score =
+		float64(pattern.NeighborCount) /
+			float64(pattern.TargetNeighborCount)
+	pattern.Score = 0
+	for _, component := range pattern.Components {
+		pattern.Score += component.Score * component.Weight
+	}
+	pattern.Limitations =
+		[]projectionpatternconfidence.Notice{
+			{
+				Code:    "pattern_support_partial",
+				Message: "Historical pattern is usable but does not satisfy complete target support.",
+			},
+		}
 
 	result, err := evaluator.Evaluate(
 		selection,
@@ -346,14 +364,43 @@ func freshnessFixtures(
 		Version: projectionpatternconfidence.Version,
 		Status: projectionpatternconfidence.
 			StatusComplete,
-		Usable:                      true,
-		NeighborCount:               len(neighbors),
-		TargetNeighborCount:         len(neighbors),
-		MeanSimilarityScore:         0.85,
-		MinimumSimilarityScore:      0.8,
-		SimilarityStandardDeviation: 0.04082482904638629,
-		MeanAnchorDistanceKM:        2,
-		Score:                       0.9170875854768068,
+		Usable:              true,
+		NeighborCount:       len(neighbors),
+		TargetNeighborCount: len(neighbors),
+		SelectionStatus:     projectionneighbors.StatusComplete,
+		Policy: projectionpatternconfidence.Policy{
+			MinimumNeighborCount:                   2,
+			TargetNeighborCount:                    len(neighbors),
+			MinimumSimilarityScore:                 0.5,
+			MaximumSimilarityStandardDeviation:     0.2,
+			AnchorDistanceNormalizationKM:          50,
+			MinimumUsableScore:                     0.5,
+			MediumConfidenceMinimum:                0.6,
+			HighConfidenceMinimum:                  0.8,
+			ContinuationAgreementSampleCount:       4,
+			ContinuationDivergenceNormalizationMPS: 100,
+			MaximumContinuationDivergenceMPS:       200,
+			SimilarityStrengthWeight:               0.2,
+			SupportWeight:                          0.2,
+			SimilarityConsistencyWeight:            0.2,
+			AnchorProximityWeight:                  0.2,
+			ContinuationAgreementWeight:            0.2,
+		},
+
+		ContinuationAgreementKnown:       true,
+		ContinuationAgreementSampleCount: 4,
+		ContinuationAgreementPairCount:   (len(neighbors)) * ((len(neighbors)) - 1) / 2,
+		ContinuationComparisonCount:      ((len(neighbors)) * ((len(neighbors)) - 1) / 2) * 4,
+		ContinuationHorizonSeconds:       120,
+		MeanContinuationSpreadM:          750,
+		MaximumContinuationSpreadM:       1800,
+		MeanContinuationDivergenceMPS:    10,
+		MaximumContinuationDivergenceMPS: 15,
+		MeanSimilarityScore:              0.85,
+		MinimumSimilarityScore:           0.8,
+		SimilarityStandardDeviation:      0.04082482904638629,
+		MeanAnchorDistanceKM:             2,
+		Score:                            0.9256700683814455,
 		Level: projectioncontract.
 			ConfidenceLevelHigh,
 		Components: []projectionpatternconfidence.Component{
@@ -361,27 +408,33 @@ func freshnessFixtures(
 				Name: projectionpatternconfidence.
 					ComponentSimilarityStrength,
 				Score:  0.85,
-				Weight: 0.25,
+				Weight: 0.20000000000000001,
 			},
 			{
 				Name: projectionpatternconfidence.
 					ComponentSupport,
 				Score:  1,
-				Weight: 0.25,
+				Weight: 0.20000000000000001,
 			},
 			{
 				Name: projectionpatternconfidence.
 					ComponentSimilarityConsistency,
 				Score:  0.9183503419072274,
-				Weight: 0.25,
+				Weight: 0.20000000000000001,
 			},
 			{
 				Name: projectionpatternconfidence.
 					ComponentAnchorProximity,
-				Score:  0.9,
-				Weight: 0.25,
+				Score:  0.95999999999999996,
+				Weight: 0.20000000000000001,
 			},
-		},
+
+			{
+				Name: projectionpatternconfidence.
+					ComponentContinuationAgreement,
+				Score:  0.9,
+				Weight: 0.2,
+			}},
 		SelectedTrajectoryIDs: selectedIDs,
 		InputFingerprint: "sha256:" +
 			strings.Repeat("e", 64),

@@ -24,6 +24,11 @@ func buildComponents(config Config, evidence patternEvidence) []Component {
 			Score:  evidence.anchorProximityScore,
 			Weight: config.AnchorProximityWeight,
 		},
+		{
+			Name:   ComponentContinuationAgreement,
+			Score:  evidence.continuationAgreementScore,
+			Weight: config.ContinuationAgreementWeight,
+		},
 	}
 }
 

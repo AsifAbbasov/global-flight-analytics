@@ -1,10 +1,6 @@
 package projectionpatternconfidence
 
-import (
-	"testing"
-
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
-)
+import "testing"
 
 func TestResultValidateRejectsUnknownComponentName(t *testing.T) {
 	result := validEvaluatedResult(t)
@@ -18,55 +14,87 @@ func TestResultValidateRejectsComponentScoreMismatch(t *testing.T) {
 	result := validEvaluatedResult(t)
 	result.Components[0].Score -= 0.1
 	if err := result.Validate(); err == nil {
-		t.Fatal("Validate() accepted a score inconsistent with components")
+		t.Fatal("Validate() accepted a component inconsistent with aggregate evidence")
 	}
 }
 
-func TestResultValidateRejectsInvalidSimilarityDistribution(t *testing.T) {
+func TestResultValidateRejectsPolicyMutation(t *testing.T) {
 	result := validEvaluatedResult(t)
-	result.MinimumSimilarityScore = result.MeanSimilarityScore + 0.1
+	result.Policy.MinimumUsableScore = 0.99
 	if err := result.Validate(); err == nil {
-		t.Fatal("Validate() accepted minimum similarity above mean similarity")
-	}
-
-	result = validEvaluatedResult(t)
-	result.SimilarityStandardDeviation = 0.6
-	if err := result.Validate(); err == nil {
-		t.Fatal("Validate() accepted impossible similarity deviation")
+		t.Fatal("Validate() accepted a usable decision inconsistent with policy")
 	}
 }
 
-func TestResultValidateRejectsUsableNoneConfidence(t *testing.T) {
+func TestResultValidateRejectsComponentWeightMutation(t *testing.T) {
 	result := validEvaluatedResult(t)
-	for index := range result.Components {
-		result.Components[index].Score = 0
-	}
-	result.Score = 0
-	result.Level = projectioncontract.ConfidenceLevelNone
-	result.Usable = true
+	result.Components[0].Weight -= 0.05
+	result.Components[1].Weight += 0.05
+	result.Score = weightedComponentScore(result.Components)
 	if err := result.Validate(); err == nil {
-		t.Fatal("Validate() accepted usable result with none confidence")
+		t.Fatal("Validate() accepted component weights inconsistent with policy")
 	}
 }
 
-func TestResultValidateRejectsUnavailableHighConfidence(t *testing.T) {
+func TestResultValidateRejectsUnknownAgreementForUsableResult(t *testing.T) {
 	result := validEvaluatedResult(t)
-	result.Status = StatusUnavailable
-	result.Usable = false
-	result.Level = projectioncontract.ConfidenceLevelHigh
-	result.Limitations = []Notice{{Code: "blocked", Message: "Blocked."}}
+	result.ContinuationAgreementKnown = false
+	result.ContinuationAgreementSampleCount = 0
+	result.ContinuationAgreementPairCount = 0
+	result.ContinuationComparisonCount = 0
+	result.ContinuationHorizonSeconds = 0
+	result.MeanContinuationSpreadM = 0
+	result.MaximumContinuationSpreadM = 0
+	result.MeanContinuationDivergenceMPS = 0
+	result.MaximumContinuationDivergenceMPS = 0
+	result.Components[4].Score = 0
+	result.Score = weightedComponentScore(result.Components)
 	if err := result.Validate(); err == nil {
-		t.Fatal("Validate() accepted unavailable high confidence")
+		t.Fatal("Validate() accepted usable pattern without continuation agreement")
 	}
 }
 
-func TestResultValidateRejectsLimitedHighConfidence(t *testing.T) {
+func TestResultValidateRejectsInvalidPairCount(t *testing.T) {
 	result := validEvaluatedResult(t)
-	result.Status = StatusLimited
-	result.Level = projectioncontract.ConfidenceLevelHigh
-	result.Limitations = []Notice{{Code: "limited", Message: "Limited."}}
+	result.ContinuationAgreementPairCount++
 	if err := result.Validate(); err == nil {
-		t.Fatal("Validate() accepted limited high confidence")
+		t.Fatal("Validate() accepted invalid continuation pair count")
+	}
+}
+
+func TestResultValidateRejectsDivergenceDecisionMismatch(t *testing.T) {
+	result := validEvaluatedResult(t)
+	result.MaximumContinuationDivergenceMPS =
+		result.Policy.MaximumContinuationDivergenceMPS + 1
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted usable pattern above divergence maximum")
+	}
+}
+
+func TestResultValidateRejectsInconsistentSpreadEvidence(t *testing.T) {
+	result := validEvaluatedResult(t)
+	result.MaximumContinuationSpreadM =
+		result.MaximumContinuationDivergenceMPS*result.ContinuationHorizonSeconds + 1
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted inconsistent continuation spread evidence")
+	}
+}
+
+func TestResultValidateRejectsMissingDecisionLimitation(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	result, err := evaluator.Evaluate(confidenceSelection(3))
+	if err != nil {
+		t.Fatalf("Evaluate() error = %v", err)
+	}
+	filtered := make([]Notice, 0, len(result.Limitations))
+	for _, limitation := range result.Limitations {
+		if limitation.Code != "pattern_continuation_agreement_unavailable" {
+			filtered = append(filtered, limitation)
+		}
+	}
+	result.Limitations = filtered
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted a missing decision limitation")
 	}
 }
 
@@ -102,9 +130,13 @@ func TestResultValidateRejectsDuplicateLimitations(t *testing.T) {
 
 func validEvaluatedResult(t *testing.T) Result {
 	t.Helper()
-	result, err := newConfidenceEvaluator(t).Evaluate(confidenceSelection(3))
+	selection := confidenceSelection(3)
+	result, err := newConfidenceEvaluator(t).EvaluateWithContinuations(
+		selection,
+		confidenceCandidates(selection),
+	)
 	if err != nil {
-		t.Fatalf("Evaluate() error = %v", err)
+		t.Fatalf("EvaluateWithContinuations() error = %v", err)
 	}
 	return result
 }

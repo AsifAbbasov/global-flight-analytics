@@ -57,9 +57,12 @@ func (
 		}
 	}
 
-	pattern, err := baseline.config.
-		PatternConfidenceEvaluator.
-		Evaluate(selection)
+	pattern, err := evaluatePatternConfidence(
+		baseline.config.
+			PatternConfidenceEvaluator,
+		selection,
+		request.Candidates,
+	)
 	if err != nil {
 		return continuationPreparation{
 			fallbackReason: "historical_pattern_confidence_failed",

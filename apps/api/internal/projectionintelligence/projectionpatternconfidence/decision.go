@@ -27,6 +27,10 @@ func decidePattern(
 	dispersionAcceptable := neighborCount > 0 &&
 		evidence.similarityStandardDeviation <=
 			config.MaximumSimilarityStandardDeviation
+	agreementAvailable := evidence.continuation.known
+	agreementAcceptable := agreementAvailable &&
+		evidence.continuation.maximumDivergenceMPS <=
+			config.MaximumContinuationDivergenceMPS
 	scoreSufficient := score >= config.MinimumUsableScore
 
 	if !supportSufficient {
@@ -59,6 +63,21 @@ func decidePattern(
 			),
 		})
 	}
+	if !agreementAvailable {
+		limitations = append(limitations, Notice{
+			Code:    "pattern_continuation_agreement_unavailable",
+			Message: "Future continuation agreement was not evaluated, so the historical pattern cannot authorize a projection.",
+		})
+	} else if !agreementAcceptable {
+		limitations = append(limitations, Notice{
+			Code: "pattern_continuation_divergence_above_maximum",
+			Message: fmt.Sprintf(
+				"Maximum continuation divergence %.6f m/s exceeds the configured maximum %.6f m/s.",
+				evidence.continuation.maximumDivergenceMPS,
+				config.MaximumContinuationDivergenceMPS,
+			),
+		})
+	}
 	if !scoreSufficient {
 		limitations = append(limitations, Notice{
 			Code: "pattern_confidence_below_minimum",
@@ -73,6 +92,8 @@ func decidePattern(
 	usable := supportSufficient &&
 		similarityFloorSufficient &&
 		dispersionAcceptable &&
+		agreementAvailable &&
+		agreementAcceptable &&
 		scoreSufficient
 	if !usable {
 		return patternDecision{
