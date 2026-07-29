@@ -75,8 +75,9 @@ type fakePatternEvaluator struct {
 	calls  int
 }
 
-func (fake *fakePatternEvaluator) Evaluate(
+func (fake *fakePatternEvaluator) EvaluateWithContinuations(
 	projectionneighbors.Result,
+	[]trajectory.FlightTrajectory,
 ) (projectionpatternconfidence.Result, error) {
 	fake.calls++
 	return fake.result.Clone(), fake.err

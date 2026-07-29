@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionbaseline"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
@@ -61,8 +62,9 @@ type NeighborSelector interface {
 }
 
 type PatternConfidenceEvaluator interface {
-	Evaluate(
+	EvaluateWithContinuations(
 		projectionneighbors.Result,
+		[]trajectory.FlightTrajectory,
 	) (projectionpatternconfidence.Result, error)
 }
 

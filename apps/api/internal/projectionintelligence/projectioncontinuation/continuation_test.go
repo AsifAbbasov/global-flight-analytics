@@ -40,8 +40,9 @@ type patternEvaluatorStub struct {
 
 func (
 	stub *patternEvaluatorStub,
-) Evaluate(
+) EvaluateWithContinuations(
 	projectionneighbors.Result,
+	[]trajectory.FlightTrajectory,
 ) (projectionpatternconfidence.Result, error) {
 	stub.calls++
 	return stub.result.Clone(),
