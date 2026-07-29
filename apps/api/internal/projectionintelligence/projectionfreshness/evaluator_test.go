@@ -183,6 +183,9 @@ func TestEvaluateReturnsLimitedForUsableIncompletePattern(
 	pattern.Status =
 		projectionpatternconfidence.
 			StatusLimited
+	pattern.Level =
+		projectioncontract.
+			ConfidenceLevelMedium
 
 	result, err := evaluator.Evaluate(
 		selection,
@@ -343,19 +346,20 @@ func freshnessFixtures(
 		Version: projectionpatternconfidence.Version,
 		Status: projectionpatternconfidence.
 			StatusComplete,
-		Usable:                  true,
-		NeighborCount:           len(neighbors),
-		TargetNeighborCount:     len(neighbors),
-		MeanSimilarityScore:     0.85,
-		MeanCandidateAgeSeconds: 48 * 60 * 60,
-		MeanAnchorDistanceKM:    2,
-		Score:                   0.88750000000000007,
+		Usable:                      true,
+		NeighborCount:               len(neighbors),
+		TargetNeighborCount:         len(neighbors),
+		MeanSimilarityScore:         0.85,
+		MinimumSimilarityScore:      0.8,
+		SimilarityStandardDeviation: 0.04082482904638629,
+		MeanAnchorDistanceKM:        2,
+		Score:                       0.9170875854768068,
 		Level: projectioncontract.
 			ConfidenceLevelHigh,
 		Components: []projectionpatternconfidence.Component{
 			{
 				Name: projectionpatternconfidence.
-					ComponentSimilarity,
+					ComponentSimilarityStrength,
 				Score:  0.85,
 				Weight: 0.25,
 			},
@@ -367,8 +371,8 @@ func freshnessFixtures(
 			},
 			{
 				Name: projectionpatternconfidence.
-					ComponentFreshness,
-				Score:  0.8,
+					ComponentSimilarityConsistency,
+				Score:  0.9183503419072274,
 				Weight: 0.25,
 			},
 			{

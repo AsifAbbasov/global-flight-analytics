@@ -20,11 +20,26 @@ func validateResultCounts(result Result) error {
 
 func validateAggregateMeasurements(result Result) error {
 	if !unitInterval(result.MeanSimilarityScore) ||
-		!finite(result.MeanCandidateAgeSeconds) ||
-		result.MeanCandidateAgeSeconds < 0 ||
+		!unitInterval(result.MinimumSimilarityScore) ||
+		result.MinimumSimilarityScore > result.MeanSimilarityScore ||
+		!finite(result.SimilarityStandardDeviation) ||
+		result.SimilarityStandardDeviation < 0 ||
+		result.SimilarityStandardDeviation > maximumUnitIntervalStandardDeviation ||
 		!finite(result.MeanAnchorDistanceKM) ||
-		result.MeanAnchorDistanceKM < 0 {
+		result.MeanAnchorDistanceKM < 0 ||
+		!finite(result.MeanCandidateAgeSeconds) ||
+		result.MeanCandidateAgeSeconds < 0 {
 		return fmt.Errorf("pattern confidence aggregate measurements are invalid")
+	}
+	if result.NeighborCount == 0 &&
+		(result.MeanSimilarityScore != 0 ||
+			result.MinimumSimilarityScore != 0 ||
+			result.SimilarityStandardDeviation != 0 ||
+			result.MeanAnchorDistanceKM != 0) {
+		return fmt.Errorf("empty pattern confidence must have zero aggregate measurements")
+	}
+	if result.NeighborCount > 0 && result.MinimumSimilarityScore <= 0 {
+		return fmt.Errorf("non-empty pattern confidence requires positive minimum similarity")
 	}
 	return nil
 }
@@ -33,11 +48,21 @@ func validateScoreAndLevel(result Result) error {
 	if !unitInterval(result.Score) || !result.Level.IsKnown() {
 		return fmt.Errorf("pattern confidence score and level are invalid")
 	}
-	if result.Score == 0 && result.Level != projectioncontract.ConfidenceLevelNone {
-		return fmt.Errorf("zero pattern confidence score requires none level")
+	if result.Status == StatusUnavailable {
+		if result.Level == projectioncontract.ConfidenceLevelHigh {
+			return fmt.Errorf("unavailable pattern confidence cannot report high level")
+		}
+		if result.Score == 0 && result.Level != projectioncontract.ConfidenceLevelNone {
+			return fmt.Errorf("zero unavailable pattern confidence requires none level")
+		}
+		return nil
 	}
-	if result.Score > 0 && result.Level == projectioncontract.ConfidenceLevelNone {
-		return fmt.Errorf("positive pattern confidence score requires a non-none level")
+	if result.Score == 0 || result.Level == projectioncontract.ConfidenceLevelNone {
+		return fmt.Errorf("usable pattern confidence requires positive score and level")
+	}
+	if result.Status == StatusLimited &&
+		result.Level == projectioncontract.ConfidenceLevelHigh {
+		return fmt.Errorf("limited pattern confidence cannot report high level")
 	}
 	return nil
 }

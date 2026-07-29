@@ -21,10 +21,11 @@ type Evaluator struct {
 }
 
 func New(config Config) (*Evaluator, error) {
-	if err := config.Validate(); err != nil {
+	normalized, err := normalizeAndValidateConfig(config)
+	if err != nil {
 		return nil, fmt.Errorf("validate pattern confidence config: %w", err)
 	}
-	return &Evaluator{config: config}, nil
+	return &Evaluator{config: normalized}, nil
 }
 
 func (evaluator *Evaluator) Evaluate(
@@ -50,13 +51,16 @@ func (evaluator *Evaluator) Evaluate(
 		NeighborCount:       len(evidence.neighbors),
 		TargetNeighborCount: evaluator.config.TargetNeighborCount,
 
-		MeanSimilarityScore:     evidence.meanSimilarityScore,
-		MeanCandidateAgeSeconds: evidence.meanCandidateAgeSeconds,
-		MeanAnchorDistanceKM:    evidence.meanAnchorDistanceKM,
+		MeanSimilarityScore:         evidence.meanSimilarityScore,
+		MinimumSimilarityScore:      evidence.minimumSimilarityScore,
+		SimilarityStandardDeviation: evidence.similarityStandardDeviation,
+		MeanAnchorDistanceKM:        evidence.meanAnchorDistanceKM,
+		MeanCandidateAgeSeconds:     0,
 
 		Score: score,
-		Level: confidenceLevelForScore(
+		Level: confidenceLevelForDecision(
 			score,
+			decision.status,
 			evaluator.config.MediumConfidenceMinimum,
 			evaluator.config.HighConfidenceMinimum,
 		),

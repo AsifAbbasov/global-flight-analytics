@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash"
-	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
 )
@@ -31,7 +30,6 @@ func inputFingerprint(
 		writeFingerprintString(digest, neighbor.trajectoryID)
 		writeFingerprintFloat(digest, neighbor.similarityScore)
 		writeFingerprintString(digest, neighbor.similarityInputFingerprint)
-		writeFingerprintDuration(digest, neighbor.candidateAge)
 		writeFingerprintFloat(digest, neighbor.anchorDistanceKM)
 	}
 
@@ -43,14 +41,15 @@ func inputFingerprint(
 
 	writeFingerprintInt(digest, config.MinimumNeighborCount)
 	writeFingerprintInt(digest, config.TargetNeighborCount)
-	writeFingerprintDuration(digest, config.MaximumCandidateAge)
-	writeFingerprintFloat(digest, config.MaximumMeanAnchorDistanceKM)
+	writeFingerprintFloat(digest, config.MinimumSimilarityScore)
+	writeFingerprintFloat(digest, config.MaximumSimilarityStandardDeviation)
+	writeFingerprintFloat(digest, config.AnchorDistanceNormalizationKM)
 	writeFingerprintFloat(digest, config.MinimumUsableScore)
 	writeFingerprintFloat(digest, config.MediumConfidenceMinimum)
 	writeFingerprintFloat(digest, config.HighConfidenceMinimum)
-	writeFingerprintFloat(digest, config.SimilarityWeight)
+	writeFingerprintFloat(digest, config.SimilarityStrengthWeight)
 	writeFingerprintFloat(digest, config.SupportWeight)
-	writeFingerprintFloat(digest, config.FreshnessWeight)
+	writeFingerprintFloat(digest, config.SimilarityConsistencyWeight)
 	writeFingerprintFloat(digest, config.AnchorProximityWeight)
 
 	return fingerprintPrefix + hex.EncodeToString(digest.Sum(nil))
@@ -66,10 +65,6 @@ func writeFingerprintInt(digest hash.Hash, value int) {
 
 func writeFingerprintFloat(digest hash.Hash, value float64) {
 	_, _ = fmt.Fprintf(digest, "%.17g|", value)
-}
-
-func writeFingerprintDuration(digest hash.Hash, value time.Duration) {
-	_, _ = fmt.Fprintf(digest, "%d|", value.Nanoseconds())
 }
 
 func writeFingerprintBool(digest hash.Hash, value bool) {

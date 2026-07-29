@@ -1,18 +1,19 @@
 package projectionpatternconfidence
 
 import (
+	"math"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
 )
+
+const maximumUnitIntervalStandardDeviation = 0.5
 
 type neighborPatternEvidence struct {
 	trajectoryID               string
 	similarityScore            float64
 	similarityInputFingerprint string
-	candidateAge               time.Duration
 	anchorDistanceKM           float64
 }
 
@@ -22,14 +23,15 @@ type patternEvidence struct {
 	trajectoryIDs []string
 	limitations   []Notice
 
-	meanSimilarityScore     float64
-	meanCandidateAgeSeconds float64
-	meanAnchorDistanceKM    float64
+	meanSimilarityScore         float64
+	minimumSimilarityScore      float64
+	similarityStandardDeviation float64
+	meanAnchorDistanceKM        float64
 
-	similarityScore      float64
-	supportScore         float64
-	freshnessScore       float64
-	anchorProximityScore float64
+	similarityStrengthScore    float64
+	supportScore               float64
+	similarityConsistencyScore float64
+	anchorProximityScore       float64
 }
 
 func extractPatternEvidence(
@@ -39,7 +41,7 @@ func extractPatternEvidence(
 	evidence := patternEvidence{
 		neighbors:     make([]neighborPatternEvidence, 0, len(selection.Neighbors)),
 		trajectoryIDs: make([]string, 0, len(selection.Neighbors)),
-		limitations:   make([]Notice, 0, len(selection.Limitations)+3),
+		limitations:   make([]Notice, 0, len(selection.Limitations)+4),
 	}
 
 	for _, limitation := range selection.Limitations {
@@ -57,17 +59,12 @@ func extractPatternEvidence(
 			trajectoryID:               strings.TrimSpace(neighbor.TrajectoryID),
 			similarityScore:            neighbor.SimilarityScore,
 			similarityInputFingerprint: neighbor.SimilarityInputFingerprint,
-			candidateAge:               neighbor.CandidateAge,
 			anchorDistanceKM:           neighbor.AnchorDistanceKM,
 		}
 		evidence.neighbors = append(evidence.neighbors, item)
 		evidence.trajectoryIDs = append(evidence.trajectoryIDs, item.trajectoryID)
 		evidence.meanSimilarityScore += item.similarityScore
-		evidence.meanCandidateAgeSeconds += item.candidateAge.Seconds()
 		evidence.meanAnchorDistanceKM += item.anchorDistanceKM
-		evidence.freshnessScore += clampUnit(
-			1 - item.candidateAge.Seconds()/config.MaximumCandidateAge.Seconds(),
-		)
 	}
 
 	sort.SliceStable(evidence.neighbors, func(left int, right int) bool {
@@ -79,18 +76,30 @@ func extractPatternEvidence(
 	if neighborCount > 0 {
 		divisor := float64(neighborCount)
 		evidence.meanSimilarityScore /= divisor
-		evidence.meanCandidateAgeSeconds /= divisor
 		evidence.meanAnchorDistanceKM /= divisor
-		evidence.freshnessScore /= divisor
+		evidence.minimumSimilarityScore = evidence.neighbors[0].similarityScore
+
+		variance := 0.0
+		for _, neighbor := range evidence.neighbors {
+			if neighbor.similarityScore < evidence.minimumSimilarityScore {
+				evidence.minimumSimilarityScore = neighbor.similarityScore
+			}
+			delta := neighbor.similarityScore - evidence.meanSimilarityScore
+			variance += delta * delta
+		}
+		evidence.similarityStandardDeviation = math.Sqrt(variance / divisor)
 	}
 
-	evidence.similarityScore = clampUnit(evidence.meanSimilarityScore)
+	evidence.similarityStrengthScore = clampUnit(evidence.meanSimilarityScore)
 	evidence.supportScore = clampUnit(
 		float64(neighborCount) / float64(config.TargetNeighborCount),
 	)
+	evidence.similarityConsistencyScore = clampUnit(
+		1 - evidence.similarityStandardDeviation/maximumUnitIntervalStandardDeviation,
+	)
 	if neighborCount > 0 {
 		evidence.anchorProximityScore = clampUnit(
-			1 - evidence.meanAnchorDistanceKM/config.MaximumMeanAnchorDistanceKM,
+			1 - evidence.meanAnchorDistanceKM/config.AnchorDistanceNormalizationKM,
 		)
 	}
 	evidence.limitations = normalizeNotices(evidence.limitations)

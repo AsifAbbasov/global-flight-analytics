@@ -1,6 +1,7 @@
 package projectionpatternconfidence
 
 import (
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
 )
 
-func TestEvaluateProducesCompletePatternConfidence(t *testing.T) {
+func TestEvaluateProducesCompleteDistributionConfidence(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
 	result, err := evaluator.Evaluate(confidenceSelection(3))
 	if err != nil {
@@ -22,8 +23,13 @@ func TestEvaluateProducesCompletePatternConfidence(t *testing.T) {
 		result.Level != projectioncontract.ConfidenceLevelHigh {
 		t.Fatalf("unexpected complete result: %#v", result)
 	}
-	if result.Score < 0.84 || result.Score > 0.85 {
-		t.Fatalf("score = %f, want approximately 0.842857", result.Score)
+	if math.Abs(result.MeanSimilarityScore-0.8) > scoreComparisonTolerance ||
+		math.Abs(result.MinimumSimilarityScore-0.7) > scoreComparisonTolerance ||
+		math.Abs(result.SimilarityStandardDeviation-0.0816496580927726) > 1e-12 {
+		t.Fatalf("unexpected similarity distribution: %#v", result)
+	}
+	if result.MeanCandidateAgeSeconds != 0 {
+		t.Fatalf("pattern confidence retained freshness evidence: %#v", result)
 	}
 	if len(result.Components) != 4 || len(result.SelectedTrajectoryIDs) != 3 {
 		t.Fatalf("unexpected evidence: %#v", result)
@@ -44,6 +50,7 @@ func TestEvaluateProducesLimitedUsablePattern(t *testing.T) {
 	}
 	if result.Status != StatusLimited ||
 		!result.Usable ||
+		result.Level == projectioncontract.ConfidenceLevelHigh ||
 		!hasConfidenceNotice(result.Limitations, "pattern_support_partial") {
 		t.Fatalf("unexpected limited result: %#v", result)
 	}
@@ -60,11 +67,56 @@ func TestEvaluateRejectsInsufficientPatternSupport(t *testing.T) {
 	}
 	if result.Status != StatusUnavailable ||
 		result.Usable ||
+		result.Level != projectioncontract.ConfidenceLevelNone ||
 		!hasConfidenceNotice(
 			result.Limitations,
 			"insufficient_historical_neighbor_support",
 		) {
 		t.Fatalf("unexpected unavailable result: %#v", result)
+	}
+}
+
+func TestEvaluateRejectsWeakSimilarityFloor(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	selection.Neighbors[2].SimilarityScore = 0.54
+	selection.Neighbors[2].SimilarityLevel = historicalsimilarity.LevelForScore(0.54)
+
+	result, err := evaluator.Evaluate(selection)
+	if err != nil {
+		t.Fatalf("Evaluate() error = %v", err)
+	}
+	if result.Usable || result.Status != StatusUnavailable ||
+		!hasConfidenceNotice(
+			result.Limitations,
+			"pattern_similarity_floor_below_minimum",
+		) {
+		t.Fatalf("weak similarity floor was not blocked: %#v", result)
+	}
+}
+
+func TestEvaluateRejectsSimilarityDispersion(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	scores := []float64{1, 1, 0.55}
+	for index, score := range scores {
+		selection.Neighbors[index].SimilarityScore = score
+		selection.Neighbors[index].SimilarityLevel = historicalsimilarity.LevelForScore(score)
+	}
+
+	result, err := evaluator.Evaluate(selection)
+	if err != nil {
+		t.Fatalf("Evaluate() error = %v", err)
+	}
+	if result.Usable || result.Status != StatusUnavailable ||
+		result.Level != projectioncontract.ConfidenceLevelNone ||
+		result.SimilarityStandardDeviation <=
+			validConfidenceConfig().MaximumSimilarityStandardDeviation ||
+		!hasConfidenceNotice(
+			result.Limitations,
+			"pattern_similarity_dispersion_above_maximum",
+		) {
+		t.Fatalf("dispersed similarity evidence was not blocked: %#v", result)
 	}
 }
 
@@ -84,24 +136,53 @@ func TestEvaluateFingerprintIsDeterministic(t *testing.T) {
 	}
 }
 
-func TestEvaluateFingerprintChangesWithSelectionIdentity(t *testing.T) {
+func TestEvaluateIgnoresFreshnessEvidence(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
 	selection := confidenceSelection(3)
 	first, err := evaluator.Evaluate(selection)
 	if err != nil {
 		t.Fatalf("Evaluate() error = %v", err)
 	}
-	selection.InputFingerprint = "sha256:" + strings.Repeat("b", 64)
+
+	selection.Neighbors[0].CandidateAge += 24 * time.Hour
+	selection.Neighbors[0].CandidateStartTime = selection.Neighbors[0].CandidateStartTime.Add(-24 * time.Hour)
+	selection.Neighbors[0].CandidateEndTime = selection.Neighbors[0].CandidateEndTime.Add(-24 * time.Hour)
+	selection.Neighbors[0].AnchorObservedAt = selection.Neighbors[0].AnchorObservedAt.Add(-24 * time.Hour)
+	selection.Neighbors[0].ContinuationEndTime = selection.Neighbors[0].ContinuationEndTime.Add(-24 * time.Hour)
+
+	changed, err := evaluator.Evaluate(selection)
+	if err != nil {
+		t.Fatalf("changed Evaluate() error = %v", err)
+	}
+	if changed.InputFingerprint != first.InputFingerprint ||
+		changed.Score != first.Score ||
+		changed.MeanSimilarityScore != first.MeanSimilarityScore {
+		t.Fatalf("freshness leaked into pattern confidence: first=%#v changed=%#v", first, changed)
+	}
+}
+
+func TestEvaluateFingerprintChangesWithSimilarityDistribution(t *testing.T) {
+	evaluator := newConfidenceEvaluator(t)
+	selection := confidenceSelection(3)
+	first, err := evaluator.Evaluate(selection)
+	if err != nil {
+		t.Fatalf("Evaluate() error = %v", err)
+	}
+	selection.Neighbors[0].SimilarityScore = 0.95
+	selection.Neighbors[0].SimilarityLevel = historicalsimilarity.LevelForScore(0.95)
 	changed, err := evaluator.Evaluate(selection)
 	if err != nil {
 		t.Fatalf("changed Evaluate() error = %v", err)
 	}
 	if changed.InputFingerprint == first.InputFingerprint {
-		t.Fatal("changed selection fingerprint was ignored")
+		t.Fatal("changed similarity distribution was ignored by fingerprint")
+	}
+	if changed.SimilarityStandardDeviation == first.SimilarityStandardDeviation {
+		t.Fatal("changed similarity distribution did not change dispersion evidence")
 	}
 }
 
-func TestEvaluateFingerprintChangesWithSemanticEvidence(t *testing.T) {
+func TestEvaluateFingerprintChangesWithAnchorEvidence(t *testing.T) {
 	evaluator := newConfidenceEvaluator(t)
 	selection := confidenceSelection(3)
 	first, err := evaluator.Evaluate(selection)
@@ -113,11 +194,8 @@ func TestEvaluateFingerprintChangesWithSemanticEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("changed Evaluate() error = %v", err)
 	}
-	if changed.InputFingerprint == first.InputFingerprint {
+	if changed.InputFingerprint == first.InputFingerprint || changed.Score == first.Score {
 		t.Fatal("changed anchor-distance evidence was ignored")
-	}
-	if changed.Score == first.Score {
-		t.Fatal("changed anchor-distance evidence did not affect score")
 	}
 }
 

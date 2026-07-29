@@ -7,10 +7,30 @@ import (
 	"time"
 )
 
-func TestConfigValidateAcceptsExplicitPolicy(t *testing.T) {
+func TestConfigValidateAcceptsExplicitDistributionPolicy(t *testing.T) {
 	config := validConfidenceConfig()
 	if err := config.Validate(); err != nil {
 		t.Fatalf("Validate() error = %v", err)
+	}
+}
+
+func TestConfigValidateAcceptsLegacyWeightAliases(t *testing.T) {
+	config := validConfidenceConfig()
+	config.AnchorDistanceNormalizationKM = 0
+	config.SimilarityStrengthWeight = 0
+	config.SimilarityConsistencyWeight = 0
+	config.MaximumMeanAnchorDistanceKM = 50
+	config.SimilarityWeight = 0.35
+	config.FreshnessWeight = 0.25
+
+	evaluator, err := New(config)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+	if evaluator.config.AnchorDistanceNormalizationKM != 50 ||
+		evaluator.config.SimilarityStrengthWeight != 0.35 ||
+		evaluator.config.SimilarityConsistencyWeight != 0.25 {
+		t.Fatalf("legacy config was not normalized: %#v", evaluator.config)
 	}
 }
 
@@ -35,18 +55,25 @@ func TestConfigValidateRejectsInvalidValues(t *testing.T) {
 			wantError: ErrTargetNeighborCountInvalid,
 		},
 		{
-			name: "maximum age",
+			name: "minimum similarity above one",
 			mutate: func(config *Config) {
-				config.MaximumCandidateAge = 0
+				config.MinimumSimilarityScore = 2
 			},
-			wantError: ErrMaximumCandidateAgeInvalid,
+			wantError: ErrMinimumSimilarityScoreInvalid,
 		},
 		{
-			name: "anchor distance",
+			name: "similarity standard deviation above theoretical maximum",
 			mutate: func(config *Config) {
-				config.MaximumMeanAnchorDistanceKM = math.NaN()
+				config.MaximumSimilarityStandardDeviation = 0.6
 			},
-			wantError: ErrMaximumMeanAnchorDistanceInvalid,
+			wantError: ErrMaximumSimilarityStandardDeviationInvalid,
+		},
+		{
+			name: "anchor distance normalization",
+			mutate: func(config *Config) {
+				config.AnchorDistanceNormalizationKM = math.NaN()
+			},
+			wantError: ErrAnchorDistanceNormalizationInvalid,
 		},
 		{
 			name: "minimum usable score above one",
@@ -73,17 +100,24 @@ func TestConfigValidateRejectsInvalidValues(t *testing.T) {
 		{
 			name: "component weights do not sum to one",
 			mutate: func(config *Config) {
-				config.SimilarityWeight = 1
+				config.SimilarityStrengthWeight = 1
 			},
 			wantError: ErrComponentWeightInvalid,
 		},
 		{
 			name: "component weight is zero",
 			mutate: func(config *Config) {
+				config.SimilarityStrengthWeight = 0
 				config.SimilarityWeight = 0
-				config.SupportWeight = 0.7
 			},
 			wantError: ErrComponentWeightInvalid,
+		},
+		{
+			name: "legacy canonical conflict",
+			mutate: func(config *Config) {
+				config.SimilarityWeight = 0.2
+			},
+			wantError: ErrLegacyConfigConflict,
 		},
 	}
 
@@ -101,16 +135,18 @@ func TestConfigValidateRejectsInvalidValues(t *testing.T) {
 
 func validConfidenceConfig() Config {
 	return Config{
-		MinimumNeighborCount:        2,
-		TargetNeighborCount:         3,
-		MaximumCandidateAge:         7 * 24 * time.Hour,
-		MaximumMeanAnchorDistanceKM: 50,
-		MinimumUsableScore:          0.5,
-		MediumConfidenceMinimum:     0.6,
-		HighConfidenceMinimum:       0.8,
-		SimilarityWeight:            0.4,
-		SupportWeight:               0.3,
-		FreshnessWeight:             0.2,
-		AnchorProximityWeight:       0.1,
+		MinimumNeighborCount:               2,
+		TargetNeighborCount:                3,
+		MinimumSimilarityScore:             0.55,
+		MaximumSimilarityStandardDeviation: 0.15,
+		AnchorDistanceNormalizationKM:      50,
+		MinimumUsableScore:                 0.5,
+		MediumConfidenceMinimum:            0.6,
+		HighConfidenceMinimum:              0.8,
+		SimilarityStrengthWeight:           0.35,
+		SupportWeight:                      0.25,
+		SimilarityConsistencyWeight:        0.25,
+		AnchorProximityWeight:              0.15,
+		MaximumCandidateAge:                7 * 24 * time.Hour,
 	}
 }

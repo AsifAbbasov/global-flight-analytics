@@ -645,18 +645,19 @@ func continuationTestPattern(
 		NeighborCount:       2,
 		TargetNeighborCount: 2,
 
-		MeanSimilarityScore:     0.85,
-		MeanCandidateAgeSeconds: 24.5 * 60 * 60,
-		MeanAnchorDistanceKM:    1.5,
+		MeanSimilarityScore:         0.85,
+		MinimumSimilarityScore:      0.8,
+		SimilarityStandardDeviation: 0.05,
+		MeanAnchorDistanceKM:        1.5,
 
-		Score: 0.88750000000000007,
+		Score: 0.9125,
 		Level: projectioncontract.
 			ConfidenceLevelHigh,
 
 		Components: []projectionpatternconfidence.Component{
 			{
 				Name: projectionpatternconfidence.
-					ComponentSimilarity,
+					ComponentSimilarityStrength,
 				Score:  0.85,
 				Weight: 0.25,
 			},
@@ -668,8 +669,8 @@ func continuationTestPattern(
 			},
 			{
 				Name: projectionpatternconfidence.
-					ComponentFreshness,
-				Score:  0.8,
+					ComponentSimilarityConsistency,
+				Score:  0.9,
 				Weight: 0.25,
 			},
 			{

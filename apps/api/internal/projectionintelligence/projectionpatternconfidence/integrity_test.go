@@ -22,6 +22,20 @@ func TestResultValidateRejectsComponentScoreMismatch(t *testing.T) {
 	}
 }
 
+func TestResultValidateRejectsInvalidSimilarityDistribution(t *testing.T) {
+	result := validEvaluatedResult(t)
+	result.MinimumSimilarityScore = result.MeanSimilarityScore + 0.1
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted minimum similarity above mean similarity")
+	}
+
+	result = validEvaluatedResult(t)
+	result.SimilarityStandardDeviation = 0.6
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted impossible similarity deviation")
+	}
+}
+
 func TestResultValidateRejectsUsableNoneConfidence(t *testing.T) {
 	result := validEvaluatedResult(t)
 	for index := range result.Components {
@@ -32,6 +46,27 @@ func TestResultValidateRejectsUsableNoneConfidence(t *testing.T) {
 	result.Usable = true
 	if err := result.Validate(); err == nil {
 		t.Fatal("Validate() accepted usable result with none confidence")
+	}
+}
+
+func TestResultValidateRejectsUnavailableHighConfidence(t *testing.T) {
+	result := validEvaluatedResult(t)
+	result.Status = StatusUnavailable
+	result.Usable = false
+	result.Level = projectioncontract.ConfidenceLevelHigh
+	result.Limitations = []Notice{{Code: "blocked", Message: "Blocked."}}
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted unavailable high confidence")
+	}
+}
+
+func TestResultValidateRejectsLimitedHighConfidence(t *testing.T) {
+	result := validEvaluatedResult(t)
+	result.Status = StatusLimited
+	result.Level = projectioncontract.ConfidenceLevelHigh
+	result.Limitations = []Notice{{Code: "limited", Message: "Limited."}}
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted limited high confidence")
 	}
 }
 

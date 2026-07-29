@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	Version            = "projection-pattern-confidence-v2"
-	FingerprintVersion = "projection-pattern-confidence-fingerprint-v2"
+	Version            = "projection-pattern-confidence-v3"
+	FingerprintVersion = "projection-pattern-confidence-fingerprint-v3"
 )
 
 const scoreComparisonTolerance = 1e-9
@@ -34,16 +34,20 @@ func (status Status) IsKnown() bool {
 type ComponentName string
 
 const (
-	ComponentSimilarity      ComponentName = "similarity"
-	ComponentSupport         ComponentName = "support"
-	ComponentFreshness       ComponentName = "freshness"
-	ComponentAnchorProximity ComponentName = "anchor_proximity"
+	ComponentSimilarityStrength    ComponentName = "similarity_strength"
+	ComponentSupport               ComponentName = "support"
+	ComponentSimilarityConsistency ComponentName = "similarity_consistency"
+	ComponentAnchorProximity       ComponentName = "anchor_proximity"
+
+	// Deprecated compatibility aliases.
+	ComponentSimilarity = ComponentSimilarityStrength
+	ComponentFreshness  = ComponentSimilarityConsistency
 )
 
 var canonicalComponentNames = []ComponentName{
-	ComponentSimilarity,
+	ComponentSimilarityStrength,
 	ComponentSupport,
-	ComponentFreshness,
+	ComponentSimilarityConsistency,
 	ComponentAnchorProximity,
 }
 
@@ -66,9 +70,12 @@ type Result struct {
 	NeighborCount       int
 	TargetNeighborCount int
 
-	MeanSimilarityScore     float64
+	MeanSimilarityScore         float64
+	MinimumSimilarityScore      float64
+	SimilarityStandardDeviation float64
+	MeanAnchorDistanceKM        float64
+	// Deprecated: retained for source compatibility and always zero for evaluator results.
 	MeanCandidateAgeSeconds float64
-	MeanAnchorDistanceKM    float64
 
 	Score float64
 	Level projectioncontract.ConfidenceLevel

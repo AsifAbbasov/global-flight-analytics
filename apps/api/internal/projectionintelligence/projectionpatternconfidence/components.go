@@ -5,9 +5,9 @@ import "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/project
 func buildComponents(config Config, evidence patternEvidence) []Component {
 	return []Component{
 		{
-			Name:   ComponentSimilarity,
-			Score:  evidence.similarityScore,
-			Weight: config.SimilarityWeight,
+			Name:   ComponentSimilarityStrength,
+			Score:  evidence.similarityStrengthScore,
+			Weight: config.SimilarityStrengthWeight,
 		},
 		{
 			Name:   ComponentSupport,
@@ -15,9 +15,9 @@ func buildComponents(config Config, evidence patternEvidence) []Component {
 			Weight: config.SupportWeight,
 		},
 		{
-			Name:   ComponentFreshness,
-			Score:  evidence.freshnessScore,
-			Weight: config.FreshnessWeight,
+			Name:   ComponentSimilarityConsistency,
+			Score:  evidence.similarityConsistencyScore,
+			Weight: config.SimilarityConsistencyWeight,
 		},
 		{
 			Name:   ComponentAnchorProximity,
@@ -35,19 +35,25 @@ func weightedComponentScore(components []Component) float64 {
 	return clampUnit(score)
 }
 
-func confidenceLevelForScore(
+func confidenceLevelForDecision(
 	score float64,
+	status Status,
 	mediumMinimum float64,
 	highMinimum float64,
 ) projectioncontract.ConfidenceLevel {
-	switch {
-	case score >= highMinimum:
-		return projectioncontract.ConfidenceLevelHigh
-	case score >= mediumMinimum:
-		return projectioncontract.ConfidenceLevelMedium
-	case score > 0:
-		return projectioncontract.ConfidenceLevelLow
-	default:
+	if status == StatusUnavailable {
 		return projectioncontract.ConfidenceLevelNone
 	}
+
+	level := projectioncontract.ConfidenceLevelLow
+	switch {
+	case score >= highMinimum:
+		level = projectioncontract.ConfidenceLevelHigh
+	case score >= mediumMinimum:
+		level = projectioncontract.ConfidenceLevelMedium
+	}
+	if status == StatusLimited && level == projectioncontract.ConfidenceLevelHigh {
+		return projectioncontract.ConfidenceLevelMedium
+	}
+	return level
 }
