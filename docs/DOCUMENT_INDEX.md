@@ -1216,5 +1216,6 @@ and qualified-selection limiting, permanent regression tests, engineering commit
 `e2a4a7dc76e43942ca9deb0d8d5f83a09a42deff`,
 `911a1b102c68af2746a13bfca48b008cf7225ff8`,
 `3eee05fb44484aa6e389af66520aba23d4ae277e`, and
-`353d19bc97f561e1897ece1967e7304c0e10b5fb`, with formal closure pending permanent
-audit Continuous Integration.
+`353d19bc97f561e1897ece1967e7304c0e10b5fb`, permanent audit commit
+`c409cc171507050625524af1a0b8b8a6f38b7a75`, GitHub Actions run `30452465009`, and formal closure with zero open,
+unclassified, or deferred findings.
