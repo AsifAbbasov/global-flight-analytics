@@ -11,6 +11,15 @@ import (
 )
 
 var (
+	ErrSelectorUnavailable = errors.New(
+		"historical neighbor selector is unavailable",
+	)
+	ErrSimilarityEngineFailed = errors.New(
+		"historical similarity engine failed",
+	)
+	ErrSimilarityEvidenceInvalid = errors.New(
+		"historical similarity engine returned invalid consumer evidence",
+	)
 	ErrCurrentTrajectoryIDRequired = errors.New(
 		"current trajectory identifier is required",
 	)
@@ -62,7 +71,7 @@ func (
 ) (Result, error) {
 	if selector == nil {
 		return Result{},
-			ErrSimilarityEngineRequired
+			ErrSelectorUnavailable
 	}
 
 	currentID := strings.TrimSpace(
@@ -100,168 +109,37 @@ func (
 			)
 	}
 
-	candidates := append(
-		[]trajectory.FlightTrajectory(nil),
-		request.Candidates...,
-	)
-	sort.SliceStable(
-		candidates,
-		func(left int, right int) bool {
-			leftID := strings.TrimSpace(
-				candidates[left].ID,
-			)
-			rightID := strings.TrimSpace(
-				candidates[right].ID,
-			)
-			return leftID < rightID
-		},
-	)
-
-	truncated := false
-	if len(candidates) >
-		selector.config.
-			MaximumCandidateCount {
-		candidates = candidates[:selector.config.MaximumCandidateCount]
-		truncated = true
-	}
-
 	latestCurrentPoint := current.Points[len(current.Points)-1]
-	currentStartTime :=
-		current.Points[0].
-			ObservedAt.UTC()
+	currentStartTime := current.Points[0].ObservedAt.UTC()
+
+	pool := prepareCandidatePool(
+		request.Candidates,
+		currentID,
+		currentStartTime,
+		asOfTime,
+		selector.config,
+	)
+	candidates := pool.Candidates
+	truncated := pool.Truncated
 
 	neighbors := make(
 		[]Neighbor,
 		0,
 		selector.config.SelectionLimit,
 	)
-	rejections := make(
-		[]Rejection,
-		0,
-		len(candidates),
+	rejections := append(
+		[]Rejection(nil),
+		pool.Rejections...,
 	)
-	excludedCandidateFuturePointCount := 0
+	excludedCandidateFuturePointCount :=
+		pool.ExcludedFuturePointCount
 
-	candidateIDCounts := make(
-		map[string]int,
-		len(candidates),
-	)
-	for _, candidate := range candidates {
-		candidateID := strings.TrimSpace(
-			candidate.ID,
-		)
-		candidateIDCounts[candidateID]++
-	}
-
-	for _, candidateInput := range candidates {
-		candidateID := strings.TrimSpace(
-			candidateInput.ID,
-		)
-		if candidateID == "" {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionIdentifierMissing,
-					"Historical candidate identifier is required.",
-				),
-			)
-			continue
-		}
-		if candidateID == currentID {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionSameTrajectory,
-					"Current trajectory cannot be selected as its own historical neighbor.",
-				),
-			)
-			continue
-		}
-		if candidateIDCounts[candidateID] > 1 {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionDuplicateCandidate,
-					"Every historical candidate with a duplicated identifier was rejected.",
-				),
-			)
-			continue
-		}
-
-		candidate,
-			excludedFuturePointCount :=
-			snapshotAt(
-				candidateInput,
-				asOfTime,
-			)
-		excludedCandidateFuturePointCount +=
-			excludedFuturePointCount
-		if len(candidate.Points) <
-			selector.config.
-				MinimumCurrentPointCount+1 {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionInsufficientPoints,
-					"Historical candidate does not contain enough usable points for a comparable prefix and continuation.",
-				),
-			)
-			continue
-		}
-
-		candidateStartTime :=
-			candidate.Points[0].
-				ObservedAt.UTC()
-		candidateEndTime :=
-			candidate.Points[len(candidate.Points)-1].ObservedAt.UTC()
-
-		if !candidateEndTime.Before(
-			currentStartTime,
-		) {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionNotHistorical,
-					"Historical candidate must end before the current trajectory begins.",
-				),
-			)
-			continue
-		}
-
-		candidateAge := asOfTime.Sub(
-			candidateEndTime,
-		)
-		if candidateAge < 0 {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionNotHistorical,
-					"Historical candidate contains evidence after the as-of time.",
-				),
-			)
-			continue
-		}
-		if selector.config.
-			MaximumCandidateAge > 0 &&
-			candidateAge >
-				selector.config.
-					MaximumCandidateAge {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionTooOld,
-					"Historical candidate exceeds the configured maximum age.",
-				),
-			)
-			continue
-		}
+	for _, prepared := range candidates {
+		candidateID := prepared.ID
+		candidate := prepared.Trajectory
+		candidateStartTime := prepared.StartTime
+		candidateEndTime := prepared.EndTime
+		candidateAge := prepared.Age
 
 		anchorIndex, anchorDistanceKM,
 			continuationPointCount,
@@ -303,21 +181,42 @@ func (
 			candidate,
 			anchorIndex,
 		)
-		similarity, err := selector.config.
+		similarityResult, err := selector.config.
 			SimilarityEngine.Compare(
 			current,
 			prefix,
 		)
 		if err != nil {
-			rejections = append(
-				rejections,
-				rejection(
-					candidateID,
-					RejectionSimilarityUnavailable,
-					"Historical candidate prefix could not be compared with the current trajectory.",
-				),
+			if candidateSimilarityFailure(err) {
+				rejections = append(
+					rejections,
+					rejection(
+						candidateID,
+						RejectionSimilarityUnavailable,
+						"Historical candidate prefix could not be compared with the current trajectory.",
+					),
+				)
+				continue
+			}
+			return Result{}, fmt.Errorf(
+				"%w: candidate=%s: %v",
+				ErrSimilarityEngineFailed,
+				candidateID,
+				err,
 			)
-			continue
+		}
+		similarity, err := similarityEvidenceFromResult(
+			similarityResult,
+			current,
+			prefix,
+		)
+		if err != nil {
+			return Result{}, fmt.Errorf(
+				"%w: candidate=%s: %v",
+				ErrSimilarityEvidenceInvalid,
+				candidateID,
+				err,
+			)
 		}
 		if similarity.Score <
 			selector.config.
@@ -486,8 +385,9 @@ func (
 		RequiredContinuationDuration: request.
 			RequiredContinuationDuration,
 
-		InputCandidateCount:     len(request.Candidates),
-		CheckedCandidateCount:   len(candidates),
+		InputCandidateCount: len(request.Candidates),
+		CheckedCandidateCount: qualifiedCandidateCount +
+			len(rejections),
 		QualifiedCandidateCount: qualifiedCandidateCount,
 		RejectedCandidateCount:  len(rejections),
 
@@ -532,73 +432,37 @@ func snapshotAt(
 	item trajectory.FlightTrajectory,
 	asOfTime time.Time,
 ) (trajectory.FlightTrajectory, int) {
-	type indexedPoint struct {
-		point trajectory.TrackPoint4D
-		index int
-	}
-
-	valid := make(
-		[]indexedPoint,
+	points := make(
+		[]trajectory.TrackPoint4D,
 		0,
 		len(item.Points),
 	)
 	excludedFutureCount := 0
 
-	for index, point := range item.Points {
+	for _, point := range item.Points {
 		if point.ObservedAt.IsZero() ||
-			!validLatitude(
-				point.Latitude,
-			) ||
-			!validLongitude(
-				point.Longitude,
-			) {
+			!validLatitude(point.Latitude) ||
+			!validLongitude(point.Longitude) {
 			continue
 		}
-		if point.ObservedAt.UTC().After(
-			asOfTime,
-		) {
+		if point.ObservedAt.UTC().After(asOfTime) {
 			excludedFutureCount++
 			continue
 		}
 
-		point.ObservedAt =
-			point.ObservedAt.UTC()
-		valid = append(
-			valid,
-			indexedPoint{
-				point: point,
-				index: index,
-			},
-		)
+		point.ObservedAt = point.ObservedAt.UTC()
+		points = append(points, point)
 	}
 
 	sort.SliceStable(
-		valid,
+		points,
 		func(left int, right int) bool {
-			if valid[left].point.
-				ObservedAt.Equal(
-				valid[right].point.
-					ObservedAt,
-			) {
-				return valid[left].index <
-					valid[right].index
-			}
-
-			return valid[left].point.
-				ObservedAt.Before(
-				valid[right].point.
-					ObservedAt,
+			return canonicalPointLess(
+				points[left],
+				points[right],
 			)
 		},
 	)
-
-	points := make(
-		[]trajectory.TrackPoint4D,
-		len(valid),
-	)
-	for index, item := range valid {
-		points[index] = item.point
-	}
 
 	snapshot := item
 	snapshot.Points = points
@@ -608,28 +472,19 @@ func snapshotAt(
 		snapshot.StartTime = time.Time{}
 		snapshot.EndTime = time.Time{}
 		snapshot.DurationSeconds = 0
-		return snapshot,
-			excludedFutureCount
+		return snapshot, excludedFutureCount
 	}
 
-	snapshot.StartTime =
-		points[0].ObservedAt
-	snapshot.EndTime =
-		points[len(points)-1].
-			ObservedAt
+	snapshot.StartTime = points[0].ObservedAt
+	snapshot.EndTime = points[len(points)-1].ObservedAt
 	snapshot.DurationSeconds = int64(
-		snapshot.EndTime.Sub(
-			snapshot.StartTime,
-		).Seconds(),
+		snapshot.EndTime.Sub(snapshot.StartTime).Seconds(),
 	)
-	if snapshot.UpdatedAt.After(
-		asOfTime,
-	) {
+	if snapshot.UpdatedAt.After(asOfTime) {
 		snapshot.UpdatedAt = asOfTime
 	}
 
-	return snapshot,
-		excludedFutureCount
+	return snapshot, excludedFutureCount
 }
 
 func findAnchor(

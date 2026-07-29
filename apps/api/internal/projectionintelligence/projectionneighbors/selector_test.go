@@ -11,8 +11,10 @@ import (
 )
 
 type similarityEngineStub struct {
-	scores map[string]float64
-	calls  []string
+	scores  map[string]float64
+	results map[string]historicalsimilarity.Result
+	errors  map[string]error
+	calls   []string
 }
 
 func (
@@ -29,6 +31,13 @@ func (
 		stub.calls,
 		reference.ID+"->"+candidateID,
 	)
+
+	if err, exists := stub.errors[candidateID]; exists {
+		return historicalsimilarity.Result{}, err
+	}
+	if result, exists := stub.results[candidateID]; exists {
+		return result, nil
+	}
 
 	score, exists := stub.scores[candidateID]
 	if !exists {

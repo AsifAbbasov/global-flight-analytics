@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	Version            = "projection-historical-neighbor-selection-v1"
-	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v1"
+	Version            = "projection-historical-neighbor-selection-v2"
+	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v2"
 )
 
 type Status string
@@ -48,6 +48,24 @@ const (
 	RejectionSimilarityUnavailable   RejectionCode = "candidate_similarity_unavailable"
 	RejectionSimilarityBelowMinimum  RejectionCode = "candidate_similarity_below_minimum"
 )
+
+func (code RejectionCode) IsKnown() bool {
+	switch code {
+	case RejectionSameTrajectory,
+		RejectionIdentifierMissing,
+		RejectionDuplicateCandidate,
+		RejectionNotHistorical,
+		RejectionTooOld,
+		RejectionInsufficientPoints,
+		RejectionContinuationUnavailable,
+		RejectionAnchorTooDistant,
+		RejectionSimilarityUnavailable,
+		RejectionSimilarityBelowMinimum:
+		return true
+	default:
+		return false
+	}
+}
 
 type Notice struct {
 	Code    string
@@ -170,6 +188,13 @@ func (result Result) Validate() error {
 			"checked candidate count exceeds input candidate count",
 		)
 	}
+	expectedTruncated := result.CheckedCandidateCount <
+		result.InputCandidateCount
+	if result.Truncated != expectedTruncated {
+		return fmt.Errorf(
+			"candidate evaluation truncation does not match checked and input counts",
+		)
+	}
 	if result.QualifiedCandidateCount+
 		result.RejectedCandidateCount !=
 		result.CheckedCandidateCount {
@@ -285,6 +310,27 @@ func (result Result) Validate() error {
 			)
 		}
 
+		if neighbor.AnchorPointIndex !=
+			neighbor.PrefixPointCount-1 ||
+			neighbor.AnchorObservedAt.Before(
+				neighbor.CandidateStartTime,
+			) ||
+			neighbor.AnchorObservedAt.After(
+				neighbor.CandidateEndTime,
+			) ||
+			neighbor.ContinuationEndTime.After(
+				neighbor.CandidateEndTime,
+			) ||
+			neighbor.CandidateAge !=
+				result.AsOfTime.UTC().Sub(
+					neighbor.CandidateEndTime.UTC(),
+				) {
+			return fmt.Errorf(
+				"selected neighbor cross-field evidence is invalid: %s",
+				neighbor.TrajectoryID,
+			)
+		}
+
 		if index > 0 {
 			previous := result.Neighbors[index-1]
 			if previous.SimilarityScore <
@@ -313,7 +359,7 @@ func (result Result) Validate() error {
 		if strings.TrimSpace(
 			rejection.Message,
 		) == "" ||
-			rejection.Code == "" {
+			!rejection.Code.IsKnown() {
 			return fmt.Errorf(
 				"candidate rejection is invalid",
 			)

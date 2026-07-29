@@ -69,32 +69,42 @@ func selectionFingerprint(
 		current,
 	)
 
-	sortedCandidates := append(
-		[]trajectory.FlightTrajectory(nil),
-		candidates...,
+	type candidateFingerprintInput struct {
+		item trajectory.FlightTrajectory
+		id   string
+		key  string
+	}
+	canonicalCandidates := make(
+		[]candidateFingerprintInput,
+		0,
+		len(candidates),
 	)
+	for _, candidate := range candidates {
+		snapshot, _ := snapshotAt(candidate, asOfTime)
+		canonicalCandidates = append(
+			canonicalCandidates,
+			candidateFingerprintInput{
+				item: snapshot,
+				id:   strings.TrimSpace(snapshot.ID),
+				key:  trajectoryFingerprintSortKey(snapshot),
+			},
+		)
+	}
 	sort.SliceStable(
-		sortedCandidates,
+		canonicalCandidates,
 		func(left int, right int) bool {
-			leftID := strings.TrimSpace(
-				sortedCandidates[left].ID,
-			)
-			rightID := strings.TrimSpace(
-				sortedCandidates[right].ID,
-			)
-			return leftID < rightID
+			if canonicalCandidates[left].id !=
+				canonicalCandidates[right].id {
+				return canonicalCandidates[left].id <
+					canonicalCandidates[right].id
+			}
+			return canonicalCandidates[left].key <
+				canonicalCandidates[right].key
 		},
 	)
 
-	for _, candidate := range sortedCandidates {
-		snapshot, _ := snapshotAt(
-			candidate,
-			asOfTime,
-		)
-		writeTrajectoryFingerprint(
-			digest,
-			snapshot,
-		)
+	for _, candidate := range canonicalCandidates {
+		writeTrajectoryFingerprint(digest, candidate.item)
 	}
 
 	return fingerprintPrefix +
@@ -147,18 +157,10 @@ func writeTrajectoryFingerprint(
 	sort.SliceStable(
 		points,
 		func(left int, right int) bool {
-			leftTime := points[left].
-				ObservedAt.UTC()
-			rightTime := points[right].
-				ObservedAt.UTC()
-			if !leftTime.Equal(rightTime) {
-				return leftTime.Before(
-					rightTime,
-				)
-			}
-
-			return points[left].ID <
-				points[right].ID
+			return canonicalPointLess(
+				points[left],
+				points[right],
+			)
 		},
 	)
 
@@ -204,6 +206,14 @@ func writeTrajectoryFingerprint(
 			point.VerticalRateMPS,
 		)
 	}
+}
+
+func trajectoryFingerprintSortKey(
+	item trajectory.FlightTrajectory,
+) string {
+	digest := sha256.New()
+	writeTrajectoryFingerprint(digest, item)
+	return hex.EncodeToString(digest.Sum(nil))
 }
 
 func writeFingerprintString(

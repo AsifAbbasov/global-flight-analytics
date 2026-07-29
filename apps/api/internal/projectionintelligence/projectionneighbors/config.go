@@ -27,6 +27,9 @@ var (
 	ErrSelectionLimitInvalid = errors.New(
 		"selection limit must be between one and one hundred",
 	)
+	ErrSelectionLimitExceedsCandidateBudget = errors.New(
+		"selection limit must not exceed the maximum candidate evaluation count",
+	)
 	ErrMinimumSimilarityScoreInvalid = errors.New(
 		"minimum similarity score must be finite and between zero and one",
 	)
@@ -88,6 +91,14 @@ func (config Config) Validate() error {
 			"%w: %d",
 			ErrSelectionLimitInvalid,
 			config.SelectionLimit,
+		)
+	}
+	if config.SelectionLimit > config.MaximumCandidateCount {
+		return fmt.Errorf(
+			"%w: selection=%d maximum_candidates=%d",
+			ErrSelectionLimitExceedsCandidateBudget,
+			config.SelectionLimit,
+			config.MaximumCandidateCount,
 		)
 	}
 	if !unitInterval(
