@@ -181,6 +181,9 @@ jobs:
       - name: Run projection neighbors review audit
         run: go run ./tools/projectionneighborsreviewaudit -strict
 
+      - name: Run projection pattern confidence review audit
+        run: go run ./tools/projectionpatternconfidencereviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
