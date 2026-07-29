@@ -65,6 +65,26 @@ func TestReviewRequirementsProtectMandatoryContinuationInterfaces(t *testing.T) 
 	}
 }
 
+func TestReviewRequirementsProtectFormalClosureEvidence(t *testing.T) {
+	requirements := reviewRequirements()
+	protected := map[string]bool{
+		"../../docs/32_STAGE_9_PROJECTION_AND_ESTIMATED_TIME_OF_ARRIVAL_COMPLETION.md": false,
+		"../../docs/138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md":             false,
+		"../../docs/DOCUMENT_INDEX.md":                                                 false,
+		"../../.github/workflows/backend-ci.yml":                                       false,
+	}
+	for _, item := range requirements {
+		if _, exists := protected[item.path]; exists {
+			protected[item.path] = true
+		}
+	}
+	for path, found := range protected {
+		if !found {
+			t.Fatalf("formal closure requirement is missing for %s", path)
+		}
+	}
+}
+
 func writeAuditFixture(t *testing.T, root string, relativePath string, content string) {
 	t.Helper()
 	path := filepath.Join(root, filepath.FromSlash(relativePath))

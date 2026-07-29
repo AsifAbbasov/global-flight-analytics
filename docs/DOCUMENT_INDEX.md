@@ -1219,3 +1219,21 @@ and qualified-selection limiting, permanent regression tests, engineering commit
 `353d19bc97f561e1897ece1967e7304c0e10b5fb`, permanent audit commit
 `c409cc171507050625524af1a0b8b8a6f38b7a75`, GitHub Actions run `30452465009`, and formal closure with zero open,
 unclassified, or deferred findings.
+
+<!-- PROJECTION-PATTERN-CONFIDENCE-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 138 — Projection Pattern Confidence Review Hardening
+
+`138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` records semantic selected-neighbor and continuation fingerprinting,
+strictly positive component
+weights, similarity floor and dispersion evidence, freshness separation, five
+canonical versioned components, pairwise continuation spread and divergence,
+mandatory continuation-aware production interfaces, complete result reconstruction,
+deliberately retained floating-point and compatibility contracts, engineering
+commits `6e6ac17cfcfca688d57829adfe2468346db6db1a`,
+`f73534feb275c5e109fa12fcfd9df5b69c56c03a`,
+`5873ae911b40197ee45eea30e7558aa04af78064`, and
+`e31fcb5bbbb76093305e8b2c137c793a85dc6795`, permanent audit commit
+`cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42`, GitHub Actions run
+`30497703314`, and formal closure with zero open, unclassified, or deferred
+findings.
