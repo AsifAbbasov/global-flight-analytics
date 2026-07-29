@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	Version            = "projection-historical-neighbor-selection-v4"
-	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v4"
+	Version            = "projection-historical-neighbor-selection-v5"
+	FingerprintVersion = "projection-historical-neighbor-selection-fingerprint-v5"
 )
 
 type Status string
@@ -120,7 +120,12 @@ type Result struct {
 	RejectedCandidateCount  int
 
 	SelectionLimit int
-	Truncated      bool
+
+	CandidateEvaluationTruncated bool
+	QualifiedSelectionLimited    bool
+
+	// Deprecated: use CandidateEvaluationTruncated.
+	Truncated bool
 
 	Neighbors   []Neighbor
 	Rejections  []Rejection
@@ -192,11 +197,19 @@ func (result Result) Validate() error {
 			"checked candidate count exceeds input candidate count",
 		)
 	}
-	expectedTruncated := result.CheckedCandidateCount <
-		result.InputCandidateCount
-	if result.Truncated != expectedTruncated {
+	expectedCandidateEvaluationTruncated :=
+		result.CheckedCandidateCount <
+			result.InputCandidateCount
+	if result.CandidateEvaluationTruncated !=
+		expectedCandidateEvaluationTruncated {
 		return fmt.Errorf(
 			"candidate evaluation truncation does not match checked and input counts",
+		)
+	}
+	if result.Truncated !=
+		result.CandidateEvaluationTruncated {
+		return fmt.Errorf(
+			"deprecated truncation alias does not match candidate evaluation truncation",
 		)
 	}
 	if result.QualifiedCandidateCount+
@@ -210,6 +223,22 @@ func (result Result) Validate() error {
 		result.QualifiedCandidateCount {
 		return fmt.Errorf(
 			"selected neighbor count exceeds qualified candidate count",
+		)
+	}
+	expectedQualifiedSelectionLimited :=
+		result.QualifiedCandidateCount >
+			len(result.Neighbors)
+	if result.QualifiedSelectionLimited !=
+		expectedQualifiedSelectionLimited {
+		return fmt.Errorf(
+			"qualified selection limiting does not match qualified and selected counts",
+		)
+	}
+	if result.QualifiedSelectionLimited &&
+		len(result.Neighbors) !=
+			result.SelectionLimit {
+		return fmt.Errorf(
+			"qualified selection limiting must fill the configured selection limit",
 		)
 	}
 	if result.RejectedCandidateCount !=
@@ -243,7 +272,7 @@ func (result Result) Validate() error {
 	case StatusComplete:
 		if len(result.Neighbors) !=
 			result.SelectionLimit ||
-			result.Truncated {
+			result.CandidateEvaluationTruncated {
 			return fmt.Errorf(
 				"complete selection must fill the limit without truncation",
 			)

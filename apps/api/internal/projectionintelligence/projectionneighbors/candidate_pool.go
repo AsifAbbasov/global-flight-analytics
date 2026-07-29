@@ -17,10 +17,11 @@ type preparedCandidate struct {
 }
 
 type preparedCandidatePool struct {
-	Candidates               []preparedCandidate
-	Rejections               []Rejection
-	ExcludedFuturePointCount int
-	Truncated                bool
+	Candidates                   []preparedCandidate
+	Rejections                   []Rejection
+	ExcludedFuturePointCount     int
+	CandidateEvaluationTruncated bool
+	Truncated                    bool
 }
 
 func prepareCandidatePool(
@@ -204,6 +205,7 @@ func prepareCandidatePool(
 			[]preparedCandidate(nil),
 			pool.Candidates[:config.MaximumCandidateCount]...,
 		)
+		pool.CandidateEvaluationTruncated = true
 		pool.Truncated = true
 	}
 
