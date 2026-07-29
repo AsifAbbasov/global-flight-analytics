@@ -1202,3 +1202,19 @@ on-ground behavior, qualified review findings, engineering commits
 `560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`, permanent audit commit
 `51476c427f77b5a7375cd30b6f9a81d446c1c3f2`, GitHub Actions run `30408617024`, and
 formal closure with zero open, unclassified, or deferred findings.
+
+<!-- PROJECTION-NEIGHBORS-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 137 — Projection Neighbors Review Hardening
+
+`137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` records candidate eligibility
+before the expensive evaluation budget, whole-input duplicate integrity, canonical
+point and fingerprint ordering, systemic similarity failure propagation,
+continuous continuation-gap enforcement, source-attested origin-destination route
+scope, focused selector pipeline stages, explicit candidate-evaluation truncation
+and qualified-selection limiting, permanent regression tests, engineering commits
+`e2a4a7dc76e43942ca9deb0d8d5f83a09a42deff`,
+`911a1b102c68af2746a13bfca48b008cf7225ff8`,
+`3eee05fb44484aa6e389af66520aba23d4ae277e`, and
+`353d19bc97f561e1897ece1967e7304c0e10b5fb`, with formal closure pending permanent
+audit Continuous Integration.
