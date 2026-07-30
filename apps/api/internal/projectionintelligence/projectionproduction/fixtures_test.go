@@ -609,7 +609,7 @@ func validProductionFrequency(
 		RecentObservationCount: 5,
 		LatestObservationAge:   24 * time.Hour,
 		RouteConfidenceScore:   0.9,
-		Score:                  0.85,
+		Score:                  0.94,
 		Components: []projectionroutefrequency.Component{
 			{Name: projectionroutefrequency.ComponentObservationCount, Score: 1, Weight: 0.2},
 			{Name: projectionroutefrequency.ComponentDistinctDays, Score: 1, Weight: 0.2},

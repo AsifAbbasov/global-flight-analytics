@@ -88,6 +88,7 @@ type RouteFrequencyPolicy struct {
 	TargetObservationCount        int
 	MinimumDistinctDayCount       int
 	TargetDistinctDayCount        int
+	HistoryWindow                 time.Duration
 	RecentWindow                  time.Duration
 	MinimumRecentObservationCount int
 	TargetRecentObservationCount  int
@@ -214,6 +215,7 @@ func DefaultPolicy() Policy {
 			TargetObservationCount:        10,
 			MinimumDistinctDayCount:       2,
 			TargetDistinctDayCount:        7,
+			HistoryWindow:                 180 * 24 * time.Hour,
 			RecentWindow:                  30 * 24 * time.Hour,
 			MinimumRecentObservationCount: 1,
 			TargetRecentObservationCount:  4,
@@ -324,6 +326,12 @@ func (policy Policy) Validate() error {
 	if policy.Neighbors.MaximumContinuationGap <= 0 {
 		return fmt.Errorf(
 			"neighbor maximum continuation gap must be positive",
+		)
+	}
+	if policy.RouteFrequency.HistoryWindow !=
+		policy.DataSource.RouteHistoryWindow {
+		return fmt.Errorf(
+			"route-frequency and data-source history windows must match",
 		)
 	}
 	if policy.RouteFrequency.RecentWindow !=

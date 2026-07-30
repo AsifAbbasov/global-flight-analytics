@@ -90,6 +90,10 @@ func routeFrequencyFingerprint(
 	)
 	writeFingerprintDuration(
 		digest,
+		config.HistoryWindow,
+	)
+	writeFingerprintDuration(
+		digest,
 		config.RecentWindow,
 	)
 	writeFingerprintInt(

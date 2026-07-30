@@ -21,6 +21,9 @@ var (
 	ErrRouteHistoryKeyMismatch = errors.New(
 		"route history key does not match the resolved route",
 	)
+	ErrRouteHistoryWindowMismatch = errors.New(
+		"route history full-window boundary does not match the evaluator policy",
+	)
 	ErrRouteHistoryRecentWindowMismatch = errors.New(
 		"route history recent-window boundary does not match the evaluator policy",
 	)
@@ -84,6 +87,15 @@ func (
 		return Result{},
 			ErrRouteHistoryAsOfMismatch
 	}
+	expectedWindowStart := history.AsOfTime.UTC().Add(
+		-evaluator.config.HistoryWindow,
+	)
+	if history.WindowStart.IsZero() ||
+		!history.WindowStart.UTC().Equal(expectedWindowStart) ||
+		!history.WindowEnd.UTC().Equal(history.AsOfTime.UTC()) {
+		return Result{},
+			ErrRouteHistoryWindowMismatch
+	}
 	expectedRecentWindowStart := history.AsOfTime.UTC().Add(
 		-evaluator.config.RecentWindow,
 	)
@@ -111,7 +123,7 @@ func (
 		Sub(
 			history.LastObservedAt.UTC(),
 		)
-	if history.ObservationCount == 0 {
+	if history.DistinctFlightCount == 0 {
 		latestAge = 0
 	}
 
@@ -143,7 +155,7 @@ func (
 			),
 	)
 	latestObservationScore := 0.0
-	if history.ObservationCount > 0 {
+	if history.DistinctFlightCount > 0 {
 		latestObservationScore = clampUnit(
 			1 -
 				float64(latestAge)/
@@ -206,10 +218,9 @@ func (
 		10,
 	)
 
-	switch {
-	case !routeAvailable:
-		decision = DecisionBlocked
-		usable = false
+	blocked := false
+	if !routeAvailable {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -217,9 +228,9 @@ func (
 				Message: "Historical route continuation is blocked because Route Intelligence did not resolve both route endpoints.",
 			},
 		)
-	case route.Summary.SameAirport:
-		decision = DecisionBlocked
-		usable = false
+	}
+	if route.Summary.SameAirport {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -227,11 +238,10 @@ func (
 				Message: "Historical route continuation is blocked because origin and destination resolve to the same airport.",
 			},
 		)
-	case route.Confidence.Score <
-		evaluator.config.
-			MinimumRouteConfidenceScore:
-		decision = DecisionBlocked
-		usable = false
+	}
+	if route.Confidence.Score <
+		evaluator.config.MinimumRouteConfidenceScore {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -239,16 +249,14 @@ func (
 				Message: fmt.Sprintf(
 					"Route confidence %.6f is below the configured minimum %.6f.",
 					route.Confidence.Score,
-					evaluator.config.
-						MinimumRouteConfidenceScore,
+					evaluator.config.MinimumRouteConfidenceScore,
 				),
 			},
 		)
-	case history.DistinctFlightCount <
-		evaluator.config.
-			MinimumObservationCount:
-		decision = DecisionBlocked
-		usable = false
+	}
+	if history.DistinctFlightCount <
+		evaluator.config.MinimumObservationCount {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -256,16 +264,14 @@ func (
 				Message: fmt.Sprintf(
 					"Historical route distinct-flight count %d is below the configured minimum %d.",
 					history.DistinctFlightCount,
-					evaluator.config.
-						MinimumObservationCount,
+					evaluator.config.MinimumObservationCount,
 				),
 			},
 		)
-	case history.DistinctDayCount <
-		evaluator.config.
-			MinimumDistinctDayCount:
-		decision = DecisionBlocked
-		usable = false
+	}
+	if history.DistinctDayCount <
+		evaluator.config.MinimumDistinctDayCount {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -273,16 +279,14 @@ func (
 				Message: fmt.Sprintf(
 					"Historical route distinct-day count %d is below the configured minimum %d.",
 					history.DistinctDayCount,
-					evaluator.config.
-						MinimumDistinctDayCount,
+					evaluator.config.MinimumDistinctDayCount,
 				),
 			},
 		)
-	case history.RecentObservationCount <
-		evaluator.config.
-			MinimumRecentObservationCount:
-		decision = DecisionBlocked
-		usable = false
+	}
+	if history.RecentObservationCount <
+		evaluator.config.MinimumRecentObservationCount {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -291,17 +295,14 @@ func (
 					"Recent route observation count %d in the configured %s window is below the minimum %d.",
 					history.RecentObservationCount,
 					evaluator.config.RecentWindow,
-					evaluator.config.
-						MinimumRecentObservationCount,
+					evaluator.config.MinimumRecentObservationCount,
 				),
 			},
 		)
-	case history.ObservationCount > 0 &&
-		latestAge >
-			evaluator.config.
-				MaximumLatestObservationAge:
-		decision = DecisionBlocked
-		usable = false
+	}
+	if history.DistinctFlightCount > 0 &&
+		latestAge > evaluator.config.MaximumLatestObservationAge {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -309,16 +310,13 @@ func (
 				Message: fmt.Sprintf(
 					"Latest route observation age %s exceeds the configured maximum %s.",
 					latestAge,
-					evaluator.config.
-						MaximumLatestObservationAge,
+					evaluator.config.MaximumLatestObservationAge,
 				),
 			},
 		)
-	case score <
-		evaluator.config.
-			MinimumUsableScore:
-		decision = DecisionBlocked
-		usable = false
+	}
+	if score < evaluator.config.MinimumUsableScore {
+		blocked = true
 		limitations = append(
 			limitations,
 			Notice{
@@ -326,14 +324,15 @@ func (
 				Message: fmt.Sprintf(
 					"Route-frequency score %.6f is below the configured usable minimum %.6f.",
 					score,
-					evaluator.config.
-						MinimumUsableScore,
+					evaluator.config.MinimumUsableScore,
 				),
 			},
 		)
-	case score <
-		evaluator.config.
-			CompleteScoreMinimum:
+	}
+	if blocked {
+		decision = DecisionBlocked
+		usable = false
+	} else if score < evaluator.config.CompleteScoreMinimum {
 		decision = DecisionLimited
 		limitations = append(
 			limitations,
@@ -342,8 +341,7 @@ func (
 				Message: fmt.Sprintf(
 					"Route-frequency score %.6f is below the configured complete threshold %.6f.",
 					score,
-					evaluator.config.
-						CompleteScoreMinimum,
+					evaluator.config.CompleteScoreMinimum,
 				),
 			},
 		)

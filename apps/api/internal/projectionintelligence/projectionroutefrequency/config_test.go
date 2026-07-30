@@ -123,6 +123,7 @@ func validRouteFrequencyConfig() Config {
 		MinimumDistinctDayCount: 3,
 		TargetDistinctDayCount:  6,
 
+		HistoryWindow:                 60 * 24 * time.Hour,
 		RecentWindow:                  14 * 24 * time.Hour,
 		MinimumRecentObservationCount: 2,
 		TargetRecentObservationCount:  4,

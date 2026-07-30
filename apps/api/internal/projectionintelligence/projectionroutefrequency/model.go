@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	Version            = "projection-low-frequency-route-guard-v2"
-	FingerprintVersion = "projection-low-frequency-route-fingerprint-v2"
+	Version            = "projection-low-frequency-route-guard-v3"
+	FingerprintVersion = "projection-low-frequency-route-fingerprint-v3"
 )
 
 type Decision string
@@ -253,6 +253,7 @@ func (result Result) Validate() error {
 		len(result.Components),
 	)
 	weightTotal := 0.0
+	weightedScore := 0.0
 	for _, component := range result.Components {
 		switch component.Name {
 		case ComponentObservationCount,
@@ -275,19 +276,38 @@ func (result Result) Validate() error {
 			struct{}{}
 		if !unitInterval(component.Score) ||
 			!finite(component.Weight) ||
-			component.Weight < 0 {
+			component.Weight <= 0 {
 			return fmt.Errorf(
 				"route-frequency component is invalid",
 			)
 		}
 		weightTotal += component.Weight
+		weightedScore += component.Score * component.Weight
 	}
 	if absolute(weightTotal-1) > 1e-9 {
 		return fmt.Errorf(
 			"route-frequency component weights do not sum to one",
 		)
 	}
+	if absolute(weightedScore-result.Score) > 1e-9 {
+		return fmt.Errorf(
+			"route-frequency score does not match weighted components",
+		)
+	}
 
+	normalizedLimitations := normalizeNotices(result.Limitations)
+	if len(normalizedLimitations) != len(result.Limitations) {
+		return fmt.Errorf(
+			"route-frequency limitations must be normalized and unique",
+		)
+	}
+	for index := range normalizedLimitations {
+		if normalizedLimitations[index] != result.Limitations[index] {
+			return fmt.Errorf(
+				"route-frequency limitations must be deterministically ordered",
+			)
+		}
+	}
 	for _, limitation := range result.Limitations {
 		if strings.TrimSpace(
 			limitation.Code,
@@ -327,9 +347,9 @@ func (result Result) Validate() error {
 			)
 		}
 	case DecisionAllowed:
-		if !result.Usable {
+		if !result.Usable || len(result.Limitations) != 0 {
 			return fmt.Errorf(
-				"allowed route-frequency result must be usable",
+				"allowed route-frequency result must be usable and limitation-free",
 			)
 		}
 	}

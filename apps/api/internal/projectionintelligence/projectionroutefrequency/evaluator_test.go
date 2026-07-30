@@ -267,7 +267,7 @@ func validRouteHistory() HistorySummary {
 		RouteKey: "UBBB>LTBA",
 
 		WindowStart: asOfTime.Add(
-			-60 * 24 * time.Hour,
+			-validRouteFrequencyConfig().HistoryWindow,
 		),
 		WindowEnd: asOfTime,
 		RecentWindowStart: asOfTime.Add(

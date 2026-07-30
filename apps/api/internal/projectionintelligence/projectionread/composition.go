@@ -276,6 +276,8 @@ func buildAlgorithmComponents(
 					MinimumDistinctDayCount,
 				TargetDistinctDayCount: policy.RouteFrequency.
 					TargetDistinctDayCount,
+				HistoryWindow: policy.RouteFrequency.
+					HistoryWindow,
 				RecentWindow: policy.RouteFrequency.
 					RecentWindow,
 				MinimumRecentObservationCount: policy.RouteFrequency.
