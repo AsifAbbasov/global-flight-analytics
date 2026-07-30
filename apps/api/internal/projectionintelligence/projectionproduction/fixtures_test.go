@@ -44,15 +44,20 @@ func (fake *fakeKinematicProjector) Project(
 }
 
 type fakeHistoricalProjector struct {
-	result projectioncontract.Result
-	err    error
-	calls  int
+	result   projectioncontract.Result
+	err      error
+	calls    int
+	request  projectioncontinuation.Request
+	evidence projectioncontinuation.ApprovedEvidence
 }
 
-func (fake *fakeHistoricalProjector) Project(
-	projectioncontinuation.Request,
+func (fake *fakeHistoricalProjector) ProjectApproved(
+	request projectioncontinuation.Request,
+	evidence projectioncontinuation.ApprovedEvidence,
 ) (projectioncontract.Result, error) {
 	fake.calls++
+	fake.request = request
+	fake.evidence = evidence.Clone()
 	return fake.result.Clone(), fake.err
 }
 

@@ -528,7 +528,7 @@ func (
 	if state.strategy ==
 		StrategyHistoricalNeighbor {
 		result, err := composer.config.
-			HistoricalProjector.Project(
+			HistoricalProjector.ProjectApproved(
 			projectioncontinuation.Request{
 				CurrentTrajectory: request.
 					CurrentTrajectory,
@@ -539,6 +539,10 @@ func (
 				RequestedDuration: request.
 					RequestedDuration,
 				GeneratedAt: request.GeneratedAt,
+			},
+			projectioncontinuation.ApprovedEvidence{
+				Selection: state.selection.Clone(),
+				Pattern:   state.pattern.Clone(),
 			},
 		)
 		if err != nil {

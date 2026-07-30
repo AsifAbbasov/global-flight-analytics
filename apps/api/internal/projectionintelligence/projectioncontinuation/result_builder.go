@@ -107,6 +107,7 @@ func (
 			Inputs: continuationInputs(
 				preparation.currentEndpoint,
 				preparation.selection,
+				preparation.candidateByID,
 			),
 			LatestInputObservedAt: preparation.
 				currentEndpoint.

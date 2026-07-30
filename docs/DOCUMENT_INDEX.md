@@ -1266,3 +1266,14 @@ semantic fingerprinting, production fixture correction, permanent regression tes
 and Backend Quality audit integration. Exact policy Continuous Integration run
 `30544636679` and permanent-audit run `30548438062` are recorded, with formal closure
 and zero open, unclassified, or deferred findings.
+
+<!-- PROJECTION-CONTINUATION-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 141 — Projection Continuation Review Hardening
+
+`141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` records the critical
+authorization/projection evidence-identity defect, compile-time Approved Evidence
+production contract, exact Pattern-to-Selection fingerprint lineage,
+candidate-anchor binding, observed historical source provenance, rejected mechanical
+recommendations, and the still-open interpolation, plausibility, uncertainty,
+confidence and numerical-stability work.

@@ -66,8 +66,9 @@ type KinematicProjector interface {
 }
 
 type HistoricalProjector interface {
-	Project(
+	ProjectApproved(
 		projectioncontinuation.Request,
+		projectioncontinuation.ApprovedEvidence,
 	) (projectioncontract.Result, error)
 }
 

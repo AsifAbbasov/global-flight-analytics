@@ -104,6 +104,7 @@ func historicalContinuationLimitations(
 func continuationInputs(
 	currentEndpoint trajectory.TrackPoint4D,
 	selection projectionneighbors.Result,
+	candidateByID map[string]trajectory.FlightTrajectory,
 ) []projectioncontract.InputReference {
 	result := []projectioncontract.InputReference{
 		{
@@ -133,6 +134,9 @@ func continuationInputs(
 	}
 
 	for _, neighbor := range selection.Neighbors {
+		candidate := candidateByID[strings.TrimSpace(
+			neighbor.TrajectoryID,
+		)]
 		result = append(
 			result,
 			projectioncontract.InputReference{
@@ -140,8 +144,11 @@ func continuationInputs(
 					neighbor.
 						TrajectoryID,
 				Classification: projectioncontract.
-					InputClassificationDerived,
-				SourceName: "historical_trajectory",
+					InputClassificationObserved,
+				SourceName: candidateEvidenceSourceName(
+					candidate,
+					neighbor.AnchorPointIndex,
+				),
 				ObservedAt: neighbor.
 					CandidateEndTime.UTC(),
 			},
@@ -155,8 +162,10 @@ func patternMatchesSelection(
 	pattern projectionpatternconfidence.Result,
 	selection projectionneighbors.Result,
 ) bool {
-	if pattern.NeighborCount !=
-		len(selection.Neighbors) {
+	if pattern.SourceSelectionFingerprint !=
+		selection.InputFingerprint ||
+		pattern.NeighborCount !=
+			len(selection.Neighbors) {
 		return false
 	}
 

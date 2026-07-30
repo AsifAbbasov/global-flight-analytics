@@ -7,6 +7,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionpatternconfidence"
 	"strings"
 	"time"
 
@@ -61,6 +62,18 @@ func New(
 	}, nil
 }
 
+type ApprovedEvidence struct {
+	Selection projectionneighbors.Result
+	Pattern   projectionpatternconfidence.Result
+}
+
+func (evidence ApprovedEvidence) Clone() ApprovedEvidence {
+	return ApprovedEvidence{
+		Selection: evidence.Selection.Clone(),
+		Pattern:   evidence.Pattern.Clone(),
+	}
+}
+
 type Request struct {
 	CurrentTrajectory trajectory.FlightTrajectory
 	Candidates        []trajectory.FlightTrajectory
@@ -75,6 +88,25 @@ func (
 	baseline *Baseline,
 ) Project(
 	request Request,
+) (projectioncontract.Result, error) {
+	return baseline.project(request, nil)
+}
+
+func (
+	baseline *Baseline,
+) ProjectApproved(
+	request Request,
+	evidence ApprovedEvidence,
+) (projectioncontract.Result, error) {
+	cloned := evidence.Clone()
+	return baseline.project(request, &cloned)
+}
+
+func (
+	baseline *Baseline,
+) project(
+	request Request,
+	approvedEvidence *ApprovedEvidence,
 ) (projectioncontract.Result, error) {
 	if baseline == nil {
 		return projectioncontract.Result{},
@@ -122,6 +154,7 @@ func (
 		baseline.prepareContinuation(
 			request,
 			plan,
+			approvedEvidence,
 		)
 	if preparation.requiresFallback() {
 		return baseline.fallback(

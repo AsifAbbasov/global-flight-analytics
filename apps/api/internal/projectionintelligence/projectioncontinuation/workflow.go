@@ -32,74 +32,25 @@ func (
 ) prepareContinuation(
 	request Request,
 	plan projectionhorizon.Plan,
+	approvedEvidence *ApprovedEvidence,
 ) continuationPreparation {
-	selection, err := baseline.config.
-		NeighborSelector.Select(
-		projectionneighbors.Request{
-			CurrentTrajectory: request.CurrentTrajectory,
-			Candidates:        request.Candidates,
-			RouteScope:        request.RouteScope,
-			AsOfTime:          plan.AsOfTime,
-			RequiredContinuationDuration: plan.
-				EffectiveDuration,
-		},
+	evidence := baseline.resolveContinuationEvidence(
+		request,
+		plan,
+		approvedEvidence,
 	)
-	if err != nil {
+	if evidence.fallbackReason != "" {
 		return continuationPreparation{
-			fallbackReason: "historical_neighbor_selection_failed",
-		}
-	}
-	if err := selection.Validate(); err != nil {
-		return continuationPreparation{
-			fallbackReason: "historical_neighbor_selection_invalid",
-			selectionFingerprint: selection.
-				InputFingerprint,
+			fallbackReason: evidence.fallbackReason,
+			selectionFingerprint: evidence.
+				selectionFingerprint,
+			patternFingerprint: evidence.
+				patternFingerprint,
 		}
 	}
 
-	pattern, err := evaluatePatternConfidence(
-		baseline.config.
-			PatternConfidenceEvaluator,
-		selection,
-		request.Candidates,
-	)
-	if err != nil {
-		return continuationPreparation{
-			fallbackReason: "historical_pattern_confidence_failed",
-			selectionFingerprint: selection.
-				InputFingerprint,
-		}
-	}
-	if err := pattern.Validate(); err != nil {
-		return continuationPreparation{
-			fallbackReason: "historical_pattern_confidence_invalid",
-			selectionFingerprint: selection.
-				InputFingerprint,
-			patternFingerprint: pattern.
-				InputFingerprint,
-		}
-	}
-	if !patternMatchesSelection(
-		pattern,
-		selection,
-	) {
-		return continuationPreparation{
-			fallbackReason: "historical_pattern_selection_mismatch",
-			selectionFingerprint: selection.
-				InputFingerprint,
-			patternFingerprint: pattern.
-				InputFingerprint,
-		}
-	}
-	if !pattern.Usable {
-		return continuationPreparation{
-			fallbackReason: "historical_pattern_not_usable",
-			selectionFingerprint: selection.
-				InputFingerprint,
-			patternFingerprint: pattern.
-				InputFingerprint,
-		}
-	}
+	selection := evidence.selection
+	pattern := evidence.pattern
 
 	current := trajectorySnapshotAt(
 		request.CurrentTrajectory,
@@ -121,6 +72,24 @@ func (
 		currentAltitudeAvailable :=
 		usableAltitude(currentEndpoint)
 
+	candidateByID := buildCandidateIndex(
+		request.Candidates,
+		plan.AsOfTime,
+	)
+	if approvedEvidence != nil &&
+		!selectedCandidateEvidenceMatches(
+			selection,
+			candidateByID,
+		) {
+		return continuationPreparation{
+			fallbackReason: "historical_approved_evidence_candidate_mismatch",
+			selectionFingerprint: selection.
+				InputFingerprint,
+			patternFingerprint: pattern.
+				InputFingerprint,
+		}
+	}
+
 	return continuationPreparation{
 		selection:                selection,
 		pattern:                  pattern,
@@ -128,10 +97,7 @@ func (
 		currentEndpoint:          currentEndpoint,
 		currentAltitudeM:         currentAltitudeM,
 		currentAltitudeAvailable: currentAltitudeAvailable,
-		candidateByID: buildCandidateIndex(
-			request.Candidates,
-			plan.AsOfTime,
-		),
+		candidateByID:            candidateByID,
 		selectionFingerprint: selection.
 			InputFingerprint,
 		patternFingerprint: pattern.

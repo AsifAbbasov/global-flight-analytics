@@ -720,6 +720,8 @@ func continuationTestPattern(
 			"historical-a",
 			"historical-b",
 		},
+		SourceSelectionFingerprint: selection.
+			InputFingerprint,
 		InputFingerprint: "sha256:" +
 			strings.Repeat("f", 64),
 	}
