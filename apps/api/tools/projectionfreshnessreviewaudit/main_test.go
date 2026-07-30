@@ -46,6 +46,7 @@ func TestReviewRequirementsProtectFreshnessCorrectnessContracts(t *testing.T) {
 	protected := map[string]bool{
 		"internal/projectionintelligence/projectionfreshness/model.go":                 false,
 		"internal/projectionintelligence/projectionfreshness/config.go":                false,
+		"internal/projectionintelligence/projectionfreshness/config_test.go":           false,
 		"internal/projectionintelligence/projectionfreshness/policy.go":                false,
 		"internal/projectionintelligence/projectionfreshness/evaluator.go":             false,
 		"internal/projectionintelligence/projectionfreshness/measurement.go":           false,
@@ -75,6 +76,68 @@ func TestReviewRequirementsProtectFormalClosureEvidence(t *testing.T) {
 		"../../.github/workflows/backend-ci.yml":                                       false,
 	}
 	markProtectedRequirements(t, protected)
+}
+
+func TestReviewRequirementsProtectStrictPositiveWeightPolicy(t *testing.T) {
+	checks := map[string]struct {
+		required  []string
+		forbidden []string
+	}{
+		"internal/projectionintelligence/projectionfreshness/config.go": {
+			required: []string{
+				"freshness component weights must be finite, positive, and sum to one",
+				"if !finite(weight) || weight <= 0 {",
+			},
+			forbidden: []string{
+				"freshness component weights must be finite, non-negative, and sum to one",
+				"if !finite(weight) || weight < 0 {",
+			},
+		},
+		"internal/projectionintelligence/projectionfreshness/model.go": {
+			required:  []string{"component.Weight <= 0"},
+			forbidden: []string{"component.Weight < 0"},
+		},
+		"internal/projectionintelligence/projectionfreshness/config_test.go": {
+			required: []string{"TestConfigValidateRejectsZeroComponentWeights"},
+		},
+		"internal/projectionintelligence/projectionfreshness/policy_integrity_test.go": {
+			required: []string{"TestResultValidateRejectsZeroComponentWeight"},
+		},
+	}
+
+	for _, item := range reviewRequirements() {
+		check, exists := checks[item.path]
+		if !exists {
+			continue
+		}
+		requiredText := strings.Join(item.fragments, "\n")
+		for _, fragment := range check.required {
+			if !strings.Contains(requiredText, fragment) {
+				t.Fatalf(
+					"%s misses required positive-weight fragment %q",
+					item.path,
+					fragment,
+				)
+			}
+		}
+		forbiddenText := strings.Join(item.forbidden, "\n")
+		for _, fragment := range check.forbidden {
+			if !strings.Contains(forbiddenText, fragment) {
+				t.Fatalf(
+					"%s misses forbidden legacy-weight fragment %q",
+					item.path,
+					fragment,
+				)
+			}
+		}
+		delete(checks, item.path)
+	}
+	for path := range checks {
+		t.Fatalf(
+			"positive-weight audit requirement is missing for %s",
+			path,
+		)
+	}
 }
 
 func markProtectedRequirements(t *testing.T, protected map[string]bool) {

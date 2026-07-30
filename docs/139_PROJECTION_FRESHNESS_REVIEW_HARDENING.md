@@ -1,6 +1,6 @@
 # Projection Freshness Review Hardening
 
-Status: closed
+Status: open
 
 ```text
 LINEAGE_AGE_INTEGRITY_COMMIT=0b47aa3231c93d573a6026651a4085d376a40583
@@ -13,14 +13,16 @@ PERMANENT_AUDIT_BACKEND_QUALITY_JOB=90809046060
 PERMANENT_AUDIT_BACKEND_RACE_SAFETY_JOB=90809046046
 PERMANENT_AUDIT_POSTGRESQL_16_INTEGRATION_JOB=90809046013
 PERMANENT_AUDIT_BACKEND_CONTAINER_JOB=90809225151
-OPEN_CONFIRMED_FINDINGS=0
+WEIGHT_POLICY_CORRECTION_COMMIT=PENDING
+WEIGHT_POLICY_CONSISTENCY=IMPLEMENTED_PENDING_EXACT_CI
+OPEN_CONFIRMED_FINDINGS=1
 UNCLASSIFIED_FINDINGS=0
 DEFERRED_FINDINGS=0
-PROJECTION_FRESHNESS_ENGINEERING_IMPLEMENTATION=COMPLETE
-PROJECTION_FRESHNESS_ENGINEERING_DEBT=CLOSED
+PROJECTION_FRESHNESS_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
+PROJECTION_FRESHNESS_ENGINEERING_DEBT=OPEN
 PROJECTION_FRESHNESS_ADDITIONAL_CODE_FIXES_REQUIRED=NO
-FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
-PROJECTION_FRESHNESS_REVIEW_STATUS=CLOSED
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
+PROJECTION_FRESHNESS_REVIEW_STATUS=OPEN
 ```
 
 ## 1. Scope
@@ -95,6 +97,23 @@ component-weight total equal to one
 
 Zero score thresholds and incoherent age ordering are rejected before an evaluator
 is created.
+
+### 2.3.1 Strictly positive component-weight correction
+
+The original closure document stated that every component weight is finite and
+strictly positive, while the implementation rejected only negative weights. That
+allowed a zero weight to disable one of the four canonical Freshness components while
+keeping the remaining weights normalized to one.
+
+The correction changes both configuration and result validation to reject every
+non-finite or non-positive component weight. Regression tests cover zero values for
+newest age, mean age, oldest age, and recent support, including a coordinated Result
+mutation whose policy, component catalog, weighted score, decision, usability, and
+limitations otherwise remain internally consistent.
+
+The permanent audit now requires the `<= 0` guards and forbids the former `< 0`
+contracts. The review remains formally open until the corrective commit completes
+exact Continuous Integration and its immutable evidence is recorded.
 
 ### 2.4 Semantic freshness fingerprint
 
@@ -281,6 +300,7 @@ The `Backend Quality` job executed and passed the dedicated step:
 Run projection freshness review audit
 ```
 
-Engineering implementation and formal closure documentation are complete. No
-confirmed finding remains open, unclassified, or deferred. The permanent audit gate
-remains mandatory in Backend Continuous Integration.
+The strictly positive component-weight correction is implemented locally, but the
+review is formally reopened until the corrective commit completes exact Continuous
+Integration and the resulting commit and run identifiers replace the pending markers.
+The permanent audit gate remains mandatory in Backend Continuous Integration.

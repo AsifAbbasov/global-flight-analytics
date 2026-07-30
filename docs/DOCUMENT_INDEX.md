@@ -1251,5 +1251,6 @@ retained floating-point and compatibility contracts, engineering commits
 `0b47aa3231c93d573a6026651a4085d376a40583` and
 `072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19`, permanent audit commit
 `619e24878a5025decf6fe21abddba537ce195560`, GitHub Actions run
-`30523502590`, and formal closure with zero open, unclassified, or deferred
-findings.
+`30523502590`. The review is temporarily reopened while the strictly positive
+component-weight correction awaits exact Continuous Integration and immutable
+corrective commit evidence.

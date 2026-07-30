@@ -124,6 +124,41 @@ func TestResultValidateReconstructsPolicyDecision(t *testing.T) {
 	}
 }
 
+func TestResultValidateRejectsZeroComponentWeight(t *testing.T) {
+	evaluator := newFreshnessEvaluator(t)
+	selection, pattern := freshnessFixtures([]time.Duration{
+		24 * time.Hour,
+		48 * time.Hour,
+		72 * time.Hour,
+	})
+	result, err := evaluator.Evaluate(selection, pattern)
+	if err != nil {
+		t.Fatalf("Evaluate() error = %v", err)
+	}
+
+	transferredWeight := result.Policy.NewestAgeWeight
+	result.Policy.NewestAgeWeight = 0
+	result.Policy.MeanAgeWeight += transferredWeight
+	result.Components[0].Weight = 0
+	result.Components[1].Weight += transferredWeight
+	result.Score = weightedComponentScore(result.Components)
+	decision := evaluateFreshnessPolicy(
+		metricsFromResult(result),
+		result.Score,
+		result.SelectionStatus,
+		result.PatternStatus,
+		result.PatternUsable,
+		result.Policy.config(),
+	)
+	result.Decision = decision.decision
+	result.Usable = decision.usable
+	result.Limitations = decision.limitations
+
+	if err := result.Validate(); err == nil {
+		t.Fatal("Validate() accepted a zero component weight")
+	}
+}
+
 func TestResultValidateAcceptsReconstructedLimitedDecision(t *testing.T) {
 	config := validFreshnessConfig()
 	config.CompleteScoreMinimum = 0.99

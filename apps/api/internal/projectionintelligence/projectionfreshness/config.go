@@ -30,7 +30,7 @@ var (
 		"freshness score thresholds must satisfy zero < minimum <= complete <= one",
 	)
 	ErrFreshnessWeightInvalid = errors.New(
-		"freshness component weights must be finite, non-negative, and sum to one",
+		"freshness component weights must be finite, positive, and sum to one",
 	)
 )
 
@@ -133,7 +133,7 @@ func validateWeights(config Config) error {
 	}
 	total := 0.0
 	for _, weight := range weights {
-		if !finite(weight) || weight < 0 {
+		if !finite(weight) || weight <= 0 {
 			return fmt.Errorf("%w: %f", ErrFreshnessWeightInvalid, weight)
 		}
 		total += weight

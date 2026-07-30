@@ -105,6 +105,65 @@ func TestConfigValidateRejectsInvalidValues(
 	}
 }
 
+func TestConfigValidateRejectsZeroComponentWeights(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*Config)
+	}{
+		{
+			name: "newest age weight",
+			mutate: func(config *Config) {
+				config.NewestAgeWeight = 0
+				config.MeanAgeWeight = 0.40
+				config.OldestAgeWeight = 0.30
+				config.RecentSupportWeight = 0.30
+			},
+		},
+		{
+			name: "mean age weight",
+			mutate: func(config *Config) {
+				config.NewestAgeWeight = 0.40
+				config.MeanAgeWeight = 0
+				config.OldestAgeWeight = 0.30
+				config.RecentSupportWeight = 0.30
+			},
+		},
+		{
+			name: "oldest age weight",
+			mutate: func(config *Config) {
+				config.NewestAgeWeight = 0.40
+				config.MeanAgeWeight = 0.40
+				config.OldestAgeWeight = 0
+				config.RecentSupportWeight = 0.20
+			},
+		},
+		{
+			name: "recent support weight",
+			mutate: func(config *Config) {
+				config.NewestAgeWeight = 0.40
+				config.MeanAgeWeight = 0.40
+				config.OldestAgeWeight = 0.20
+				config.RecentSupportWeight = 0
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config := validFreshnessConfig()
+			test.mutate(&config)
+			err := config.Validate()
+			if !errors.Is(err, ErrFreshnessWeightInvalid) {
+				t.Fatalf(
+					"error = %v, want %v",
+					err,
+					ErrFreshnessWeightInvalid,
+				)
+			}
+		})
+	}
+}
+
 func validFreshnessConfig() Config {
 	return Config{
 		MaximumNewestNeighborAge: 7 * 24 * time.Hour,

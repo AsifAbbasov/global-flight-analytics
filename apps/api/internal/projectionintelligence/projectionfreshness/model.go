@@ -203,7 +203,7 @@ func validateResultComponents(result Result) error {
 		}
 		if !unitInterval(component.Score) ||
 			!finite(component.Weight) ||
-			component.Weight < 0 {
+			component.Weight <= 0 {
 			return fmt.Errorf("pattern freshness component is invalid")
 		}
 		if math.Abs(component.Score-expected[index].Score) >
