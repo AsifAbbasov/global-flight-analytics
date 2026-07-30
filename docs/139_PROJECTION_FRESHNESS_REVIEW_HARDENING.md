@@ -1,6 +1,6 @@
 # Projection Freshness Review Hardening
 
-Status: open
+Status: closed
 
 ```text
 LINEAGE_AGE_INTEGRITY_COMMIT=0b47aa3231c93d573a6026651a4085d376a40583
@@ -13,16 +13,21 @@ PERMANENT_AUDIT_BACKEND_QUALITY_JOB=90809046060
 PERMANENT_AUDIT_BACKEND_RACE_SAFETY_JOB=90809046046
 PERMANENT_AUDIT_POSTGRESQL_16_INTEGRATION_JOB=90809046013
 PERMANENT_AUDIT_BACKEND_CONTAINER_JOB=90809225151
-WEIGHT_POLICY_CORRECTION_COMMIT=PENDING
-WEIGHT_POLICY_CONSISTENCY=IMPLEMENTED_PENDING_EXACT_CI
-OPEN_CONFIRMED_FINDINGS=1
+WEIGHT_POLICY_CORRECTION_COMMIT=e3e99758d6f654db12ccce32ec55ad1339fb518f
+WEIGHT_POLICY_CORRECTION_GITHUB_ACTIONS_RUN=30527541240
+WEIGHT_POLICY_CORRECTION_BACKEND_QUALITY_JOB=90821894564
+WEIGHT_POLICY_CORRECTION_BACKEND_RACE_SAFETY_JOB=90821894465
+WEIGHT_POLICY_CORRECTION_POSTGRESQL_16_INTEGRATION_JOB=90821894536
+WEIGHT_POLICY_CORRECTION_BACKEND_CONTAINER_JOB=90822090361
+WEIGHT_POLICY_CONSISTENCY=CLOSED
+OPEN_CONFIRMED_FINDINGS=0
 UNCLASSIFIED_FINDINGS=0
 DEFERRED_FINDINGS=0
-PROJECTION_FRESHNESS_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
-PROJECTION_FRESHNESS_ENGINEERING_DEBT=OPEN
+PROJECTION_FRESHNESS_ENGINEERING_IMPLEMENTATION=COMPLETE
+PROJECTION_FRESHNESS_ENGINEERING_DEBT=CLOSED
 PROJECTION_FRESHNESS_ADDITIONAL_CODE_FIXES_REQUIRED=NO
-FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
-PROJECTION_FRESHNESS_REVIEW_STATUS=OPEN
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_FRESHNESS_REVIEW_STATUS=CLOSED
 ```
 
 ## 1. Scope
@@ -111,9 +116,10 @@ newest age, mean age, oldest age, and recent support, including a coordinated Re
 mutation whose policy, component catalog, weighted score, decision, usability, and
 limitations otherwise remain internally consistent.
 
-The permanent audit now requires the `<= 0` guards and forbids the former `< 0`
-contracts. The review remains formally open until the corrective commit completes
-exact Continuous Integration and its immutable evidence is recorded.
+The permanent audit requires the `<= 0` guards and forbids the former `< 0`
+contracts. Corrective commit `e3e99758d6f654db12ccce32ec55ad1339fb518f` completed exact Continuous
+Integration run `30527541240`, so the code, tests, permanent audit, and formal
+weight-policy contract are now aligned.
 
 ### 2.4 Semantic freshness fingerprint
 
@@ -300,7 +306,24 @@ The `Backend Quality` job executed and passed the dedicated step:
 Run projection freshness review audit
 ```
 
-The strictly positive component-weight correction is implemented locally, but the
-review is formally reopened until the corrective commit completes exact Continuous
-Integration and the resulting commit and run identifiers replace the pending markers.
-The permanent audit gate remains mandatory in Backend Continuous Integration.
+The strictly positive component-weight correction completed every required Backend
+Continuous Integration job:
+
+```text
+WEIGHT_POLICY_CORRECTION_COMMIT=e3e99758d6f654db12ccce32ec55ad1339fb518f
+WEIGHT_POLICY_CORRECTION_GITHUB_ACTIONS_RUN=30527541240
+WEIGHT_POLICY_CORRECTION_BACKEND_QUALITY_JOB=90821894564
+WEIGHT_POLICY_CORRECTION_BACKEND_RACE_SAFETY_JOB=90821894465
+WEIGHT_POLICY_CORRECTION_POSTGRESQL_16_INTEGRATION_JOB=90821894536
+WEIGHT_POLICY_CORRECTION_BACKEND_CONTAINER_JOB=90822090361
+```
+
+The corrective `Backend Quality` job executed and passed the dedicated step:
+
+```text
+Run projection freshness review audit
+```
+
+Engineering implementation and formal closure documentation are complete. No
+confirmed finding remains open, unclassified, or deferred. The permanent audit gate
+remains mandatory in Backend Continuous Integration.
