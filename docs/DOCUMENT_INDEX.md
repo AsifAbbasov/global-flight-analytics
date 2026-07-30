@@ -1254,3 +1254,13 @@ engineering commits `0b47aa3231c93d573a6026651a4085d376a40583` and
 corrective weight-policy commit `e3e99758d6f654db12ccce32ec55ad1339fb518f`, GitHub Actions run
 `30527541240`, and formal reclosure with zero open, unclassified, or deferred
 findings.
+<!-- PROJECTION-ROUTE-FREQUENCY-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 140 — Projection Route Frequency Review Hardening
+
+`140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` records current-flight evidence isolation,
+logical-flight deduplication, fixed full and recent exposure windows, distinct-flight
+scoring, coherent policy targets, strictly positive thresholds and weights, complete
+hard-violation reporting, weighted-score reconstruction, deterministic limitations,
+semantic fingerprinting, production fixture correction, permanent regression tests,
+and Backend Quality audit integration. The review remains open pending exact Continuous Integration and formal closure.

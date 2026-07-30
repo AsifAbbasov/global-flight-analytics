@@ -187,6 +187,9 @@ jobs:
       - name: Run projection freshness review audit
         run: go run ./tools/projectionfreshnessreviewaudit -strict
 
+      - name: Run projection route frequency review audit
+        run: go run ./tools/projectionroutefrequencyreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
