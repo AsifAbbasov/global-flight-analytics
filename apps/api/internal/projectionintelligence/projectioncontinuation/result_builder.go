@@ -30,6 +30,7 @@ func (
 		preparation.selection,
 		preparation.pattern,
 		pointResult.altitudeComplete,
+		pointResult.plausibilityFiltered,
 	) {
 		status = projectioncontract.
 			ResultStatusLimited
@@ -41,6 +42,16 @@ func (
 				Code:    "projection_horizon_truncated",
 				Message: "Requested duration exceeded the configured maximum and was truncated.",
 				Scope:   "horizon",
+			},
+		)
+	}
+	if pointResult.plausibilityFiltered {
+		limitations = append(
+			limitations,
+			projectioncontract.Limitation{
+				Code:    "historical_continuation_plausibility_filtered",
+				Message: "At least one historical continuation sample was excluded because its interpolation gap, horizontal speed, or vertical speed exceeded the configured plausibility policy.",
+				Scope:   "support",
 			},
 		)
 	}
@@ -90,6 +101,10 @@ func (
 				Message: "Forecast coordinates combine usable historical continuations using normalized similarity weights.",
 			},
 			{
+				Code:    "interpolation_plausibility_policy",
+				Message: "Historical continuation segments are accepted only when their time gap and implied horizontal and vertical rates satisfy the configured plausibility policy.",
+			},
+			{
 				Code:    "neighbor_disagreement_uncertainty",
 				Message: "Published uncertainty includes configured growth and weighted disagreement between historical continuation samples.",
 			},
@@ -122,6 +137,7 @@ func continuationResultLimited(
 	selection projectionneighbors.Result,
 	pattern projectionpatternconfidence.Result,
 	altitudeComplete bool,
+	plausibilityFiltered bool,
 ) bool {
 	return plan.Truncated ||
 		selection.Status !=
@@ -129,5 +145,6 @@ func continuationResultLimited(
 		pattern.Status !=
 			projectionpatternconfidence.
 				StatusComplete ||
-		!altitudeComplete
+		!altitudeComplete ||
+		plausibilityFiltered
 }

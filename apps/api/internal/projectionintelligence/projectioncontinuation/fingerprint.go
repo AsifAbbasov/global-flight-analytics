@@ -51,6 +51,23 @@ func continuationFingerprint(
 		digest,
 		config.MinimumAltitudeSupport,
 	)
+	writeFingerprintInt64(
+		digest,
+		int64(
+			config.PlausibilityPolicy.
+				MaximumInterpolationGap,
+		),
+	)
+	writeFingerprintFloat(
+		digest,
+		config.PlausibilityPolicy.
+			MaximumHorizontalSpeedMPS,
+	)
+	writeFingerprintFloat(
+		digest,
+		config.PlausibilityPolicy.
+			MaximumVerticalSpeedMPS,
+	)
 	writeFingerprintFloat(
 		digest,
 		config.InitialHorizontalUncertaintyM,
@@ -140,6 +157,17 @@ func writeFingerprintString(
 func writeFingerprintInt(
 	digest hash.Hash,
 	value int,
+) {
+	_, _ = fmt.Fprintf(
+		digest,
+		"%d|",
+		value,
+	)
+}
+
+func writeFingerprintInt64(
+	digest hash.Hash,
+	value int64,
 ) {
 	_, _ = fmt.Fprintf(
 		digest,

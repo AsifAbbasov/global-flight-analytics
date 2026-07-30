@@ -1,6 +1,7 @@
 package projectioncontinuation
 
 import (
+	"math"
 	"sort"
 	"time"
 
@@ -13,6 +14,14 @@ type interpolatedPoint struct {
 	longitude float64
 	altitudeM *float64
 }
+
+type interpolationDecision uint8
+
+const (
+	interpolationUnavailable interpolationDecision = iota
+	interpolationAccepted
+	interpolationRejectedByPlausibility
+)
 
 func trajectorySnapshotAt(
 	item trajectory.FlightTrajectory,
@@ -106,9 +115,32 @@ func interpolateTrajectoryPoint(
 	points []trajectory.TrackPoint4D,
 	targetTime time.Time,
 ) (interpolatedPoint, bool) {
+	point, decision :=
+		interpolateTrajectoryPointWithPolicy(
+			points,
+			targetTime,
+			DefaultPlausibilityPolicy(),
+		)
+	return point,
+		decision == interpolationAccepted
+}
+
+func interpolateTrajectoryPointWithPolicy(
+	points []trajectory.TrackPoint4D,
+	targetTime time.Time,
+	policy PlausibilityPolicy,
+) (
+	interpolatedPoint,
+	interpolationDecision,
+) {
 	if len(points) == 0 ||
 		targetTime.IsZero() {
-		return interpolatedPoint{}, false
+		return interpolatedPoint{},
+			interpolationUnavailable
+	}
+	if err := policy.Validate(); err != nil {
+		return interpolatedPoint{},
+			interpolationRejectedByPlausibility
 	}
 
 	targetTime = targetTime.UTC()
@@ -119,33 +151,44 @@ func interpolateTrajectoryPoint(
 			points[len(points)-1].
 				ObservedAt.UTC(),
 		) {
-		return interpolatedPoint{}, false
+		return interpolatedPoint{},
+			interpolationUnavailable
 	}
 
 	for index, point := range points {
 		pointTime := point.ObservedAt.UTC()
 		if pointTime.Equal(targetTime) {
+			if index > 0 &&
+				!plausibleTrajectorySegment(
+					points[index-1],
+					point,
+					policy,
+				) {
+				return interpolatedPoint{},
+					interpolationRejectedByPlausibility
+			}
 			return interpolatedFromPoint(
-				point,
-			), true
+					point,
+				),
+				interpolationAccepted
 		}
 		if pointTime.After(targetTime) {
 			if index == 0 {
 				return interpolatedPoint{},
-					false
+					interpolationUnavailable
 			}
 
-			return interpolateBetween(
+			return interpolateBetweenWithPolicy(
 				points[index-1],
 				point,
 				targetTime,
+				policy,
 			)
 		}
 	}
 
-	return interpolatedFromPoint(
-		points[len(points)-1],
-	), true
+	return interpolatedPoint{},
+		interpolationUnavailable
 }
 
 func interpolateBetween(
@@ -153,12 +196,37 @@ func interpolateBetween(
 	right trajectory.TrackPoint4D,
 	targetTime time.Time,
 ) (interpolatedPoint, bool) {
+	point, decision := interpolateBetweenWithPolicy(
+		left,
+		right,
+		targetTime,
+		DefaultPlausibilityPolicy(),
+	)
+	return point,
+		decision == interpolationAccepted
+}
+
+func interpolateBetweenWithPolicy(
+	left trajectory.TrackPoint4D,
+	right trajectory.TrackPoint4D,
+	targetTime time.Time,
+	policy PlausibilityPolicy,
+) (
+	interpolatedPoint,
+	interpolationDecision,
+) {
+	if !plausibleTrajectorySegment(
+		left,
+		right,
+		policy,
+	) {
+		return interpolatedPoint{},
+			interpolationRejectedByPlausibility
+	}
+
 	leftTime := left.ObservedAt.UTC()
 	rightTime := right.ObservedAt.UTC()
 	duration := rightTime.Sub(leftTime)
-	if duration <= 0 {
-		return interpolatedPoint{}, false
-	}
 
 	fraction := float64(
 		targetTime.Sub(leftTime),
@@ -166,7 +234,8 @@ func interpolateBetween(
 	if fraction < 0 ||
 		fraction > 1 ||
 		!finite(fraction) {
-		return interpolatedPoint{}, false
+		return interpolatedPoint{},
+			interpolationUnavailable
 	}
 
 	distanceM := greatCircleDistanceM(
@@ -189,7 +258,8 @@ func interpolateBetween(
 			distanceM*fraction,
 		)
 	if !valid {
-		return interpolatedPoint{}, false
+		return interpolatedPoint{},
+			interpolationUnavailable
 	}
 
 	result := interpolatedPoint{
@@ -211,7 +281,54 @@ func interpolateBetween(
 		}
 	}
 
-	return result, true
+	return result,
+		interpolationAccepted
+}
+
+func plausibleTrajectorySegment(
+	left trajectory.TrackPoint4D,
+	right trajectory.TrackPoint4D,
+	policy PlausibilityPolicy,
+) bool {
+	if err := policy.Validate(); err != nil {
+		return false
+	}
+
+	duration := right.ObservedAt.UTC().Sub(
+		left.ObservedAt.UTC(),
+	)
+	if duration <= 0 ||
+		duration >
+			policy.MaximumInterpolationGap {
+		return false
+	}
+
+	durationSeconds := duration.Seconds()
+	distanceM := greatCircleDistanceM(
+		left.Latitude,
+		left.Longitude,
+		right.Latitude,
+		right.Longitude,
+	)
+	if !nonNegativeFinite(distanceM) ||
+		distanceM/durationSeconds >
+			policy.MaximumHorizontalSpeedMPS {
+		return false
+	}
+
+	leftAltitudeM, leftAvailable :=
+		usableAltitude(left)
+	rightAltitudeM, rightAvailable :=
+		usableAltitude(right)
+	if leftAvailable && rightAvailable &&
+		math.Abs(
+			rightAltitudeM-leftAltitudeM,
+		)/durationSeconds >
+			policy.MaximumVerticalSpeedMPS {
+		return false
+	}
+
+	return true
 }
 
 func interpolatedFromPoint(

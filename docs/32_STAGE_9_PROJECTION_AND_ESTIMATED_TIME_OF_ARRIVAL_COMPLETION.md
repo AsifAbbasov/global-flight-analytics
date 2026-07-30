@@ -1483,3 +1483,25 @@ The authoritative review record is:
 ```text
 docs/141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md
 ```
+
+## 34. Projection Continuation Interpolation Plausibility
+
+The second Projection Continuation hardening increment adds a centrally normalized
+and fingerprinted plausibility policy.
+
+```text
+PROJECTION_CONTINUATION_PLAUSIBILITY_BASELINE=23ecf72a0700b5a96459bc4a8618c72951a4e6aa
+MAXIMUM_INTERPOLATION_GAP=5m
+MAXIMUM_HORIZONTAL_SPEED_MPS=400
+MAXIMUM_VERTICAL_SPEED_MPS=100
+EXACT_ENDPOINT_SEGMENT_VALIDATION=ENFORCED
+PLAUSIBILITY_FILTERED_OUTPUT_STATUS=LIMITED
+PLAUSIBILITY_SUPPORT_FALLBACK=ENFORCED
+INTERPOLATION_PLAUSIBILITY=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_CONTINUATION_REVIEW_STATUS=OPEN
+```
+
+The policy defaults are constructor-normalized for compatibility with existing
+composition roots. Effective policy values are included in the continuation input
+fingerprint, so a policy change cannot reuse the identity of a projection created
+under different plausibility limits.

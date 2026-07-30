@@ -111,10 +111,24 @@ func (
 	return preparation.fallbackReason != ""
 }
 
+type projectedSampleStatus uint8
+
+const (
+	projectedSampleUnavailable projectedSampleStatus = iota
+	projectedSampleUsable
+	projectedSampleRejectedByPlausibility
+)
+
+type projectedSampleBatch struct {
+	samples              []projectedSample
+	plausibilityRejected int
+}
+
 type continuationPointResult struct {
-	points           []projectioncontract.ProjectionPoint
-	altitudeComplete bool
-	fallbackReason   string
+	points               []projectioncontract.ProjectionPoint
+	altitudeComplete     bool
+	plausibilityFiltered bool
+	fallbackReason       string
 }
 
 func (
@@ -129,22 +143,32 @@ func (
 		len(plan.ForecastTimes),
 	)
 	altitudeComplete := true
+	plausibilityFiltered := false
 
 	for index, forecastTime := range plan.ForecastTimes {
-		samples := baseline.projectSamplesAt(
+		batch := baseline.projectSamplesAt(
 			preparation,
 			forecastTime.Sub(plan.AsOfTime),
 		)
-		if len(samples) <
+		if len(batch.samples) <
 			baseline.config.MinimumPointSupport {
-			return continuationPointResult{
-				fallbackReason: "historical_continuation_point_support_insufficient",
+			reason :=
+				"historical_continuation_point_support_insufficient"
+			if batch.plausibilityRejected > 0 {
+				reason =
+					"historical_continuation_plausibility_support_insufficient"
 			}
+			return continuationPointResult{
+				fallbackReason: reason,
+			}
+		}
+		if batch.plausibilityRejected > 0 {
+			plausibilityFiltered = true
 		}
 
 		point, altitudeAvailable, err :=
 			baseline.combineSamples(
-				samples,
+				batch.samples,
 				preparation.pattern,
 				plan,
 				index,
@@ -162,8 +186,9 @@ func (
 	}
 
 	return continuationPointResult{
-		points:           points,
-		altitudeComplete: altitudeComplete,
+		points:               points,
+		altitudeComplete:     altitudeComplete,
+		plausibilityFiltered: plausibilityFiltered,
 	}
 }
 
@@ -172,26 +197,34 @@ func (
 ) projectSamplesAt(
 	preparation continuationPreparation,
 	offset time.Duration,
-) []projectedSample {
-	samples := make(
-		[]projectedSample,
-		0,
-		len(preparation.selection.Neighbors),
-	)
+) projectedSampleBatch {
+	batch := projectedSampleBatch{
+		samples: make(
+			[]projectedSample,
+			0,
+			len(preparation.selection.Neighbors),
+		),
+	}
 
 	for _, neighbor := range preparation.selection.Neighbors {
-		sample, usable :=
+		sample, status :=
 			baseline.projectNeighborSample(
 				preparation,
 				neighbor,
 				offset,
 			)
-		if usable {
-			samples = append(samples, sample)
+		switch status {
+		case projectedSampleUsable:
+			batch.samples = append(
+				batch.samples,
+				sample,
+			)
+		case projectedSampleRejectedByPlausibility:
+			batch.plausibilityRejected++
 		}
 	}
 
-	return samples
+	return batch
 }
 
 func (
@@ -200,26 +233,39 @@ func (
 	preparation continuationPreparation,
 	neighbor projectionneighbors.Neighbor,
 	offset time.Duration,
-) (projectedSample, bool) {
+) (
+	projectedSample,
+	projectedSampleStatus,
+) {
 	candidate, exists :=
 		preparation.candidateByID[neighbor.TrajectoryID]
 	if !exists ||
 		neighbor.AnchorPointIndex < 0 ||
 		neighbor.AnchorPointIndex >=
 			len(candidate.Points) {
-		return projectedSample{}, false
+		return projectedSample{},
+			projectedSampleUnavailable
 	}
 
 	anchor :=
 		candidate.Points[neighbor.AnchorPointIndex]
 	targetTime :=
 		anchor.ObservedAt.UTC().Add(offset)
-	future, exists := interpolateTrajectoryPoint(
-		candidate.Points,
-		targetTime,
-	)
-	if !exists {
-		return projectedSample{}, false
+	future, interpolation :=
+		interpolateTrajectoryPointWithPolicy(
+			candidate.Points,
+			targetTime,
+			baseline.config.
+				PlausibilityPolicy,
+		)
+	switch interpolation {
+	case interpolationRejectedByPlausibility:
+		return projectedSample{},
+			projectedSampleRejectedByPlausibility
+	case interpolationAccepted:
+	default:
+		return projectedSample{},
+			projectedSampleUnavailable
 	}
 
 	distanceM := greatCircleDistanceM(
@@ -245,7 +291,8 @@ func (
 		!positiveFinite(
 			neighbor.SimilarityScore,
 		) {
-		return projectedSample{}, false
+		return projectedSample{},
+			projectedSampleUnavailable
 	}
 
 	sample := projectedSample{
@@ -273,5 +320,6 @@ func (
 		}
 	}
 
-	return sample, true
+	return sample,
+		projectedSampleUsable
 }

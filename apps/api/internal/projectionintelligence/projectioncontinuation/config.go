@@ -83,6 +83,8 @@ type Config struct {
 	MinimumPointSupport    int
 	MinimumAltitudeSupport int
 
+	PlausibilityPolicy PlausibilityPolicy
+
 	InitialHorizontalUncertaintyM  float64
 	HorizontalUncertaintyGrowthMPS float64
 	InitialVerticalUncertaintyM    float64
@@ -96,6 +98,8 @@ type Config struct {
 }
 
 func (config Config) Validate() error {
+	config = config.normalized()
+
 	if config.HorizonPlanner == nil {
 		return ErrHorizonPlannerRequired
 	}
@@ -124,6 +128,10 @@ func (config Config) Validate() error {
 			config.MinimumAltitudeSupport,
 			config.MinimumPointSupport,
 		)
+	}
+	if err := config.PlausibilityPolicy.
+		Validate(); err != nil {
+		return err
 	}
 	if !positiveFinite(
 		config.InitialHorizontalUncertaintyM,

@@ -1274,6 +1274,7 @@ and zero open, unclassified, or deferred findings.
 `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` records the critical
 authorization/projection evidence-identity defect, compile-time Approved Evidence
 production contract, exact Pattern-to-Selection fingerprint lineage,
-candidate-anchor binding, observed historical source provenance, rejected mechanical
-recommendations, and the still-open interpolation, plausibility, uncertainty,
-confidence and numerical-stability work.
+candidate-anchor binding, observed historical source provenance, bounded
+interpolation gaps, horizontal and vertical rate plausibility guards, rejected
+mechanical recommendations, and the still-open uncertainty, confidence and
+numerical-stability work.

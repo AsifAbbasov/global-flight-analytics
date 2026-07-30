@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	Version    = "local-historical-neighbor-continuation-v1"
+	Version    = "local-historical-neighbor-continuation-v2"
 	MethodName = "local_historical_neighbor_continuation"
 
-	FingerprintVersion         = "local-historical-neighbor-continuation-fingerprint-v1"
-	FallbackFingerprintVersion = "local-historical-neighbor-fallback-fingerprint-v1"
+	FingerprintVersion         = "local-historical-neighbor-continuation-fingerprint-v2"
+	FallbackFingerprintVersion = "local-historical-neighbor-fallback-fingerprint-v2"
 )
 
 var (
@@ -50,6 +50,7 @@ type Baseline struct {
 func New(
 	config Config,
 ) (*Baseline, error) {
+	config = config.normalized()
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf(
 			"validate local historical continuation config: %w",
