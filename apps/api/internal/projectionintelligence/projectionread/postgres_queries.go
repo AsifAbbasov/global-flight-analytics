@@ -48,7 +48,10 @@ const routeHistorySummarySQL = `
 		SELECT DISTINCT ON (route_result.trajectory_id)
 			route_result.trajectory_id,
 			route_result.as_of_time,
-			trajectory.flight_id
+			COALESCE(
+				trajectory.flight_id::text,
+				route_result.trajectory_id::text
+			) AS evidence_id
 		FROM flight_route_results AS route_result
 		INNER JOIN flight_trajectories AS trajectory
 			ON trajectory.id = route_result.trajectory_id
@@ -60,19 +63,31 @@ const routeHistorySummarySQL = `
 				'{Origin,Airport,ICAOCode}' = $4
 		  AND route_result.route_json #>>
 				'{Destination,Airport,ICAOCode}' = $5
+		  AND route_result.trajectory_id::text <> $7
+		  AND (
+				$8 = ''
+				OR trajectory.flight_id IS NULL
+				OR trajectory.flight_id::text <> $8
+		  )
 		ORDER BY
 			route_result.trajectory_id,
 			route_result.as_of_time DESC,
 			route_result.id ASC
+	),
+	latest_route_per_evidence AS (
+		SELECT DISTINCT ON (evidence_id)
+			evidence_id,
+			trajectory_id,
+			as_of_time
+		FROM latest_route_per_trajectory
+		ORDER BY
+			evidence_id,
+			as_of_time DESC,
+			trajectory_id ASC
 	)
 	SELECT
 		COUNT(*)::bigint,
-		COUNT(
-			DISTINCT COALESCE(
-				flight_id::text,
-				trajectory_id::text
-			)
-		)::bigint,
+		COUNT(*)::bigint,
 		COUNT(
 			DISTINCT (
 				as_of_time AT TIME ZONE 'UTC'
@@ -82,7 +97,7 @@ const routeHistorySummarySQL = `
 			WHERE as_of_time >= $6
 		)::bigint,
 		MAX(as_of_time)
-	FROM latest_route_per_trajectory;
+	FROM latest_route_per_evidence;
 `
 
 const trajectoryPointsByFlightSQL = `

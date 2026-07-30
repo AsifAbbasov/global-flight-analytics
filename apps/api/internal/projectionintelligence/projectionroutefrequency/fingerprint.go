@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash"
+	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
@@ -23,6 +24,15 @@ func routeFrequencyFingerprint(
 		digest,
 		FingerprintVersion,
 	)
+	writeFingerprintString(digest, string(route.SchemaVersion))
+	writeFingerprintString(digest, string(route.Status))
+	writeFingerprintString(digest, strings.TrimSpace(route.TrajectoryID))
+	writeFingerprintString(digest, strings.TrimSpace(route.FlightID))
+	resolvedKey, routeAvailable := resolvedRouteKey(route)
+	writeFingerprintBool(digest, routeAvailable)
+	writeFingerprintString(digest, resolvedKey)
+	writeFingerprintBool(digest, route.Summary.SameAirport)
+	writeFingerprintFloat(digest, route.Confidence.Score)
 	writeFingerprintString(
 		digest,
 		route.Provenance.InputFingerprint,
@@ -33,8 +43,11 @@ func routeFrequencyFingerprint(
 	)
 	writeFingerprintString(
 		digest,
-		history.RouteKey,
+		strings.ToUpper(strings.TrimSpace(history.RouteKey)),
 	)
+	writeFingerprintTime(digest, history.WindowStart)
+	writeFingerprintTime(digest, history.WindowEnd)
+	writeFingerprintTime(digest, history.RecentWindowStart)
 	writeFingerprintTime(
 		digest,
 		history.AsOfTime,
@@ -174,6 +187,17 @@ func writeFingerprintTime(
 			time.RFC3339Nano,
 		),
 	)
+}
+
+func writeFingerprintBool(
+	digest hash.Hash,
+	value bool,
+) {
+	if value {
+		writeFingerprintString(digest, "true")
+		return
+	}
+	writeFingerprintString(digest, "false")
 }
 
 func writeFingerprintDuration(

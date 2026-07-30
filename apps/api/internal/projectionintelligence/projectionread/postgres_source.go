@@ -370,6 +370,8 @@ func (
 		origin,
 		destination,
 		recentStart,
+		strings.TrimSpace(route.TrajectoryID),
+		strings.TrimSpace(route.FlightID),
 	).Scan(
 		&observationCount,
 		&distinctFlightCount,
@@ -416,9 +418,10 @@ func (
 	summary := projectionroutefrequency.HistorySummary{
 		RouteKey: routeKey,
 
-		WindowStart: windowStart,
-		WindowEnd:   asOfTime,
-		AsOfTime:    asOfTime,
+		WindowStart:       windowStart,
+		WindowEnd:         asOfTime,
+		RecentWindowStart: recentStart,
+		AsOfTime:          asOfTime,
 
 		ObservationCount:       int(observationCount),
 		DistinctFlightCount:    int(distinctFlightCount),
@@ -802,11 +805,13 @@ func routeHistoryFingerprint(
 	digest := sha256.Sum256(
 		[]byte(
 			fmt.Sprintf(
-				"projection-route-history-summary-v1|%s|%s|%s|%s|%d|%d|%d|%d|%s|%s",
-				summary.RouteKey,
+				"projection-route-history-summary-v2|%s|%s|%s|%s|%s|%d|%d|%d|%d|%s|%s",
+				strings.ToUpper(strings.TrimSpace(summary.RouteKey)),
 				summary.WindowStart.UTC().
 					Format(time.RFC3339Nano),
 				summary.WindowEnd.UTC().
+					Format(time.RFC3339Nano),
+				summary.RecentWindowStart.UTC().
 					Format(time.RFC3339Nano),
 				summary.AsOfTime.UTC().
 					Format(time.RFC3339Nano),

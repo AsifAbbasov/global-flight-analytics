@@ -21,6 +21,9 @@ var (
 	ErrRouteHistoryKeyMismatch = errors.New(
 		"route history key does not match the resolved route",
 	)
+	ErrRouteHistoryRecentWindowMismatch = errors.New(
+		"route history recent-window boundary does not match the evaluator policy",
+	)
 	ErrRouteFrequencyResultInvalid = errors.New(
 		"route-frequency guard result is invalid",
 	)
@@ -81,6 +84,16 @@ func (
 		return Result{},
 			ErrRouteHistoryAsOfMismatch
 	}
+	expectedRecentWindowStart := history.AsOfTime.UTC().Add(
+		-evaluator.config.RecentWindow,
+	)
+	if history.RecentWindowStart.IsZero() ||
+		!history.RecentWindowStart.UTC().Equal(
+			expectedRecentWindowStart,
+		) {
+		return Result{},
+			ErrRouteHistoryRecentWindowMismatch
+	}
 
 	expectedRouteKey,
 		routeAvailable :=
@@ -104,7 +117,7 @@ func (
 
 	observationScore := clampUnit(
 		float64(
-			history.ObservationCount,
+			history.DistinctFlightCount,
 		) /
 			float64(
 				evaluator.config.
@@ -231,7 +244,7 @@ func (
 				),
 			},
 		)
-	case history.ObservationCount <
+	case history.DistinctFlightCount <
 		evaluator.config.
 			MinimumObservationCount:
 		decision = DecisionBlocked
@@ -241,8 +254,8 @@ func (
 			Notice{
 				Code: "route_observation_count_below_minimum",
 				Message: fmt.Sprintf(
-					"Historical route observation count %d is below the configured minimum %d.",
-					history.ObservationCount,
+					"Historical route distinct-flight count %d is below the configured minimum %d.",
+					history.DistinctFlightCount,
 					evaluator.config.
 						MinimumObservationCount,
 				),

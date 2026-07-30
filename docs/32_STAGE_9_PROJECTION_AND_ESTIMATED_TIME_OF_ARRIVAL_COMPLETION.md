@@ -516,8 +516,8 @@ complete score minimum: 0.75
 The final PostgreSQL runtime fixture provides:
 
 ```text
-6 route observations
-6 distinct days
+5 independent historical route flights
+5 distinct historical UTC days
 recent route support
 complete ZAAA to ZBBB route
 high route confidence
@@ -529,7 +529,7 @@ The resulting decision is:
 allowed
 ```
 
-The guard prevents a rare or weakly supported route from being treated as a strong historical prediction pattern.
+The guard prevents a rare or weakly supported route from being treated as a strong historical prediction pattern. Route-history evidence excludes the current trajectory and current flight, then deduplicates multiple trajectories of one logical flight before counts, recent support, UTC-day support, and latest-observation age are calculated.
 
 ---
 
@@ -952,8 +952,8 @@ The final fixture supplies:
 5 historical candidates
 5 selected neighbors
 5 recent neighbors
-6 route observations
-6 distinct route days
+5 independent historical route flights
+5 distinct historical UTC days
 ```
 
 The verifier now proves that the historical path satisfies current production policy rather than only a simplified test policy.

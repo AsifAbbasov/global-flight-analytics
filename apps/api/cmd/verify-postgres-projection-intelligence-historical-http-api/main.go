@@ -14,6 +14,36 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func validateIndependentRouteFrequencyEvidence(
+	result projectionproduction.Result,
+	expectedHistoricalFlights int,
+) error {
+	if result.RouteFrequency == nil {
+		return fmt.Errorf("route-frequency result is missing")
+	}
+	frequency := result.RouteFrequency
+	if frequency.ObservationCount != expectedHistoricalFlights ||
+		frequency.DistinctFlightCount != expectedHistoricalFlights ||
+		frequency.RecentObservationCount != expectedHistoricalFlights ||
+		frequency.DistinctDayCount != expectedHistoricalFlights {
+		return fmt.Errorf(
+			"route-frequency evidence counts are not isolated: observations=%d distinct_flights=%d recent=%d distinct_days=%d expected=%d",
+			frequency.ObservationCount,
+			frequency.DistinctFlightCount,
+			frequency.RecentObservationCount,
+			frequency.DistinctDayCount,
+			expectedHistoricalFlights,
+		)
+	}
+	if frequency.LatestObservationAge <= 0 {
+		return fmt.Errorf(
+			"latest historical route observation age must be positive, got %s",
+			frequency.LatestObservationAge,
+		)
+	}
+	return nil
+}
+
 func main() {
 	os.Exit(
 		run(
@@ -229,6 +259,17 @@ func run(
 	directServiceDuration := time.Since(
 		serviceStartedAt,
 	)
+	if err := validateIndependentRouteFrequencyEvidence(
+		directResult,
+		len(verificationFlights)-1,
+	); err != nil {
+		fmt.Fprintf(
+			stderr,
+			"ERROR: validate independent route-frequency evidence: %v\n",
+			err,
+		)
+		return 1
+	}
 
 	app, err := buildRuntimeApp(
 		composition.Service,

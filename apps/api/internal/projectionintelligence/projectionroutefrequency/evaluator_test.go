@@ -70,6 +70,7 @@ func TestEvaluateBlocksLowObservationCount(
 	history := validRouteHistory()
 	history.ObservationCount = 3
 	history.DistinctFlightCount = 3
+	history.DistinctDayCount = 3
 	history.RecentObservationCount = 2
 
 	result, err := evaluator.Evaluate(
@@ -269,7 +270,10 @@ func validRouteHistory() HistorySummary {
 			-60 * 24 * time.Hour,
 		),
 		WindowEnd: asOfTime,
-		AsOfTime:  asOfTime,
+		RecentWindowStart: asOfTime.Add(
+			-validRouteFrequencyConfig().RecentWindow,
+		),
+		AsOfTime: asOfTime,
 
 		ObservationCount:       12,
 		DistinctFlightCount:    10,

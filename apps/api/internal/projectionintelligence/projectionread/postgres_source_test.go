@@ -309,7 +309,7 @@ func TestLoadRouteHistoryBuildsDeterministicValidatedSummary(
 		rowQueue: []scriptedRow{
 			{
 				values: []any{
-					int64(10),
+					int64(8),
 					int64(8),
 					int64(7),
 					int64(4),
@@ -321,7 +321,7 @@ func TestLoadRouteHistoryBuildsDeterministicValidatedSummary(
 			},
 			{
 				values: []any{
-					int64(10),
+					int64(8),
 					int64(8),
 					int64(7),
 					int64(4),
@@ -366,10 +366,13 @@ func TestLoadRouteHistoryBuildsDeterministicValidatedSummary(
 	}
 
 	if first.RouteKey != "UBBB>LTBA" ||
-		first.ObservationCount != 10 ||
+		first.ObservationCount != 8 ||
 		first.DistinctFlightCount != 8 ||
 		first.DistinctDayCount != 7 ||
 		first.RecentObservationCount != 4 ||
+		!first.RecentWindowStart.Equal(
+			asOfTime.Add(-DefaultPolicy().DataSource.RecentRouteWindow),
+		) ||
 		!first.LastObservedAt.Equal(
 			lastObservedAt,
 		) ||
@@ -392,6 +395,18 @@ func TestLoadRouteHistoryBuildsDeterministicValidatedSummary(
 			client.queryRowCalls[0].query,
 			"as_of_time <= $3",
 		) ||
+		!strings.Contains(
+			client.queryRowCalls[0].query,
+			"route_result.trajectory_id::text <> $7",
+		) ||
+		!strings.Contains(
+			client.queryRowCalls[0].query,
+			"trajectory.flight_id::text <> $8",
+		) ||
+		!strings.Contains(
+			client.queryRowCalls[0].query,
+			"latest_route_per_evidence",
+		) ||
 		strings.Contains(
 			strings.ToUpper(
 				client.queryRowCalls[0].query,
@@ -401,6 +416,15 @@ func TestLoadRouteHistoryBuildsDeterministicValidatedSummary(
 		t.Fatalf(
 			"route-history query is not reproducibly bounded: %#v",
 			client.queryRowCalls,
+		)
+	}
+	args := client.queryRowCalls[0].args
+	if len(args) != 8 ||
+		args[6] != route.TrajectoryID ||
+		args[7] != route.FlightID {
+		t.Fatalf(
+			"route-history exclusion args = %#v",
+			args,
 		)
 	}
 }

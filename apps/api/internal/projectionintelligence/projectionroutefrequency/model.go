@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	Version            = "projection-low-frequency-route-guard-v1"
-	FingerprintVersion = "projection-low-frequency-route-fingerprint-v1"
+	Version            = "projection-low-frequency-route-guard-v2"
+	FingerprintVersion = "projection-low-frequency-route-fingerprint-v2"
 )
 
 type Decision string
@@ -56,9 +56,10 @@ type Notice struct {
 type HistorySummary struct {
 	RouteKey string
 
-	WindowStart time.Time
-	WindowEnd   time.Time
-	AsOfTime    time.Time
+	WindowStart       time.Time
+	WindowEnd         time.Time
+	RecentWindowStart time.Time
+	AsOfTime          time.Time
 
 	ObservationCount       int
 	DistinctFlightCount    int
@@ -81,18 +82,16 @@ func (summary HistorySummary) Clone() HistorySummary {
 }
 
 func (summary HistorySummary) Validate() error {
-	if strings.TrimSpace(
-		summary.RouteKey,
-	) == "" ||
+	normalizedRouteKey := strings.ToUpper(
+		strings.TrimSpace(summary.RouteKey),
+	)
+	if normalizedRouteKey != summary.RouteKey ||
+		!routeKeyPattern.MatchString(summary.RouteKey) ||
 		summary.WindowStart.IsZero() ||
 		summary.WindowEnd.IsZero() ||
 		summary.AsOfTime.IsZero() ||
-		!summary.WindowStart.Before(
-			summary.WindowEnd,
-		) ||
-		summary.WindowEnd.After(
-			summary.AsOfTime,
-		) {
+		!summary.WindowStart.Before(summary.WindowEnd) ||
+		!summary.WindowEnd.Equal(summary.AsOfTime) {
 		return fmt.Errorf(
 			"route history identity or window is invalid",
 		)
@@ -101,16 +100,19 @@ func (summary HistorySummary) Validate() error {
 		summary.DistinctFlightCount < 0 ||
 		summary.DistinctDayCount < 0 ||
 		summary.RecentObservationCount < 0 ||
-		summary.DistinctFlightCount >
-			summary.ObservationCount ||
-		summary.RecentObservationCount >
-			summary.ObservationCount {
+		summary.DistinctFlightCount > summary.ObservationCount ||
+		summary.DistinctDayCount > summary.ObservationCount ||
+		summary.DistinctDayCount > summary.DistinctFlightCount ||
+		summary.RecentObservationCount > summary.DistinctFlightCount {
 		return fmt.Errorf(
 			"route history counts are invalid",
 		)
 	}
 	if summary.ObservationCount == 0 {
-		if !summary.LastObservedAt.IsZero() {
+		if summary.DistinctFlightCount != 0 ||
+			summary.DistinctDayCount != 0 ||
+			summary.RecentObservationCount != 0 ||
+			!summary.LastObservedAt.IsZero() {
 			return fmt.Errorf(
 				"empty route history must not publish a latest observation",
 			)
@@ -127,6 +129,11 @@ func (summary HistorySummary) Validate() error {
 		)
 	}
 
+	if len(summary.SourceNames) == 0 {
+		return fmt.Errorf(
+			"route history requires at least one source name",
+		)
+	}
 	seenSources := make(map[string]struct{})
 	for _, sourceName := range summary.SourceNames {
 		normalized := strings.TrimSpace(
@@ -200,14 +207,19 @@ func (result Result) Clone() Result {
 	return cloned
 }
 
-var fingerprintPattern = regexp.MustCompile(
-	`^sha256:[0-9a-f]{64}$`,
+var (
+	routeKeyPattern = regexp.MustCompile(
+		`^[A-Z0-9]{4}>[A-Z0-9]{4}$`,
+	)
+	fingerprintPattern = regexp.MustCompile(
+		`^sha256:[0-9a-f]{64}$`,
+	)
 )
 
 func (result Result) Validate() error {
 	if result.Version != Version ||
 		!result.Decision.IsKnown() ||
-		strings.TrimSpace(result.RouteKey) == "" ||
+		!routeKeyPattern.MatchString(result.RouteKey) ||
 		result.AsOfTime.IsZero() {
 		return fmt.Errorf(
 			"route-frequency result metadata is invalid",
@@ -217,10 +229,10 @@ func (result Result) Validate() error {
 		result.DistinctFlightCount < 0 ||
 		result.DistinctDayCount < 0 ||
 		result.RecentObservationCount < 0 ||
-		result.DistinctFlightCount >
-			result.ObservationCount ||
-		result.RecentObservationCount >
-			result.ObservationCount ||
+		result.DistinctFlightCount > result.ObservationCount ||
+		result.DistinctDayCount > result.ObservationCount ||
+		result.DistinctDayCount > result.DistinctFlightCount ||
+		result.RecentObservationCount > result.DistinctFlightCount ||
 		result.LatestObservationAge < 0 ||
 		!unitInterval(
 			result.RouteConfidenceScore,

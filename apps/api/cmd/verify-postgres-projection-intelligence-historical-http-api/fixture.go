@@ -750,11 +750,11 @@ func validateFixturePolicyCoverage(
 			policy.Freshness.TargetRecentNeighborCount,
 		)
 	}
-	if len(verificationFlights) <
+	if candidateCount <
 		policy.RouteFrequency.MinimumObservationCount {
 		return fmt.Errorf(
-			"historical fixture route observations %d are below the route-frequency minimum %d",
-			len(verificationFlights),
+			"historical fixture independent route flights %d are below the route-frequency minimum %d",
+			candidateCount,
 			policy.RouteFrequency.MinimumObservationCount,
 		)
 	}
@@ -767,7 +767,6 @@ func validateFixturePolicyCoverage(
 					"current fixture trajectory must have zero age days",
 				)
 			}
-			seenDays[flight.AgeDays] = struct{}{}
 			continue
 		}
 		if flight.AgeDays <= 0 {
