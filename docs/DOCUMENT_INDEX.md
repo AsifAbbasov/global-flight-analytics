@@ -1263,4 +1263,6 @@ logical-flight deduplication, fixed full and recent exposure windows, distinct-f
 scoring, coherent policy targets, strictly positive thresholds and weights, complete
 hard-violation reporting, weighted-score reconstruction, deterministic limitations,
 semantic fingerprinting, production fixture correction, permanent regression tests,
-and Backend Quality audit integration. The review remains open pending exact Continuous Integration and formal closure.
+and Backend Quality audit integration. Exact policy Continuous Integration run
+`30544636679` and permanent-audit run `30548438062` are recorded, with formal closure
+and zero open, unclassified, or deferred findings.

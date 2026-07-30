@@ -1,6 +1,6 @@
 # Projection Route Frequency Review Hardening
 
-Status: open
+Status: closed
 
 ```text
 EVIDENCE_ISOLATION_COMMIT=c6fff15f8d0c770197db40a69d54f8856044d8d2
@@ -10,17 +10,25 @@ EVIDENCE_ISOLATION_BACKEND_QUALITY_JOB=90843560991
 EVIDENCE_ISOLATION_BACKEND_RACE_SAFETY_JOB=90843560999
 EVIDENCE_ISOLATION_BACKEND_CONTAINER_JOB=90843853362
 POLICY_DECISION_INTEGRITY_COMMIT=ee7c79bc8213dc030ce0d98f13d1065c9bb96275
-POLICY_DECISION_INTEGRITY_GITHUB_ACTIONS_RUN=PENDING
-PERMANENT_AUDIT_COMMIT=PENDING
-PERMANENT_AUDIT_GITHUB_ACTIONS_RUN=PENDING
-OPEN_CONFIRMED_FINDINGS=3
+POLICY_DECISION_INTEGRITY_GITHUB_ACTIONS_RUN=30544636679
+POLICY_DECISION_INTEGRITY_POSTGRESQL_16_INTEGRATION_JOB=90877578926
+POLICY_DECISION_INTEGRITY_BACKEND_RACE_SAFETY_JOB=90877578928
+POLICY_DECISION_INTEGRITY_BACKEND_QUALITY_JOB=90877579007
+POLICY_DECISION_INTEGRITY_BACKEND_CONTAINER_JOB=90877915808
+PERMANENT_AUDIT_COMMIT=6f039b33c96cdb67370158b0eda5d0fc87593de5
+PERMANENT_AUDIT_GITHUB_ACTIONS_RUN=30548438062
+PERMANENT_AUDIT_BACKEND_QUALITY_JOB=90890525039
+PERMANENT_AUDIT_POSTGRESQL_16_INTEGRATION_JOB=90890525126
+PERMANENT_AUDIT_BACKEND_RACE_SAFETY_JOB=90890525150
+PERMANENT_AUDIT_BACKEND_CONTAINER_JOB=90890829745
+OPEN_CONFIRMED_FINDINGS=0
 UNCLASSIFIED_FINDINGS=0
 DEFERRED_FINDINGS=0
-PROJECTION_ROUTE_FREQUENCY_ENGINEERING_IMPLEMENTATION=IMPLEMENTED
-PROJECTION_ROUTE_FREQUENCY_ENGINEERING_DEBT=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
-PROJECTION_ROUTE_FREQUENCY_ADDITIONAL_CODE_FIXES_REQUIRED=NO_CONFIRMED_FIX_AT_THIS_BASELINE
-FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
-PROJECTION_ROUTE_FREQUENCY_REVIEW_STATUS=OPEN
+PROJECTION_ROUTE_FREQUENCY_ENGINEERING_IMPLEMENTATION=COMPLETE
+PROJECTION_ROUTE_FREQUENCY_ENGINEERING_DEBT=CLOSED
+PROJECTION_ROUTE_FREQUENCY_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_ROUTE_FREQUENCY_REVIEW_STATUS=CLOSED
 ```
 
 ## 1. Scope
@@ -204,17 +212,22 @@ BACKEND_CONTAINER_JOB=90843853362
 This exact evidence closes current-target leakage and multiple-trajectory inflation at
 the committed baseline.
 
-## 4. Policy and decision integrity evidence pending
+## 4. Policy and decision integrity evidence closed
 
-The policy and decision integrity implementation is committed as:
+The policy and decision integrity implementation completed all four exact Backend
+Continuous Integration jobs:
 
 ```text
 POLICY_DECISION_INTEGRITY_COMMIT=ee7c79bc8213dc030ce0d98f13d1065c9bb96275
+POLICY_DECISION_INTEGRITY_GITHUB_ACTIONS_RUN=30544636679
+POLICY_DECISION_INTEGRITY_POSTGRESQL_16_INTEGRATION_JOB=90877578926
+POLICY_DECISION_INTEGRITY_BACKEND_RACE_SAFETY_JOB=90877578928
+POLICY_DECISION_INTEGRITY_BACKEND_QUALITY_JOB=90877579007
+POLICY_DECISION_INTEGRITY_BACKEND_CONTAINER_JOB=90877915808
 ```
 
-Its exact GitHub Actions run and job identifiers are intentionally recorded as
-`PENDING` until they are independently verified. Local installer success and a pushed
-commit do not substitute for exact Continuous Integration.
+This exact evidence closes exposure-window, policy-target, decision-reporting,
+weighted-score, and semantic-fingerprint integrity at the committed baseline.
 
 ## 5. Deliberately retained and rejected recommendations
 
@@ -289,23 +302,37 @@ The corresponding Backend Quality step is:
 Run projection route frequency review audit
 ```
 
-## 8. Remaining closure work
-
-The module remains formally open until all of the following are complete:
+The permanent-audit increment completed all four exact Backend Continuous Integration
+jobs:
 
 ```text
-1. exact Continuous Integration for ee7c79bc8213dc030ce0d98f13d1065c9bb96275
-2. permanent-audit commit and exact Continuous Integration
-3. formal closure documentation with exact commit and job identifiers
-4. exact Continuous Integration for the formal closure commit
+PERMANENT_AUDIT_COMMIT=6f039b33c96cdb67370158b0eda5d0fc87593de5
+PERMANENT_AUDIT_GITHUB_ACTIONS_RUN=30548438062
+PERMANENT_AUDIT_BACKEND_QUALITY_JOB=90890525039
+PERMANENT_AUDIT_POSTGRESQL_16_INTEGRATION_JOB=90890525126
+PERMANENT_AUDIT_BACKEND_RACE_SAFETY_JOB=90890525150
+PERMANENT_AUDIT_BACKEND_CONTAINER_JOB=90890829745
 ```
 
-No confirmed production-code defect is intentionally deferred. The remaining work is
-evidence and formal closure, not another speculative refactor.
+## 8. Formal closure
+
+All confirmed findings are corrected and permanently protected. Exact Continuous
+Integration is recorded for evidence isolation, policy and decision integrity, and the
+permanent audit. No confirmed production-code defect is deferred, unclassified, or
+left open.
+
+The commit that introduces this formal-closure record must itself complete the same
+four Backend Continuous Integration jobs before the external
+`FORMAL_MODULE_CLOSURE=PASS` verdict is declared. That post-commit verification does
+not require another source or documentation change when all four jobs succeed.
 
 ```text
-OPEN_CONFIRMED_FINDINGS=3
+OPEN_CONFIRMED_FINDINGS=0
 UNCLASSIFIED_FINDINGS=0
 DEFERRED_FINDINGS=0
-PROJECTION_ROUTE_FREQUENCY_REVIEW_STATUS=OPEN
+PROJECTION_ROUTE_FREQUENCY_ENGINEERING_IMPLEMENTATION=COMPLETE
+PROJECTION_ROUTE_FREQUENCY_ENGINEERING_DEBT=CLOSED
+PROJECTION_ROUTE_FREQUENCY_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_ROUTE_FREQUENCY_REVIEW_STATUS=CLOSED
 ```

@@ -193,7 +193,7 @@ func TestReviewRequirementsProtectDocumentationAndContinuousIntegration(t *testi
 	markProtectedRequirements(t, protected)
 }
 
-func TestReviewRequirementsKeepClosureOpenUntilExactEvidence(t *testing.T) {
+func TestReviewRequirementsEnforceClosedExactEvidence(t *testing.T) {
 	var review requirement
 	found := false
 	for _, item := range reviewRequirements() {
@@ -208,23 +208,35 @@ func TestReviewRequirementsKeepClosureOpenUntilExactEvidence(t *testing.T) {
 	}
 	required := strings.Join(review.fragments, "\n")
 	for _, fragment := range []string{
+		"POLICY_DECISION_INTEGRITY_GITHUB_ACTIONS_RUN=30544636679",
+		"POLICY_DECISION_INTEGRITY_POSTGRESQL_16_INTEGRATION_JOB=90877578926",
+		"POLICY_DECISION_INTEGRITY_BACKEND_RACE_SAFETY_JOB=90877578928",
+		"POLICY_DECISION_INTEGRITY_BACKEND_QUALITY_JOB=90877579007",
+		"POLICY_DECISION_INTEGRITY_BACKEND_CONTAINER_JOB=90877915808",
+		"PERMANENT_AUDIT_COMMIT=6f039b33c96cdb67370158b0eda5d0fc87593de5",
+		"PERMANENT_AUDIT_GITHUB_ACTIONS_RUN=30548438062",
+		"PERMANENT_AUDIT_BACKEND_QUALITY_JOB=90890525039",
+		"PERMANENT_AUDIT_POSTGRESQL_16_INTEGRATION_JOB=90890525126",
+		"PERMANENT_AUDIT_BACKEND_RACE_SAFETY_JOB=90890525150",
+		"PERMANENT_AUDIT_BACKEND_CONTAINER_JOB=90890829745",
+		"OPEN_CONFIRMED_FINDINGS=0",
+		"FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO",
+		"PROJECTION_ROUTE_FREQUENCY_REVIEW_STATUS=CLOSED",
+	} {
+		if !strings.Contains(required, fragment) {
+			t.Fatalf("closed requirement misses %q", fragment)
+		}
+	}
+	forbidden := strings.Join(review.forbidden, "\n")
+	for _, fragment := range []string{
+		"Status: open",
 		"POLICY_DECISION_INTEGRITY_GITHUB_ACTIONS_RUN=PENDING",
 		"PERMANENT_AUDIT_COMMIT=PENDING",
 		"OPEN_CONFIRMED_FINDINGS=3",
 		"PROJECTION_ROUTE_FREQUENCY_REVIEW_STATUS=OPEN",
 	} {
-		if !strings.Contains(required, fragment) {
-			t.Fatalf("open-closure requirement misses %q", fragment)
-		}
-	}
-	forbidden := strings.Join(review.forbidden, "\n")
-	for _, fragment := range []string{
-		"Status: closed",
-		"OPEN_CONFIRMED_FINDINGS=0",
-		"PROJECTION_ROUTE_FREQUENCY_REVIEW_STATUS=CLOSED",
-	} {
 		if !strings.Contains(forbidden, fragment) {
-			t.Fatalf("open-closure requirement does not forbid %q", fragment)
+			t.Fatalf("closed requirement does not forbid %q", fragment)
 		}
 	}
 }
