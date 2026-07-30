@@ -123,7 +123,8 @@ type Result struct {
 	SelectedTrajectoryIDs []string
 	Limitations           []Notice
 
-	InputFingerprint string
+	SourceSelectionFingerprint string
+	InputFingerprint           string
 }
 
 func (result Result) Clone() Result {
@@ -166,6 +167,10 @@ func (result Result) Validate() error {
 	}
 	if err := validateLimitations(result.Limitations); err != nil {
 		return err
+	}
+	if result.SourceSelectionFingerprint != "" &&
+		!fingerprintPattern.MatchString(result.SourceSelectionFingerprint) {
+		return fmt.Errorf("pattern confidence source selection fingerprint is invalid")
 	}
 	if !fingerprintPattern.MatchString(result.InputFingerprint) {
 		return fmt.Errorf("pattern confidence input fingerprint is invalid")

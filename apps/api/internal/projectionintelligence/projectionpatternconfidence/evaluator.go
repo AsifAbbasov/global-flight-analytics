@@ -120,6 +120,7 @@ func (evaluator *Evaluator) evaluate(
 		SelectedTrajectoryIDs: append([]string(nil), evidence.trajectoryIDs...),
 		Limitations:           append([]Notice(nil), decision.limitations...),
 
+		SourceSelectionFingerprint: selection.InputFingerprint,
 		InputFingerprint: inputFingerprint(
 			selection,
 			evaluator.config,

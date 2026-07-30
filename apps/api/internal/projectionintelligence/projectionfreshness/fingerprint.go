@@ -20,157 +20,67 @@ func freshnessFingerprint(
 	config Config,
 ) string {
 	digest := sha256.New()
+	writeFingerprintString(digest, FingerprintVersion)
+	writeFingerprintString(digest, selection.InputFingerprint)
+	writeFingerprintString(digest, string(selection.Status))
+	writeFingerprintString(digest, pattern.InputFingerprint)
+	writeFingerprintString(digest, pattern.SourceSelectionFingerprint)
+	writeFingerprintString(digest, string(pattern.SelectionStatus))
+	writeFingerprintString(digest, string(pattern.Status))
+	writeFingerprintBool(digest, pattern.Usable)
+	writeFingerprintTime(digest, selection.AsOfTime)
+	writeFingerprintDuration(digest, config.MaximumNewestNeighborAge)
+	writeFingerprintDuration(digest, config.MaximumMeanNeighborAge)
+	writeFingerprintDuration(digest, config.MaximumOldestNeighborAge)
+	writeFingerprintDuration(digest, config.RecentNeighborAgeLimit)
+	writeFingerprintInt(digest, config.MinimumRecentNeighborCount)
+	writeFingerprintInt(digest, config.TargetRecentNeighborCount)
+	writeFingerprintFloat(digest, config.MinimumUsableScore)
+	writeFingerprintFloat(digest, config.CompleteScoreMinimum)
+	writeFingerprintFloat(digest, config.NewestAgeWeight)
+	writeFingerprintFloat(digest, config.MeanAgeWeight)
+	writeFingerprintFloat(digest, config.OldestAgeWeight)
+	writeFingerprintFloat(digest, config.RecentSupportWeight)
 
-	writeFingerprintString(
-		digest,
-		FingerprintVersion,
-	)
-	writeFingerprintString(
-		digest,
-		selection.InputFingerprint,
-	)
-	writeFingerprintString(
-		digest,
-		pattern.InputFingerprint,
-	)
-	writeFingerprintTime(
-		digest,
-		selection.AsOfTime,
-	)
-	writeFingerprintDuration(
-		digest,
-		config.MaximumNewestNeighborAge,
-	)
-	writeFingerprintDuration(
-		digest,
-		config.MaximumMeanNeighborAge,
-	)
-	writeFingerprintDuration(
-		digest,
-		config.MaximumOldestNeighborAge,
-	)
-	writeFingerprintDuration(
-		digest,
-		config.RecentNeighborAgeLimit,
-	)
-	writeFingerprintInt(
-		digest,
-		config.MinimumRecentNeighborCount,
-	)
-	writeFingerprintInt(
-		digest,
-		config.TargetRecentNeighborCount,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.MinimumUsableScore,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.CompleteScoreMinimum,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.NewestAgeWeight,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.MeanAgeWeight,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.OldestAgeWeight,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.RecentSupportWeight,
-	)
-
-	neighbors := append(
-		[]projectionneighbors.Neighbor(nil),
-		selection.Neighbors...,
-	)
-	sort.SliceStable(
-		neighbors,
-		func(left int, right int) bool {
-			return neighbors[left].TrajectoryID <
-				neighbors[right].TrajectoryID
-		},
-	)
+	neighbors := append([]projectionneighbors.Neighbor(nil), selection.Neighbors...)
+	sort.SliceStable(neighbors, func(left int, right int) bool {
+		return neighbors[left].TrajectoryID < neighbors[right].TrajectoryID
+	})
 	for _, neighbor := range neighbors {
-		writeFingerprintString(
-			digest,
-			neighbor.TrajectoryID,
-		)
+		writeFingerprintString(digest, neighbor.TrajectoryID)
+		writeFingerprintTime(digest, neighbor.CandidateEndTime)
 		writeFingerprintDuration(
 			digest,
-			neighbor.CandidateAge,
-		)
-		writeFingerprintTime(
-			digest,
-			neighbor.CandidateEndTime,
+			selection.AsOfTime.UTC().Sub(neighbor.CandidateEndTime.UTC()),
 		)
 	}
-
-	return fingerprintPrefix +
-		hex.EncodeToString(
-			digest.Sum(nil),
-		)
+	return fingerprintPrefix + hex.EncodeToString(digest.Sum(nil))
 }
 
-func writeFingerprintString(
-	digest hash.Hash,
-	value string,
-) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%d:%s|",
-		len(value),
-		value,
-	)
+func writeFingerprintString(digest hash.Hash, value string) {
+	_, _ = fmt.Fprintf(digest, "%d:%s|", len(value), value)
 }
 
-func writeFingerprintInt(
-	digest hash.Hash,
-	value int,
-) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%d|",
-		value,
-	)
+func writeFingerprintInt(digest hash.Hash, value int) {
+	_, _ = fmt.Fprintf(digest, "%d|", value)
 }
 
-func writeFingerprintFloat(
-	digest hash.Hash,
-	value float64,
-) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%.17g|",
-		value,
-	)
+func writeFingerprintFloat(digest hash.Hash, value float64) {
+	_, _ = fmt.Fprintf(digest, "%.17g|", value)
 }
 
-func writeFingerprintTime(
-	digest hash.Hash,
-	value time.Time,
-) {
-	writeFingerprintString(
-		digest,
-		value.UTC().Format(
-			time.RFC3339Nano,
-		),
-	)
+func writeFingerprintBool(digest hash.Hash, value bool) {
+	if value {
+		writeFingerprintString(digest, "true")
+		return
+	}
+	writeFingerprintString(digest, "false")
 }
 
-func writeFingerprintDuration(
-	digest hash.Hash,
-	value time.Duration,
-) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%d|",
-		value.Nanoseconds(),
-	)
+func writeFingerprintTime(digest hash.Hash, value time.Time) {
+	writeFingerprintString(digest, value.UTC().Format(time.RFC3339Nano))
+}
+
+func writeFingerprintDuration(digest hash.Hash, value time.Duration) {
+	_, _ = fmt.Fprintf(digest, "%d|", value.Nanoseconds())
 }

@@ -65,6 +65,24 @@ func TestReviewRequirementsProtectMandatoryContinuationInterfaces(t *testing.T) 
 	}
 }
 
+func TestReviewRequirementsProtectSelectionLineage(t *testing.T) {
+	requirements := reviewRequirements()
+	protected := map[string]bool{
+		"internal/projectionintelligence/projectionpatternconfidence/model.go":     false,
+		"internal/projectionintelligence/projectionpatternconfidence/evaluator.go": false,
+	}
+	for _, item := range requirements {
+		if _, exists := protected[item.path]; exists {
+			protected[item.path] = true
+		}
+	}
+	for path, found := range protected {
+		if !found {
+			t.Fatalf("selection lineage requirement is missing for %s", path)
+		}
+	}
+}
+
 func TestReviewRequirementsProtectFormalClosureEvidence(t *testing.T) {
 	requirements := reviewRequirements()
 	protected := map[string]bool{

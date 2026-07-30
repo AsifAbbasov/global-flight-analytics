@@ -227,8 +227,11 @@ func newProductionFixture() productionFixture {
 	selector := &fakeNeighborSelector{
 		result: validProductionSelection(asOfTime),
 	}
+	patternResult := validProductionPattern()
+	patternResult.SourceSelectionFingerprint =
+		selector.result.InputFingerprint
 	pattern := &fakePatternEvaluator{
-		result: validProductionPattern(),
+		result: patternResult,
 	}
 	freshness := &fakeFreshnessEvaluator{
 		result: validProductionFreshness(asOfTime),
@@ -538,7 +541,7 @@ func validProductionFreshness(
 		NewestNeighborAge:   24 * time.Hour,
 		MeanNeighborAge:     36 * time.Hour,
 		OldestNeighborAge:   48 * time.Hour,
-		Score:               0.8,
+		Score:               0.85,
 		Components: []projectionfreshness.Component{
 			{Name: projectionfreshness.ComponentNewestAge, Score: 0.9, Weight: 0.25},
 			{Name: projectionfreshness.ComponentMeanAge, Score: 0.8, Weight: 0.25},

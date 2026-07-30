@@ -2,6 +2,7 @@ package projectionfreshness
 
 import (
 	"errors"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -240,7 +241,7 @@ func TestEvaluateRejectsPatternSelectionMismatch(
 		)
 	pattern.SelectedTrajectoryIDs[0] =
 		"other-trajectory"
-	sortStrings(pattern.SelectedTrajectoryIDs)
+	sort.Strings(pattern.SelectedTrajectoryIDs)
 
 	_, err := evaluator.Evaluate(
 		selection,
@@ -359,15 +360,16 @@ func freshnessFixtures(
 			strings.Repeat("d", 64),
 	}
 
-	sortStrings(selectedIDs)
+	sort.Strings(selectedIDs)
 	pattern := projectionpatternconfidence.Result{
 		Version: projectionpatternconfidence.Version,
 		Status: projectionpatternconfidence.
 			StatusComplete,
-		Usable:              true,
-		NeighborCount:       len(neighbors),
-		TargetNeighborCount: len(neighbors),
-		SelectionStatus:     projectionneighbors.StatusComplete,
+		Usable:                     true,
+		NeighborCount:              len(neighbors),
+		TargetNeighborCount:        len(neighbors),
+		SelectionStatus:            projectionneighbors.StatusComplete,
+		SourceSelectionFingerprint: selection.InputFingerprint,
 		Policy: projectionpatternconfidence.Policy{
 			MinimumNeighborCount:                   2,
 			TargetNeighborCount:                    len(neighbors),
@@ -454,15 +456,4 @@ func hasFreshnessNotice(
 	}
 
 	return false
-}
-
-func sortStrings(items []string) {
-	for left := 0; left < len(items); left++ {
-		for right := left + 1; right < len(items); right++ {
-			if items[right] < items[left] {
-				items[left], items[right] =
-					items[right], items[left]
-			}
-		}
-	}
 }
