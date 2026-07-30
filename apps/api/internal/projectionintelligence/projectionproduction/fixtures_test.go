@@ -531,26 +531,67 @@ func validProductionPattern() projectionpatternconfidence.Result {
 func validProductionFreshness(
 	asOfTime time.Time,
 ) projectionfreshness.Result {
-	return projectionfreshness.Result{
-		Version:             projectionfreshness.Version,
-		Decision:            projectionfreshness.DecisionAllowed,
-		Usable:              true,
-		AsOfTime:            asOfTime,
-		NeighborCount:       2,
-		RecentNeighborCount: 2,
-		NewestNeighborAge:   24 * time.Hour,
-		MeanNeighborAge:     36 * time.Hour,
-		OldestNeighborAge:   48 * time.Hour,
-		Score:               0.85,
-		Components: []projectionfreshness.Component{
-			{Name: projectionfreshness.ComponentNewestAge, Score: 0.9, Weight: 0.25},
-			{Name: projectionfreshness.ComponentMeanAge, Score: 0.8, Weight: 0.25},
-			{Name: projectionfreshness.ComponentOldestAge, Score: 0.7, Weight: 0.25},
-			{Name: projectionfreshness.ComponentRecentSupport, Score: 1, Weight: 0.25},
-		},
-		SelectedTrajectoryIDs: []string{"historical-a", "historical-b"},
-		InputFingerprint:      "sha256:" + strings.Repeat("2", 64),
+	return evaluateProductionFreshnessFixture(
+		asOfTime,
+		validProductionFreshnessConfig(),
+	)
+}
+
+func validProductionBlockedFreshness(
+	asOfTime time.Time,
+) projectionfreshness.Result {
+	config := validProductionFreshnessConfig()
+	config.MaximumNewestNeighborAge = 12 * time.Hour
+	config.MaximumMeanNeighborAge = 24 * time.Hour
+	config.MaximumOldestNeighborAge = 36 * time.Hour
+	config.RecentNeighborAgeLimit = 12 * time.Hour
+	return evaluateProductionFreshnessFixture(asOfTime, config)
+}
+
+func validProductionLimitedFreshness(
+	asOfTime time.Time,
+) projectionfreshness.Result {
+	config := validProductionFreshnessConfig()
+	config.CompleteScoreMinimum = 0.99
+	return evaluateProductionFreshnessFixture(asOfTime, config)
+}
+
+func validProductionFreshnessConfig() projectionfreshness.Config {
+	return projectionfreshness.Config{
+		MaximumNewestNeighborAge: 30 * 24 * time.Hour,
+		MaximumMeanNeighborAge:   60 * 24 * time.Hour,
+		MaximumOldestNeighborAge: 90 * 24 * time.Hour,
+
+		RecentNeighborAgeLimit:     30 * 24 * time.Hour,
+		MinimumRecentNeighborCount: 1,
+		TargetRecentNeighborCount:  2,
+
+		MinimumUsableScore:   0.50,
+		CompleteScoreMinimum: 0.65,
+
+		NewestAgeWeight:     0.25,
+		MeanAgeWeight:       0.25,
+		OldestAgeWeight:     0.25,
+		RecentSupportWeight: 0.25,
 	}
+}
+
+func evaluateProductionFreshnessFixture(
+	asOfTime time.Time,
+	config projectionfreshness.Config,
+) projectionfreshness.Result {
+	selection := validProductionSelection(asOfTime)
+	pattern := validProductionPattern()
+	pattern.SourceSelectionFingerprint = selection.InputFingerprint
+	evaluator, err := projectionfreshness.New(config)
+	if err != nil {
+		panic(err)
+	}
+	result, err := evaluator.Evaluate(selection, pattern)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }
 
 func validProductionFrequency(

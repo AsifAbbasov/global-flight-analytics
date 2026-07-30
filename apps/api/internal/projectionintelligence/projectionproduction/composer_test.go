@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionbaseline"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionfreshness"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionroutefrequency"
 )
 
@@ -90,16 +89,9 @@ func TestComposeFallsBackWhenFreshnessBlocks(
 	t *testing.T,
 ) {
 	fixture := newProductionFixture()
-	fixture.freshness.result.Decision =
-		projectionfreshness.DecisionBlocked
-	fixture.freshness.result.Usable = false
-	fixture.freshness.result.Limitations =
-		[]projectionfreshness.Notice{
-			{
-				Code:    "stale",
-				Message: "Historical pattern is stale.",
-			},
-		}
+	fixture.freshness.result = validProductionBlockedFreshness(
+		productionTestAsOfTime(),
+	)
 
 	composer, err := New(fixture.config)
 	if err != nil {
@@ -173,15 +165,9 @@ func TestComposeLimitedGuardPolicyIsExplicit(
 	t *testing.T,
 ) {
 	fixture := newProductionFixture()
-	fixture.freshness.result.Decision =
-		projectionfreshness.DecisionLimited
-	fixture.freshness.result.Limitations =
-		[]projectionfreshness.Notice{
-			{
-				Code:    "freshness_limited",
-				Message: "Freshness is usable but limited.",
-			},
-		}
+	fixture.freshness.result = validProductionLimitedFreshness(
+		productionTestAsOfTime(),
+	)
 
 	rejectComposer, err := New(fixture.config)
 	if err != nil {
@@ -207,15 +193,9 @@ func TestComposeLimitedGuardPolicyIsExplicit(
 	}
 
 	allowFixture := newProductionFixture()
-	allowFixture.freshness.result.Decision =
-		projectionfreshness.DecisionLimited
-	allowFixture.freshness.result.Limitations =
-		[]projectionfreshness.Notice{
-			{
-				Code:    "freshness_limited",
-				Message: "Freshness is usable but limited.",
-			},
-		}
+	allowFixture.freshness.result = validProductionLimitedFreshness(
+		productionTestAsOfTime(),
+	)
 	allowFixture.config.FreshnessLimitedPolicy =
 		LimitedEvidenceAllow
 	allowComposer, err := New(

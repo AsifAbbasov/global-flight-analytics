@@ -46,6 +46,15 @@ func TestEvaluateFingerprintIncludesUpstreamStatus(t *testing.T) {
 		t.Fatalf("complete Evaluate() error = %v", err)
 	}
 	selection.Status = projectionneighbors.StatusPartial
+	pattern.SelectionStatus = projectionneighbors.StatusPartial
+	pattern.Status = projectionpatternconfidence.StatusLimited
+	pattern.Level = projectioncontract.ConfidenceLevelMedium
+	pattern.Limitations = []projectionpatternconfidence.Notice{
+		{
+			Code:    "pattern_support_partial",
+			Message: "Historical pattern is usable but does not satisfy complete target support.",
+		},
+	}
 	partial, err := evaluator.Evaluate(selection, pattern)
 	if err != nil {
 		t.Fatalf("partial Evaluate() error = %v", err)

@@ -59,8 +59,9 @@ func (evaluator *Evaluator) Evaluate(
 	decision := evaluateFreshnessPolicy(
 		metrics,
 		score,
-		selection,
-		pattern,
+		selection.Status,
+		pattern.Status,
+		pattern.Usable,
 		evaluator.config,
 	)
 	result := assembleFreshnessResult(
@@ -83,7 +84,8 @@ func validateLineage(
 	pattern projectionpatternconfidence.Result,
 ) error {
 	if pattern.SourceSelectionFingerprint == "" ||
-		pattern.SourceSelectionFingerprint != selection.InputFingerprint {
+		pattern.SourceSelectionFingerprint != selection.InputFingerprint ||
+		pattern.SelectionStatus != selection.Status {
 		return ErrPatternSelectionMismatch
 	}
 	if !sameSelectedTrajectoryIDs(selection, pattern) {
@@ -98,7 +100,10 @@ func sameSelectedTrajectoryIDs(
 ) bool {
 	selectionIDs := make([]string, 0, len(selection.Neighbors))
 	for _, neighbor := range selection.Neighbors {
-		selectionIDs = append(selectionIDs, strings.TrimSpace(neighbor.TrajectoryID))
+		selectionIDs = append(
+			selectionIDs,
+			strings.TrimSpace(neighbor.TrajectoryID),
+		)
 	}
 	sort.Strings(selectionIDs)
 	if len(selectionIDs) != len(pattern.SelectedTrajectoryIDs) {
@@ -122,9 +127,13 @@ func assembleFreshnessResult(
 	config Config,
 ) Result {
 	return Result{
-		Version:  Version,
-		Decision: decision.decision,
-		Usable:   decision.usable,
+		Version:         Version,
+		Decision:        decision.decision,
+		Usable:          decision.usable,
+		SelectionStatus: selection.Status,
+		PatternStatus:   pattern.Status,
+		PatternUsable:   pattern.Usable,
+		Policy:          config.policySnapshot(),
 
 		AsOfTime: selection.AsOfTime.UTC(),
 
@@ -138,8 +147,10 @@ func assembleFreshnessResult(
 		Score:      score,
 		Components: append([]Component(nil), components...),
 
-		SelectedTrajectoryIDs: append([]string(nil), metrics.selectedIDs...),
-		Limitations:           append([]Notice(nil), decision.limitations...),
+		SelectedTrajectoryIDs:      append([]string(nil), metrics.selectedIDs...),
+		Limitations:                append([]Notice(nil), decision.limitations...),
+		SourceSelectionFingerprint: selection.InputFingerprint,
+		SourcePatternFingerprint:   pattern.InputFingerprint,
 		InputFingerprint: freshnessFingerprint(
 			selection,
 			pattern,

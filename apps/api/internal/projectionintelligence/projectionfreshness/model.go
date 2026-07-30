@@ -7,11 +7,14 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionpatternconfidence"
 )
 
 const (
-	Version                  = "projection-pattern-freshness-guard-v2"
-	FingerprintVersion       = "projection-pattern-freshness-fingerprint-v2"
+	Version                  = "projection-pattern-freshness-guard-v3"
+	FingerprintVersion       = "projection-pattern-freshness-fingerprint-v3"
 	scoreComparisonTolerance = 1e-9
 )
 
@@ -60,9 +63,13 @@ type Notice struct {
 }
 
 type Result struct {
-	Version  string
-	Decision Decision
-	Usable   bool
+	Version         string
+	Decision        Decision
+	Usable          bool
+	SelectionStatus projectionneighbors.Status
+	PatternStatus   projectionpatternconfidence.Status
+	PatternUsable   bool
+	Policy          Policy
 
 	AsOfTime time.Time
 
@@ -78,13 +85,19 @@ type Result struct {
 
 	SelectedTrajectoryIDs []string
 	Limitations           []Notice
-	InputFingerprint      string
+
+	SourceSelectionFingerprint string
+	SourcePatternFingerprint   string
+	InputFingerprint           string
 }
 
 func (result Result) Clone() Result {
 	cloned := result
 	cloned.Components = append([]Component(nil), result.Components...)
-	cloned.SelectedTrajectoryIDs = append([]string(nil), result.SelectedTrajectoryIDs...)
+	cloned.SelectedTrajectoryIDs = append(
+		[]string(nil),
+		result.SelectedTrajectoryIDs...,
+	)
 	cloned.Limitations = append([]Notice(nil), result.Limitations...)
 	return cloned
 }
@@ -94,6 +107,12 @@ var fingerprintPattern = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 func (result Result) Validate() error {
 	if result.Version != Version || !result.Decision.IsKnown() {
 		return fmt.Errorf("pattern freshness version or decision is invalid")
+	}
+	if err := result.Policy.Validate(); err != nil {
+		return fmt.Errorf("pattern freshness policy snapshot is invalid: %w", err)
+	}
+	if err := validateUpstreamSnapshot(result); err != nil {
+		return err
 	}
 	if err := validateCountsAndAges(result); err != nil {
 		return err
@@ -110,7 +129,23 @@ func (result Result) Validate() error {
 	if !fingerprintPattern.MatchString(result.InputFingerprint) {
 		return fmt.Errorf("pattern freshness input fingerprint is invalid")
 	}
-	return validateDecisionShape(result)
+	return validateDecisionSemantics(result)
+}
+
+func validateUpstreamSnapshot(result Result) error {
+	if !result.SelectionStatus.IsKnown() || !result.PatternStatus.IsKnown() {
+		return fmt.Errorf("pattern freshness upstream status snapshot is invalid")
+	}
+	expectedPatternUsable := result.PatternStatus !=
+		projectionpatternconfidence.StatusUnavailable
+	if result.PatternUsable != expectedPatternUsable {
+		return fmt.Errorf("pattern freshness pattern usability does not match pattern status")
+	}
+	if !fingerprintPattern.MatchString(result.SourceSelectionFingerprint) ||
+		!fingerprintPattern.MatchString(result.SourcePatternFingerprint) {
+		return fmt.Errorf("pattern freshness source lineage fingerprint is invalid")
+	}
+	return nil
 }
 
 func validateCountsAndAges(result Result) error {
@@ -121,33 +156,69 @@ func validateCountsAndAges(result Result) error {
 		result.NeighborCount != len(result.SelectedTrajectoryIDs) {
 		return fmt.Errorf("pattern freshness counts or as-of time are invalid")
 	}
-	if result.NewestNeighborAge < 0 || result.MeanNeighborAge < 0 || result.OldestNeighborAge < 0 {
+	if result.SelectionStatus == projectionneighbors.StatusUnavailable &&
+		result.NeighborCount != 0 {
+		return fmt.Errorf("unavailable neighbor selection cannot publish selected neighbors")
+	}
+	if result.SelectionStatus != projectionneighbors.StatusUnavailable &&
+		result.NeighborCount == 0 {
+		return fmt.Errorf("usable neighbor selection snapshot requires selected neighbors")
+	}
+	if result.NewestNeighborAge < 0 ||
+		result.MeanNeighborAge < 0 ||
+		result.OldestNeighborAge < 0 {
 		return fmt.Errorf("pattern freshness age measurements are invalid")
 	}
 	if result.NeighborCount == 0 {
-		if result.NewestNeighborAge != 0 || result.MeanNeighborAge != 0 || result.OldestNeighborAge != 0 {
+		if result.NewestNeighborAge != 0 ||
+			result.MeanNeighborAge != 0 ||
+			result.OldestNeighborAge != 0 {
 			return fmt.Errorf("empty pattern freshness result must have zero age measurements")
 		}
 		return nil
 	}
-	if result.NewestNeighborAge > result.MeanNeighborAge || result.MeanNeighborAge > result.OldestNeighborAge {
+	if result.NewestNeighborAge > result.MeanNeighborAge ||
+		result.MeanNeighborAge > result.OldestNeighborAge {
 		return fmt.Errorf("pattern freshness age measurements are invalid")
 	}
 	return nil
 }
 
 func validateResultComponents(result Result) error {
-	if !unitInterval(result.Score) || len(result.Components) != len(canonicalComponentNames) {
+	if !unitInterval(result.Score) ||
+		len(result.Components) != len(canonicalComponentNames) {
 		return fmt.Errorf("pattern freshness score or components are invalid")
 	}
+	metrics := metricsFromResult(result)
+	expected := buildFreshnessComponents(metrics, result.Policy.config())
 	weightTotal := 0.0
 	weightedScore := 0.0
 	for index, component := range result.Components {
-		if component.Name != canonicalComponentNames[index] {
-			return fmt.Errorf("pattern freshness component catalog is invalid at index %d", index)
+		if component.Name != canonicalComponentNames[index] ||
+			component.Name != expected[index].Name {
+			return fmt.Errorf(
+				"pattern freshness component catalog is invalid at index %d",
+				index,
+			)
 		}
-		if !unitInterval(component.Score) || !finite(component.Weight) || component.Weight < 0 {
+		if !unitInterval(component.Score) ||
+			!finite(component.Weight) ||
+			component.Weight < 0 {
 			return fmt.Errorf("pattern freshness component is invalid")
+		}
+		if math.Abs(component.Score-expected[index].Score) >
+			scoreComparisonTolerance {
+			return fmt.Errorf(
+				"pattern freshness component %q does not match aggregate evidence",
+				component.Name,
+			)
+		}
+		if math.Abs(component.Weight-expected[index].Weight) >
+			scoreComparisonTolerance {
+			return fmt.Errorf(
+				"pattern freshness component %q weight does not match policy",
+				component.Name,
+			)
 		}
 		weightTotal += component.Weight
 		weightedScore += component.Score * component.Weight
@@ -155,10 +226,22 @@ func validateResultComponents(result Result) error {
 	if math.Abs(weightTotal-1) > scoreComparisonTolerance {
 		return fmt.Errorf("pattern freshness component weights do not sum to one")
 	}
-	if math.Abs(result.Score-clampUnit(weightedScore)) > scoreComparisonTolerance {
+	if math.Abs(result.Score-clampUnit(weightedScore)) >
+		scoreComparisonTolerance {
 		return fmt.Errorf("pattern freshness score does not match weighted components")
 	}
 	return nil
+}
+
+func metricsFromResult(result Result) freshnessMetrics {
+	return freshnessMetrics{
+		ages:        make([]time.Duration, result.NeighborCount),
+		selectedIDs: append([]string(nil), result.SelectedTrajectoryIDs...),
+		recentCount: result.RecentNeighborCount,
+		newestAge:   result.NewestNeighborAge,
+		meanAge:     result.MeanNeighborAge,
+		oldestAge:   result.OldestNeighborAge,
+	}
 }
 
 func validateSelectedTrajectoryIDs(items []string) error {
@@ -184,7 +267,10 @@ func validateLimitations(items []Notice) error {
 	for index, limitation := range items {
 		code := strings.TrimSpace(limitation.Code)
 		message := strings.TrimSpace(limitation.Message)
-		if code == "" || message == "" || code != limitation.Code || message != limitation.Message {
+		if code == "" ||
+			message == "" ||
+			code != limitation.Code ||
+			message != limitation.Message {
 			return fmt.Errorf("pattern freshness limitation is invalid or not normalized")
 		}
 		key := code + "\x00" + message
@@ -196,22 +282,34 @@ func validateLimitations(items []Notice) error {
 	return nil
 }
 
-func validateDecisionShape(result Result) error {
-	switch result.Decision {
-	case DecisionBlocked:
-		if result.Usable || len(result.Limitations) == 0 {
-			return fmt.Errorf("blocked freshness result must be unusable and explain limitations")
-		}
-	case DecisionLimited:
-		if !result.Usable || len(result.Limitations) == 0 {
-			return fmt.Errorf("limited freshness result must remain usable and explain limitations")
-		}
-	case DecisionAllowed:
-		if !result.Usable || len(result.Limitations) != 0 {
-			return fmt.Errorf("allowed freshness result must be usable without limitations")
-		}
+func validateDecisionSemantics(result Result) error {
+	expected := evaluateFreshnessPolicy(
+		metricsFromResult(result),
+		result.Score,
+		result.SelectionStatus,
+		result.PatternStatus,
+		result.PatternUsable,
+		result.Policy.config(),
+	)
+	if result.Decision != expected.decision || result.Usable != expected.usable {
+		return fmt.Errorf("pattern freshness decision does not match policy evidence")
+	}
+	if !noticesEqual(result.Limitations, expected.limitations) {
+		return fmt.Errorf("pattern freshness limitations do not match policy evidence")
 	}
 	return nil
+}
+
+func noticesEqual(left []Notice, right []Notice) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func normalizeNotices(items []Notice) []Notice {

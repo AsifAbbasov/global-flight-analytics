@@ -16,8 +16,9 @@ type freshnessDecision struct {
 func evaluateFreshnessPolicy(
 	metrics freshnessMetrics,
 	score float64,
-	selection projectionneighbors.Result,
-	pattern projectionpatternconfidence.Result,
+	selectionStatus projectionneighbors.Status,
+	patternStatus projectionpatternconfidence.Status,
+	patternUsable bool,
 	config Config,
 ) freshnessDecision {
 	limitations := make([]Notice, 0, 10)
@@ -27,7 +28,7 @@ func evaluateFreshnessPolicy(
 			Message: "Historical continuation is blocked because no selected historical neighbors are available.",
 		})
 	}
-	if !pattern.Usable {
+	if !patternUsable {
 		limitations = append(limitations, Notice{
 			Code:    "pattern_confidence_unusable",
 			Message: "Historical continuation is blocked because Pattern Confidence did not authorize the selected evidence.",
@@ -87,7 +88,11 @@ func evaluateFreshnessPolicy(
 	}
 	limitations = normalizeNotices(limitations)
 	if len(limitations) > 0 {
-		return freshnessDecision{decision: DecisionBlocked, usable: false, limitations: limitations}
+		return freshnessDecision{
+			decision:    DecisionBlocked,
+			usable:      false,
+			limitations: limitations,
+		}
 	}
 
 	if scoreBelowThreshold(score, config.CompleteScoreMinimum) {
@@ -100,13 +105,13 @@ func evaluateFreshnessPolicy(
 			),
 		})
 	}
-	if pattern.Status != projectionpatternconfidence.StatusComplete {
+	if patternStatus != projectionpatternconfidence.StatusComplete {
 		limitations = append(limitations, Notice{
 			Code:    "pattern_confidence_not_complete",
 			Message: "Pattern confidence remains usable but is not complete, so freshness approval is limited.",
 		})
 	}
-	if selection.Status != projectionneighbors.StatusComplete {
+	if selectionStatus != projectionneighbors.StatusComplete {
 		limitations = append(limitations, Notice{
 			Code:    "neighbor_selection_not_complete",
 			Message: "Historical neighbor selection remains usable but did not fill the configured selection target.",
@@ -114,7 +119,11 @@ func evaluateFreshnessPolicy(
 	}
 	limitations = normalizeNotices(limitations)
 	if len(limitations) > 0 {
-		return freshnessDecision{decision: DecisionLimited, usable: true, limitations: limitations}
+		return freshnessDecision{
+			decision:    DecisionLimited,
+			usable:      true,
+			limitations: limitations,
+		}
 	}
 	return freshnessDecision{decision: DecisionAllowed, usable: true}
 }
