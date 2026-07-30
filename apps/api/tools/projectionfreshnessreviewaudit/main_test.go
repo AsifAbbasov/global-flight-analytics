@@ -67,6 +67,16 @@ func TestReviewRequirementsProtectProductionAndContinuousIntegration(t *testing.
 	markProtectedRequirements(t, protected)
 }
 
+func TestReviewRequirementsProtectFormalClosureEvidence(t *testing.T) {
+	protected := map[string]bool{
+		"../../docs/32_STAGE_9_PROJECTION_AND_ESTIMATED_TIME_OF_ARRIVAL_COMPLETION.md": false,
+		"../../docs/139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md":                      false,
+		"../../docs/DOCUMENT_INDEX.md":                                                 false,
+		"../../.github/workflows/backend-ci.yml":                                       false,
+	}
+	markProtectedRequirements(t, protected)
+}
+
 func markProtectedRequirements(t *testing.T, protected map[string]bool) {
 	t.Helper()
 	for _, item := range reviewRequirements() {

@@ -1237,3 +1237,19 @@ commits `6e6ac17cfcfca688d57829adfe2468346db6db1a`,
 `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42`, GitHub Actions run
 `30497703314`, and formal closure with zero open, unclassified, or deferred
 findings.
+
+<!-- PROJECTION-FRESHNESS-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 139 — Projection Freshness Review Hardening
+
+`139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` records exact selected-neighbor
+lineage, timestamp-derived selected-neighbor age evidence, overflow-safe mean-duration
+calculation, ordered positive thresholds, semantic upstream-state fingerprinting,
+complete hard-violation reporting, policy and upstream-state snapshots, component and
+decision reconstruction, evaluator-generated production fixtures, deliberately
+retained floating-point and compatibility contracts, engineering commits
+`0b47aa3231c93d573a6026651a4085d376a40583` and
+`072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19`, permanent audit commit
+`619e24878a5025decf6fe21abddba537ce195560`, GitHub Actions run
+`30523502590`, and formal closure with zero open, unclassified, or deferred
+findings.
