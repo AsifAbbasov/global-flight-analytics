@@ -211,12 +211,12 @@ func makeRecordID(
 	return recordIDPrefix + hex.EncodeToString(sum[:])
 }
 
-func nonNilContext(
+func contextError(
 	ctx context.Context,
-) context.Context {
+) error {
 	if ctx == nil {
-		return context.Background()
+		return ErrContextRequired
 	}
 
-	return ctx
+	return ctx.Err()
 }

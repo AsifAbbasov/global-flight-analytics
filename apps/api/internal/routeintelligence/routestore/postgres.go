@@ -241,8 +241,7 @@ func (store *PostgresStore) Put(
 	ctx context.Context,
 	result routecontract.Result,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := contextError(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -325,8 +324,7 @@ func (store *PostgresStore) Get(
 	ctx context.Context,
 	key ResultKey,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := contextError(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -377,8 +375,7 @@ func (store *PostgresStore) GetLatest(
 	trajectoryID string,
 	schemaVersion routecontract.SchemaVersion,
 ) (Record, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := contextError(ctx); err != nil {
 		return Record{}, err
 	}
 
@@ -419,8 +416,7 @@ func (store *PostgresStore) List(
 	ctx context.Context,
 	query ListQuery,
 ) (Page, error) {
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := contextError(ctx); err != nil {
 		return Page{}, err
 	}
 

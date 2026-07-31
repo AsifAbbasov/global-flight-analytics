@@ -19,6 +19,75 @@ func TestNewPostgresWithExecutorRequiresExecutor(t *testing.T) {
 	}
 }
 
+func TestPostgresStoreRejectsNilContextBeforeDatabaseAccess(
+	t *testing.T,
+) {
+	client := &fakeClient{
+		queryRows: &fakeRows{},
+	}
+	store := newPostgresStore(
+		client,
+		time.Now,
+	)
+	result := validRouteResult()
+	key := resultKey(
+		normalizeResult(result),
+	)
+
+	_, putErr := store.Put(
+		nil,
+		result,
+	)
+	_, getErr := store.Get(
+		nil,
+		key,
+	)
+	_, latestErr := store.GetLatest(
+		nil,
+		result.TrajectoryID,
+		routecontract.SchemaVersionV1,
+	)
+	_, listErr := store.List(
+		nil,
+		ListQuery{
+			TrajectoryID:  result.TrajectoryID,
+			SchemaVersion: routecontract.SchemaVersionV1,
+			Limit:         1,
+		},
+	)
+
+	for operation, err := range map[string]error{
+		"put":        putErr,
+		"get":        getErr,
+		"get latest": latestErr,
+		"list":       listErr,
+	} {
+		if !errors.Is(
+			err,
+			ErrContextRequired,
+		) {
+			t.Fatalf(
+				"%s error = %v, want context required",
+				operation,
+				err,
+			)
+		}
+	}
+
+	if client.queryRowCallCount != 0 {
+		t.Fatalf(
+			"QueryRow calls = %d, want 0",
+			client.queryRowCallCount,
+		)
+	}
+	if client.queryCallCount != 0 {
+		t.Fatalf(
+			"Query calls = %d, want 0",
+			client.queryCallCount,
+		)
+	}
+}
+
 func TestPostgresStorePutAndRead(t *testing.T) {
 	result := validRouteResult()
 	storedAt := result.GeneratedAt.Add(time.Second)
@@ -196,6 +265,9 @@ type fakeClient struct {
 	rows      []rowScanner
 	queryRows rowIterator
 	queryErr  error
+
+	queryRowCallCount int
+	queryCallCount    int
 }
 
 func (client *fakeClient) QueryRow(
@@ -203,6 +275,8 @@ func (client *fakeClient) QueryRow(
 	string,
 	...any,
 ) rowScanner {
+	client.queryRowCallCount++
+
 	if len(client.rows) == 0 {
 		return fakeRow{err: pgx.ErrNoRows}
 	}
@@ -216,6 +290,8 @@ func (client *fakeClient) Query(
 	string,
 	...any,
 ) (rowIterator, error) {
+	client.queryCallCount++
+
 	if client.queryErr != nil {
 		return nil, client.queryErr
 	}

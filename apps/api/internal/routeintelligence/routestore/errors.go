@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"route store context is required",
+	)
 	ErrTrajectoryIDRequired = errors.New(
 		"route result trajectory id is required",
 	)
