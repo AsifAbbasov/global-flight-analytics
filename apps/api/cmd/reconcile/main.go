@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os/signal"
@@ -25,6 +26,102 @@ func main() {
 			err,
 		)
 	}
+}
+
+type reconciliationTaskRunner interface {
+	RunOnce(
+		ctx context.Context,
+	) (reconciliationworker.RunResult, error)
+}
+
+type reconciliationBatchSummary struct {
+	ProcessedCount        int
+	CompletedCount        int
+	RetryCount            int
+	FailedCount           int
+	RequeuedBySignalCount int
+}
+
+func runReconciliationBatch(
+	ctx context.Context,
+	maximumTasks int,
+	runner reconciliationTaskRunner,
+	observe func(reconciliationworker.RunResult),
+) (reconciliationBatchSummary, error) {
+	summary := reconciliationBatchSummary{}
+
+	for summary.ProcessedCount < maximumTasks {
+		if err := ctx.Err(); err != nil {
+			if isOperationContextTermination(
+				ctx,
+				err,
+			) {
+				return summary, nil
+			}
+
+			return summary, err
+		}
+
+		result, err := runner.RunOnce(
+			ctx,
+		)
+		if err != nil {
+			if isOperationContextTermination(
+				ctx,
+				err,
+			) {
+				return summary, nil
+			}
+
+			return summary, err
+		}
+
+		if !result.TaskFound {
+			return summary, nil
+		}
+
+		summary.ProcessedCount++
+
+		switch result.FinalStatus {
+		case "completed":
+			summary.CompletedCount++
+
+		case "pending":
+			if result.PersistedItemCount > 0 {
+				summary.RequeuedBySignalCount++
+			} else {
+				summary.RetryCount++
+			}
+
+		case "failed":
+			summary.FailedCount++
+		}
+
+		if observe != nil {
+			observe(result)
+		}
+	}
+
+	return summary, nil
+}
+
+func isOperationContextTermination(
+	ctx context.Context,
+	err error,
+) bool {
+	if ctx == nil ||
+		ctx.Err() == nil ||
+		err == nil {
+		return false
+	}
+
+	return errors.Is(
+		err,
+		context.Canceled,
+	) || errors.Is(
+		err,
+		context.DeadlineExceeded,
+	)
 }
 
 func run() error {
@@ -121,68 +218,40 @@ func run() error {
 		)
 	}
 
-	processedCount := 0
-	completedCount := 0
-	retryCount := 0
-	failedCount := 0
-	requeuedBySignalCount := 0
-
-	for processedCount < cfg.MaximumTasks {
-		if err := operationContext.Err(); err != nil {
-			return err
-		}
-
-		result, err := worker.RunOnce(
-			operationContext,
-		)
-		if err != nil {
-			return err
-		}
-
-		if !result.TaskFound {
-			break
-		}
-
-		processedCount++
-
-		switch result.FinalStatus {
-		case "completed":
-			completedCount++
-
-		case "pending":
-			if result.PersistedItemCount > 0 {
-				requeuedBySignalCount++
-			} else {
-				retryCount++
-			}
-
-		case "failed":
-			failedCount++
-		}
-
-		fmt.Printf(
-			"task_id=%s icao24=%s derivation_type=%s attempt=%d final_status=%s persisted=%d next_attempt_at=%s last_error=%q\n",
-			result.TaskID,
-			result.ICAO24,
-			result.DerivationType,
-			result.AttemptCount,
-			result.FinalStatus,
-			result.PersistedItemCount,
-			formatOptionalTime(
-				result.NextAttemptAt,
-			),
-			result.LastError,
-		)
+	summary, err := runReconciliationBatch(
+		operationContext,
+		cfg.MaximumTasks,
+		worker,
+		func(
+			result reconciliationworker.RunResult,
+		) {
+			fmt.Printf(
+				"task_id=%s icao24=%s derivation_type=%s attempt=%d final_status=%s persisted=%d next_attempt_at=%s last_error=%q\n",
+				result.TaskID,
+				result.ICAO24,
+				result.DerivationType,
+				result.AttemptCount,
+				result.FinalStatus,
+				result.PersistedItemCount,
+				formatOptionalTime(
+					result.NextAttemptAt,
+				),
+				result.LastError,
+			)
+		},
+	)
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf(
 		"requeued_stale=%d processed=%d completed=%d retries=%d failed=%d requeued_by_new_signal=%d maximum_tasks=%d\n",
 		requeuedCount,
-		processedCount,
-		completedCount,
-		retryCount,
-		failedCount,
-		requeuedBySignalCount,
+		summary.ProcessedCount,
+		summary.CompletedCount,
+		summary.RetryCount,
+		summary.FailedCount,
+		summary.RequeuedBySignalCount,
 		cfg.MaximumTasks,
 	)
 
