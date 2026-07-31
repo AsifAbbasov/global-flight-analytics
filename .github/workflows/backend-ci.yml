@@ -205,6 +205,9 @@ jobs:
       - name: Run projection read review audit
         run: go run ./tools/projectionreadreviewaudit -strict
 
+      - name: Run Projection Intelligence final reconciliation audit
+        run: go run ./tools/projectionintelligencefinalaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
