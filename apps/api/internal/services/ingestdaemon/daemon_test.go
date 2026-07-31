@@ -374,6 +374,76 @@ func TestRunSkipsCycleWhenContextIsAlreadyCancelled(
 	}
 }
 
+func TestRunPreservesIndependentWaitCancellation(
+	t *testing.T,
+) {
+	daemon := mustNewDaemon(
+		t,
+		Config{
+			RunCycle: func(
+				context.Context,
+			) error {
+				return nil
+			},
+			Interval: time.Minute,
+			Wait: func(
+				context.Context,
+				time.Duration,
+			) error {
+				return context.Canceled
+			},
+		},
+	)
+
+	err := daemon.Run(
+		context.Background(),
+	)
+	if !errors.Is(
+		err,
+		context.Canceled,
+	) {
+		t.Fatalf(
+			"expected independent wait cancellation, got %v",
+			err,
+		)
+	}
+}
+
+func TestRunPreservesIndependentWaitDeadline(
+	t *testing.T,
+) {
+	daemon := mustNewDaemon(
+		t,
+		Config{
+			RunCycle: func(
+				context.Context,
+			) error {
+				return nil
+			},
+			Interval: time.Minute,
+			Wait: func(
+				context.Context,
+				time.Duration,
+			) error {
+				return context.DeadlineExceeded
+			},
+		},
+	)
+
+	err := daemon.Run(
+		context.Background(),
+	)
+	if !errors.Is(
+		err,
+		context.DeadlineExceeded,
+	) {
+		t.Fatalf(
+			"expected independent wait deadline, got %v",
+			err,
+		)
+	}
+}
+
 func TestNewValidatesRequiredConfiguration(
 	t *testing.T,
 ) {

@@ -173,14 +173,11 @@ func (
 			ctx,
 			nextDelay,
 		); err != nil {
-			if ctx.Err() != nil ||
+			contextErr := ctx.Err()
+			if contextErr != nil &&
 				errors.Is(
 					err,
-					context.Canceled,
-				) ||
-				errors.Is(
-					err,
-					context.DeadlineExceeded,
+					contextErr,
 				) {
 				return nil
 			}
