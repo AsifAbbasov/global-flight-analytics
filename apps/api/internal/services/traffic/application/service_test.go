@@ -13,6 +13,76 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
 )
 
+func TestProcessAndStoreRejectsNilContextBeforeSideEffects(
+	t *testing.T,
+) {
+	flightStateRepository := &fakeFlightStateRepository{}
+	trajectoryRepository := &fakeTrajectoryRepository{}
+	dataQualityRepository := &fakeDataQualityRepository{}
+
+	service := mustNewService(
+		t,
+		Config{
+			Processor:             newFixedProcessor(t),
+			FlightStateRepository: flightStateRepository,
+			TrajectoryRepository:  trajectoryRepository,
+			DataQualityRepository: dataQualityRepository,
+		},
+	)
+
+	result, err := service.ProcessAndStore(
+		nil,
+		[]flightstate.FlightState{
+			makeApplicationFlightState(
+				"state-nil-context",
+				"ABC123",
+				"AHY101",
+				fixedNow().Add(-60*time.Second),
+			),
+		},
+	)
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected context required error, got %v",
+			err,
+		)
+	}
+
+	if result.ProcessingResult.Stats.ReceivedCount != 0 ||
+		result.ContinuedTrajectoryCount != 0 ||
+		result.StoredFlightStateCount != 0 ||
+		result.StoredQualityReportCount != 0 ||
+		result.StoredTrajectoryCount != 0 ||
+		!result.StoredAt.IsZero() {
+		t.Fatalf(
+			"expected zero result before processing, got %+v",
+			result,
+		)
+	}
+
+	if flightStateRepository.saveCount != 0 {
+		t.Fatalf(
+			"expected no flight state writes, got %d",
+			flightStateRepository.saveCount,
+		)
+	}
+	if dataQualityRepository.saveCount != 0 {
+		t.Fatalf(
+			"expected no data quality writes, got %d",
+			dataQualityRepository.saveCount,
+		)
+	}
+	if trajectoryRepository.saveCount != 0 {
+		t.Fatalf(
+			"expected no trajectory writes, got %d",
+			trajectoryRepository.saveCount,
+		)
+	}
+}
+
 func TestProcessAndStoreWithoutRepositories(t *testing.T) {
 	service := mustNewService(
 		t,

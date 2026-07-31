@@ -14,6 +14,10 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
 )
 
+var ErrContextRequired = errors.New(
+	"traffic application context is required",
+)
+
 type FlightStateRepository interface {
 	SaveFlightStates(
 		ctx context.Context,
@@ -140,7 +144,7 @@ func (service *Service) ProcessAndStore(
 	states []flightstate.FlightState,
 ) (ProcessAndStoreResult, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return ProcessAndStoreResult{}, ErrContextRequired
 	}
 
 	processingResult := service.processor.Process(states)
