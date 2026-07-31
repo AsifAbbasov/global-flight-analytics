@@ -13,6 +13,10 @@ import (
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 )
 
+var ErrContextRequired = errors.New(
+	"traffic ingestion context is required",
+)
+
 type RegionalProvider interface {
 	SourceName() string
 
@@ -162,7 +166,7 @@ func (service *Service) LoadAndProcessByPoint(
 	radius int,
 ) (LoadAndProcessResult, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return LoadAndProcessResult{}, ErrContextRequired
 	}
 
 	if service == nil || service.provider == nil {

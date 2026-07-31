@@ -3,6 +3,7 @@ package ingestion
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +12,74 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
 	trafficapplication "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/application"
 )
+
+func TestLoadAndProcessByPointRejectsNilContextBeforeSideEffects(
+	t *testing.T,
+) {
+	provider := &testRegionalProvider{
+		sourceName: "test-provider",
+	}
+	processor := &testProcessingService{}
+	runRepository := &testIngestionRunRepository{
+		run: ingestionrun.Run{
+			ID: "run-nil-context",
+		},
+	}
+
+	service := New(
+		Config{
+			Provider:               provider,
+			ProcessingService:      processor,
+			IngestionRunRepository: runRepository,
+			Now:                    fixedIngestionTime,
+		},
+	)
+
+	result, err := service.LoadAndProcessByPoint(
+		nil,
+		40.4093,
+		49.8671,
+		250,
+	)
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected context required error, got %v",
+			err,
+		)
+	}
+
+	if !reflect.DeepEqual(
+		result,
+		LoadAndProcessResult{},
+	) {
+		t.Fatalf(
+			"expected zero result, got %+v",
+			result,
+		)
+	}
+
+	if runRepository.createCount != 0 {
+		t.Fatalf(
+			"expected no ingestion run creation, got %d",
+			runRepository.createCount,
+		)
+	}
+	if provider.callCount != 0 {
+		t.Fatalf(
+			"expected no provider call, got %d",
+			provider.callCount,
+		)
+	}
+	if processor.callCount != 0 {
+		t.Fatalf(
+			"expected no processing call, got %d",
+			processor.callCount,
+		)
+	}
+}
 
 func TestLoadAndProcessByPoint(t *testing.T) {
 	provider := &testRegionalProvider{
