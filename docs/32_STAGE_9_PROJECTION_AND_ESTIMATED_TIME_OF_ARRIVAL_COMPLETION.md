@@ -1556,14 +1556,15 @@ PROJECTION_CONTINUATION_REVIEW_STATUS=CLOSED
 The formal-closure commit must pass the same four Backend Continuous Integration jobs
 before the external final closure report is issued.
 
-## 36. Projection Arrival Directional Estimated Arrival Integrity
+## 36. Projection Arrival Engineering and Formal Review Closure
 
-Projection Arrival engineering review hardening is implemented on baseline
-`d179e6529c2ce75ac1519d49e72015622617cbc0`. The module now separates physical
-ground speed from signed destination closing speed, preserves slow and receding
-samples, enforces a maximum physical segment speed, uses radial closing speed for
-radius-entry uncertainty, bounds the complete extrapolated interval, and fingerprints
-the exact canonical position evidence consumed by the calculation.
+Projection Arrival engineering review hardening was completed in commit
+`65311c066aebbc278b63e2d25558f79f57584ca3` and passed exact Backend Continuous
+Integration run `30614617800`. The module separates physical ground speed from signed
+destination closing speed, preserves slow and receding samples, enforces a maximum
+physical segment speed, uses radial closing speed for radius-entry uncertainty, bounds
+the complete extrapolated interval, and fingerprints the exact canonical position
+evidence consumed by the calculation.
 
 Permanent review enforcement is implemented in:
 
@@ -1594,12 +1595,24 @@ PROJECTION_ARRIVAL_CURRENT_ENDPOINT_PROVENANCE=ENFORCED
 PROJECTION_ARRIVAL_POSITION_SAMPLE_LINEAGE=ENFORCED
 PROJECTION_ARRIVAL_CONFIDENCE_REASON_RECONSTRUCTION=ENFORCED
 PROJECTION_ARRIVAL_DURATION_POLICY_COHERENCE=ENFORCED
-PROJECTION_ARRIVAL_PERMANENT_REVIEW_AUDIT=ENFORCED_PENDING_EXACT_CI
-PROJECTION_ARRIVAL_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
-PROJECTION_ARRIVAL_OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_ARRIVAL_ENGINEERING_CLOSURE_COMMIT=65311c066aebbc278b63e2d25558f79f57584ca3
+PROJECTION_ARRIVAL_ENGINEERING_CLOSURE_GITHUB_ACTIONS_RUN=30614617800
+PROJECTION_ARRIVAL_ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91104833141
+PROJECTION_ARRIVAL_ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB=91104833127
+PROJECTION_ARRIVAL_ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB=91104833181
+PROJECTION_ARRIVAL_ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB=91105067522
+PROJECTION_ARRIVAL_PERMANENT_REVIEW_AUDIT=CI_CONFIRMED
+PROJECTION_ARRIVAL_ENGINEERING_IMPLEMENTATION=COMPLETE
+PROJECTION_ARRIVAL_ENGINEERING_DEBT=CLOSED
+PROJECTION_ARRIVAL_OPEN_CONFIRMED_FINDINGS=0
 PROJECTION_ARRIVAL_UNCLASSIFIED_FINDINGS=0
 PROJECTION_ARRIVAL_DEFERRED_FINDINGS=0
-PROJECTION_ARRIVAL_ADDITIONAL_CODE_FIXES_REQUIRED=NO_PENDING_EXACT_CI
-PROJECTION_ARRIVAL_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
-PROJECTION_ARRIVAL_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
+PROJECTION_ARRIVAL_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+PROJECTION_ARRIVAL_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_ARRIVAL_FORMAL_CLOSURE=COMPLETE
+PROJECTION_ARRIVAL_REVIEW_STATUS=CLOSED
 ```
+
+
+The formal-closure commit must pass the same four Backend Continuous Integration jobs
+before the external final closure report is issued.

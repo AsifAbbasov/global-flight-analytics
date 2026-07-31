@@ -1285,12 +1285,12 @@ and zero open, unclassified or deferred findings.
 
 ## Document 142 — Projection Arrival Review Hardening
 
-`142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` records signed destination closing
-speed, bounded physical ground speed, preservation of slow and receding samples,
-radial radius-entry uncertainty, complete Estimated Arrival interval bounds, explicit
-nanosecond ceiling and overflow rejection, strict current-trajectory identity,
-canonical used-sample fingerprint lineage, observed current-endpoint provenance,
-confidence contribution reconstruction, duration-policy coherence, focused regression
-tests, permanent review audit integration, deliberately retained idiomatic optional
-contracts, and the exact Continuous Integration gates still required for formal
-closure.
+`142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` is the formally closed review record
+for signed destination closing speed, bounded physical ground speed, preservation of
+slow and receding samples, radial radius-entry uncertainty, complete Estimated Arrival
+interval bounds, explicit nanosecond ceiling and overflow rejection, strict
+current-trajectory identity, canonical used-sample fingerprint lineage, observed
+current-endpoint provenance, confidence contribution reconstruction, duration-policy
+coherence, focused regression tests, permanent strict review audit, exact engineering
+closure commit and Continuous Integration evidence, and zero open, unclassified or
+deferred findings.
