@@ -8,6 +8,7 @@ import (
 
 var (
 	_ KinematicProjector         = (*projectionbaseline.Baseline)(nil)
-	_ HistoricalProjector        = (*projectioncontinuation.Baseline)(nil)
+	_ HistoricalProjectionSource = (*projectioncontinuation.Baseline)(nil)
+	_ HistoricalProjector        = (*HistoricalProjectionAdapter)(nil)
 	_ ArrivalProjectionEstimator = (*projectionarrival.Estimator)(nil)
 )

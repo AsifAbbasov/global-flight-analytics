@@ -47,7 +47,8 @@ type HistoricalProjector interface {
 		projectioncontinuation.Request,
 		projectionhorizon.Plan,
 		projectioncontinuation.ApprovedEvidence,
-	) (projectioncontract.Result, error)
+	) (HistoricalProjectionOutcome, error)
+	historicalProjectionAdapter()
 }
 
 type NeighborSelector interface {

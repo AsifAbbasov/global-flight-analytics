@@ -357,24 +357,40 @@ func (composer *Composer) project(
 	}
 
 	evidence := state.authorized.Clone()
-	result, err := composer.config.HistoricalProjector.ProjectApprovedWithPlan(
-		projectioncontinuation.Request{
-			CurrentTrajectory: request.CurrentTrajectory.Clone(),
-			Candidates:        cloneTrajectories(request.HistoricalCandidates),
-			RouteScope:        evidence.RouteScope.Clone(),
-			AsOfTime:          plan.AsOfTime,
-			RequestedDuration: plan.RequestedDuration,
-			GeneratedAt:       request.GeneratedAt,
-		},
+	historicalRequest := projectioncontinuation.Request{
+		CurrentTrajectory: request.CurrentTrajectory.Clone(),
+		Candidates:        cloneTrajectories(request.HistoricalCandidates),
+		RouteScope:        evidence.RouteScope.Clone(),
+		AsOfTime:          plan.AsOfTime,
+		RequestedDuration: plan.RequestedDuration,
+		GeneratedAt:       request.GeneratedAt,
+	}
+	approvedEvidence := projectioncontinuation.ApprovedEvidence{
+		Selection: evidence.Selection.Clone(),
+		Pattern:   evidence.Pattern.Clone(),
+	}
+	outcome, err := composer.config.HistoricalProjector.ProjectApprovedWithPlan(
+		historicalRequest,
 		plan.Clone(),
-		projectioncontinuation.ApprovedEvidence{
-			Selection: evidence.Selection.Clone(),
-			Pattern:   evidence.Pattern.Clone(),
-		},
+		approvedEvidence.Clone(),
 	)
 	if err != nil {
-		return composer.historicalFailure(request, plan, state, "historical_projection_failed", wrapDependency(ErrHistoricalProjectionFailed, err))
+		reason := "historical_projection_failed"
+		if errors.Is(err, ErrHistoricalProjectionLineageInvalid) {
+			reason = "historical_projection_lineage_mismatch"
+		}
+		return composer.historicalFailure(
+			request,
+			plan,
+			state,
+			reason,
+			wrapDependency(ErrHistoricalProjectionFailed, err),
+		)
 	}
+	if err := outcome.ValidateAgainst(plan, approvedEvidence); err != nil {
+		return composer.historicalFailure(request, plan, state, "historical_projection_lineage_mismatch", err)
+	}
+	result := outcome.Projection.Clone()
 	if result.Method.Name == projectionbaseline.MethodName {
 		if err := validateProjectionPostconditions(result, request, plan, StrategyKinematic); err != nil {
 			return composer.historicalFailure(request, plan, state, "historical_projector_internal_fallback_invalid", err)

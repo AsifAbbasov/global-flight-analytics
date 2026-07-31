@@ -390,6 +390,15 @@ func buildAlgorithmComponents(
 			)
 	}
 
+	historicalAdapter, err := projectionproduction.NewHistoricalProjectionAdapter(historical)
+	if err != nil {
+		return algorithmComponents{},
+			componentError(
+				"Historical Continuation production adapter",
+				err,
+			)
+	}
+
 	arrivalAdapter, err := projectionproduction.NewArrivalAdapter(arrival)
 	if err != nil {
 		return algorithmComponents{},
@@ -404,7 +413,7 @@ func buildAlgorithmComponents(
 			projectionproduction.Config{
 				HorizonPlanner:             horizonPlanner,
 				KinematicProjector:         kinematic,
-				HistoricalProjector:        historical,
+				HistoricalProjector:        historicalAdapter,
 				NeighborSelector:           selector,
 				PatternConfidenceEvaluator: pattern,
 				FreshnessEvaluator:         freshness,

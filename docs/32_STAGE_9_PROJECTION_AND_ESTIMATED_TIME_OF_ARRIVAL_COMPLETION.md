@@ -1694,22 +1694,35 @@ The exact engineering commit passed Backend Quality, Backend Race Safety, Postgr
 16 Integration, and Backend Container in run `30619973772`. The formal-closure commit
 must pass the same four jobs before the external final closure report is issued.
 
-## 38. Projection Production Engineering and Formal Review Closure
+## 38. Projection Production Review Reopen and Output-Lineage Correction
 
-Projection Production engineering review hardening is implemented against baseline
-`298d3fdb2d11b1797ce3728b116702b0a978d870`.
+Projection Production was first hardened against baseline
+`298d3fdb2d11b1797ce3728b116702b0a978d870`, with engineering commit
+`c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` and formal-closure commit
+`0f1a31f56f4baf232e978d240216068a001a184e`. Both exact push-triggered Backend
+Continuous Integration runs succeeded.
 
-The production composer now owns one immutable orchestration snapshot. It builds one
-canonical Horizon Plan, deep-clones all trajectory and route evidence, binds Route
-Intelligence to the current trajectory and time boundary, validates Selection,
-Pattern Confidence, Freshness, Route History, and Route Frequency as one authorized
-evidence graph, and checks every projector output against the authorized identity,
-plan, method, and generation time.
+The formal review was later reopened for one dependency-boundary finding: a
+substitutable Historical Projector could return a projection with correct identity,
+horizon, method, status, and generation time while failing to prove that its output
+was produced from the Selection and Pattern published by the composer.
 
-Estimated Arrival is attached through a narrow production adapter. The existing
-arrival estimator may calculate a complete contract internally, but the adapter
-rejects any change outside the `Arrival` field and returns only an `ArrivalOutcome`
-delta to the composer.
+The corrective implementation introduces:
+
+```text
+HistoricalProjectionAdapter
+HistoricalProjectionOutcome
+ApprovedProjectionLineage
+independent continuation fingerprint reconstruction
+exact selected-neighbor provenance reconstruction
+composer comparison with authorized Plan, Selection, Pattern, and selected IDs
+controlled fallback or typed error on output-lineage drift
+```
+
+The existing single Horizon Plan, immutable request snapshot, route binding,
+cross-contract evidence binding, projector identity postconditions, Estimated
+Arrival-only adapter, limited-evidence notices, error-chain preservation, and request
+and composition fingerprints remain unchanged and protected by their regression tests.
 
 Permanent review enforcement is implemented in:
 
@@ -1730,9 +1743,17 @@ PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91136606
 PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB=91136606649
 PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB=91136606715
 PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB=91136827987
+PROJECTION_PRODUCTION_PRIOR_FORMAL_CLOSURE_COMMIT=0f1a31f56f4baf232e978d240216068a001a184e
+PROJECTION_PRODUCTION_PRIOR_FORMAL_CLOSURE_GITHUB_ACTIONS_RUN=30626948379
+PROJECTION_PRODUCTION_PRIOR_FORMAL_CLOSURE_BACKEND_RACE_SAFETY_JOB=91144310170
+PROJECTION_PRODUCTION_PRIOR_FORMAL_CLOSURE_BACKEND_QUALITY_JOB=91144310191
+PROJECTION_PRODUCTION_PRIOR_FORMAL_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91144310201
+PROJECTION_PRODUCTION_PRIOR_FORMAL_CLOSURE_BACKEND_CONTAINER_JOB=91144541785
+PROJECTION_PRODUCTION_FORMAL_CLOSURE_REOPENED_BASELINE=0f1a31f56f4baf232e978d240216068a001a184e
 PROJECTION_PRODUCTION_VERSION=projection-production-composition-v2
 PROJECTION_PRODUCTION_REQUEST_FINGERPRINT_VERSION=projection-production-request-fingerprint-v2
 PROJECTION_PRODUCTION_COMPOSITION_FINGERPRINT_VERSION=projection-production-composition-fingerprint-v2
+PROJECTION_PRODUCTION_APPROVED_LINEAGE_VERSION=historical-approved-projection-lineage-v1
 PROJECTION_PRODUCTION_SINGLE_HORIZON_PLAN=CI_CONFIRMED
 PROJECTION_PRODUCTION_IMMUTABLE_REQUEST_SNAPSHOT=CI_CONFIRMED
 PROJECTION_PRODUCTION_ROUTE_REQUEST_BINDING=CI_CONFIRMED
@@ -1743,18 +1764,22 @@ PROJECTION_PRODUCTION_UNAVAILABLE_HISTORICAL_REJECTION=CI_CONFIRMED
 PROJECTION_PRODUCTION_LIMITED_EVIDENCE_NOTICES=CI_CONFIRMED
 PROJECTION_PRODUCTION_DEPENDENCY_ERROR_CHAIN=CI_CONFIRMED
 PROJECTION_PRODUCTION_REQUEST_AND_COMPOSITION_FINGERPRINTS=CI_CONFIRMED
-PROJECTION_PRODUCTION_PERMANENT_REVIEW_AUDIT=CI_CONFIRMED
-PROJECTION_PRODUCTION_ENGINEERING_IMPLEMENTATION=COMPLETE
-PROJECTION_PRODUCTION_ENGINEERING_DEBT=CLOSED
-PROJECTION_PRODUCTION_OPEN_CONFIRMED_FINDINGS=0
-PROJECTION_PRODUCTION_UNCLASSIFIED_FINDINGS=0
-PROJECTION_PRODUCTION_DEFERRED_FINDINGS=0
-PROJECTION_PRODUCTION_ADDITIONAL_CODE_FIXES_REQUIRED=NO
-PROJECTION_PRODUCTION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
-PROJECTION_PRODUCTION_FORMAL_CLOSURE=COMPLETE
-PROJECTION_PRODUCTION_REVIEW_STATUS=CLOSED
+PROJECTION_PRODUCTION_HISTORICAL_PROJECTOR_OUTPUT_LINEAGE_BINDING=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_HISTORICAL_PROJECTION_PROVENANCE_RECONSTRUCTION=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_HISTORICAL_SELECTED_NEIGHBOR_PROVENANCE=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_PERMANENT_REVIEW_AUDIT=UPDATED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_ENGINEERING_IMPLEMENTATION=CORRECTIVE_IMPLEMENTATION_COMPLETE_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_ENGINEERING_DEBT=OPEN_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
+PROJECTION_PRODUCTION_OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_UNCLASSIFIED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_DEFERRED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_ADDITIONAL_CODE_FIXES_REQUIRED=NO_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
+PROJECTION_PRODUCTION_FORMAL_CLOSURE=REOPENED_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
+PROJECTION_PRODUCTION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
 ```
 
-The exact engineering commit passed Backend Quality, Backend Race Safety, PostgreSQL
-16 Integration, and Backend Container in run `30624533886`. The formal-closure commit
-must pass the same four jobs before the external final closure report is issued.
+The previous exact Continuous Integration evidence remains authoritative for the
+previously closed findings. The corrective output-lineage implementation and its later
+formal-reclosure commit must each pass Backend Quality, Backend Race Safety, PostgreSQL
+16 Integration, and Backend Container before the module can be declared closed again.

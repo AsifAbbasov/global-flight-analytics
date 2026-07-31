@@ -1,6 +1,6 @@
 # Projection Production Review Hardening
 
-Status: closed
+Status: reopened — Historical Projector output-lineage correction implemented, exact Continuous Integration and formal reclosure pending
 
 ```text
 REVIEW_BASELINE_COMMIT=298d3fdb2d11b1797ce3728b116702b0a978d870
@@ -10,8 +10,16 @@ ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91136606689
 ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB=91136606649
 ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB=91136606715
 ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB=91136827987
+PRIOR_FORMAL_CLOSURE_COMMIT=0f1a31f56f4baf232e978d240216068a001a184e
+PRIOR_FORMAL_CLOSURE_GITHUB_ACTIONS_RUN=30626948379
+PRIOR_FORMAL_CLOSURE_BACKEND_RACE_SAFETY_JOB=91144310170
+PRIOR_FORMAL_CLOSURE_BACKEND_QUALITY_JOB=91144310191
+PRIOR_FORMAL_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91144310201
+PRIOR_FORMAL_CLOSURE_BACKEND_CONTAINER_JOB=91144541785
+FORMAL_CLOSURE_REOPENED_BASELINE=0f1a31f56f4baf232e978d240216068a001a184e
+REOPEN_CONFIRMED_FINDING=HISTORICAL_PROJECTOR_OUTPUT_LINEAGE_BINDING
 ACCEPTED_CRITICAL_FINDINGS=5
-ACCEPTED_HIGH_OR_MEDIUM_FINDINGS=7
+ACCEPTED_HIGH_OR_MEDIUM_FINDINGS=8
 PARTIALLY_ACCEPTED_FINDINGS=3
 REJECTED_STALE_FINDINGS=1
 REJECTED_MECHANICAL_OR_IDIOMATIC_FINDINGS=2
@@ -25,16 +33,19 @@ UNAVAILABLE_HISTORICAL_REJECTION=CI_CONFIRMED
 LIMITED_EVIDENCE_NOTICES=CI_CONFIRMED
 DEPENDENCY_ERROR_CHAIN_PRESERVATION=CI_CONFIRMED
 REQUEST_AND_COMPOSITION_FINGERPRINTS=CI_CONFIRMED
-PERMANENT_REVIEW_AUDIT=CI_CONFIRMED
-ENGINEERING_IMPLEMENTATION=COMPLETE
-ENGINEERING_DEBT=CLOSED
-OPEN_CONFIRMED_FINDINGS=0
-UNCLASSIFIED_FINDINGS=0
-DEFERRED_FINDINGS=0
-ADDITIONAL_CODE_FIXES_REQUIRED=NO
-FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
-PROJECTION_PRODUCTION_FORMAL_CLOSURE=COMPLETE
-PROJECTION_PRODUCTION_REVIEW_STATUS=CLOSED
+HISTORICAL_PROJECTOR_OUTPUT_LINEAGE_BINDING=IMPLEMENTED_PENDING_EXACT_CI
+HISTORICAL_PROJECTION_PROVENANCE_RECONSTRUCTION=IMPLEMENTED_PENDING_EXACT_CI
+HISTORICAL_SELECTED_NEIGHBOR_PROVENANCE=IMPLEMENTED_PENDING_EXACT_CI
+PERMANENT_REVIEW_AUDIT=UPDATED_PENDING_EXACT_CI
+ENGINEERING_IMPLEMENTATION=CORRECTIVE_IMPLEMENTATION_COMPLETE_PENDING_EXACT_CI
+ENGINEERING_DEBT=OPEN_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
+OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI
+UNCLASSIFIED_FINDINGS=0_PENDING_EXACT_CI
+DEFERRED_FINDINGS=0_PENDING_EXACT_CI
+ADDITIONAL_CODE_FIXES_REQUIRED=NO_PENDING_EXACT_CI
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
+PROJECTION_PRODUCTION_FORMAL_CLOSURE=REOPENED_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
+PROJECTION_PRODUCTION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
 ```
 
 ## 1. Scope
@@ -286,15 +297,15 @@ projector postconditions, arrival-only adapter, fingerprint versions, regression
 tests, read composition adapter, documentation, and Backend Continuous Integration
 wiring.
 
-## 14. Formal closure evidence
+## 14. Prior formal closure evidence and reopen
 
-The engineering implementation commit is:
+The first engineering implementation commit was:
 
 ```text
 c01b6ee0affff185adeda8e7fb0e1c39681cbe8c
 ```
 
-The exact push-triggered Backend Continuous Integration evidence is:
+Its exact push-triggered Backend Continuous Integration evidence was:
 
 ```text
 run: 30624533886
@@ -304,14 +315,79 @@ Backend Quality: 91136606715 — success
 Backend Container: 91136827987 — success
 ```
 
-The Backend Quality job executed the permanent Projection Production review audit as
-well as the previously closed Projection Horizon, Projection Baseline, Projection
-Continuation, Projection Arrival, and Projection Evaluation audits. The engineering
-debt, confirmed findings, unclassified findings, and deferred findings recorded by
-this review are closed.
+The first formal-closure commit was:
 
-The formal-closure commit must pass the same four Backend Continuous Integration jobs
-before the external final closure report is issued.
+```text
+0f1a31f56f4baf232e978d240216068a001a184e
+```
+
+Its exact push-triggered Backend Continuous Integration evidence was:
+
+```text
+run: 30626948379
+Backend Race Safety: 91144310170 — success
+Backend Quality: 91144310191 — success
+PostgreSQL 16 Integration: 91144310201 — success
+Backend Container: 91144541785 — success
+```
+
+Those commits and runs remain valid evidence for all previously closed findings. The
+formal verdict was subsequently reopened because the production dependency contract
+still accepted a Historical Projector result without a typed and independently
+validated receipt binding that result to the authorized Plan, Selection, Pattern, and
+selected-neighbor provenance.
+
+## 15. Historical Projector output-lineage correction
+
+Production now uses `HistoricalProjectionAdapter` instead of injecting
+`projectioncontinuation.Baseline` directly into the composer. The adapter calls the
+existing plan-aware projector and then asks the concrete Historical Continuation
+source to independently validate the returned projection against its immutable
+continuation policy.
+
+The validator reconstructs:
+
+```text
+continuation input fingerprint from current trajectory, Plan, Selection, Pattern, and policy
+canonical current-endpoint provenance
+canonical Selection and Pattern provenance
+exact historical_neighbor:<selected-id> provenance inputs
+latest input observation boundary
+```
+
+The adapter returns a typed `HistoricalProjectionOutcome` with an
+`ApprovedProjectionLineage` receipt containing:
+
+```text
+Plan fingerprint
+Selection fingerprint
+Pattern fingerprint
+sorted selected trajectory identifiers
+validated projection input fingerprint
+```
+
+The composer compares every receipt field with the already authorized production
+evidence and independently requires the projection provenance input names to contain
+exactly the current endpoint, Selection, Pattern, and selected historical neighbors.
+A substituted projector with valid trajectory identity, horizon, method, status, and
+generation time but foreign lineage now produces controlled kinematic fallback or a
+typed error according to the configured dependency-failure policy.
+
+Focused corrective regression coverage includes:
+
+```text
+TestValidateApprovedProjectionLineageReconstructsFingerprintAndInputs
+TestValidateApprovedProjectionLineageRejectsForeignFingerprint
+TestValidateApprovedProjectionLineageRejectsForeignNeighborProvenance
+TestComposeRejectsHistoricalProjectionLineageDrift
+TestComposeReturnsHistoricalProjectionLineageErrorWhenConfigured
+```
+
+The permanent audit now requires the adapter, independent source validator, typed
+lineage receipt, malicious lineage tests, runtime wiring, reopened documentation, and
+exact prior closure evidence. Formal reclosure remains blocked until this corrective
+engineering commit and the later formal-reclosure commit each pass the exact required
+Backend Continuous Integration jobs.
 
 No statement in this document closes `projectionread` or the final end-to-end project
 reconciliation.

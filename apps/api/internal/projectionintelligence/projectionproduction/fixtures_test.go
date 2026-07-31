@@ -53,24 +53,88 @@ func (fake *fakeKinematicProjector) ProjectWithPlan(
 }
 
 type fakeHistoricalProjector struct {
-	result   projectioncontract.Result
-	err      error
-	calls    int
-	request  projectioncontinuation.Request
-	plan     projectionhorizon.Plan
-	evidence projectioncontinuation.ApprovedEvidence
+	result        projectioncontract.Result
+	err           error
+	calls         int
+	request       projectioncontinuation.Request
+	plan          projectionhorizon.Plan
+	evidence      projectioncontinuation.ApprovedEvidence
+	mutateOutcome func(*HistoricalProjectionOutcome)
 }
+
+func (*fakeHistoricalProjector) historicalProjectionAdapter() {}
 
 func (fake *fakeHistoricalProjector) ProjectApprovedWithPlan(
 	request projectioncontinuation.Request,
 	plan projectionhorizon.Plan,
 	evidence projectioncontinuation.ApprovedEvidence,
-) (projectioncontract.Result, error) {
+) (HistoricalProjectionOutcome, error) {
 	fake.calls++
 	fake.request = request
 	fake.plan = plan.Clone()
 	fake.evidence = evidence.Clone()
-	return fake.result.Clone(), fake.err
+	if fake.err != nil {
+		return HistoricalProjectionOutcome{}, fake.err
+	}
+	projection := fake.result.Clone()
+	outcome := HistoricalProjectionOutcome{Projection: projection}
+	if projection.Method.Name != projectionbaseline.MethodName {
+		selectedIDs := selectedTrajectoryIDs(evidence.Selection)
+		projection.Provenance.Inputs = productionHistoricalInputs(
+			plan.AsOfTime,
+			selectedIDs,
+		)
+		projection.Provenance.LatestInputObservedAt = plan.AsOfTime
+		outcome.Projection = projection
+		lineage := projectioncontinuation.ApprovedProjectionLineage{
+			Version:                    projectioncontinuation.ApprovedProjectionLineageVersion,
+			PlanFingerprint:            plan.Fingerprint,
+			SelectionFingerprint:       evidence.Selection.InputFingerprint,
+			PatternFingerprint:         evidence.Pattern.InputFingerprint,
+			SelectedTrajectoryIDs:      append([]string(nil), selectedIDs...),
+			ProjectionInputFingerprint: projection.Provenance.InputFingerprint,
+		}
+		outcome.Lineage = &lineage
+	}
+	if fake.mutateOutcome != nil {
+		fake.mutateOutcome(&outcome)
+	}
+	return outcome.Clone(), nil
+}
+
+func productionHistoricalInputs(
+	asOfTime time.Time,
+	selectedIDs []string,
+) []projectioncontract.InputReference {
+	inputs := []projectioncontract.InputReference{
+		{
+			Name:           "current_trajectory_endpoint",
+			Classification: projectioncontract.InputClassificationObserved,
+			SourceName:     "test-source",
+			ObservedAt:     asOfTime,
+		},
+		{
+			Name:           "historical_neighbor_selection",
+			Classification: projectioncontract.InputClassificationDerived,
+			SourceName:     "projectionneighbors",
+			ObservedAt:     asOfTime,
+		},
+		{
+			Name:           "historical_pattern_confidence",
+			Classification: projectioncontract.InputClassificationDerived,
+			SourceName:     "projectionpatternconfidence",
+			ObservedAt:     asOfTime,
+		},
+	}
+	for _, trajectoryID := range selectedIDs {
+		inputs = append(inputs, projectioncontract.InputReference{
+			Name:           "historical_neighbor:" + trajectoryID,
+			Classification: projectioncontract.InputClassificationObserved,
+			SourceName:     "historical-store",
+			ObservedAt:     asOfTime.Add(-time.Hour),
+		})
+	}
+	return inputs
 }
 
 type fakeNeighborSelector struct {

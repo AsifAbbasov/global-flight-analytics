@@ -133,6 +133,87 @@ func TestComposeRejectsHistoricalProjectionPostconditionDrift(t *testing.T) {
 	}
 }
 
+func TestComposeRejectsHistoricalProjectionLineageDrift(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*HistoricalProjectionOutcome)
+	}{
+		{
+			name: "selection fingerprint",
+			mutate: func(outcome *HistoricalProjectionOutcome) {
+				outcome.Lineage.SelectionFingerprint = "sha256:" + strings.Repeat("1", 64)
+			},
+		},
+		{
+			name: "pattern fingerprint",
+			mutate: func(outcome *HistoricalProjectionOutcome) {
+				outcome.Lineage.PatternFingerprint = "sha256:" + strings.Repeat("2", 64)
+			},
+		},
+		{
+			name: "plan fingerprint",
+			mutate: func(outcome *HistoricalProjectionOutcome) {
+				outcome.Lineage.PlanFingerprint = "sha256:" + strings.Repeat("3", 64)
+			},
+		},
+		{
+			name: "selected trajectory identifiers",
+			mutate: func(outcome *HistoricalProjectionOutcome) {
+				outcome.Lineage.SelectedTrajectoryIDs = []string{"historical-a", "historical-z"}
+			},
+		},
+		{
+			name: "projection input fingerprint",
+			mutate: func(outcome *HistoricalProjectionOutcome) {
+				outcome.Lineage.ProjectionInputFingerprint = "sha256:" + strings.Repeat("4", 64)
+			},
+		},
+		{
+			name: "historical provenance names",
+			mutate: func(outcome *HistoricalProjectionOutcome) {
+				outcome.Projection.Provenance.Inputs[len(outcome.Projection.Provenance.Inputs)-1].Name =
+					"historical_neighbor:historical-z"
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			fixture := newProductionFixture()
+			fixture.historical.mutateOutcome = testCase.mutate
+			composer, err := New(fixture.config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := composer.Compose(fixture.request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Strategy != StrategyKinematic ||
+				result.FallbackReason != "historical_projection_lineage_mismatch" ||
+				fixture.kinematic.calls != 1 {
+				t.Fatalf("lineage drift was not isolated: %#v", result)
+			}
+		})
+	}
+}
+
+func TestComposeReturnsHistoricalProjectionLineageErrorWhenConfigured(t *testing.T) {
+	fixture := newProductionFixture()
+	fixture.historical.mutateOutcome = func(outcome *HistoricalProjectionOutcome) {
+		outcome.Lineage.SelectionFingerprint = "sha256:" + strings.Repeat("8", 64)
+	}
+	fixture.config.DependencyFailurePolicy = DependencyFailureReturnError
+	composer, err := New(fixture.config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = composer.Compose(fixture.request)
+	if !errors.Is(err, ErrHistoricalProjectionLineageInvalid) {
+		t.Fatalf("lineage error = %v", err)
+	}
+}
+
 func TestComposeRejectsUnavailableHistoricalProjection(t *testing.T) {
 	fixture := newProductionFixture()
 	fixture.historical.result.Status = projectioncontract.ResultStatusUnavailable
