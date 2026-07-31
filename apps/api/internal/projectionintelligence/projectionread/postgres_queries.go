@@ -54,7 +54,10 @@ const routeHistorySummarySQL = `
 	WITH latest_route_per_trajectory AS (
 		SELECT DISTINCT ON (route_result.trajectory_id)
 			route_result.trajectory_id,
+			route_result.id::text AS route_record_id,
+			route_result.input_fingerprint,
 			route_result.as_of_time,
+			route_result.as_of_time_unix_nano,
 			COALESCE(
 				trajectory.flight_id::text,
 				route_result.trajectory_id::text
@@ -85,7 +88,10 @@ const routeHistorySummarySQL = `
 		SELECT DISTINCT ON (evidence_id)
 			evidence_id,
 			trajectory_id,
-			as_of_time
+			route_record_id,
+			input_fingerprint,
+			as_of_time,
+			as_of_time_unix_nano
 		FROM latest_route_per_trajectory
 		ORDER BY
 			evidence_id,
@@ -103,7 +109,23 @@ const routeHistorySummarySQL = `
 		COUNT(*) FILTER (
 			WHERE as_of_time >= $6
 		)::bigint,
-		MAX(as_of_time)
+		MAX(as_of_time),
+		COALESCE(
+			jsonb_agg(
+				jsonb_build_object(
+					'evidence_id', evidence_id,
+					'trajectory_id', trajectory_id::text,
+					'route_record_id', route_record_id,
+					'input_fingerprint', input_fingerprint,
+					'as_of_time_unix_nano', as_of_time_unix_nano
+				)
+				ORDER BY
+					evidence_id,
+					trajectory_id,
+					route_record_id
+			),
+			'[]'::jsonb
+		)
 	FROM latest_route_per_evidence;
 `
 

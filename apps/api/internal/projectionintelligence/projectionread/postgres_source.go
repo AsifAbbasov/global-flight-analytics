@@ -182,8 +182,10 @@ func (
 		origin,
 		destination,
 		currentStart,
-		source.policy.
-			MaximumHistoricalCandidateCount,
+		historicalCandidateScanLimit(
+			source.policy.
+				MaximumHistoricalCandidateCount,
+		),
 	)
 	if err != nil {
 		return nil,
@@ -197,8 +199,10 @@ func (
 	candidateIDs := make(
 		[]string,
 		0,
-		source.policy.
-			MaximumHistoricalCandidateCount,
+		historicalCandidateScanLimit(
+			source.policy.
+				MaximumHistoricalCandidateCount,
+		),
 	)
 	for rows.Next() {
 		var candidateID string
@@ -296,6 +300,11 @@ func (
 			result,
 			candidate,
 		)
+		if len(result) ==
+			source.policy.
+				MaximumHistoricalCandidateCount {
+			break
+		}
 	}
 
 	return result, nil
@@ -340,6 +349,7 @@ func (
 	var distinctDayCount int64
 	var recentObservationCount int64
 	var lastObservedAt pgtype.Timestamptz
+	var evidencePayload []byte
 
 	err := source.client.QueryRow(
 		ctx,
@@ -360,6 +370,7 @@ func (
 		&distinctDayCount,
 		&recentObservationCount,
 		&lastObservedAt,
+		&evidencePayload,
 	)
 	if err != nil {
 		return projectionroutefrequency.HistorySummary{},
@@ -390,6 +401,30 @@ func (
 		}
 	}
 
+	evidence, err := decodeRouteHistoryEvidence(
+		evidencePayload,
+		routeHistoryEvidenceBoundary{
+			ObservationCount: int(observationCount),
+			DistinctDayCount: int(distinctDayCount),
+			RecentObservationCount: int(
+				recentObservationCount,
+			),
+			WindowStart:       windowStart,
+			RecentWindowStart: recentStart,
+			AsOfTime:          asOfTime,
+			LastObservedAt:    lastObservedAt.Time.UTC(),
+		},
+	)
+	if err != nil {
+		return projectionroutefrequency.HistorySummary{},
+			fmt.Errorf(
+				"validate route-history record lineage: %w",
+				err,
+			)
+	}
+	evidenceFingerprint :=
+		routeHistoryEvidenceFingerprint(evidence)
+
 	routeKey := origin + ">" +
 		destination
 	sourceNames := []string{
@@ -416,6 +451,7 @@ func (
 	summary.InputFingerprint =
 		routeHistoryFingerprint(
 			summary,
+			evidenceFingerprint,
 		)
 
 	if err := summary.Validate(); err != nil {
@@ -784,11 +820,12 @@ func filterCoverageGapsAt(
 
 func routeHistoryFingerprint(
 	summary projectionroutefrequency.HistorySummary,
+	evidenceFingerprint string,
 ) string {
 	digest := sha256.Sum256(
 		[]byte(
 			fmt.Sprintf(
-				"projection-route-history-summary-v2|%s|%s|%s|%s|%s|%d|%d|%d|%d|%s|%s",
+				"projection-route-history-summary-v3|%s|%s|%s|%s|%s|%d|%d|%d|%d|%s|%s|%s",
 				strings.ToUpper(strings.TrimSpace(summary.RouteKey)),
 				summary.WindowStart.UTC().
 					Format(time.RFC3339Nano),
@@ -808,6 +845,7 @@ func routeHistoryFingerprint(
 					summary.SourceNames,
 					",",
 				),
+				strings.TrimSpace(evidenceFingerprint),
 			),
 		),
 	)

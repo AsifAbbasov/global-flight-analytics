@@ -318,6 +318,7 @@ func projectionReadHistory(
 	summary.InputFingerprint =
 		routeHistoryFingerprint(
 			summary,
+			routeHistoryEvidenceFingerprint(nil),
 		)
 
 	return summary

@@ -323,6 +323,10 @@ func TestLoadRouteHistoryBuildsDeterministicValidatedSummary(
 						Time:  lastObservedAt,
 						Valid: true,
 					},
+					projectionReadRouteHistoryEvidencePayload(
+						t,
+						lastObservedAt,
+					),
 				},
 			},
 			{
@@ -335,6 +339,10 @@ func TestLoadRouteHistoryBuildsDeterministicValidatedSummary(
 						Time:  lastObservedAt,
 						Valid: true,
 					},
+					projectionReadRouteHistoryEvidencePayload(
+						t,
+						lastObservedAt,
+					),
 				},
 			},
 		},
