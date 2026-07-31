@@ -1271,11 +1271,12 @@ and zero open, unclassified, or deferred findings.
 
 ## Document 141 — Projection Continuation Review Hardening
 
-`141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` records the critical
-authorization/projection evidence-identity defect, compile-time Approved Evidence
-production contract, exact Pattern-to-Selection fingerprint lineage,
-candidate-anchor binding, observed historical source provenance, bounded
-interpolation and rate plausibility, conservative additive uncertainty, effective
-weighted support, disagreement-aware confidence, zero-confidence status semantics,
-near-antipodal rejection, fallback cause preservation, permanent review audit, and
-the exact Continuous Integration gates still required for formal closure.
+`141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` is the formally closed review
+record for the critical authorization/projection evidence-identity defect,
+compile-time Approved Evidence production contract, exact Pattern-to-Selection
+fingerprint lineage, candidate-anchor binding, observed historical source provenance,
+bounded interpolation and rate plausibility, conservative additive uncertainty,
+effective weighted support, disagreement-aware confidence, zero-confidence status
+semantics, near-antipodal rejection, fallback cause preservation, permanent strict
+review audit, exact engineering-closure commit and Continuous Integration evidence,
+and zero open, unclassified or deferred findings.

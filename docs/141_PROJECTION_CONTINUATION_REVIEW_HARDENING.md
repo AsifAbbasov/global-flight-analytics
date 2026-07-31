@@ -1,6 +1,6 @@
 # Projection Continuation Review Hardening
 
-Status: engineering implementation complete, exact Continuous Integration and formal closure pending
+Status: closed
 
 ```text
 REVIEW_BASELINE_COMMIT=a9b72001f1358af06a06f3a16212850daceef553
@@ -10,18 +10,29 @@ PARTIALLY_ACCEPTED_RECOMMENDATIONS=5
 REJECTED_NON_DEFECT_RECOMMENDATIONS=7
 APPROVED_EVIDENCE_INTEGRITY=CI_CONFIRMED_COMMIT_23ecf72a0700b5a96459bc4a8618c72951a4e6aa_RUN_30573655172
 INTERPOLATION_PLAUSIBILITY=CI_CONFIRMED_COMMIT_739073de31e4c1da2aa105d495bc789a294cb3c9_RUN_30576928637
-UNCERTAINTY_CONFIDENCE_CONSISTENCY=IMPLEMENTED_PENDING_EXACT_CI
-GEODESIC_NUMERICAL_STABILITY=IMPLEMENTED_PENDING_EXACT_CI
-EFFECTIVE_WEIGHTED_SUPPORT=IMPLEMENTED_PENDING_EXACT_CI
-FALLBACK_ERROR_CAUSE_PRESERVATION=IMPLEMENTED_PENDING_EXACT_CI
-STANDALONE_CANDIDATE_EVIDENCE_BINDING=IMPLEMENTED_PENDING_EXACT_CI
-DETERMINISTIC_EQUAL_TIMESTAMP_ORDERING=IMPLEMENTED_PENDING_EXACT_CI
-IRREGULAR_FORECAST_GRID_REJECTION=IMPLEMENTED_PENDING_EXACT_CI
-PERMANENT_REVIEW_AUDIT=ENFORCED_PENDING_EXACT_CI
-ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
-OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI
-FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
-PROJECTION_CONTINUATION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
+ENGINEERING_CLOSURE_COMMIT=13838c4273a3be6bde63835e1d8f51af6f6daa21
+ENGINEERING_CLOSURE_GITHUB_ACTIONS_RUN=30593549087
+ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91040848886
+ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB=91040848927
+ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB=91040848967
+ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB=91041042383
+UNCERTAINTY_CONFIDENCE_CONSISTENCY=CI_CONFIRMED
+GEODESIC_NUMERICAL_STABILITY=CI_CONFIRMED
+EFFECTIVE_WEIGHTED_SUPPORT=CI_CONFIRMED
+FALLBACK_ERROR_CAUSE_PRESERVATION=CI_CONFIRMED
+STANDALONE_CANDIDATE_EVIDENCE_BINDING=CI_CONFIRMED
+DETERMINISTIC_EQUAL_TIMESTAMP_ORDERING=CI_CONFIRMED
+IRREGULAR_FORECAST_GRID_REJECTION=CI_CONFIRMED
+PERMANENT_REVIEW_AUDIT=CI_CONFIRMED
+ENGINEERING_IMPLEMENTATION=COMPLETE
+ENGINEERING_DEBT=CLOSED
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_CONTINUATION_FORMAL_CLOSURE=COMPLETE
+PROJECTION_CONTINUATION_REVIEW_STATUS=CLOSED
 ```
 
 ## 1. Review assessment
@@ -47,7 +58,10 @@ requires exact Pattern-to-Selection fingerprint lineage, binds candidate start, 
 anchor and continuation timestamps to the consumed trajectory, and publishes
 historical candidates as observed inputs with their actual source names.
 
-The exact commit and Backend Continuous Integration run are recorded above.
+```text
+COMMIT=23ecf72a0700b5a96459bc4a8618c72951a4e6aa
+GITHUB_ACTIONS_RUN=30573655172
+```
 
 ## 3. Interpolation Plausibility — Continuous Integration confirmed
 
@@ -57,11 +71,14 @@ to interpolated targets and exact observed endpoints. Rejected samples are
 distinguished from ordinary missing samples, causing either a limited result or
 fallback according to remaining support. Effective policy values are fingerprinted.
 
-The exact commit and Backend Continuous Integration run are recorded above.
+```text
+COMMIT=739073de31e4c1da2aa105d495bc789a294cb3c9
+GITHUB_ACTIONS_RUN=30576928637
+```
 
 ## 4. Uncertainty and confidence consistency
 
-Configured model uncertainty and weighted neighbor-disagreement uncertainty are now
+Configured model uncertainty and weighted neighbor-disagreement uncertainty are
 combined conservatively by addition:
 
 ```text
@@ -72,7 +89,7 @@ This preserves both components and deliberately avoids root-sum-square because t
 independence required by that formula is not established. The disagreement multiplier
 must be finite and at least one, so configuration cannot suppress observed spread.
 
-Point confidence now composes four bounded factors:
+Point confidence composes four bounded factors:
 
 ```text
 pattern confidence
@@ -111,34 +128,34 @@ existing deterministic fallback path is used.
 
 ## 7. Candidate evidence and fallback causality
 
-Candidate evidence binding now applies to both `ProjectApproved` and standalone
-`Project`. A structurally valid but trajectory-inconsistent selector result cannot
-silently direct interpolation to a different anchor.
+Candidate evidence binding applies to both `ProjectApproved` and standalone `Project`.
+A structurally valid but trajectory-inconsistent selector result cannot silently direct
+interpolation to a different anchor.
 
 Fallback wrapping uses `%w` for both the strategy error and underlying projector error.
 Callers can therefore use `errors.Is` for `ErrFallbackProjectionFailed` and the original
 cause.
 
-Trajectory snapshots now use a canonical equal-timestamp tie-break based on point ID
-and bit-stable numeric fields instead of preserving input order. Equivalent point sets
+Trajectory snapshots use a canonical equal-timestamp tie-break based on point ID and
+bit-stable numeric fields instead of preserving input order. Equivalent point sets
 therefore produce the same interpolation order. An irregular forecast grid is rejected
-by the complete Horizon Plan validation before projection.
+by complete Horizon Plan validation before projection.
 
 ## 8. Fingerprint collision assessment
 
-The alleged truncated-plan collision is rejected as a current-code defect. Continuation
-fingerprints the complete Horizon Plan fingerprint, which includes version, policy
-name, requested and effective duration, truncation state and reason, and every forecast
-timestamp. A dedicated Projection Continuation regression test now proves that exact
-and truncated requests with the same effective duration produce different continuation
+The alleged truncated-plan collision is not present in the hardened implementation.
+Projection Continuation fingerprints the complete Horizon Plan fingerprint, which
+includes version, policy name, requested and effective duration, truncation state and
+reason, and every forecast timestamp. A dedicated regression test proves that exact and
+truncated requests with the same effective duration produce different continuation
 fingerprints.
 
-Method and continuation/fallback fingerprint versions advance to version 3 because the
-uncertainty, support and confidence semantics changed.
+Method and continuation/fallback fingerprint versions advanced to version 3 because
+the uncertainty, support and confidence semantics changed.
 
 ## 9. Recommendations not accepted as defects
 
-Mandatory basis-point conversion is rejected because these are bounded non-monetary
+Mandatory basis-point conversion was rejected because these are bounded non-monetary
 analytical scores with finite-value validation and explicit comparison tolerance.
 `New(Config) (*Baseline, error)` remains idiomatic Go. Optional altitude remains an
 explicit pointer-presence contract. Test names containing conjunctions are not defects.
@@ -157,22 +174,41 @@ Backend Continuous Integration executes the audit in strict mode. It protects ve
 identity, configuration boundaries, additive uncertainty composition, effective
 weighted support, disagreement confidence penalty, zero-confidence status semantics,
 near-antipodal rejection, standalone candidate binding, fallback cause preservation,
-regression tests and review documentation.
+regression tests, exact engineering-closure evidence and formal review status.
 
-## 11. Formal closure gate
+## 11. Exact engineering-closure Continuous Integration
 
-The engineering implementation contains no confirmed open code finding at this
-baseline, but the review remains open until all of the following are recorded:
+The engineering closure commit passed the exact Backend Continuous Integration run and
+all four mandatory jobs:
 
 ```text
-engineering-closure commit
-exact Backend Continuous Integration run
-Backend Quality job
-Backend Race Safety job
-PostgreSQL 16 Integration job
-Backend Container job
-formal closure commit
-exact Continuous Integration for the formal closure commit
+COMMIT=13838c4273a3be6bde63835e1d8f51af6f6daa21
+GITHUB_ACTIONS_RUN=30593549087
+POSTGRESQL_16_INTEGRATION_JOB=91040848886
+BACKEND_RACE_SAFETY_JOB=91040848927
+BACKEND_QUALITY_JOB=91040848967
+BACKEND_CONTAINER_JOB=91041042383
 ```
 
-No external closed verdict may be issued before those gates are satisfied.
+## 12. Formal closure
+
+All confirmed findings are implemented and protected by regression tests and the
+permanent strict audit. Exact Continuous Integration evidence for the engineering
+closure is recorded above. There are no open, unclassified or deferred findings in the
+review scope.
+
+```text
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+PROJECTION_CONTINUATION_ENGINEERING_IMPLEMENTATION=COMPLETE
+PROJECTION_CONTINUATION_ENGINEERING_DEBT=CLOSED
+PROJECTION_CONTINUATION_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_CONTINUATION_FORMAL_CLOSURE=COMPLETE
+PROJECTION_CONTINUATION_REVIEW_STATUS=CLOSED
+```
+
+The formal-closure commit must itself pass the same four Backend Continuous Integration
+jobs before an external final report is issued. That final run is a release gate for the
+closure record, not an additional engineering finding.

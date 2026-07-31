@@ -1463,8 +1463,10 @@ formal-module-closure verdict is declared.
 
 ## 33. Projection Continuation Review Hardening
 
-The review is open. The first corrective increment closes production
-authorization/projection identity drift.
+Projection Continuation review hardening began at baseline
+`a9b72001f1358af06a06f3a16212850daceef553`. Approved Evidence Integrity removed
+production authorization/projection identity drift and bound Pattern, Selection,
+anchors, candidates and source provenance to the consumed evidence chain.
 
 ```text
 PROJECTION_CONTINUATION_REVIEW_BASELINE=a9b72001f1358af06a06f3a16212850daceef553
@@ -1473,9 +1475,9 @@ PROJECTION_CONTINUATION_DOUBLE_EVALUATION_IN_PRODUCTION=REMOVED
 PROJECTION_CONTINUATION_PATTERN_SELECTION_FINGERPRINT=ENFORCED
 PROJECTION_CONTINUATION_ANCHOR_CANDIDATE_BINDING=ENFORCED
 PROJECTION_CONTINUATION_OBSERVED_SOURCE_PROVENANCE=PRESERVED
-PROJECTION_CONTINUATION_INTERPOLATION_PLAUSIBILITY=OPEN
-PROJECTION_CONTINUATION_UNCERTAINTY_CONFIDENCE_CONSISTENCY=OPEN
-PROJECTION_CONTINUATION_REVIEW_STATUS=OPEN
+PROJECTION_CONTINUATION_APPROVED_EVIDENCE_COMMIT=23ecf72a0700b5a96459bc4a8618c72951a4e6aa
+PROJECTION_CONTINUATION_APPROVED_EVIDENCE_GITHUB_ACTIONS_RUN=30573655172
+PROJECTION_CONTINUATION_REVIEW_STATUS=CLOSED
 ```
 
 The authoritative review record is:
@@ -1486,8 +1488,8 @@ docs/141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md
 
 ## 34. Projection Continuation Interpolation Plausibility
 
-The second Projection Continuation hardening increment adds a centrally normalized
-and fingerprinted plausibility policy.
+The second hardening increment added a centrally normalized and fingerprinted
+plausibility policy and passed exact Backend Continuous Integration.
 
 ```text
 PROJECTION_CONTINUATION_PLAUSIBILITY_BASELINE=23ecf72a0700b5a96459bc4a8618c72951a4e6aa
@@ -1497,26 +1499,18 @@ MAXIMUM_VERTICAL_SPEED_MPS=100
 EXACT_ENDPOINT_SEGMENT_VALIDATION=ENFORCED
 PLAUSIBILITY_FILTERED_OUTPUT_STATUS=LIMITED
 PLAUSIBILITY_SUPPORT_FALLBACK=ENFORCED
-INTERPOLATION_PLAUSIBILITY=IMPLEMENTED_PENDING_EXACT_CI
-PROJECTION_CONTINUATION_REVIEW_STATUS=OPEN
+INTERPOLATION_PLAUSIBILITY=CI_CONFIRMED_COMMIT_739073de31e4c1da2aa105d495bc789a294cb3c9_RUN_30576928637
+PROJECTION_CONTINUATION_REVIEW_STATUS=CLOSED
 ```
 
-The policy defaults are constructor-normalized for compatibility with existing
-composition roots. Effective policy values are included in the continuation input
-fingerprint, so a policy change cannot reuse the identity of a projection created
-under different plausibility limits.
+## 35. Projection Continuation Engineering and Formal Review Closure
 
----
-
-## 35. Projection Continuation Engineering Review Closure
-
-The remaining confirmed Projection Continuation engineering findings are implemented
-as one consistency and permanent-audit increment. Configured model uncertainty and
-neighbor disagreement are conservatively added, effective weighted support replaces
-raw sample count, disagreement directly reduces confidence, terminal confidence loss
-cannot reach one, zero-confidence points force limited status, near-antipodal means are
-rejected, standalone candidate evidence is bound, and fallback causes remain
-inspectable through `errors.Is`.
+The remaining confirmed engineering findings were closed in commit `13838c4273a3be6bde63835e1d8f51af6f6daa21`.
+Configured model uncertainty and neighbor disagreement are conservatively added,
+effective weighted support replaces raw sample count, disagreement directly reduces
+confidence, terminal confidence loss cannot reach one, zero-confidence points force
+limited status, near-antipodal means are rejected, standalone candidate evidence is
+bound, and fallback causes remain inspectable through `errors.Is`.
 
 Permanent review enforcement is implemented in:
 
@@ -1541,8 +1535,23 @@ PROJECTION_CONTINUATION_FALLBACK_CAUSE_PRESERVATION=ENFORCED
 PROJECTION_CONTINUATION_TRUNCATED_PLAN_FINGERPRINT_REGRESSION=ENFORCED
 PROJECTION_CONTINUATION_IRREGULAR_FORECAST_GRID_REJECTION=ENFORCED
 PROJECTION_CONTINUATION_EQUAL_TIMESTAMP_CANONICAL_ORDER=ENFORCED
-PROJECTION_CONTINUATION_PERMANENT_REVIEW_AUDIT=ENFORCED_PENDING_EXACT_CI
-PROJECTION_CONTINUATION_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
-PROJECTION_CONTINUATION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
-PROJECTION_CONTINUATION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
+PROJECTION_CONTINUATION_ENGINEERING_CLOSURE_COMMIT=13838c4273a3be6bde63835e1d8f51af6f6daa21
+PROJECTION_CONTINUATION_ENGINEERING_CLOSURE_GITHUB_ACTIONS_RUN=30593549087
+PROJECTION_CONTINUATION_ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91040848886
+PROJECTION_CONTINUATION_ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB=91040848927
+PROJECTION_CONTINUATION_ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB=91040848967
+PROJECTION_CONTINUATION_ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB=91041042383
+PROJECTION_CONTINUATION_PERMANENT_REVIEW_AUDIT=CI_CONFIRMED
+PROJECTION_CONTINUATION_ENGINEERING_IMPLEMENTATION=COMPLETE
+PROJECTION_CONTINUATION_ENGINEERING_DEBT=CLOSED
+PROJECTION_CONTINUATION_OPEN_CONFIRMED_FINDINGS=0
+PROJECTION_CONTINUATION_UNCLASSIFIED_FINDINGS=0
+PROJECTION_CONTINUATION_DEFERRED_FINDINGS=0
+PROJECTION_CONTINUATION_ADDITIONAL_CODE_FIXES_REQUIRED=NO
+PROJECTION_CONTINUATION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_CONTINUATION_FORMAL_CLOSURE=COMPLETE
+PROJECTION_CONTINUATION_REVIEW_STATUS=CLOSED
 ```
+
+The formal-closure commit must pass the same four Backend Continuous Integration jobs
+before the external final closure report is issued.
