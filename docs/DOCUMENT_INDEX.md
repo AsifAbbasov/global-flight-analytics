@@ -1315,12 +1315,13 @@ Continuous Integration evidence, and zero open, unclassified or deferred finding
 
 ## Document 144 — Projection Production Review Hardening
 
-`144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` records the single immutable Horizon
-Plan, defensive request cloning, Route Intelligence identity and time binding,
-Selection-to-Pattern-to-Freshness lineage, Route History and Route Frequency boundary
-binding, strict historical and kinematic projector postconditions, rejection of
-unavailable historical projections, an Estimated Arrival-only mutation adapter,
-explicit limited-evidence notices, preserved dependency error chains, separate request
-and composition fingerprints, request-aware malicious fakes, focused regression tests,
-permanent strict review audit, and the pending exact Continuous Integration and formal
-closure process.
+`144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` is the formally closed review record
+for one immutable production Horizon Plan, defensive request cloning, Route
+Intelligence identity and time binding, Selection-to-Pattern-to-Freshness lineage,
+Route History and Route Frequency boundary binding, strict historical and kinematic
+projector postconditions, rejection of unavailable historical projections, an
+Estimated Arrival-only mutation adapter, explicit limited-evidence notices, preserved
+dependency error chains, separate request and composition fingerprints,
+request-aware malicious fakes, focused regression tests, permanent strict review
+audit, exact engineering commit and Continuous Integration evidence, and zero open,
+unclassified or deferred findings.

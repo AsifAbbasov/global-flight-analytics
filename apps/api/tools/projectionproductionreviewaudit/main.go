@@ -29,6 +29,7 @@ func main() {
 	}
 
 	failures := inspectRequirements(apiRoot, reviewRequirements())
+	failures = append(failures, inspectExactClosureMarkers(apiRoot)...)
 	if len(failures) == 0 {
 		fmt.Println("Projection production review audit: PASS")
 		return
@@ -204,15 +205,168 @@ func reviewRequirements() []requirement {
 		{
 			path: "../../docs/144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md",
 			fragments: []string{
-				"Status: engineering implementation complete, exact Continuous Integration and formal closure pending",
+				"Status: closed",
 				"REVIEW_BASELINE_COMMIT=298d3fdb2d11b1797ce3728b116702b0a978d870",
-				"SINGLE_HORIZON_PLAN=IMPLEMENTED_PENDING_EXACT_CI",
-				"CROSS_CONTRACT_EVIDENCE_BINDING=IMPLEMENTED_PENDING_EXACT_CI",
-				"ARRIVAL_ONLY_MUTATION_BOUNDARY=IMPLEMENTED_PENDING_EXACT_CI",
-				"PROJECTION_PRODUCTION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE",
+				"ENGINEERING_CLOSURE_COMMIT=c01b6ee0affff185adeda8e7fb0e1c39681cbe8c",
+				"ENGINEERING_CLOSURE_GITHUB_ACTIONS_RUN=30624533886",
+				"ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91136606689",
+				"ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB=91136606649",
+				"ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB=91136606715",
+				"ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB=91136827987",
+				"SINGLE_HORIZON_PLAN=CI_CONFIRMED",
+				"CROSS_CONTRACT_EVIDENCE_BINDING=CI_CONFIRMED",
+				"ARRIVAL_ONLY_MUTATION_BOUNDARY=CI_CONFIRMED",
+				"PERMANENT_REVIEW_AUDIT=CI_CONFIRMED",
+				"ENGINEERING_IMPLEMENTATION=COMPLETE",
+				"ENGINEERING_DEBT=CLOSED",
+				"OPEN_CONFIRMED_FINDINGS=0",
+				"UNCLASSIFIED_FINDINGS=0",
+				"DEFERRED_FINDINGS=0",
+				"ADDITIONAL_CODE_FIXES_REQUIRED=NO",
+				"FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO",
+				"PROJECTION_PRODUCTION_FORMAL_CLOSURE=COMPLETE",
+				"PROJECTION_PRODUCTION_REVIEW_STATUS=CLOSED",
+			},
+			forbidden: []string{
+				"Status: engineering implementation complete, exact Continuous Integration and formal closure pending",
+				"IMPLEMENTED_PENDING_EXACT_CI",
+				"ENFORCED_PENDING_EXACT_CI",
+				"COMPLETE_PENDING_EXACT_CI",
+				"0_PENDING_EXACT_CI",
+				"NO_PENDING_EXACT_CI",
+				"FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES",
+				"PROJECTION_PRODUCTION_REVIEW_STATUS=OPEN",
+			},
+		},
+		{
+			path: "../../docs/32_STAGE_9_PROJECTION_AND_ESTIMATED_TIME_OF_ARRIVAL_COMPLETION.md",
+			fragments: []string{
+				"## 38. Projection Production Engineering and Formal Review Closure",
+				"PROJECTION_PRODUCTION_VERSION=projection-production-composition-v2",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_COMMIT=c01b6ee0affff185adeda8e7fb0e1c39681cbe8c",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_GITHUB_ACTIONS_RUN=30624533886",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91136606689",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB=91136606649",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB=91136606715",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB=91136827987",
+				"PROJECTION_PRODUCTION_PERMANENT_REVIEW_AUDIT=CI_CONFIRMED",
+				"PROJECTION_PRODUCTION_ENGINEERING_IMPLEMENTATION=COMPLETE",
+				"PROJECTION_PRODUCTION_ENGINEERING_DEBT=CLOSED",
+				"PROJECTION_PRODUCTION_OPEN_CONFIRMED_FINDINGS=0",
+				"PROJECTION_PRODUCTION_UNCLASSIFIED_FINDINGS=0",
+				"PROJECTION_PRODUCTION_DEFERRED_FINDINGS=0",
+				"PROJECTION_PRODUCTION_ADDITIONAL_CODE_FIXES_REQUIRED=NO",
+				"PROJECTION_PRODUCTION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO",
+				"PROJECTION_PRODUCTION_FORMAL_CLOSURE=COMPLETE",
+				"PROJECTION_PRODUCTION_REVIEW_STATUS=CLOSED",
+			},
+			forbidden: []string{
+				"PROJECTION_PRODUCTION_PERMANENT_REVIEW_AUDIT=ENFORCED_PENDING_EXACT_CI",
+				"PROJECTION_PRODUCTION_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI",
+				"PROJECTION_PRODUCTION_OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI",
+				"PROJECTION_PRODUCTION_ADDITIONAL_CODE_FIXES_REQUIRED=NO_PENDING_EXACT_CI",
+				"PROJECTION_PRODUCTION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES",
+				"PROJECTION_PRODUCTION_REVIEW_STATUS=OPEN",
+			},
+		},
+		{
+			path: "../../docs/DOCUMENT_INDEX.md",
+			fragments: []string{
+				"## Document 144 — Projection Production Review Hardening",
+				"is the formally closed review record",
+				"exact engineering commit and Continuous Integration evidence",
+				"zero open, unclassified or deferred findings",
+			},
+			forbidden: []string{
+				"pending exact Continuous Integration and formal",
 			},
 		},
 	}
+}
+
+type exactMarkerRequirement struct {
+	path    string
+	markers map[string]string
+}
+
+func inspectExactClosureMarkers(apiRoot string) []string {
+	requirements := []exactMarkerRequirement{
+		{
+			path: "../../docs/144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md",
+			markers: map[string]string{
+				"ENGINEERING_CLOSURE_COMMIT":                        "c01b6ee0affff185adeda8e7fb0e1c39681cbe8c",
+				"ENGINEERING_CLOSURE_GITHUB_ACTIONS_RUN":            "30624533886",
+				"ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB": "91136606689",
+				"ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB":       "91136606649",
+				"ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB":           "91136606715",
+				"ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB":         "91136827987",
+				"PERMANENT_REVIEW_AUDIT":                            "CI_CONFIRMED",
+				"ENGINEERING_IMPLEMENTATION":                        "COMPLETE",
+				"ENGINEERING_DEBT":                                  "CLOSED",
+				"OPEN_CONFIRMED_FINDINGS":                           "0",
+				"UNCLASSIFIED_FINDINGS":                             "0",
+				"DEFERRED_FINDINGS":                                 "0",
+				"ADDITIONAL_CODE_FIXES_REQUIRED":                    "NO",
+				"FORMAL_CLOSURE_DOCUMENTATION_REQUIRED":             "NO",
+				"PROJECTION_PRODUCTION_FORMAL_CLOSURE":              "COMPLETE",
+				"PROJECTION_PRODUCTION_REVIEW_STATUS":               "CLOSED",
+			},
+		},
+		{
+			path: "../../docs/32_STAGE_9_PROJECTION_AND_ESTIMATED_TIME_OF_ARRIVAL_COMPLETION.md",
+			markers: map[string]string{
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_COMMIT":                        "c01b6ee0affff185adeda8e7fb0e1c39681cbe8c",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_GITHUB_ACTIONS_RUN":            "30624533886",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB": "91136606689",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_RACE_SAFETY_JOB":       "91136606649",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_QUALITY_JOB":           "91136606715",
+				"PROJECTION_PRODUCTION_ENGINEERING_CLOSURE_BACKEND_CONTAINER_JOB":         "91136827987",
+				"PROJECTION_PRODUCTION_PERMANENT_REVIEW_AUDIT":                            "CI_CONFIRMED",
+				"PROJECTION_PRODUCTION_ENGINEERING_IMPLEMENTATION":                        "COMPLETE",
+				"PROJECTION_PRODUCTION_ENGINEERING_DEBT":                                  "CLOSED",
+				"PROJECTION_PRODUCTION_OPEN_CONFIRMED_FINDINGS":                           "0",
+				"PROJECTION_PRODUCTION_UNCLASSIFIED_FINDINGS":                             "0",
+				"PROJECTION_PRODUCTION_DEFERRED_FINDINGS":                                 "0",
+				"PROJECTION_PRODUCTION_ADDITIONAL_CODE_FIXES_REQUIRED":                    "NO",
+				"PROJECTION_PRODUCTION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED":             "NO",
+				"PROJECTION_PRODUCTION_FORMAL_CLOSURE":                                    "COMPLETE",
+				"PROJECTION_PRODUCTION_REVIEW_STATUS":                                     "CLOSED",
+			},
+		},
+	}
+
+	failures := make([]string, 0)
+	for _, requirement := range requirements {
+		path := filepath.Clean(filepath.Join(apiRoot, requirement.path))
+		contentBytes, err := os.ReadFile(path)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("read exact markers from %s: %v", requirement.path, err))
+			continue
+		}
+		valuesByKey := make(map[string][]string)
+		for _, line := range strings.Split(string(contentBytes), "\n") {
+			trimmed := strings.TrimSpace(line)
+			key, value, found := strings.Cut(trimmed, "=")
+			if !found || strings.TrimSpace(key) == "" {
+				continue
+			}
+			key = strings.TrimSpace(key)
+			valuesByKey[key] = append(valuesByKey[key], strings.TrimSpace(value))
+		}
+		for key, expected := range requirement.markers {
+			values := valuesByKey[key]
+			if len(values) == 0 {
+				failures = append(failures, fmt.Sprintf("%s is missing exact marker %s=%s", requirement.path, key, expected))
+				continue
+			}
+			for _, actual := range values {
+				if actual != expected {
+					failures = append(failures, fmt.Sprintf("%s marker %s has value %q, expected %q", requirement.path, key, actual, expected))
+				}
+			}
+		}
+	}
+	return failures
 }
 
 func inspectRequirements(apiRoot string, requirements []requirement) []string {
