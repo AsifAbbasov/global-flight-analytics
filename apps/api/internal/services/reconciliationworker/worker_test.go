@@ -13,6 +13,51 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/processor"
 )
 
+func TestRunOnceRejectsNilContext(
+	t *testing.T,
+) {
+	repositoryErr := errors.New(
+		"repository must not be called",
+	)
+
+	worker := newTestWorker(
+		t,
+		&repositoryStub{
+			claimErr: repositoryErr,
+		},
+		&flightStateRepositoryStub{},
+		&dataQualityRepositoryStub{},
+		&trajectoryRepositoryStub{},
+	)
+
+	result, err := worker.RunOnce(nil)
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected context required error, got %v",
+			err,
+		)
+	}
+
+	if errors.Is(
+		err,
+		repositoryErr,
+	) {
+		t.Fatal(
+			"expected nil context rejection before repository access",
+		)
+	}
+
+	if result != (RunResult{}) {
+		t.Fatalf(
+			"expected empty result, got %+v",
+			result,
+		)
+	}
+}
+
 func TestRunOnceCompletesFlightStateQualityTask(
 	t *testing.T,
 ) {

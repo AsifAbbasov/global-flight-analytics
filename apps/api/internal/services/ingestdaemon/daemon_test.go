@@ -8,6 +8,43 @@ import (
 	"time"
 )
 
+func TestRunRejectsNilContext(
+	t *testing.T,
+) {
+	runCalled := false
+
+	daemon := mustNewDaemon(
+		t,
+		Config{
+			RunCycle: func(
+				context.Context,
+			) error {
+				runCalled = true
+
+				return nil
+			},
+			Interval: time.Minute,
+		},
+	)
+
+	err := daemon.Run(nil)
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected context required error, got %v",
+			err,
+		)
+	}
+
+	if runCalled {
+		t.Fatal(
+			"expected nil context rejection before running a cycle",
+		)
+	}
+}
+
 func TestRunStartsFirstCycleImmediately(
 	t *testing.T,
 ) {

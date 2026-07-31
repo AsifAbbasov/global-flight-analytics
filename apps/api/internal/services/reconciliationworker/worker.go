@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	ErrContextRequired                 = errors.New("reconciliation worker context is required")
 	ErrRepositoryRequired              = errors.New("reconciliation worker repository is required")
 	ErrFlightStateRepositoryRequired   = errors.New("reconciliation worker flight state repository is required")
 	ErrDataQualityRepositoryRequired   = errors.New("reconciliation worker data quality repository is required")
@@ -185,7 +186,7 @@ func (worker *Worker) RunOnce(
 	ctx context.Context,
 ) (RunResult, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return RunResult{}, ErrContextRequired
 	}
 
 	task, err := worker.repository.ClaimNextAvailable(

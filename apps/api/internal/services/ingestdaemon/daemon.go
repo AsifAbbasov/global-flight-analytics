@@ -8,6 +8,9 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"ingest daemon context is required",
+	)
 	ErrCycleRunnerRequired = errors.New(
 		"ingest daemon cycle runner is required",
 	)
@@ -109,7 +112,7 @@ func (
 	ctx context.Context,
 ) error {
 	if ctx == nil {
-		ctx = context.Background()
+		return ErrContextRequired
 	}
 
 	cycleNumber := 0
