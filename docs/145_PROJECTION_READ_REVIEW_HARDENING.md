@@ -1,6 +1,6 @@
 # Projection Read Review Hardening
 
-Status: engineering complete; formal closure pending permanent-audit exact Continuous Integration
+Status: closed
 Module: `apps/api/internal/projectionintelligence/projectionread`
 Review baseline: `87b853e5a74bc5b8e0cd9bcb3f1e8e13eec8df0e`
 Permanent-audit baseline: `9dda4b102497028b59280143b86bf84564afb136`
@@ -109,19 +109,26 @@ Backend Quality registration is implemented in:
 .github/workflows/backend-ci.yml
 ```
 
-The permanent-audit commit and its exact push-triggered Backend Continuous Integration run are not
-known until this enforcement increment is committed and executed. They must be recorded in a final
-formal-closure increment.
+Permanent audit commit `e0557f6bc3115767ba124a9c94cbb008194c643b` passed exact
+push-triggered Backend Continuous Integration run `30651385019`. Backend Quality job
+`91225208542` completed successfully and included the permanent `Run projection read review audit`
+step. Backend Race Safety job `91225208660`, PostgreSQL 16 Integration job `91225208672`, and
+Backend Container job `91225529938` also completed successfully.
 
 ```text
-PERMANENT_AUDIT_COMMIT=PENDING
-PERMANENT_AUDIT_GITHUB_ACTIONS_RUN=PENDING
-PERMANENT_AUDIT_BACKEND_QUALITY_JOB=PENDING
-PERMANENT_AUDIT_POSTGRESQL_16_INTEGRATION_JOB=PENDING
-PERMANENT_AUDIT_BACKEND_RACE_SAFETY_JOB=PENDING
-PERMANENT_AUDIT_BACKEND_CONTAINER_JOB=PENDING
-PERMANENT_REVIEW_AUDIT=IMPLEMENTED_PENDING_EXACT_CI
-FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
-PROJECTION_READ_FORMAL_CLOSURE=OPEN_PENDING_EXACT_CI
-PROJECTION_READ_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
+PERMANENT_AUDIT_COMMIT=e0557f6bc3115767ba124a9c94cbb008194c643b
+PERMANENT_AUDIT_GITHUB_ACTIONS_RUN=30651385019
+PERMANENT_AUDIT_BACKEND_QUALITY_JOB=91225208542
+PERMANENT_AUDIT_POSTGRESQL_16_INTEGRATION_JOB=91225208672
+PERMANENT_AUDIT_BACKEND_RACE_SAFETY_JOB=91225208660
+PERMANENT_AUDIT_BACKEND_CONTAINER_JOB=91225529938
+PERMANENT_REVIEW_AUDIT=CI_CONFIRMED
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_READ_FORMAL_CLOSURE=COMPLETE
+PROJECTION_READ_REVIEW_STATUS=CLOSED
 ```
+
+
+The formal-closure commit containing this record must pass Backend Quality, Backend Race Safety,
+PostgreSQL 16 Integration, and Backend Container before the external final module-closure verdict
+is issued.
