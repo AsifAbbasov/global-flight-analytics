@@ -2,28 +2,31 @@ package projectioncontinuation
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionbaseline"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
-	"strings"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 )
 
 func (
 	baseline *Baseline,
 ) fallback(
 	request Request,
+	plan projectionhorizon.Plan,
 	reason string,
 	selectionFingerprint string,
 	patternFingerprint string,
 ) (projectioncontract.Result, error) {
 	result, err := baseline.config.
-		FallbackProjector.Project(
+		FallbackProjector.ProjectWithPlan(
 		projectionbaseline.Request{
 			Trajectory:        request.CurrentTrajectory,
 			AsOfTime:          request.AsOfTime,
 			RequestedDuration: request.RequestedDuration,
 			GeneratedAt:       request.GeneratedAt,
 		},
+		plan,
 	)
 	if err != nil {
 		return projectioncontract.Result{},

@@ -12,6 +12,7 @@ import (
 	domainweather "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionbaseline"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/weatherintelligence/weatheralignment"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/weatherintelligence/weatherencounter"
@@ -422,8 +423,18 @@ func testProjection(
 		GeneratedAt: generatedAt,
 	}
 
+	plan, err := projectionhorizon.FinalizePlan(projectionhorizon.Plan{
+		Version: projectionhorizon.Version, PolicyName: "weather-context-test",
+		AsOfTime: asOfTime, EndTime: projection.Horizon.EndTime, Step: projection.Horizon.Step,
+		RequestedDuration: projection.Horizon.Duration(), EffectiveDuration: projection.Horizon.Duration(),
+		ForecastTimes: []time.Time{asOfTime.Add(5 * time.Minute), asOfTime.Add(10 * time.Minute)},
+	})
+	if err != nil {
+		t.Fatalf("finalize test horizon: %v", err)
+	}
 	result := projectionproduction.Result{
 		Version:          projectionproduction.Version,
+		HorizonPlan:      plan,
 		Strategy:         projectionproduction.StrategyKinematic,
 		FallbackReason:   "test_kinematic_fallback",
 		ArrivalStatus:    projectionproduction.ArrivalStatusSkipped,
@@ -432,7 +443,8 @@ func testProjection(
 		InputFingerprint: "sha256:" + strings.Repeat("c", 64),
 		GeneratedAt:      generatedAt,
 	}
-	if err := result.Validate(); err != nil {
+	result, err = projectionproduction.Finalize(result)
+	if err != nil {
 		t.Fatalf("test projection is invalid: %v", err)
 	}
 	return result

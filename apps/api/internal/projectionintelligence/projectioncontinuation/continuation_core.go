@@ -87,7 +87,22 @@ func (
 ) Project(
 	request Request,
 ) (projectioncontract.Result, error) {
-	return baseline.project(request, nil)
+	if baseline == nil {
+		return projectioncontract.Result{}, ErrHorizonPlannerRequired
+	}
+	plan, err := baseline.config.HorizonPlanner.Build(
+		projectionhorizon.Request{
+			AsOfTime:          request.AsOfTime,
+			RequestedDuration: request.RequestedDuration,
+		},
+	)
+	if err != nil {
+		return projectioncontract.Result{}, fmt.Errorf(
+			"build historical continuation horizon: %w",
+			err,
+		)
+	}
+	return baseline.projectWithPlan(request, plan, nil)
 }
 
 func (
@@ -96,81 +111,94 @@ func (
 	request Request,
 	evidence ApprovedEvidence,
 ) (projectioncontract.Result, error) {
+	if baseline == nil {
+		return projectioncontract.Result{}, ErrHorizonPlannerRequired
+	}
+	plan, err := baseline.config.HorizonPlanner.Build(
+		projectionhorizon.Request{
+			AsOfTime:          request.AsOfTime,
+			RequestedDuration: request.RequestedDuration,
+		},
+	)
+	if err != nil {
+		return projectioncontract.Result{}, fmt.Errorf(
+			"build historical continuation horizon: %w",
+			err,
+		)
+	}
 	cloned := evidence.Clone()
-	return baseline.project(request, &cloned)
+	return baseline.projectWithPlan(request, plan, &cloned)
+}
+
+// ProjectApprovedWithPlan consumes one immutable production-authorized plan
+// and approved evidence without rebuilding either orchestration decision.
+func (
+	baseline *Baseline,
+) ProjectApprovedWithPlan(
+	request Request,
+	plan projectionhorizon.Plan,
+	evidence ApprovedEvidence,
+) (projectioncontract.Result, error) {
+	cloned := evidence.Clone()
+	return baseline.projectWithPlan(request, plan, &cloned)
 }
 
 func (
 	baseline *Baseline,
-) project(
+) projectWithPlan(
 	request Request,
+	plan projectionhorizon.Plan,
 	approvedEvidence *ApprovedEvidence,
 ) (projectioncontract.Result, error) {
 	if baseline == nil {
-		return projectioncontract.Result{},
-			ErrHorizonPlannerRequired
+		return projectioncontract.Result{}, ErrHorizonPlannerRequired
 	}
-	if strings.TrimSpace(
-		request.CurrentTrajectory.ID,
-	) == "" {
-		return projectioncontract.Result{},
-			ErrTrajectoryIDRequired
-	}
-
-	plan, err := baseline.config.
-		HorizonPlanner.Build(
-		projectionhorizon.Request{
-			AsOfTime: request.AsOfTime,
-			RequestedDuration: request.
-				RequestedDuration,
-		},
-	)
-	if err != nil {
-		return projectioncontract.Result{},
-			fmt.Errorf(
-				"build historical continuation horizon: %w",
-				err,
-			)
+	if strings.TrimSpace(request.CurrentTrajectory.ID) == "" {
+		return projectioncontract.Result{}, ErrTrajectoryIDRequired
 	}
 	if err := plan.Validate(); err != nil {
-		return projectioncontract.Result{},
-			fmt.Errorf(
-				"%w: %v",
-				ErrHorizonPlanInvalid,
-				err,
-			)
+		return projectioncontract.Result{}, fmt.Errorf(
+			"%w: %w",
+			ErrHorizonPlanInvalid,
+			err,
+		)
+	}
+	if !request.AsOfTime.UTC().Equal(plan.AsOfTime) ||
+		request.RequestedDuration != plan.RequestedDuration {
+		return projectioncontract.Result{}, fmt.Errorf(
+			"%w: request does not match authorized plan",
+			ErrHorizonPlanInvalid,
+		)
 	}
 
 	generatedAt := request.GeneratedAt.UTC()
-	if generatedAt.IsZero() ||
-		generatedAt.Before(plan.AsOfTime) {
-		return projectioncontract.Result{},
-			ErrGeneratedAtInvalid
+	if generatedAt.IsZero() || generatedAt.Before(plan.AsOfTime) {
+		return projectioncontract.Result{}, ErrGeneratedAtInvalid
 	}
 
-	preparation :=
-		baseline.prepareContinuation(
-			request,
-			plan,
-			approvedEvidence,
-		)
+	preparation := baseline.prepareContinuation(
+		request,
+		plan,
+		approvedEvidence,
+	)
 	if preparation.requiresFallback() {
 		return baseline.fallback(
 			request,
+			plan,
 			preparation.fallbackReason,
 			preparation.selectionFingerprint,
 			preparation.patternFingerprint,
 		)
 	}
 
-	pointResult :=
-		baseline.projectForecastPoints(
-			preparation,
-			plan,
-		)
+	pointResult := baseline.projectForecastPoints(
+		preparation,
+		plan,
+	)
 	if pointResult.fallbackReason != "" {
 		return baseline.fallback(
 			request,
+			plan,
 			pointResult.fallbackReason,
 			preparation.selectionFingerprint,
 			preparation.patternFingerprint,

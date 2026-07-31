@@ -74,47 +74,58 @@ func (
 	request Request,
 ) (projectioncontract.Result, error) {
 	if baseline == nil {
-		return projectioncontract.Result{},
-			ErrBaselineUnavailable
-	}
-	if strings.TrimSpace(
-		request.Trajectory.ID,
-	) == "" {
-		return projectioncontract.Result{},
-			ErrTrajectoryIDRequired
+		return projectioncontract.Result{}, ErrBaselineUnavailable
 	}
 
-	plan, err := baseline.config.
-		HorizonPlanner.Build(
+	plan, err := baseline.config.HorizonPlanner.Build(
 		projectionhorizon.Request{
-			AsOfTime: request.AsOfTime,
-			RequestedDuration: request.
-				RequestedDuration,
+			AsOfTime:          request.AsOfTime,
+			RequestedDuration: request.RequestedDuration,
 		},
 	)
 	if err != nil {
-		return projectioncontract.Result{},
-			fmt.Errorf(
-				"build projection horizon: %w",
-				err,
-			)
+		return projectioncontract.Result{}, fmt.Errorf(
+			"build projection horizon: %w",
+			err,
+		)
+	}
+
+	return baseline.ProjectWithPlan(request, plan)
+}
+
+// ProjectWithPlan evaluates the kinematic baseline against one already
+// authorized immutable horizon plan. It prevents production orchestration
+// from rebuilding a second forecast grid after policy authorization.
+func (
+	baseline *Baseline,
+) ProjectWithPlan(
+	request Request,
+	plan projectionhorizon.Plan,
+) (projectioncontract.Result, error) {
+	if baseline == nil {
+		return projectioncontract.Result{}, ErrBaselineUnavailable
+	}
+	if strings.TrimSpace(request.Trajectory.ID) == "" {
+		return projectioncontract.Result{}, ErrTrajectoryIDRequired
 	}
 	if err := plan.Validate(); err != nil {
-		return projectioncontract.Result{},
-			fmt.Errorf(
-				"%w: %v",
-				ErrHorizonPlanInvalid,
-				err,
-			)
+		return projectioncontract.Result{}, fmt.Errorf(
+			"%w: %w",
+			ErrHorizonPlanInvalid,
+			err,
+		)
+	}
+	if !request.AsOfTime.UTC().Equal(plan.AsOfTime) ||
+		request.RequestedDuration != plan.RequestedDuration {
+		return projectioncontract.Result{}, fmt.Errorf(
+			"%w: request does not match authorized plan",
+			ErrHorizonPlanInvalid,
+		)
 	}
 
 	generatedAt := request.GeneratedAt.UTC()
-	if generatedAt.IsZero() ||
-		generatedAt.Before(
-			plan.AsOfTime,
-		) {
-		return projectioncontract.Result{},
-			ErrGeneratedAtInvalid
+	if generatedAt.IsZero() || generatedAt.Before(plan.AsOfTime) {
+		return projectioncontract.Result{}, ErrGeneratedAtInvalid
 	}
 
 	cutoff := buildCutoffSnapshot(

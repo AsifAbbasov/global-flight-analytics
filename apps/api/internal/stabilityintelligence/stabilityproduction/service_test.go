@@ -9,6 +9,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionbaseline"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/stabilityintelligence/scopeenforcement"
 )
@@ -311,8 +312,24 @@ func testProductionProjection(
 		GeneratedAt: generatedAt,
 	}
 
-	return projectionproduction.Result{
+	plan, err := projectionhorizon.FinalizePlan(projectionhorizon.Plan{
+		Version: projectionhorizon.Version, PolicyName: "stability-production-test",
+		AsOfTime: asOfTime, EndTime: asOfTime.Add(duration), Step: step,
+		RequestedDuration: duration, EffectiveDuration: duration,
+		ForecastTimes: append([]time.Time(nil), func() []time.Time {
+			times := make([]time.Time, 0, len(points))
+			for _, point := range points {
+				times = append(times, point.ForecastTime)
+			}
+			return times
+		}()...),
+	})
+	if err != nil {
+		panic(err)
+	}
+	result := projectionproduction.Result{
 		Version:        projectionproduction.Version,
+		HorizonPlan:    plan,
 		Strategy:       projectionproduction.StrategyKinematic,
 		FallbackReason: "historical_neighbors_unavailable",
 		ArrivalStatus:  projectionproduction.ArrivalStatusWithheld,
@@ -331,6 +348,11 @@ func testProductionProjection(
 		),
 		GeneratedAt: generatedAt,
 	}
+	result, err = projectionproduction.Finalize(result)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }
 
 func float64Pointer(

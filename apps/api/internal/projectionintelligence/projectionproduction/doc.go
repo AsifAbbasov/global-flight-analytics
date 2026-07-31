@@ -1,8 +1,8 @@
-// Package projectionproduction composes the Projection Intelligence
-// components into one deterministic production decision path.
+// Package projectionproduction composes Projection Intelligence components
+// against one immutable request and Horizon Plan snapshot.
 //
-// The composer evaluates historical-neighbor evidence, prediction freshness,
-// route frequency, position projection, and Estimated Arrival without hiding
-// fallbacks. Every production decision is returned with an auditable trace and
-// a deterministic composition fingerprint.
+// The composer binds route, neighbor, pattern, freshness, route-frequency,
+// projection, and Estimated Arrival evidence to the same trajectory and time
+// boundary. Every production decision is returned with separate request and
+// composition fingerprints and an auditable fallback trace.
 package projectionproduction

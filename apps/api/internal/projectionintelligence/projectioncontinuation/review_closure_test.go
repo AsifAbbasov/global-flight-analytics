@@ -251,8 +251,16 @@ func TestFallbackPreservesUnderlyingCause(
 		t.Fatalf("New() error = %v", err)
 	}
 
+	request := continuationTestRequest()
+	plan, planErr := config.HorizonPlanner.Build(projectionhorizon.Request{
+		AsOfTime: request.AsOfTime, RequestedDuration: request.RequestedDuration,
+	})
+	if planErr != nil {
+		t.Fatalf("Build() error = %v", planErr)
+	}
 	_, err = baseline.fallback(
-		continuationTestRequest(),
+		request,
+		plan,
 		"test_reason",
 		"",
 		"",

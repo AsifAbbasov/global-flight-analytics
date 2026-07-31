@@ -20,26 +20,35 @@ import (
 )
 
 type fakeHorizonPlanner struct {
-	plan projectionhorizon.Plan
-	err  error
+	plan     projectionhorizon.Plan
+	err      error
+	calls    int
+	requests []projectionhorizon.Request
 }
 
-func (fake fakeHorizonPlanner) Build(
-	projectionhorizon.Request,
+func (fake *fakeHorizonPlanner) Build(
+	request projectionhorizon.Request,
 ) (projectionhorizon.Plan, error) {
+	fake.calls++
+	fake.requests = append(fake.requests, request)
 	return fake.plan.Clone(), fake.err
 }
 
 type fakeKinematicProjector struct {
-	result projectioncontract.Result
-	err    error
-	calls  int
+	result  projectioncontract.Result
+	err     error
+	calls   int
+	request projectionbaseline.Request
+	plan    projectionhorizon.Plan
 }
 
-func (fake *fakeKinematicProjector) Project(
-	projectionbaseline.Request,
+func (fake *fakeKinematicProjector) ProjectWithPlan(
+	request projectionbaseline.Request,
+	plan projectionhorizon.Plan,
 ) (projectioncontract.Result, error) {
 	fake.calls++
+	fake.request = request
+	fake.plan = plan.Clone()
 	return fake.result.Clone(), fake.err
 }
 
@@ -48,133 +57,116 @@ type fakeHistoricalProjector struct {
 	err      error
 	calls    int
 	request  projectioncontinuation.Request
+	plan     projectionhorizon.Plan
 	evidence projectioncontinuation.ApprovedEvidence
 }
 
-func (fake *fakeHistoricalProjector) ProjectApproved(
+func (fake *fakeHistoricalProjector) ProjectApprovedWithPlan(
 	request projectioncontinuation.Request,
+	plan projectionhorizon.Plan,
 	evidence projectioncontinuation.ApprovedEvidence,
 ) (projectioncontract.Result, error) {
 	fake.calls++
 	fake.request = request
+	fake.plan = plan.Clone()
 	fake.evidence = evidence.Clone()
 	return fake.result.Clone(), fake.err
 }
 
 type fakeNeighborSelector struct {
-	result projectionneighbors.Result
-	err    error
-	calls  int
+	result  projectionneighbors.Result
+	err     error
+	calls   int
+	request projectionneighbors.Request
+	mutate  bool
 }
 
 func (fake *fakeNeighborSelector) Select(
-	projectionneighbors.Request,
+	request projectionneighbors.Request,
 ) (projectionneighbors.Result, error) {
 	fake.calls++
+	fake.request = request
+	if fake.mutate {
+		if len(request.CurrentTrajectory.Points) > 0 {
+			request.CurrentTrajectory.Points[0].Latitude = -89
+		}
+		if len(request.Candidates) > 0 {
+			request.Candidates[0].ID = "mutated-candidate"
+		}
+	}
 	return fake.result.Clone(), fake.err
 }
 
 type fakePatternEvaluator struct {
-	result projectionpatternconfidence.Result
-	err    error
-	calls  int
+	result     projectionpatternconfidence.Result
+	err        error
+	calls      int
+	selection  projectionneighbors.Result
+	candidates []trajectory.FlightTrajectory
 }
 
 func (fake *fakePatternEvaluator) EvaluateWithContinuations(
-	projectionneighbors.Result,
-	[]trajectory.FlightTrajectory,
+	selection projectionneighbors.Result,
+	candidates []trajectory.FlightTrajectory,
 ) (projectionpatternconfidence.Result, error) {
 	fake.calls++
+	fake.selection = selection.Clone()
+	fake.candidates = cloneTrajectories(candidates)
 	return fake.result.Clone(), fake.err
 }
 
 type fakeFreshnessEvaluator struct {
-	result projectionfreshness.Result
-	err    error
-	calls  int
+	result    projectionfreshness.Result
+	err       error
+	calls     int
+	selection projectionneighbors.Result
+	pattern   projectionpatternconfidence.Result
 }
 
 func (fake *fakeFreshnessEvaluator) Evaluate(
-	projectionneighbors.Result,
-	projectionpatternconfidence.Result,
+	selection projectionneighbors.Result,
+	pattern projectionpatternconfidence.Result,
 ) (projectionfreshness.Result, error) {
 	fake.calls++
+	fake.selection = selection.Clone()
+	fake.pattern = pattern.Clone()
 	return fake.result.Clone(), fake.err
 }
 
 type fakeRouteFrequencyEvaluator struct {
-	result projectionroutefrequency.Result
-	err    error
-	calls  int
+	result  projectionroutefrequency.Result
+	err     error
+	calls   int
+	route   routecontract.Result
+	history projectionroutefrequency.HistorySummary
 }
 
 func (fake *fakeRouteFrequencyEvaluator) Evaluate(
-	routecontract.Result,
-	projectionroutefrequency.HistorySummary,
+	route routecontract.Result,
+	history projectionroutefrequency.HistorySummary,
 ) (projectionroutefrequency.Result, error) {
 	fake.calls++
+	fake.route = route.Clone()
+	fake.history = history.Clone()
 	return fake.result.Clone(), fake.err
 }
 
 type fakeArrivalEstimator struct {
-	result projectioncontract.Result
-	err    error
-	calls  int
-	attach bool
+	outcome ArrivalOutcome
+	err     error
+	calls   int
+	request projectionarrival.Request
 }
 
-func (fake *fakeArrivalEstimator) Estimate(
+func (fake *fakeArrivalEstimator) EstimateArrival(
 	request projectionarrival.Request,
-) (projectioncontract.Result, error) {
+) (ArrivalOutcome, error) {
 	fake.calls++
+	fake.request = request
 	if fake.err != nil {
-		return projectioncontract.Result{}, fake.err
+		return ArrivalOutcome{}, fake.err
 	}
-	if fake.result.TrajectoryID != "" {
-		return fake.result.Clone(), nil
-	}
-
-	result := request.Projection.Clone()
-	if fake.attach {
-		result.Arrival =
-			&projectioncontract.ArrivalEstimate{
-				AirportICAOCode: "LTBA",
-				EarliestTime: request.Projection.
-					Horizon.AsOfTime.Add(
-					3 * time.Minute,
-				),
-				EstimatedTime: request.Projection.
-					Horizon.AsOfTime.Add(
-					4 * time.Minute,
-				),
-				LatestTime: request.Projection.
-					Horizon.AsOfTime.Add(
-					5 * time.Minute,
-				),
-				Confidence: projectioncontract.Confidence{
-					Score: 0.7,
-					Level: projectioncontract.
-						ConfidenceLevelMedium,
-					Reasons: []projectioncontract.
-						ConfidenceReason{
-						{
-							Code:         "arrival",
-							Message:      "Arrival confidence.",
-							Contribution: 0.7,
-						},
-					},
-				},
-				Limitations: []projectioncontract.Limitation{
-					{
-						Code:    "arrival_radius",
-						Message: "Arrival represents airport-radius entry.",
-						Scope:   "arrival",
-					},
-				},
-			}
-	}
-
-	return result, nil
+	return fake.outcome.Clone(), nil
 }
 
 type productionFixture struct {
@@ -245,11 +237,29 @@ func newProductionFixture() productionFixture {
 		result: validProductionFrequency(asOfTime),
 	}
 	arrival := &fakeArrivalEstimator{
-		attach: true,
+		outcome: ArrivalOutcome{
+			Status: ArrivalOutcomeAttached,
+			Estimate: &projectioncontract.ArrivalEstimate{
+				AirportICAOCode: "LTBA",
+				EarliestTime:    asOfTime.Add(3 * time.Minute),
+				EstimatedTime:   asOfTime.Add(4 * time.Minute),
+				LatestTime:      asOfTime.Add(5 * time.Minute),
+				Confidence: projectioncontract.Confidence{
+					Score: 0.7,
+					Level: projectioncontract.ConfidenceLevelMedium,
+					Reasons: []projectioncontract.ConfidenceReason{{
+						Code: "arrival", Message: "Arrival confidence.", Contribution: 0.7,
+					}},
+				},
+				Limitations: []projectioncontract.Limitation{{
+					Code: "arrival_radius", Message: "Arrival represents airport-radius entry.", Scope: "arrival",
+				}},
+			},
+		},
 	}
 
 	config := Config{
-		HorizonPlanner: fakeHorizonPlanner{
+		HorizonPlanner: &fakeHorizonPlanner{
 			plan: plan,
 		},
 		KinematicProjector:          kinematic,
@@ -266,6 +276,7 @@ func newProductionFixture() productionFixture {
 	}
 
 	history := validProductionHistory(asOfTime)
+	frequency.result.HistoryInputFingerprint = history.InputFingerprint
 	request := Request{
 		CurrentTrajectory: validProductionTrajectory(asOfTime),
 		HistoricalCandidates: []trajectory.FlightTrajectory{

@@ -65,6 +65,16 @@ func (
 		stub.err
 }
 
+func (
+	stub *fallbackProjectorStub,
+) ProjectWithPlan(
+	projectionbaseline.Request,
+	projectionhorizon.Plan,
+) (projectioncontract.Result, error) {
+	stub.calls++
+	return stub.result.Clone(), stub.err
+}
+
 func TestProjectBuildsHistoricalNeighborContinuation(
 	t *testing.T,
 ) {

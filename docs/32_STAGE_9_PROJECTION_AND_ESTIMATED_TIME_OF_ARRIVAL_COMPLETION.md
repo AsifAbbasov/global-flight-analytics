@@ -900,7 +900,7 @@ zero persistent rows
 Final runtime evidence:
 
 ```text
-Production composition: projection-production-composition-v1
+Production composition: projection-production-composition-v2
 Command timeout: 5m0s
 Direct service duration: 2.865s
 HTTP verification duration: 2.057s
@@ -1693,3 +1693,45 @@ PROJECTION_EVALUATION_REVIEW_STATUS=CLOSED
 The exact engineering commit passed Backend Quality, Backend Race Safety, PostgreSQL
 16 Integration, and Backend Container in run `30619973772`. The formal-closure commit
 must pass the same four jobs before the external final closure report is issued.
+
+## 38. Projection Production Authorized Snapshot Integrity
+
+Projection Production engineering review hardening is implemented against baseline
+`298d3fdb2d11b1797ce3728b116702b0a978d870`.
+
+The production composer now owns one immutable orchestration snapshot. It builds one
+canonical Horizon Plan, deep-clones all trajectory and route evidence, binds Route
+Intelligence to the current trajectory and time boundary, validates Selection,
+Pattern Confidence, Freshness, Route History, and Route Frequency as one authorized
+evidence graph, and checks every projector output against the authorized identity,
+plan, method, and generation time.
+
+Estimated Arrival is attached through a narrow production adapter. The existing
+arrival estimator may calculate a complete contract internally, but the adapter
+rejects any change outside the `Arrival` field and returns only an `ArrivalOutcome`
+delta to the composer.
+
+```text
+PROJECTION_PRODUCTION_VERSION=projection-production-composition-v2
+PROJECTION_PRODUCTION_REQUEST_FINGERPRINT_VERSION=projection-production-request-fingerprint-v2
+PROJECTION_PRODUCTION_COMPOSITION_FINGERPRINT_VERSION=projection-production-composition-fingerprint-v2
+PROJECTION_PRODUCTION_SINGLE_HORIZON_PLAN=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_IMMUTABLE_REQUEST_SNAPSHOT=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_ROUTE_REQUEST_BINDING=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_CROSS_CONTRACT_EVIDENCE_BINDING=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_PROJECTOR_POSTCONDITIONS=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_ARRIVAL_ONLY_MUTATION_BOUNDARY=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_UNAVAILABLE_HISTORICAL_REJECTION=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_LIMITED_EVIDENCE_NOTICES=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_DEPENDENCY_ERROR_CHAIN=IMPLEMENTED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_PERMANENT_REVIEW_AUDIT=ENFORCED_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_UNCLASSIFIED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_DEFERRED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_ADDITIONAL_CODE_FIXES_REQUIRED=NO_PENDING_EXACT_CI
+PROJECTION_PRODUCTION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
+PROJECTION_PRODUCTION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
+```
+
+Exact Backend Continuous Integration evidence must be recorded before formal closure.

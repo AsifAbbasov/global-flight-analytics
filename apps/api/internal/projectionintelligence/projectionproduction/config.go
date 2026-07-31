@@ -18,64 +18,40 @@ import (
 )
 
 var (
-	ErrHorizonPlannerRequired = errors.New(
-		"production projection horizon planner is required",
-	)
-	ErrKinematicProjectorRequired = errors.New(
-		"production kinematic projector is required",
-	)
-	ErrHistoricalProjectorRequired = errors.New(
-		"production historical projector is required",
-	)
-	ErrNeighborSelectorRequired = errors.New(
-		"production historical neighbor selector is required",
-	)
-	ErrPatternConfidenceEvaluatorRequired = errors.New(
-		"production pattern confidence evaluator is required",
-	)
-	ErrFreshnessEvaluatorRequired = errors.New(
-		"production freshness evaluator is required",
-	)
-	ErrRouteFrequencyEvaluatorRequired = errors.New(
-		"production route-frequency evaluator is required",
-	)
-	ErrArrivalEstimatorRequired = errors.New(
-		"production arrival estimator is required",
-	)
-	ErrLimitedEvidencePolicyInvalid = errors.New(
-		"production limited-evidence policy is invalid",
-	)
-	ErrDependencyFailurePolicyInvalid = errors.New(
-		"production dependency-failure policy is invalid",
-	)
-	ErrArrivalFailurePolicyInvalid = errors.New(
-		"production arrival-failure policy is invalid",
-	)
+	ErrHorizonPlannerRequired             = errors.New("production projection horizon planner is required")
+	ErrKinematicProjectorRequired         = errors.New("production kinematic projector is required")
+	ErrHistoricalProjectorRequired        = errors.New("production historical projector is required")
+	ErrNeighborSelectorRequired           = errors.New("production historical neighbor selector is required")
+	ErrPatternConfidenceEvaluatorRequired = errors.New("production pattern confidence evaluator is required")
+	ErrFreshnessEvaluatorRequired         = errors.New("production freshness evaluator is required")
+	ErrRouteFrequencyEvaluatorRequired    = errors.New("production route-frequency evaluator is required")
+	ErrArrivalEstimatorRequired           = errors.New("production arrival estimator is required")
+	ErrLimitedEvidencePolicyInvalid       = errors.New("production limited-evidence policy is invalid")
+	ErrDependencyFailurePolicyInvalid     = errors.New("production dependency-failure policy is invalid")
+	ErrArrivalFailurePolicyInvalid        = errors.New("production arrival-failure policy is invalid")
 )
 
 type HorizonPlanner interface {
-	Build(
-		projectionhorizon.Request,
-	) (projectionhorizon.Plan, error)
+	Build(projectionhorizon.Request) (projectionhorizon.Plan, error)
 }
 
 type KinematicProjector interface {
-	Project(
+	ProjectWithPlan(
 		projectionbaseline.Request,
+		projectionhorizon.Plan,
 	) (projectioncontract.Result, error)
 }
 
 type HistoricalProjector interface {
-	ProjectApproved(
+	ProjectApprovedWithPlan(
 		projectioncontinuation.Request,
+		projectionhorizon.Plan,
 		projectioncontinuation.ApprovedEvidence,
 	) (projectioncontract.Result, error)
 }
 
 type NeighborSelector interface {
-	Select(
-		projectionneighbors.Request,
-	) (projectionneighbors.Result, error)
+	Select(projectionneighbors.Request) (projectionneighbors.Result, error)
 }
 
 type PatternConfidenceEvaluator interface {
@@ -99,10 +75,10 @@ type RouteFrequencyEvaluator interface {
 	) (projectionroutefrequency.Result, error)
 }
 
+// ArrivalEstimator is intentionally narrow: production composition accepts
+// only an Estimated Arrival delta and never a replacement position projection.
 type ArrivalEstimator interface {
-	Estimate(
-		projectionarrival.Request,
-	) (projectioncontract.Result, error)
+	EstimateArrival(projectionarrival.Request) (ArrivalOutcome, error)
 }
 
 type LimitedEvidencePolicy string
@@ -113,13 +89,7 @@ const (
 )
 
 func (policy LimitedEvidencePolicy) IsKnown() bool {
-	switch policy {
-	case LimitedEvidenceReject,
-		LimitedEvidenceAllow:
-		return true
-	default:
-		return false
-	}
+	return policy == LimitedEvidenceReject || policy == LimitedEvidenceAllow
 }
 
 type DependencyFailurePolicy string
@@ -130,13 +100,7 @@ const (
 )
 
 func (policy DependencyFailurePolicy) IsKnown() bool {
-	switch policy {
-	case DependencyFailureReturnError,
-		DependencyFailureFallbackToKinematic:
-		return true
-	default:
-		return false
-	}
+	return policy == DependencyFailureReturnError || policy == DependencyFailureFallbackToKinematic
 }
 
 type ArrivalFailurePolicy string
@@ -147,13 +111,7 @@ const (
 )
 
 func (policy ArrivalFailurePolicy) IsKnown() bool {
-	switch policy {
-	case ArrivalFailureReturnError,
-		ArrivalFailurePreserveProjection:
-		return true
-	default:
-		return false
-	}
+	return policy == ArrivalFailureReturnError || policy == ArrivalFailurePreserveProjection
 }
 
 type Config struct {
@@ -175,58 +133,32 @@ type Config struct {
 }
 
 func (config Config) Validate() error {
-	if config.HorizonPlanner == nil {
+	switch {
+	case config.HorizonPlanner == nil:
 		return ErrHorizonPlannerRequired
-	}
-	if config.KinematicProjector == nil {
+	case config.KinematicProjector == nil:
 		return ErrKinematicProjectorRequired
-	}
-	if config.HistoricalProjector == nil {
+	case config.HistoricalProjector == nil:
 		return ErrHistoricalProjectorRequired
-	}
-	if config.NeighborSelector == nil {
+	case config.NeighborSelector == nil:
 		return ErrNeighborSelectorRequired
-	}
-	if config.PatternConfidenceEvaluator == nil {
+	case config.PatternConfidenceEvaluator == nil:
 		return ErrPatternConfidenceEvaluatorRequired
-	}
-	if config.FreshnessEvaluator == nil {
+	case config.FreshnessEvaluator == nil:
 		return ErrFreshnessEvaluatorRequired
-	}
-	if config.RouteFrequencyEvaluator == nil {
+	case config.RouteFrequencyEvaluator == nil:
 		return ErrRouteFrequencyEvaluatorRequired
-	}
-	if config.ArrivalEstimator == nil {
+	case config.ArrivalEstimator == nil:
 		return ErrArrivalEstimatorRequired
+	case !config.FreshnessLimitedPolicy.IsKnown():
+		return fmt.Errorf("%w: %q", ErrLimitedEvidencePolicyInvalid, config.FreshnessLimitedPolicy)
+	case !config.RouteFrequencyLimitedPolicy.IsKnown():
+		return fmt.Errorf("%w: %q", ErrLimitedEvidencePolicyInvalid, config.RouteFrequencyLimitedPolicy)
+	case !config.DependencyFailurePolicy.IsKnown():
+		return fmt.Errorf("%w: %q", ErrDependencyFailurePolicyInvalid, config.DependencyFailurePolicy)
+	case !config.ArrivalFailurePolicy.IsKnown():
+		return fmt.Errorf("%w: %q", ErrArrivalFailurePolicyInvalid, config.ArrivalFailurePolicy)
+	default:
+		return nil
 	}
-	if !config.FreshnessLimitedPolicy.IsKnown() {
-		return fmt.Errorf(
-			"%w: %q",
-			ErrLimitedEvidencePolicyInvalid,
-			config.FreshnessLimitedPolicy,
-		)
-	}
-	if !config.RouteFrequencyLimitedPolicy.IsKnown() {
-		return fmt.Errorf(
-			"%w: %q",
-			ErrLimitedEvidencePolicyInvalid,
-			config.RouteFrequencyLimitedPolicy,
-		)
-	}
-	if !config.DependencyFailurePolicy.IsKnown() {
-		return fmt.Errorf(
-			"%w: %q",
-			ErrDependencyFailurePolicyInvalid,
-			config.DependencyFailurePolicy,
-		)
-	}
-	if !config.ArrivalFailurePolicy.IsKnown() {
-		return fmt.Errorf(
-			"%w: %q",
-			ErrArrivalFailurePolicyInvalid,
-			config.ArrivalFailurePolicy,
-		)
-	}
-
-	return nil
 }

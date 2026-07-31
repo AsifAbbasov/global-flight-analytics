@@ -12,6 +12,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionbaseline"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
 	"github.com/gofiber/fiber/v2"
 )
@@ -427,8 +428,18 @@ func validProjectionHTTPResult() projectionproduction.Result {
 	)
 	generatedAt := asOfTime.Add(time.Second)
 
-	return projectionproduction.Result{
-		Version: projectionproduction.Version,
+	plan, err := projectionhorizon.FinalizePlan(projectionhorizon.Plan{
+		Version: projectionhorizon.Version, PolicyName: "handler-test",
+		AsOfTime: asOfTime, EndTime: asOfTime.Add(3 * time.Minute), Step: time.Minute,
+		RequestedDuration: 3 * time.Minute, EffectiveDuration: 3 * time.Minute,
+		ForecastTimes: []time.Time{asOfTime.Add(time.Minute), asOfTime.Add(2 * time.Minute), asOfTime.Add(3 * time.Minute)},
+	})
+	if err != nil {
+		panic(err)
+	}
+	result := projectionproduction.Result{
+		Version:     projectionproduction.Version,
+		HorizonPlan: plan,
 		Strategy: projectionproduction.
 			StrategyKinematic,
 		FallbackReason: "historical_neighbors_unavailable",
@@ -484,4 +495,9 @@ func validProjectionHTTPResult() projectionproduction.Result {
 			strings.Repeat("a", 64),
 		GeneratedAt: generatedAt,
 	}
+	result, err = projectionproduction.Finalize(result)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }

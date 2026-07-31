@@ -11,14 +11,16 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontinuation"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionfreshness"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionneighbors"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionpatternconfidence"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionroutefrequency"
 )
 
 const (
-	Version            = "projection-production-composition-v1"
-	FingerprintVersion = "projection-production-composition-fingerprint-v1"
+	Version                       = "projection-production-composition-v2"
+	RequestFingerprintVersion     = "projection-production-request-fingerprint-v2"
+	CompositionFingerprintVersion = "projection-production-composition-fingerprint-v2"
 )
 
 type Strategy string
@@ -29,13 +31,7 @@ const (
 )
 
 func (strategy Strategy) IsKnown() bool {
-	switch strategy {
-	case StrategyKinematic,
-		StrategyHistoricalNeighbor:
-		return true
-	default:
-		return false
-	}
+	return strategy == StrategyKinematic || strategy == StrategyHistoricalNeighbor
 }
 
 type ArrivalStatus string
@@ -49,10 +45,7 @@ const (
 
 func (status ArrivalStatus) IsKnown() bool {
 	switch status {
-	case ArrivalStatusAttached,
-		ArrivalStatusWithheld,
-		ArrivalStatusFailed,
-		ArrivalStatusSkipped:
+	case ArrivalStatusAttached, ArrivalStatusWithheld, ArrivalStatusFailed, ArrivalStatusSkipped:
 		return true
 	default:
 		return false
@@ -71,7 +64,8 @@ type Result struct {
 	FallbackReason string
 	ArrivalStatus  ArrivalStatus
 
-	Projection projectioncontract.Result
+	HorizonPlan projectionhorizon.Plan
+	Projection  projectioncontract.Result
 
 	NeighborSelection *projectionneighbors.Result
 	PatternConfidence *projectionpatternconfidence.Result
@@ -80,12 +74,14 @@ type Result struct {
 
 	Notices []Notice
 
-	InputFingerprint string
-	GeneratedAt      time.Time
+	InputFingerprint       string
+	CompositionFingerprint string
+	GeneratedAt            time.Time
 }
 
 func (result Result) Clone() Result {
 	cloned := result
+	cloned.HorizonPlan = result.HorizonPlan.Clone()
 	cloned.Projection = result.Projection.Clone()
 	if result.NeighborSelection != nil {
 		value := result.NeighborSelection.Clone()
@@ -103,188 +99,145 @@ func (result Result) Clone() Result {
 		value := result.RouteFrequency.Clone()
 		cloned.RouteFrequency = &value
 	}
-	cloned.Notices = append(
-		[]Notice(nil),
-		result.Notices...,
-	)
-
+	cloned.Notices = append([]Notice(nil), result.Notices...)
 	return cloned
 }
 
-var fingerprintPattern = regexp.MustCompile(
-	`^sha256:[0-9a-f]{64}$`,
-)
+var fingerprintPattern = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+
+func Finalize(result Result) (Result, error) {
+	result.CompositionFingerprint = compositionFingerprint(result)
+	if err := result.Validate(); err != nil {
+		return Result{}, err
+	}
+	return result.Clone(), nil
+}
 
 func (result Result) Validate() error {
-	if result.Version != Version ||
-		!result.Strategy.IsKnown() ||
-		!result.ArrivalStatus.IsKnown() {
-		return fmt.Errorf(
-			"production composition metadata is invalid",
-		)
+	if result.Version != Version || !result.Strategy.IsKnown() || !result.ArrivalStatus.IsKnown() {
+		return fmt.Errorf("production composition metadata is invalid")
 	}
-	if result.GeneratedAt.IsZero() ||
-		!result.GeneratedAt.Equal(
-			result.Projection.GeneratedAt,
-		) {
-		return fmt.Errorf(
-			"production composition generated-at time is invalid",
-		)
+	if err := result.HorizonPlan.Validate(); err != nil {
+		return fmt.Errorf("production horizon plan is invalid: %w", err)
 	}
-	if !fingerprintPattern.MatchString(
-		result.InputFingerprint,
-	) {
-		return fmt.Errorf(
-			"production composition fingerprint is invalid",
-		)
+	if result.GeneratedAt.IsZero() || !result.GeneratedAt.Equal(result.Projection.GeneratedAt) {
+		return fmt.Errorf("production composition generated-at time is invalid")
+	}
+	if !fingerprintPattern.MatchString(result.InputFingerprint) ||
+		!fingerprintPattern.MatchString(result.CompositionFingerprint) ||
+		result.CompositionFingerprint != compositionFingerprint(result) {
+		return fmt.Errorf("production composition fingerprints are invalid")
 	}
 
-	projectionReport := projectioncontract.Validate(
-		result.Projection,
-	)
-	if projectionReport.Status !=
-		projectioncontract.ValidationStatusValid {
-		return fmt.Errorf(
-			"production projection contract is invalid: %#v",
-			projectionReport.Issues,
-		)
+	report := projectioncontract.Validate(result.Projection)
+	if report.Status != projectioncontract.ValidationStatusValid {
+		return fmt.Errorf("production projection contract is invalid: %#v", report.Issues)
 	}
-
-	if result.NeighborSelection != nil {
-		if err := result.NeighborSelection.Validate(); err != nil {
-			return fmt.Errorf(
-				"production neighbor selection is invalid: %w",
-				err,
-			)
-		}
+	if !projectionHorizonMatchesPlan(result.Projection, result.HorizonPlan) {
+		return fmt.Errorf("production projection horizon does not match authorized plan")
 	}
-	if result.PatternConfidence != nil {
-		if err := result.PatternConfidence.Validate(); err != nil {
-			return fmt.Errorf(
-				"production pattern confidence is invalid: %w",
-				err,
-			)
-		}
-	}
-	if result.Freshness != nil {
-		if err := result.Freshness.Validate(); err != nil {
-			return fmt.Errorf(
-				"production freshness result is invalid: %w",
-				err,
-			)
-		}
-	}
-	if result.RouteFrequency != nil {
-		if err := result.RouteFrequency.Validate(); err != nil {
-			return fmt.Errorf(
-				"production route-frequency result is invalid: %w",
-				err,
-			)
-		}
+	if err := validatePublishedEvidence(result); err != nil {
+		return err
 	}
 
 	switch result.Strategy {
 	case StrategyHistoricalNeighbor:
 		if strings.TrimSpace(result.FallbackReason) != "" ||
-			result.Projection.Method.Name !=
-				projectioncontinuation.MethodName ||
-			result.NeighborSelection == nil ||
-			result.PatternConfidence == nil ||
-			result.Freshness == nil ||
-			result.RouteFrequency == nil ||
-			!result.PatternConfidence.Usable ||
-			!result.Freshness.Usable ||
-			!result.RouteFrequency.Usable {
-			return fmt.Errorf(
-				"historical production strategy does not contain complete usable evidence",
-			)
+			result.Projection.Method.Name != projectioncontinuation.MethodName ||
+			result.Projection.Status == projectioncontract.ResultStatusUnavailable ||
+			result.NeighborSelection == nil || result.PatternConfidence == nil ||
+			result.Freshness == nil || result.RouteFrequency == nil ||
+			!result.PatternConfidence.Usable || !result.Freshness.Usable || !result.RouteFrequency.Usable {
+			return fmt.Errorf("historical production strategy does not contain complete usable evidence and projection")
 		}
 	case StrategyKinematic:
 		if strings.TrimSpace(result.FallbackReason) == "" ||
-			result.Projection.Method.Name !=
-				projectionbaseline.MethodName {
-			return fmt.Errorf(
-				"kinematic production strategy requires a fallback reason and kinematic method",
-			)
+			result.Projection.Method.Name != projectionbaseline.MethodName {
+			return fmt.Errorf("kinematic production strategy requires a fallback reason and kinematic method")
 		}
 	}
 
 	switch result.ArrivalStatus {
 	case ArrivalStatusAttached:
 		if result.Projection.Arrival == nil {
-			return fmt.Errorf(
-				"attached arrival status requires an arrival estimate",
-			)
+			return fmt.Errorf("attached arrival status requires an arrival estimate")
 		}
-	case ArrivalStatusWithheld,
-		ArrivalStatusFailed,
-		ArrivalStatusSkipped:
+	case ArrivalStatusWithheld, ArrivalStatusFailed, ArrivalStatusSkipped:
 		if result.Projection.Arrival != nil {
-			return fmt.Errorf(
-				"non-attached arrival status must not contain an arrival estimate",
-			)
+			return fmt.Errorf("non-attached arrival status must not contain an arrival estimate")
 		}
 	}
 
 	for _, notice := range result.Notices {
-		if strings.TrimSpace(notice.Code) == "" ||
-			strings.TrimSpace(notice.Message) == "" {
-			return fmt.Errorf(
-				"production composition notice is invalid",
-			)
+		if strings.TrimSpace(notice.Code) == "" || strings.TrimSpace(notice.Message) == "" {
+			return fmt.Errorf("production composition notice is invalid")
 		}
 	}
-	if result.Strategy == StrategyKinematic &&
-		len(result.Notices) == 0 {
-		return fmt.Errorf(
-			"kinematic production fallback requires an auditable notice",
-		)
+	if result.Strategy == StrategyKinematic && len(result.Notices) == 0 {
+		return fmt.Errorf("kinematic production fallback requires an auditable notice")
 	}
-
 	return nil
 }
 
-func normalizeNotices(
-	items []Notice,
-) []Notice {
-	seen := make(
-		map[string]Notice,
-		len(items),
-	)
+func validatePublishedEvidence(result Result) error {
+	if result.NeighborSelection != nil {
+		if err := result.NeighborSelection.Validate(); err != nil {
+			return fmt.Errorf("production neighbor selection is invalid: %w", err)
+		}
+	}
+	if result.PatternConfidence != nil {
+		if err := result.PatternConfidence.Validate(); err != nil {
+			return fmt.Errorf("production pattern confidence is invalid: %w", err)
+		}
+	}
+	if result.Freshness != nil {
+		if err := result.Freshness.Validate(); err != nil {
+			return fmt.Errorf("production freshness result is invalid: %w", err)
+		}
+	}
+	if result.RouteFrequency != nil {
+		if err := result.RouteFrequency.Validate(); err != nil {
+			return fmt.Errorf("production route-frequency result is invalid: %w", err)
+		}
+	}
+	if result.NeighborSelection != nil && result.PatternConfidence != nil {
+		selected := selectedTrajectoryIDs(*result.NeighborSelection)
+		if result.PatternConfidence.SourceSelectionFingerprint != result.NeighborSelection.InputFingerprint ||
+			!sameStrings(selected, result.PatternConfidence.SelectedTrajectoryIDs) {
+			return fmt.Errorf("published pattern does not match neighbor selection")
+		}
+		if result.Freshness != nil &&
+			(result.Freshness.SourceSelectionFingerprint != result.NeighborSelection.InputFingerprint ||
+				result.Freshness.SourcePatternFingerprint != result.PatternConfidence.InputFingerprint ||
+				!result.Freshness.AsOfTime.UTC().Equal(result.HorizonPlan.AsOfTime) ||
+				!sameStrings(selected, result.Freshness.SelectedTrajectoryIDs)) {
+			return fmt.Errorf("published freshness does not match authorized evidence")
+		}
+	}
+	if result.RouteFrequency != nil && !result.RouteFrequency.AsOfTime.UTC().Equal(result.HorizonPlan.AsOfTime) {
+		return fmt.Errorf("published route frequency does not match authorized plan")
+	}
+	return nil
+}
+
+func normalizeNotices(items []Notice) []Notice {
+	seen := make(map[string]Notice, len(items))
 	for _, item := range items {
 		code := strings.TrimSpace(item.Code)
 		message := strings.TrimSpace(item.Message)
 		if code == "" || message == "" {
 			continue
 		}
-		key := code + "\x00" + message
-		seen[key] = Notice{
-			Code:    code,
-			Message: message,
-		}
+		seen[code+"\x00"+message] = Notice{Code: code, Message: message}
 	}
-
-	keys := make(
-		[]string,
-		0,
-		len(seen),
-	)
+	keys := make([]string, 0, len(seen))
 	for key := range seen {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-
-	result := make(
-		[]Notice,
-		0,
-		len(keys),
-	)
+	result := make([]Notice, 0, len(keys))
 	for _, key := range keys {
-		result = append(
-			result,
-			seen[key],
-		)
+		result = append(result, seen[key])
 	}
-
 	return result
 }

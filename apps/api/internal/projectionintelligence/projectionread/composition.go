@@ -390,6 +390,15 @@ func buildAlgorithmComponents(
 			)
 	}
 
+	arrivalAdapter, err := projectionproduction.NewArrivalAdapter(arrival)
+	if err != nil {
+		return algorithmComponents{},
+			componentError(
+				"Estimated Arrival production adapter",
+				err,
+			)
+	}
+
 	composer, err :=
 		projectionproduction.New(
 			projectionproduction.Config{
@@ -400,7 +409,7 @@ func buildAlgorithmComponents(
 				PatternConfidenceEvaluator: pattern,
 				FreshnessEvaluator:         freshness,
 				RouteFrequencyEvaluator:    frequency,
-				ArrivalEstimator:           arrival,
+				ArrivalEstimator:           arrivalAdapter,
 				FreshnessLimitedPolicy: projectionproduction.
 					LimitedEvidenceReject,
 				RouteFrequencyLimitedPolicy: projectionproduction.

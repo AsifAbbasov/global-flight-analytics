@@ -72,6 +72,10 @@ type FallbackProjector interface {
 	Project(
 		projectionbaseline.Request,
 	) (projectioncontract.Result, error)
+	ProjectWithPlan(
+		projectionbaseline.Request,
+		projectionhorizon.Plan,
+	) (projectioncontract.Result, error)
 }
 
 type Config struct {
