@@ -644,19 +644,31 @@ apps/api/internal/projectionintelligence/projectionevaluation
 The evaluator supports:
 
 ```text
-prediction snapshot
-future observed truth
-horizontal error by horizon
-vertical error when altitude is supported
-endpoint error
-coverage
-confidence comparison
-aggregate evaluation across replay results
-deterministic fingerprints
-bounded configuration
+immutable canonical projection snapshot
+future observed truth with explicit point-level system-availability evidence
+strict event-time and knowledge-time replay cutoffs
+deterministic equal-timestamp conflict rejection
+horizontal and vertical error when altitude is supported
+explicit endpoint error
+point coverage and uncertainty coverage
+lead-time error buckets
+point micro-average and trajectory macro-average aggregation
+bounded confidence-to-normalized-accuracy comparison
+arrival prediction recall and airport accuracy
+matched Estimated Arrival error and interval coverage
+aggregation by method, version, DecisionClass, horizon, step, and evaluation policy
+deterministic projection, truth, evaluation, and aggregate fingerprints
+bounded physical interpolation configuration
+derived-metric recomputation before aggregation
 ```
 
-This is the foundation for later model comparison and calibration.
+The replay knowledge boundary is not inferred from `ObservedAt` alone. Every usable
+truth point supplies an explicit `AvailableAt` value, and actual arrival evidence also
+proves availability by `EvaluatedAt`.
+
+This is the foundation for later model comparison and calibration. Confidence
+comparison remains a bounded engineering diagnostic and is not represented as
+scientific probability calibration.
 
 Stage 9 does not claim that a large real-world benchmark dataset has already been evaluated.
 
@@ -1616,3 +1628,60 @@ PROJECTION_ARRIVAL_REVIEW_STATUS=CLOSED
 
 The formal-closure commit must pass the same four Backend Continuous Integration jobs
 before the external final closure report is issued.
+
+## 37. Projection Evaluation Replay and Aggregation Integrity
+
+Projection Evaluation engineering review hardening is implemented against baseline
+`61e1696b16e39f49a3850530312555c3593acfc5`. The evaluator now binds the exact
+projection output, canonical truth snapshot, availability evidence, altitude statuses,
+actual arrival evidence, and immutable evaluation policy.
+
+Permanent review enforcement is implemented in:
+
+```text
+apps/api/tools/projectionevaluationreviewaudit
+```
+
+The authoritative review record is:
+
+```text
+docs/143_PROJECTION_EVALUATION_REVIEW_HARDENING.md
+```
+
+```text
+PROJECTION_EVALUATION_VERSION=projection-replay-evaluation-v2
+PROJECTION_EVALUATION_FINGERPRINT_VERSION=projection-replay-evaluation-fingerprint-v2
+PROJECTION_EVALUATION_PROJECTION_SNAPSHOT_VERSION=projection-replay-projection-snapshot-v2
+PROJECTION_EVALUATION_TRUTH_SNAPSHOT_VERSION=projection-replay-truth-snapshot-v2
+PROJECTION_EVALUATION_AGGREGATE_VERSION=projection-replay-aggregate-v2
+PROJECTION_EVALUATION_AGGREGATE_FINGERPRINT_VERSION=projection-replay-aggregate-fingerprint-v2
+PROJECTION_EVALUATION_POLICY_VERSION=projection-replay-evaluation-policy-v2
+PROJECTION_EVALUATION_TRUTH_KNOWLEDGE_CUTOFF=POINT_AVAILABILITY_EVIDENCE
+PROJECTION_EVALUATION_DUPLICATE_TIMESTAMP_POLICY=CONFLICT_REJECTION
+PROJECTION_EVALUATION_PROJECTION_OUTPUT_LINEAGE=ENFORCED
+PROJECTION_EVALUATION_ALTITUDE_STATUS_LINEAGE=ENFORCED
+PROJECTION_EVALUATION_INTERPOLATION_PLAUSIBILITY=ENFORCED
+PROJECTION_EVALUATION_ENDPOINT_METRICS=IMPLEMENTED
+PROJECTION_EVALUATION_LEAD_TIME_METRICS=IMPLEMENTED
+PROJECTION_EVALUATION_CONFIDENCE_COMPARISON=IMPLEMENTED
+PROJECTION_EVALUATION_AGGREGATION_IDENTITY=METHOD_VERSION_CLASS_HORIZON_STEP_POLICY
+PROJECTION_EVALUATION_UNAVAILABLE_ACCURACY_ISOLATION=ENFORCED
+PROJECTION_EVALUATION_ARRIVAL_SELECTIVE_PREDICTION_ACCOUNTING=ENFORCED
+PROJECTION_EVALUATION_MICRO_AND_MACRO_AGGREGATION=IMPLEMENTED
+PROJECTION_EVALUATION_STATISTICAL_MEDIAN=CONVENTIONAL
+PROJECTION_EVALUATION_DERIVED_METRIC_RECOMPUTATION=ENFORCED
+PROJECTION_EVALUATION_AGGREGATE_INPUT_FINGERPRINT=GENERATED_AT_INDEPENDENT
+PROJECTION_EVALUATION_ACTUAL_ARRIVAL_ICAO_PATTERN=^[A-Z0-9]{4}$
+PROJECTION_EVALUATION_PERMANENT_REVIEW_AUDIT=ENFORCED_PENDING_EXACT_CI
+PROJECTION_EVALUATION_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
+PROJECTION_EVALUATION_OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_EVALUATION_UNCLASSIFIED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_EVALUATION_DEFERRED_FINDINGS=0_PENDING_EXACT_CI
+PROJECTION_EVALUATION_ADDITIONAL_CODE_FIXES_REQUIRED=NO_PENDING_EXACT_CI
+PROJECTION_EVALUATION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
+PROJECTION_EVALUATION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
+```
+
+Exact engineering and formal-closure commits must each pass Backend Quality, Backend
+Race Safety, PostgreSQL 16 Integration, and Backend Container before the module review
+can be declared closed.

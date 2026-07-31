@@ -1294,3 +1294,18 @@ current-endpoint provenance, confidence contribution reconstruction, duration-po
 coherence, focused regression tests, permanent strict review audit, exact engineering
 closure commit and Continuous Integration evidence, and zero open, unclassified or
 deferred findings.
+
+<!-- PROJECTION-EVALUATION-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 143 — Projection Evaluation Review Hardening
+
+`143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` is the engineering review record for
+strict event-time and system-availability replay cutoffs, deterministic equal-timestamp
+truth normalization, canonical projection and truth snapshot fingerprints, altitude
+status lineage, physical interpolation limits, immutable evaluation policy provenance,
+endpoint and lead-time metrics, bounded confidence comparison, complete aggregation
+identity, unavailable-result accuracy isolation, arrival prediction recall and airport
+accuracy, point micro and trajectory macro averages, conventional median semantics,
+derived-metric recomputation, GeneratedAt-independent aggregate input fingerprints,
+strict actual-arrival ICAO validation, focused regression tests, permanent strict review
+audit, and the pending exact Continuous Integration and formal-closure process.

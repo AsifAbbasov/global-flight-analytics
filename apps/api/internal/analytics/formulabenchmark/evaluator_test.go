@@ -45,9 +45,17 @@ func TestEvaluateReportsInsufficientEvidence(t *testing.T) {
 	method := &request.ProjectionAggregate.Methods[0]
 	method.EvaluationCount = 5
 	method.CompleteEvaluationCount = 5
+	method.AccuracyEligibleEvaluationCount = 5
 	method.ForecastPointCount = 50
 	method.EvaluatedPointCount = 50
 	method.AltitudeEvaluatedPointCount = 30
+	method.ConfidenceEvaluationPointCount = 50
+	method.ActualArrivalTruthCount = 5
+	method.ArrivalPredictionCount = 4
+	method.MatchedArrivalCount = 4
+	method.MissingArrivalPredictionCount = 1
+	method.ArrivalPredictionRecall = 0.8
+	method.ArrivalAirportAccuracy = 1
 	method.ArrivalEvaluationCount = 4
 
 	report, err := Evaluate(request)
@@ -156,8 +164,16 @@ func validAggregate(
 				DecisionClass: projectioncontract.
 					DecisionClassProjectDerived,
 
-				EvaluationCount:         50,
-				CompleteEvaluationCount: 50,
+				ProjectionHorizonDuration: 3 * time.Minute,
+				ForecastStep:              time.Minute,
+				EvaluationPolicyVersion:   projectionevaluation.EvaluationPolicyVersion,
+				EvaluationPolicyFingerprint: "sha256:" +
+					strings.Repeat("e", 64),
+				LeadTimeBucketSize: time.Minute,
+
+				EvaluationCount:                 50,
+				CompleteEvaluationCount:         50,
+				AccuracyEligibleEvaluationCount: 50,
 
 				ForecastPointCount:  500,
 				EvaluatedPointCount: 500,
@@ -173,6 +189,15 @@ func validAggregate(
 				MeanAltitudeAbsoluteErrorM:       500,
 				AltitudeRMSEM:                    700,
 				VerticalUncertaintyCoverageRatio: 0.80,
+
+				ConfidenceEvaluationPointCount: 500,
+
+				ActualArrivalTruthCount:       50,
+				ArrivalPredictionCount:        40,
+				MatchedArrivalCount:           40,
+				MissingArrivalPredictionCount: 10,
+				ArrivalPredictionRecall:       0.80,
+				ArrivalAirportAccuracy:        1.00,
 
 				ArrivalEvaluationCount:          40,
 				MeanArrivalAbsoluteErrorSeconds: 300,

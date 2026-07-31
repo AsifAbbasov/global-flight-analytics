@@ -182,6 +182,10 @@ func TestEvaluateExcludesTruthAfterEvaluationCutoff(
 			Horizon.AsOfTime.Add(
 			2 * time.Minute,
 		)
+	for index := range request.TruthAvailability {
+		request.TruthAvailability[index].AvailableAt =
+			request.ActualTrajectory.Points[index].ObservedAt
+	}
 	request.ActualTrajectory.Points =
 		append(
 			request.ActualTrajectory.Points,
@@ -206,7 +210,7 @@ func TestEvaluateExcludesTruthAfterEvaluationCutoff(
 	if result.Position.EvaluatedPointCount != 2 ||
 		!hasEvaluationNotice(
 			result.Limitations,
-			"truth_after_evaluation_cutoff_excluded",
+			"truth_after_observation_cutoff_excluded",
 		) {
 		t.Fatalf(
 			"evaluation cutoff was not enforced: %#v",
@@ -311,9 +315,19 @@ func evaluationTestRequest(
 			asOfTime,
 		)
 
+	truthAvailability := make([]TruthAvailability, 0, len(actualTrajectory.Points))
+	for _, point := range actualTrajectory.Points {
+		truthAvailability = append(truthAvailability, TruthAvailability{
+			PointID:     point.ID,
+			SourceName:  "actual-truth-ingestion",
+			AvailableAt: point.ObservedAt.Add(time.Second),
+		})
+	}
+
 	request := Request{
-		Projection:       projection,
-		ActualTrajectory: actualTrajectory,
+		Projection:        projection,
+		ActualTrajectory:  actualTrajectory,
+		TruthAvailability: truthAvailability,
 		EvaluatedAt: asOfTime.Add(
 			5 * time.Minute,
 		),
@@ -327,6 +341,9 @@ func evaluationTestRequest(
 				),
 				SourceName: "actual-arrival-truth",
 				ObservedAt: asOfTime.Add(
+					4 * time.Minute,
+				),
+				AvailableAt: asOfTime.Add(
 					4 * time.Minute,
 				),
 			}

@@ -36,6 +36,20 @@ func TestConfigValidateRejectsInvalidValues(
 			wantError: ErrMaximumInterpolationGapInvalid,
 		},
 		{
+			name: "maximum truth ground speed",
+			mutate: func(config *Config) {
+				config.MaximumTruthGroundSpeedMPS = 0
+			},
+			wantError: ErrMaximumTruthGroundSpeedInvalid,
+		},
+		{
+			name: "maximum truth vertical rate",
+			mutate: func(config *Config) {
+				config.MaximumTruthVerticalRateMPS = 0
+			},
+			wantError: ErrMaximumTruthVerticalRateInvalid,
+		},
+		{
 			name: "minimum evaluated points",
 			mutate: func(config *Config) {
 				config.MinimumEvaluatedPointCount = 0
@@ -56,6 +70,13 @@ func TestConfigValidateRejectsInvalidValues(
 				config.MaximumAltitudeErrorM = 0
 			},
 			wantError: ErrMaximumAltitudeErrorInvalid,
+		},
+		{
+			name: "lead-time bucket size",
+			mutate: func(config *Config) {
+				config.LeadTimeBucketSize = 0
+			},
+			wantError: ErrLeadTimeBucketSizeInvalid,
 		},
 	}
 
@@ -84,9 +105,12 @@ func TestConfigValidateRejectsInvalidValues(
 
 func validEvaluationConfig() Config {
 	return Config{
-		MaximumInterpolationGap:    3 * time.Minute,
-		MinimumEvaluatedPointCount: 1,
-		MaximumHorizontalErrorM:    10000,
-		MaximumAltitudeErrorM:      1000,
+		MaximumInterpolationGap:     3 * time.Minute,
+		MaximumTruthGroundSpeedMPS:  400,
+		MaximumTruthVerticalRateMPS: 100,
+		MinimumEvaluatedPointCount:  1,
+		MaximumHorizontalErrorM:     10000,
+		MaximumAltitudeErrorM:       1000,
+		LeadTimeBucketSize:          time.Minute,
 	}
 }
