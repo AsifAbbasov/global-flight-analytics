@@ -256,8 +256,15 @@ func TestProjectFallsBackWhenPointSupportIsInsufficient(
 	}
 
 	request := continuationTestRequest()
-	request.Candidates =
-		request.Candidates[:1]
+	config.MinimumPointSupport = 3
+	config.MinimumAltitudeSupport = 2
+	baseline, err = New(config)
+	if err != nil {
+		t.Fatalf(
+			"New() with elevated support error = %v",
+			err,
+		)
+	}
 
 	result, err := baseline.Project(request)
 	if err != nil {

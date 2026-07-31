@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	Version    = "local-historical-neighbor-continuation-v2"
+	Version    = "local-historical-neighbor-continuation-v3"
 	MethodName = "local_historical_neighbor_continuation"
 
-	FingerprintVersion         = "local-historical-neighbor-continuation-fingerprint-v2"
-	FallbackFingerprintVersion = "local-historical-neighbor-fallback-fingerprint-v2"
+	FingerprintVersion         = "local-historical-neighbor-continuation-fingerprint-v3"
+	FallbackFingerprintVersion = "local-historical-neighbor-fallback-fingerprint-v3"
 )
 
 var (
@@ -31,9 +31,6 @@ var (
 	)
 	ErrHorizonPlanInvalid = errors.New(
 		"historical continuation horizon planner returned an invalid plan",
-	)
-	ErrCurrentTrajectoryUnavailable = errors.New(
-		"current trajectory does not contain a usable as-of endpoint",
 	)
 	ErrContinuationContractInvalid = errors.New(
 		"generated historical continuation contract is invalid",

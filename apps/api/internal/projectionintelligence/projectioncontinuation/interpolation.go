@@ -3,6 +3,7 @@ package projectioncontinuation
 import (
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
@@ -27,17 +28,12 @@ func trajectorySnapshotAt(
 	item trajectory.FlightTrajectory,
 	asOfTime time.Time,
 ) trajectory.FlightTrajectory {
-	type indexedPoint struct {
-		point trajectory.TrackPoint4D
-		index int
-	}
-
-	indexed := make(
-		[]indexedPoint,
+	points := make(
+		[]trajectory.TrackPoint4D,
 		0,
 		len(item.Points),
 	)
-	for index, point := range item.Points {
+	for _, point := range item.Points {
 		if point.ObservedAt.IsZero() ||
 			point.ObservedAt.UTC().After(
 				asOfTime.UTC(),
@@ -47,44 +43,19 @@ func trajectorySnapshotAt(
 			continue
 		}
 
-		point.ObservedAt =
-			point.ObservedAt.UTC()
-		indexed = append(
-			indexed,
-			indexedPoint{
-				point: point,
-				index: index,
-			},
-		)
+		point.ObservedAt = point.ObservedAt.UTC()
+		points = append(points, point)
 	}
 
 	sort.SliceStable(
-		indexed,
+		points,
 		func(left int, right int) bool {
-			leftTime :=
-				indexed[left].
-					point.ObservedAt
-			rightTime :=
-				indexed[right].
-					point.ObservedAt
-			if leftTime.Equal(rightTime) {
-				return indexed[left].index <
-					indexed[right].index
-			}
-
-			return leftTime.Before(
-				rightTime,
+			return continuationPointLess(
+				points[left],
+				points[right],
 			)
 		},
 	)
-
-	points := make(
-		[]trajectory.TrackPoint4D,
-		len(indexed),
-	)
-	for index, item := range indexed {
-		points[index] = item.point
-	}
 
 	snapshot := item
 	snapshot.Points = points
@@ -109,6 +80,51 @@ func trajectorySnapshotAt(
 	)
 
 	return snapshot
+}
+
+func continuationPointLess(
+	left trajectory.TrackPoint4D,
+	right trajectory.TrackPoint4D,
+) bool {
+	leftTime := left.ObservedAt.UTC()
+	rightTime := right.ObservedAt.UTC()
+	if !leftTime.Equal(rightTime) {
+		return leftTime.Before(rightTime)
+	}
+
+	leftID := strings.TrimSpace(left.ID)
+	rightID := strings.TrimSpace(right.ID)
+	if leftID != rightID {
+		return leftID < rightID
+	}
+
+	leftValues := [...]float64{
+		left.Latitude,
+		left.Longitude,
+		left.BarometricAltitudeM,
+		left.GeometricAltitudeM,
+		left.VelocityMPS,
+		left.HeadingDegrees,
+		left.VerticalRateMPS,
+	}
+	rightValues := [...]float64{
+		right.Latitude,
+		right.Longitude,
+		right.BarometricAltitudeM,
+		right.GeometricAltitudeM,
+		right.VelocityMPS,
+		right.HeadingDegrees,
+		right.VerticalRateMPS,
+	}
+	for index := range leftValues {
+		leftBits := math.Float64bits(leftValues[index])
+		rightBits := math.Float64bits(rightValues[index])
+		if leftBits != rightBits {
+			return leftBits < rightBits
+		}
+	}
+
+	return false
 }
 
 func interpolateTrajectoryPoint(

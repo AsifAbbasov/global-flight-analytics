@@ -39,10 +39,10 @@ var (
 		"vertical uncertainty policy is invalid",
 	)
 	ErrNeighborSpreadMultiplierInvalid = errors.New(
-		"neighbor spread multiplier must be finite and greater than zero",
+		"neighbor spread multiplier must be finite and at least one",
 	)
 	ErrMaximumConfidenceLossInvalid = errors.New(
-		"maximum confidence loss must be finite and between zero and one",
+		"maximum confidence loss must be finite, non-negative, and less than one",
 	)
 	ErrConfidenceThresholdInvalid = errors.New(
 		"confidence thresholds must satisfy zero < medium <= high <= one",
@@ -159,18 +159,17 @@ func (config Config) Validate() error {
 			config.VerticalUncertaintyGrowthMPS,
 		)
 	}
-	if !positiveFinite(
-		config.NeighborSpreadMultiplier,
-	) {
+	if !finite(config.NeighborSpreadMultiplier) ||
+		config.NeighborSpreadMultiplier < 1 {
 		return fmt.Errorf(
 			"%w: %f",
 			ErrNeighborSpreadMultiplierInvalid,
 			config.NeighborSpreadMultiplier,
 		)
 	}
-	if !unitInterval(
-		config.MaximumConfidenceLoss,
-	) {
+	if !finite(config.MaximumConfidenceLoss) ||
+		config.MaximumConfidenceLoss < 0 ||
+		config.MaximumConfidenceLoss >= 1 {
 		return fmt.Errorf(
 			"%w: %f",
 			ErrMaximumConfidenceLossInvalid,

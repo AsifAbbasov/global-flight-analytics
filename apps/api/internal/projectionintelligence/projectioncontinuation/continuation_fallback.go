@@ -28,7 +28,7 @@ func (
 	if err != nil {
 		return projectioncontract.Result{},
 			fmt.Errorf(
-				"%w: %v",
+				"%w: %w",
 				ErrFallbackProjectionFailed,
 				err,
 			)

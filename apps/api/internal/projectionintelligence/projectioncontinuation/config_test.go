@@ -87,7 +87,14 @@ func TestConfigValidateRejectsInvalidValues(
 			wantError: ErrVerticalUncertaintyInvalid,
 		},
 		{
-			name: "spread multiplier",
+			name: "spread multiplier below one",
+			mutate: func(config *Config) {
+				config.NeighborSpreadMultiplier = 0.99
+			},
+			wantError: ErrNeighborSpreadMultiplierInvalid,
+		},
+		{
+			name: "spread multiplier non-finite",
 			mutate: func(config *Config) {
 				config.NeighborSpreadMultiplier =
 					math.NaN()
@@ -95,7 +102,14 @@ func TestConfigValidateRejectsInvalidValues(
 			wantError: ErrNeighborSpreadMultiplierInvalid,
 		},
 		{
-			name: "confidence loss",
+			name: "confidence loss reaches one",
+			mutate: func(config *Config) {
+				config.MaximumConfidenceLoss = 1
+			},
+			wantError: ErrMaximumConfidenceLossInvalid,
+		},
+		{
+			name: "confidence loss above one",
 			mutate: func(config *Config) {
 				config.MaximumConfidenceLoss = 2
 			},

@@ -1505,3 +1505,44 @@ The policy defaults are constructor-normalized for compatibility with existing
 composition roots. Effective policy values are included in the continuation input
 fingerprint, so a policy change cannot reuse the identity of a projection created
 under different plausibility limits.
+
+---
+
+## 35. Projection Continuation Engineering Review Closure
+
+The remaining confirmed Projection Continuation engineering findings are implemented
+as one consistency and permanent-audit increment. Configured model uncertainty and
+neighbor disagreement are conservatively added, effective weighted support replaces
+raw sample count, disagreement directly reduces confidence, terminal confidence loss
+cannot reach one, zero-confidence points force limited status, near-antipodal means are
+rejected, standalone candidate evidence is bound, and fallback causes remain
+inspectable through `errors.Is`.
+
+Permanent review enforcement is implemented in:
+
+```text
+apps/api/tools/projectioncontinuationreviewaudit
+```
+
+```text
+PROJECTION_CONTINUATION_VERSION=local-historical-neighbor-continuation-v3
+PROJECTION_CONTINUATION_FINGERPRINT_VERSION=local-historical-neighbor-continuation-fingerprint-v3
+PROJECTION_CONTINUATION_FALLBACK_FINGERPRINT_VERSION=local-historical-neighbor-fallback-fingerprint-v3
+PROJECTION_CONTINUATION_APPROVED_EVIDENCE_INTEGRITY=CI_CONFIRMED
+PROJECTION_CONTINUATION_INTERPOLATION_PLAUSIBILITY=CI_CONFIRMED
+PROJECTION_CONTINUATION_ADDITIVE_UNCERTAINTY_COMPOSITION=ENFORCED
+PROJECTION_CONTINUATION_EFFECTIVE_WEIGHTED_SUPPORT=ENFORCED
+PROJECTION_CONTINUATION_DISAGREEMENT_CONFIDENCE_PENALTY=ENFORCED
+PROJECTION_CONTINUATION_MAXIMUM_CONFIDENCE_LOSS_BELOW_ONE=ENFORCED
+PROJECTION_CONTINUATION_ZERO_CONFIDENCE_STATUS=LIMITED
+PROJECTION_CONTINUATION_NEAR_ANTIPODAL_GUARD=ENFORCED
+PROJECTION_CONTINUATION_STANDALONE_CANDIDATE_BINDING=ENFORCED
+PROJECTION_CONTINUATION_FALLBACK_CAUSE_PRESERVATION=ENFORCED
+PROJECTION_CONTINUATION_TRUNCATED_PLAN_FINGERPRINT_REGRESSION=ENFORCED
+PROJECTION_CONTINUATION_IRREGULAR_FORECAST_GRID_REJECTION=ENFORCED
+PROJECTION_CONTINUATION_EQUAL_TIMESTAMP_CANONICAL_ORDER=ENFORCED
+PROJECTION_CONTINUATION_PERMANENT_REVIEW_AUDIT=ENFORCED_PENDING_EXACT_CI
+PROJECTION_CONTINUATION_ENGINEERING_IMPLEMENTATION=COMPLETE_PENDING_EXACT_CI
+PROJECTION_CONTINUATION_FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
+PROJECTION_CONTINUATION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_CLOSURE
+```

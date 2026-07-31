@@ -2,13 +2,18 @@ package projectioncontinuation
 
 import (
 	"math"
+	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
-
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionpatternconfidence"
-	"time"
 )
+
+type sampleCombination struct {
+	point               projectioncontract.ProjectionPoint
+	altitudeAvailable   bool
+	confidenceAvailable bool
+}
 
 func (
 	baseline *Baseline,
@@ -18,11 +23,7 @@ func (
 	plan projectionhorizon.Plan,
 	sequence int,
 	forecastTime time.Time,
-) (
-	projectioncontract.ProjectionPoint,
-	bool,
-	error,
-) {
+) (sampleCombination, error) {
 	geoPoints := make(
 		[]weightedGeoPoint,
 		0,
@@ -42,27 +43,18 @@ func (
 	}
 
 	latitude, longitude, valid :=
-		weightedMeanGeoPoint(
-			geoPoints,
-		)
-	if !valid ||
-		!positiveFinite(totalWeight) {
-		return projectioncontract.
-				ProjectionPoint{},
-			false,
+		weightedMeanGeoPoint(geoPoints)
+	if !valid || !positiveFinite(totalWeight) {
+		return sampleCombination{},
 			ErrContinuationContractInvalid
 	}
 
 	offsetSeconds := forecastTime.Sub(
 		plan.AsOfTime,
 	).Seconds()
-	horizonSeconds :=
-		plan.EffectiveDuration.Seconds()
-	if offsetSeconds <= 0 ||
-		horizonSeconds <= 0 {
-		return projectioncontract.
-				ProjectionPoint{},
-			false,
+	horizonSeconds := plan.EffectiveDuration.Seconds()
+	if offsetSeconds <= 0 || horizonSeconds <= 0 {
+		return sampleCombination{},
 			ErrContinuationContractInvalid
 	}
 
@@ -70,48 +62,38 @@ func (
 	altitudeWeight := 0.0
 	weightedAltitude := 0.0
 	for _, sample := range samples {
-		distanceM :=
-			greatCircleDistanceM(
-				latitude,
-				longitude,
-				sample.latitude,
-				sample.longitude,
-			)
+		distanceM := greatCircleDistanceM(
+			latitude,
+			longitude,
+			sample.latitude,
+			sample.longitude,
+		)
 		horizontalSpreadSquared +=
-			sample.weight *
-				distanceM *
-				distanceM
+			sample.weight * distanceM * distanceM
 
 		if sample.altitudeM != nil {
 			weightedAltitude +=
-				sample.weight *
-					*sample.altitudeM
-			altitudeWeight +=
-				sample.weight
+				sample.weight * *sample.altitudeM
+			altitudeWeight += sample.weight
 		}
 	}
+
 	horizontalSpreadM := math.Sqrt(
-		horizontalSpreadSquared /
-			totalWeight,
+		horizontalSpreadSquared / totalWeight,
 	)
 	configuredHorizontal :=
-		baseline.config.
-			InitialHorizontalUncertaintyM +
-			baseline.config.
-				HorizontalUncertaintyGrowthMPS*
+		baseline.config.InitialHorizontalUncertaintyM +
+			baseline.config.HorizontalUncertaintyGrowthMPS*
 				offsetSeconds
-	horizontalUncertaintyM := math.Max(
+	horizontalDisagreementM :=
+		horizontalSpreadM *
+			baseline.config.NeighborSpreadMultiplier
+	horizontalUncertaintyM, valid := composeUncertainty(
 		configuredHorizontal,
-		horizontalSpreadM*
-			baseline.config.
-				NeighborSpreadMultiplier,
+		horizontalDisagreementM,
 	)
-	if !positiveFinite(
-		horizontalUncertaintyM,
-	) {
-		return projectioncontract.
-				ProjectionPoint{},
-			false,
+	if !valid {
+		return sampleCombination{},
 			ErrContinuationContractInvalid
 	}
 
@@ -119,10 +101,19 @@ func (
 		Latitude:  latitude,
 		Longitude: longitude,
 	}
-	uncertainty :=
-		projectioncontract.Uncertainty{
-			HorizontalRadiusM: horizontalUncertaintyM,
-		}
+	uncertainty := projectioncontract.Uncertainty{
+		HorizontalRadiusM: horizontalUncertaintyM,
+	}
+
+	agreementFactor := uncertaintyAgreementFactor(
+		configuredHorizontal,
+		horizontalUncertaintyM,
+	)
+	if !positiveFinite(agreementFactor) ||
+		agreementFactor > 1 {
+		return sampleCombination{},
+			ErrContinuationContractInvalid
+	}
 
 	altitudeSampleCount := 0
 	for _, sample := range samples {
@@ -132,91 +123,165 @@ func (
 	}
 	altitudeAvailable :=
 		altitudeSampleCount >=
-			baseline.config.
-				MinimumAltitudeSupport &&
+			baseline.config.MinimumAltitudeSupport &&
 			altitudeWeight > 0
 	if altitudeAvailable {
-		altitudeM :=
-			weightedAltitude /
-				altitudeWeight
+		altitudeM := weightedAltitude / altitudeWeight
 		verticalSpreadSquared := 0.0
 		for _, sample := range samples {
 			if sample.altitudeM == nil {
 				continue
 			}
-			delta :=
-				*sample.altitudeM -
-					altitudeM
+			delta := *sample.altitudeM - altitudeM
 			verticalSpreadSquared +=
-				sample.weight *
-					delta *
-					delta
+				sample.weight * delta * delta
 		}
 		verticalSpreadM := math.Sqrt(
-			verticalSpreadSquared /
-				altitudeWeight,
+			verticalSpreadSquared / altitudeWeight,
 		)
 		configuredVertical :=
-			baseline.config.
-				InitialVerticalUncertaintyM +
-				baseline.config.
-					VerticalUncertaintyGrowthMPS*
+			baseline.config.InitialVerticalUncertaintyM +
+				baseline.config.VerticalUncertaintyGrowthMPS*
 					offsetSeconds
-		verticalUncertaintyM := math.Max(
-			configuredVertical,
-			verticalSpreadM*
-				baseline.config.
-					NeighborSpreadMultiplier,
-		)
-		if finite(altitudeM) &&
-			positiveFinite(
-				verticalUncertaintyM,
-			) {
-			position.AltitudeM =
-				float64Pointer(altitudeM)
+		verticalDisagreementM :=
+			verticalSpreadM *
+				baseline.config.NeighborSpreadMultiplier
+		verticalUncertaintyM, verticalValid :=
+			composeUncertainty(
+				configuredVertical,
+				verticalDisagreementM,
+			)
+		if finite(altitudeM) && verticalValid {
+			position.AltitudeM = float64Pointer(altitudeM)
 			uncertainty.VerticalRadiusM =
-				float64Pointer(
+				float64Pointer(verticalUncertaintyM)
+			verticalAgreementFactor :=
+				uncertaintyAgreementFactor(
+					configuredVertical,
 					verticalUncertaintyM,
 				)
+			agreementFactor = math.Min(
+				agreementFactor,
+				verticalAgreementFactor,
+			)
 		} else {
 			altitudeAvailable = false
 		}
 	}
 
-	supportRatio := clampUnit(
-		float64(len(samples)) /
-			float64(
-				pattern.NeighborCount,
-			),
+	supportRatio := effectiveWeightedSupportRatio(
+		samples,
+		pattern.NeighborCount,
 	)
-	progress :=
-		offsetSeconds /
-			horizonSeconds
-	score := pattern.Score *
-		supportRatio *
-		(1 -
-			baseline.config.
-				MaximumConfidenceLoss*
-				progress)
-	score = clampUnit(score)
+	progress := clampUnit(
+		offsetSeconds / horizonSeconds,
+	)
+	horizonRetention := 1 -
+		baseline.config.MaximumConfidenceLoss*progress
+	score := clampUnit(
+		pattern.Score *
+			supportRatio *
+			agreementFactor *
+			horizonRetention,
+	)
 
-	return projectioncontract.ProjectionPoint{
-		Sequence:     sequence,
-		ForecastTime: forecastTime.UTC(),
-		Position:     position,
-		Uncertainty:  uncertainty,
-		Confidence: projectioncontract.Confidence{
-			Score: score,
-			Level: baseline.
-				confidenceLevel(score),
-			Reasons: []projectioncontract.
-				ConfidenceReason{
+	confidence := projectioncontract.Confidence{
+		Score: score,
+		Level: baseline.confidenceLevel(score),
+	}
+	if score > 0 {
+		confidence.Reasons =
+			[]projectioncontract.ConfidenceReason{
 				{
-					Code:         "pattern_confidence_support_and_horizon_decay",
-					Message:      "Point confidence combines pattern confidence, usable neighbor support, and configured horizon decay.",
-					Contribution: score,
+					Code:         "pattern_confidence",
+					Message:      "Historical pattern confidence provides the upstream evidence-strength factor.",
+					Contribution: clampUnit(pattern.Score),
 				},
-			},
+				{
+					Code:         "effective_weighted_neighbor_support",
+					Message:      "Neighbor support uses effective sample size so concentrated similarity weight cannot count as broad support.",
+					Contribution: supportRatio,
+				},
+				{
+					Code:         "neighbor_agreement",
+					Message:      "Forecast confidence decreases as weighted horizontal or vertical disagreement expands total uncertainty.",
+					Contribution: agreementFactor,
+				},
+				{
+					Code:         "horizon_retention",
+					Message:      "Confidence retention decreases monotonically across the configured forecast horizon.",
+					Contribution: horizonRetention,
+				},
+			}
+	}
+
+	return sampleCombination{
+		point: projectioncontract.ProjectionPoint{
+			Sequence:     sequence,
+			ForecastTime: forecastTime.UTC(),
+			Position:     position,
+			Uncertainty:  uncertainty,
+			Confidence:   confidence,
 		},
-	}, altitudeAvailable, nil
+		altitudeAvailable:   altitudeAvailable,
+		confidenceAvailable: score > 0,
+	}, nil
+}
+
+// composeUncertainty conservatively preserves both the configured model
+// uncertainty and the observed neighbor-disagreement uncertainty. Addition is
+// used instead of root-sum-square because independence is not established.
+func composeUncertainty(
+	configured float64,
+	disagreement float64,
+) (float64, bool) {
+	if !positiveFinite(configured) ||
+		!nonNegativeFinite(disagreement) {
+		return 0, false
+	}
+
+	combined := configured + disagreement
+	return combined, positiveFinite(combined)
+}
+
+func uncertaintyAgreementFactor(
+	configured float64,
+	combined float64,
+) float64 {
+	if !positiveFinite(configured) ||
+		!positiveFinite(combined) ||
+		combined < configured {
+		return 0
+	}
+
+	return clampUnit(configured / combined)
+}
+
+func effectiveWeightedSupportRatio(
+	samples []projectedSample,
+	neighborCount int,
+) float64 {
+	if len(samples) == 0 || neighborCount < 1 {
+		return 0
+	}
+
+	totalWeight := 0.0
+	squaredWeightSum := 0.0
+	for _, sample := range samples {
+		if !positiveFinite(sample.weight) {
+			continue
+		}
+		totalWeight += sample.weight
+		squaredWeightSum += sample.weight * sample.weight
+	}
+	if !positiveFinite(totalWeight) ||
+		!positiveFinite(squaredWeightSum) {
+		return 0
+	}
+
+	effectiveSampleSize :=
+		totalWeight * totalWeight / squaredWeightSum
+	return clampUnit(
+		effectiveSampleSize / float64(neighborCount),
+	)
 }

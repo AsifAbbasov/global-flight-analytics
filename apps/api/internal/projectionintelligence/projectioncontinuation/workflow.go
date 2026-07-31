@@ -76,13 +76,16 @@ func (
 		request.Candidates,
 		plan.AsOfTime,
 	)
-	if approvedEvidence != nil &&
-		!selectedCandidateEvidenceMatches(
-			selection,
-			candidateByID,
-		) {
+	if !selectedCandidateEvidenceMatches(
+		selection,
+		candidateByID,
+	) {
+		reason := "historical_selected_candidate_evidence_mismatch"
+		if approvedEvidence != nil {
+			reason = "historical_approved_evidence_candidate_mismatch"
+		}
 		return continuationPreparation{
-			fallbackReason: "historical_approved_evidence_candidate_mismatch",
+			fallbackReason: reason,
 			selectionFingerprint: selection.
 				InputFingerprint,
 			patternFingerprint: pattern.
@@ -127,6 +130,7 @@ type projectedSampleBatch struct {
 type continuationPointResult struct {
 	points               []projectioncontract.ProjectionPoint
 	altitudeComplete     bool
+	confidenceComplete   bool
 	plausibilityFiltered bool
 	fallbackReason       string
 }
@@ -143,6 +147,7 @@ func (
 		len(plan.ForecastTimes),
 	)
 	altitudeComplete := true
+	confidenceComplete := true
 	plausibilityFiltered := false
 
 	for index, forecastTime := range plan.ForecastTimes {
@@ -166,28 +171,31 @@ func (
 			plausibilityFiltered = true
 		}
 
-		point, altitudeAvailable, err :=
-			baseline.combineSamples(
-				batch.samples,
-				preparation.pattern,
-				plan,
-				index,
-				forecastTime,
-			)
+		combination, err := baseline.combineSamples(
+			batch.samples,
+			preparation.pattern,
+			plan,
+			index,
+			forecastTime,
+		)
 		if err != nil {
 			return continuationPointResult{
 				fallbackReason: "historical_continuation_combination_failed",
 			}
 		}
-		if !altitudeAvailable {
+		if !combination.altitudeAvailable {
 			altitudeComplete = false
 		}
-		points = append(points, point)
+		if !combination.confidenceAvailable {
+			confidenceComplete = false
+		}
+		points = append(points, combination.point)
 	}
 
 	return continuationPointResult{
 		points:               points,
 		altitudeComplete:     altitudeComplete,
+		confidenceComplete:   confidenceComplete,
 		plausibilityFiltered: plausibilityFiltered,
 	}
 }

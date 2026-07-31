@@ -2,7 +2,10 @@ package projectioncontinuation
 
 import "math"
 
-const meanEarthRadiusM = 6371008.8
+const (
+	meanEarthRadiusM              = 6371008.8
+	weightedMeanVectorNormEpsilon = 1e-12
+)
 
 type weightedGeoPoint struct {
 	latitude  float64
@@ -194,7 +197,11 @@ func weightedMeanGeoPoint(
 	z /= totalWeight
 
 	horizontal := math.Sqrt(x*x + y*y)
-	if horizontal == 0 && z == 0 {
+	vectorNorm := math.Sqrt(
+		horizontal*horizontal + z*z,
+	)
+	if !positiveFinite(vectorNorm) ||
+		vectorNorm <= weightedMeanVectorNormEpsilon {
 		return 0, 0, false
 	}
 

@@ -1275,6 +1275,7 @@ and zero open, unclassified, or deferred findings.
 authorization/projection evidence-identity defect, compile-time Approved Evidence
 production contract, exact Pattern-to-Selection fingerprint lineage,
 candidate-anchor binding, observed historical source provenance, bounded
-interpolation gaps, horizontal and vertical rate plausibility guards, rejected
-mechanical recommendations, and the still-open uncertainty, confidence and
-numerical-stability work.
+interpolation and rate plausibility, conservative additive uncertainty, effective
+weighted support, disagreement-aware confidence, zero-confidence status semantics,
+near-antipodal rejection, fallback cause preservation, permanent review audit, and
+the exact Continuous Integration gates still required for formal closure.
