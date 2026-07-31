@@ -1325,3 +1325,13 @@ fingerprint and canonical provenance reconstruction, exact selected-neighbor
 provenance binding, malicious lineage-drift tests, permanent strict audit, exact
 corrective engineering commit and Continuous Integration evidence, and zero open,
 unclassified, or deferred findings.
+
+<!-- PROJECTION-READ-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 145 — Projection Read Review Hardening
+
+`145_PROJECTION_READ_REVIEW_HARDENING.md` records the atomic repeatable-read snapshot,
+strict context and as-of boundaries, snapshot and Composer postconditions, route-row payload metadata binding,
+canonical default-duration handling, historical candidate backfill, record-level route-history lineage,
+exact engineering commits and Continuous Integration evidence, zero open correctness findings, and
+formal closure pending permanent-audit exact Continuous Integration.
