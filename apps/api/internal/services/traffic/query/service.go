@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	ErrContextRequired              = errors.New("traffic query context is required")
 	ErrTrajectoryRepositoryRequired = errors.New("trajectory repository is required")
 	ErrInvalidICAO24                = errors.New("invalid icao24")
 	ErrInvalidTrajectoryID          = errors.New("invalid trajectory id")
@@ -42,7 +43,7 @@ func (service *Service) GetLatestTrajectoryByICAO24(
 	icao24 string,
 ) (trajectory.FlightTrajectory, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return trajectory.FlightTrajectory{}, ErrContextRequired
 	}
 
 	if service.trajectoryRepository == nil {
@@ -75,7 +76,7 @@ func (service *Service) GetTrajectoryByID(
 	trajectoryID string,
 ) (trajectory.FlightTrajectory, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return trajectory.FlightTrajectory{}, ErrContextRequired
 	}
 
 	if service.trajectoryRepository == nil {

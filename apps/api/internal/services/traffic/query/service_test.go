@@ -9,6 +9,72 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 )
 
+func TestQueryMethodsRejectNilContextBeforeRepositoryReads(
+	t *testing.T,
+) {
+	repository := &fakeTrajectoryReadRepository{
+		latestByICAO24: map[string]trajectory.FlightTrajectory{
+			"ABC123": makeQueryTrajectory(
+				"trajectory-latest",
+				"ABC123",
+			),
+		},
+		byID: map[string]trajectory.FlightTrajectory{
+			"trajectory-1": makeQueryTrajectory(
+				"trajectory-1",
+				"ABC123",
+			),
+		},
+	}
+
+	service := New(
+		Config{
+			TrajectoryRepository: repository,
+		},
+	)
+
+	_, latestErr := service.GetLatestTrajectoryByICAO24(
+		nil,
+		"ABC123",
+	)
+	if !errors.Is(
+		latestErr,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected latest query context required error, got %v",
+			latestErr,
+		)
+	}
+
+	_, byIDErr := service.GetTrajectoryByID(
+		nil,
+		"trajectory-1",
+	)
+	if !errors.Is(
+		byIDErr,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected id query context required error, got %v",
+			byIDErr,
+		)
+	}
+
+	if repository.latestCallCount != 0 {
+		t.Fatalf(
+			"expected no latest trajectory reads, got %d",
+			repository.latestCallCount,
+		)
+	}
+	if repository.byIDCallCount != 0 {
+		t.Fatalf(
+			"expected no trajectory id reads, got %d",
+			repository.byIDCallCount,
+		)
+	}
+}
+
 func TestGetLatestTrajectoryByICAO24(t *testing.T) {
 	repository := &fakeTrajectoryReadRepository{
 		latestByICAO24: map[string]trajectory.FlightTrajectory{
