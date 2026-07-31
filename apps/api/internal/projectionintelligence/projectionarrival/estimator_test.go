@@ -309,6 +309,7 @@ func TestEstimateWithholdsArrivalBeyondMaximumDuration(
 	t *testing.T,
 ) {
 	config := validArrivalConfig()
+	config.MinimumArrivalInterval = 30 * time.Second
 	config.MaximumEstimatedArrivalDuration =
 		time.Minute
 	estimator, err := New(config)

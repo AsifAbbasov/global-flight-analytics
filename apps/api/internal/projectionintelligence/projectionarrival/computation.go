@@ -2,7 +2,6 @@ package projectionarrival
 
 import (
 	"math"
-	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 )
@@ -25,12 +24,11 @@ func (
 	}
 
 	profile, profileAvailable :=
-		calculateSpeedProfile(
+		calculateClosingSpeedProfile(
 			samples,
-			estimator.config.
-				MinimumGroundSpeedMPS,
-			estimator.config.
-				MaximumSpeedSampleCount,
+			distances,
+			estimator.config.MaximumGroundSpeedMPS,
+			estimator.config.MaximumSpeedSampleCount,
 		)
 
 	if computation, exists :=
@@ -58,10 +56,13 @@ func arrivalDistances(
 	destinationLatitude float64,
 	destinationLongitude float64,
 ) ([]float64, bool) {
-	distances := make(
-		[]float64,
-		len(samples),
-	)
+	if len(samples) == 0 ||
+		!validLatitude(destinationLatitude) ||
+		!validLongitude(destinationLongitude) {
+		return nil, false
+	}
+
+	distances := make([]float64, len(samples))
 	for index, sample := range samples {
 		distanceM := greatCircleDistanceM(
 			sample.latitude,
@@ -129,93 +130,78 @@ func (
 	profileAvailable bool,
 	projection projectioncontract.Result,
 ) (arrivalComputation, bool) {
-	if previousDistanceM <=
-		estimator.config.ArrivalRadiusM ||
-		currentDistanceM >
-			estimator.config.ArrivalRadiusM ||
+	if previousDistanceM <= estimator.config.ArrivalRadiusM ||
+		currentDistanceM > estimator.config.ArrivalRadiusM ||
 		currentDistanceM >= previousDistanceM {
 		return arrivalComputation{}, false
 	}
 
-	denominator :=
-		previousDistanceM - currentDistanceM
-	if denominator <= 0 {
-		return arrivalComputation{}, false
-	}
-	fraction :=
-		(previousDistanceM -
-			estimator.config.ArrivalRadiusM) /
-			denominator
-	fraction = math.Max(
-		0,
-		math.Min(1, fraction),
-	)
-
-	segmentDuration :=
-		current.timeValue.Sub(
-			previous.timeValue,
-		)
+	segmentDuration := current.timeValue.Sub(previous.timeValue)
 	if segmentDuration <= 0 {
 		return arrivalComputation{}, false
 	}
-
-	estimatedTime :=
-		previous.timeValue.Add(
-			time.Duration(
-				fraction *
-					float64(segmentDuration),
-			),
-		)
-	segmentDistanceM :=
-		greatCircleDistanceM(
-			previous.latitude,
-			previous.longitude,
-			current.latitude,
-			current.longitude,
-		)
-	segmentSpeedMPS :=
-		segmentDistanceM /
-			segmentDuration.Seconds()
-	if !positiveFinite(segmentSpeedMPS) {
+	durationSeconds := segmentDuration.Seconds()
+	if !positiveFinite(durationSeconds) {
 		return arrivalComputation{}, false
 	}
 
+	groundDistanceM := greatCircleDistanceM(
+		previous.latitude,
+		previous.longitude,
+		current.latitude,
+		current.longitude,
+	)
+	groundSpeedMPS := groundDistanceM / durationSeconds
+	if !nonNegativeFinite(groundSpeedMPS) ||
+		groundSpeedMPS > estimator.config.MaximumGroundSpeedMPS {
+		return arrivalComputation{}, false
+	}
+
+	distanceClosedM := previousDistanceM - currentDistanceM
+	radialClosingSpeedMPS := distanceClosedM / durationSeconds
+	if !positiveFinite(radialClosingSpeedMPS) {
+		return arrivalComputation{}, false
+	}
+
+	fraction :=
+		(previousDistanceM - estimator.config.ArrivalRadiusM) /
+			distanceClosedM
+	fraction = math.Max(0, math.Min(1, fraction))
+	crossingOffset, valid := durationCeilFraction(
+		segmentDuration,
+		fraction,
+	)
+	if !valid {
+		return arrivalComputation{}, false
+	}
+	estimatedTime := previous.timeValue.Add(crossingOffset)
+
 	uncertaintyM :=
 		previous.horizontalUncertaintyM +
-			fraction*
-				(current.horizontalUncertaintyM-
-					previous.horizontalUncertaintyM)
-	uncertaintyDuration :=
-		time.Duration(
-			uncertaintyM /
-				segmentSpeedMPS *
-				float64(time.Second),
-		)
-	earliestTime :=
-		estimatedTime.Add(
-			-uncertaintyDuration,
-		)
-	latestTime :=
-		estimatedTime.Add(
-			uncertaintyDuration,
-		)
-	earliestTime,
-		estimatedTime,
-		latestTime =
+			fraction*(current.horizontalUncertaintyM-
+				previous.horizontalUncertaintyM)
+	uncertaintyDuration, valid := durationCeilSeconds(
+		uncertaintyM / radialClosingSpeedMPS,
+	)
+	if !valid {
+		return arrivalComputation{}, false
+	}
+
+	earliestTime := estimatedTime.Add(-uncertaintyDuration)
+	latestTime := estimatedTime.Add(uncertaintyDuration)
+	earliestTime, estimatedTime, latestTime =
 		enforceMinimumArrivalInterval(
-			projection.Horizon.
-				AsOfTime.UTC(),
+			projection.Horizon.AsOfTime.UTC(),
 			estimatedTime,
 			earliestTime,
 			latestTime,
-			estimator.config.
-				MinimumArrivalInterval,
+			estimator.config.MinimumArrivalInterval,
 		)
 
-	speedStdDevMPS := 0.0
+	closingStdDevMPS := 0.0
 	speedSampleCount := 1
 	if profileAvailable {
-		speedStdDevMPS = profile.stdDevMPS
+		closingStdDevMPS = profile.closingSpeedStdDevMPS
 		speedSampleCount = profile.sampleCount
 	}
 
@@ -224,8 +210,8 @@ func (
 		earliestTime:             earliestTime,
 		estimatedTime:            estimatedTime,
 		latestTime:               latestTime,
-		estimatedGroundSpeedMPS:  segmentSpeedMPS,
-		groundSpeedStdDevMPS:     speedStdDevMPS,
+		estimatedClosingSpeedMPS: radialClosingSpeedMPS,
+		closingSpeedStdDevMPS:    closingStdDevMPS,
 		speedSampleCount:         speedSampleCount,
 		remainingDistanceM:       0,
 		lastPositionUncertaintyM: uncertaintyM,
@@ -241,67 +227,52 @@ func (
 	profileAvailable bool,
 	projection projectioncontract.Result,
 ) (arrivalComputation, bool) {
-	if distanceM >
-		estimator.config.ArrivalRadiusM {
+	if distanceM > estimator.config.ArrivalRadiusM {
 		return arrivalComputation{}, false
 	}
 
 	estimatedTime := sample.timeValue.UTC()
-	if estimatedTime.Before(
-		projection.Horizon.AsOfTime.UTC(),
-	) {
-		estimatedTime =
-			projection.Horizon.AsOfTime.UTC()
+	if estimatedTime.Before(projection.Horizon.AsOfTime.UTC()) {
+		estimatedTime = projection.Horizon.AsOfTime.UTC()
 	}
 
-	speedMPS :=
-		estimator.config.MinimumGroundSpeedMPS
-	speedStdDevMPS := 0.0
+	closingSpeedMPS := estimator.config.MinimumGroundSpeedMPS
+	closingStdDevMPS := 0.0
 	speedSampleCount := 0
-	if profileAvailable {
-		speedMPS = profile.meanMPS
-		speedStdDevMPS = profile.stdDevMPS
+	if profileAvailable &&
+		positiveFinite(profile.meanClosingSpeedMPS) {
+		closingSpeedMPS = profile.meanClosingSpeedMPS
+		closingStdDevMPS = profile.closingSpeedStdDevMPS
 		speedSampleCount = profile.sampleCount
 	}
 
-	uncertaintyDuration :=
-		time.Duration(
-			sample.horizontalUncertaintyM /
-				speedMPS *
-				float64(time.Second),
-		)
-	earliestTime :=
-		estimatedTime.Add(
-			-uncertaintyDuration,
-		)
-	latestTime :=
-		estimatedTime.Add(
-			uncertaintyDuration,
-		)
-	earliestTime,
-		estimatedTime,
-		latestTime =
+	uncertaintyDuration, valid := durationCeilSeconds(
+		sample.horizontalUncertaintyM / closingSpeedMPS,
+	)
+	if !valid {
+		return arrivalComputation{}, false
+	}
+	earliestTime := estimatedTime.Add(-uncertaintyDuration)
+	latestTime := estimatedTime.Add(uncertaintyDuration)
+	earliestTime, estimatedTime, latestTime =
 		enforceMinimumArrivalInterval(
-			projection.Horizon.
-				AsOfTime.UTC(),
+			projection.Horizon.AsOfTime.UTC(),
 			estimatedTime,
 			earliestTime,
 			latestTime,
-			estimator.config.
-				MinimumArrivalInterval,
+			estimator.config.MinimumArrivalInterval,
 		)
 
 	return arrivalComputation{
-		mode:                    EstimateModeWithinProjection,
-		earliestTime:            earliestTime,
-		estimatedTime:           estimatedTime,
-		latestTime:              latestTime,
-		estimatedGroundSpeedMPS: speedMPS,
-		groundSpeedStdDevMPS:    speedStdDevMPS,
-		speedSampleCount:        speedSampleCount,
-		remainingDistanceM:      0,
-		lastPositionUncertaintyM: sample.
-			horizontalUncertaintyM,
+		mode:                     EstimateModeWithinProjection,
+		earliestTime:             earliestTime,
+		estimatedTime:            estimatedTime,
+		latestTime:               latestTime,
+		estimatedClosingSpeedMPS: closingSpeedMPS,
+		closingSpeedStdDevMPS:    closingStdDevMPS,
+		speedSampleCount:         speedSampleCount,
+		remainingDistanceM:       0,
+		lastPositionUncertaintyM: sample.horizontalUncertaintyM,
 	}, true
 }
 
@@ -315,110 +286,100 @@ func (
 	projection projectioncontract.Result,
 ) (arrivalComputation, bool) {
 	if !profileAvailable ||
-		profile.sampleCount <
-			estimator.config.
-				MinimumSpeedSampleCount {
+		profile.sampleCount < estimator.config.MinimumSpeedSampleCount ||
+		profile.meanClosingSpeedMPS <
+			estimator.config.MinimumGroundSpeedMPS {
+		return arrivalComputation{}, false
+	}
+
+	conservativeClosingSpeedMPS :=
+		profile.meanClosingSpeedMPS -
+			estimator.config.SpeedUncertaintyMultiplier*
+				profile.closingSpeedStdDevMPS
+	if conservativeClosingSpeedMPS <
+		estimator.config.MinimumGroundSpeedMPS {
+		return arrivalComputation{}, false
+	}
+	optimisticClosingSpeedMPS := math.Min(
+		estimator.config.MaximumGroundSpeedMPS,
+		profile.meanClosingSpeedMPS+
+			estimator.config.SpeedUncertaintyMultiplier*
+				profile.closingSpeedStdDevMPS,
+	)
+	if !positiveFinite(optimisticClosingSpeedMPS) {
 		return arrivalComputation{}, false
 	}
 
 	lastSample := samples[len(samples)-1]
-	lastDistanceM :=
-		distances[len(distances)-1]
 	remainingDistanceM := math.Max(
 		0,
-		lastDistanceM-
+		distances[len(distances)-1]-
 			estimator.config.ArrivalRadiusM,
 	)
-	estimatedDuration :=
-		time.Duration(
-			remainingDistanceM /
-				profile.meanMPS *
-				float64(time.Second),
-		)
-	if estimatedDuration >
-		estimator.config.
-			MaximumEstimatedArrivalDuration {
-		return arrivalComputation{}, false
-	}
-
-	lowerSpeedMPS := math.Max(
-		estimator.config.MinimumGroundSpeedMPS,
-		profile.meanMPS-
-			estimator.config.
-				SpeedUncertaintyMultiplier*
-				profile.stdDevMPS,
-	)
-	upperSpeedMPS :=
-		profile.meanMPS +
-			estimator.config.
-				SpeedUncertaintyMultiplier*
-				profile.stdDevMPS
-	if !positiveFinite(lowerSpeedMPS) ||
-		!positiveFinite(upperSpeedMPS) {
-		return arrivalComputation{}, false
-	}
-
 	earliestDistanceM := math.Max(
 		0,
-		remainingDistanceM-
-			lastSample.horizontalUncertaintyM,
+		remainingDistanceM-lastSample.horizontalUncertaintyM,
 	)
 	latestDistanceM :=
-		remainingDistanceM +
-			lastSample.horizontalUncertaintyM
+		remainingDistanceM + lastSample.horizontalUncertaintyM
 
-	earliestTime :=
-		lastSample.timeValue.Add(
-			time.Duration(
-				earliestDistanceM /
-					upperSpeedMPS *
-					float64(time.Second),
-			),
-		)
-	estimatedTime :=
-		lastSample.timeValue.Add(
-			estimatedDuration,
-		)
-	latestTime :=
-		lastSample.timeValue.Add(
-			time.Duration(
-				latestDistanceM /
-					lowerSpeedMPS *
-					float64(time.Second),
-			),
-		)
-	earliestTime,
-		estimatedTime,
-		latestTime =
+	earliestDuration, earliestValid := durationCeilSeconds(
+		earliestDistanceM / optimisticClosingSpeedMPS,
+	)
+	estimatedDuration, estimatedValid := durationCeilSeconds(
+		remainingDistanceM / profile.meanClosingSpeedMPS,
+	)
+	latestDuration, latestValid := durationCeilSeconds(
+		latestDistanceM / conservativeClosingSpeedMPS,
+	)
+	if !earliestValid || !estimatedValid || !latestValid ||
+		earliestDuration >
+			estimator.config.MaximumEstimatedArrivalDuration ||
+		estimatedDuration >
+			estimator.config.MaximumEstimatedArrivalDuration ||
+		latestDuration >
+			estimator.config.MaximumEstimatedArrivalDuration {
+		return arrivalComputation{}, false
+	}
+
+	earliestTime := lastSample.timeValue.Add(earliestDuration)
+	estimatedTime := lastSample.timeValue.Add(estimatedDuration)
+	latestTime := lastSample.timeValue.Add(latestDuration)
+	earliestTime, estimatedTime, latestTime =
 		enforceMinimumArrivalInterval(
-			projection.Horizon.
-				AsOfTime.UTC(),
+			projection.Horizon.AsOfTime.UTC(),
 			estimatedTime,
 			earliestTime,
 			latestTime,
-			estimator.config.
-				MinimumArrivalInterval,
+			estimator.config.MinimumArrivalInterval,
 		)
 
-	extrapolationDuration :=
-		estimatedTime.Sub(
-			projection.Horizon.EndTime.UTC(),
-		)
+	maximumArrivalTime := lastSample.timeValue.Add(
+		estimator.config.MaximumEstimatedArrivalDuration,
+	)
+	if earliestTime.After(maximumArrivalTime) ||
+		estimatedTime.After(maximumArrivalTime) ||
+		latestTime.After(maximumArrivalTime) {
+		return arrivalComputation{}, false
+	}
+
+	extrapolationDuration := estimatedTime.Sub(
+		projection.Horizon.EndTime.UTC(),
+	)
 	if extrapolationDuration < 0 {
 		extrapolationDuration = 0
 	}
 
 	return arrivalComputation{
-		mode:                    EstimateModeExtrapolated,
-		earliestTime:            earliestTime,
-		estimatedTime:           estimatedTime,
-		latestTime:              latestTime,
-		estimatedGroundSpeedMPS: profile.meanMPS,
-		groundSpeedStdDevMPS:    profile.stdDevMPS,
-		speedSampleCount:        profile.sampleCount,
-		remainingDistanceM:      remainingDistanceM,
-		lastPositionUncertaintyM: lastSample.
-			horizontalUncertaintyM,
-		extrapolationDuration: extrapolationDuration,
+		mode:                     EstimateModeExtrapolated,
+		earliestTime:             earliestTime,
+		estimatedTime:            estimatedTime,
+		latestTime:               latestTime,
+		estimatedClosingSpeedMPS: profile.meanClosingSpeedMPS,
+		closingSpeedStdDevMPS:    profile.closingSpeedStdDevMPS,
+		speedSampleCount:         profile.sampleCount,
+		remainingDistanceM:       remainingDistanceM,
+		lastPositionUncertaintyM: lastSample.horizontalUncertaintyM,
+		extrapolationDuration:    extrapolationDuration,
 	}, true
 }

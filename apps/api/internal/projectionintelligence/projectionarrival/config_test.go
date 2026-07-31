@@ -60,6 +60,14 @@ func TestConfigValidateRejectsInvalidValues(
 			wantError: ErrMinimumGroundSpeedInvalid,
 		},
 		{
+			name: "maximum speed",
+			mutate: func(config *Config) {
+				config.MaximumGroundSpeedMPS =
+					config.MinimumGroundSpeedMPS
+			},
+			wantError: ErrMaximumGroundSpeedInvalid,
+		},
+		{
 			name: "speed uncertainty",
 			mutate: func(config *Config) {
 				config.SpeedUncertaintyMultiplier = 0
@@ -80,6 +88,14 @@ func TestConfigValidateRejectsInvalidValues(
 					MaximumEstimatedArrivalDuration = 0
 			},
 			wantError: ErrMaximumArrivalDurationInvalid,
+		},
+		{
+			name: "duration policy coherence",
+			mutate: func(config *Config) {
+				config.MinimumArrivalInterval =
+					3 * time.Hour
+			},
+			wantError: ErrArrivalDurationPolicyInvalid,
 		},
 		{
 			name: "extrapolation loss",
@@ -140,6 +156,7 @@ func validArrivalConfig() Config {
 		MinimumSpeedSampleCount: 2,
 		MaximumSpeedSampleCount: 4,
 		MinimumGroundSpeedMPS:   5,
+		MaximumGroundSpeedMPS:   400,
 
 		SpeedUncertaintyMultiplier:      2,
 		MinimumArrivalInterval:          2 * time.Minute,

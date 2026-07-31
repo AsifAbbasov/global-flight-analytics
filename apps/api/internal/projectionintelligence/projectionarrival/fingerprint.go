@@ -17,89 +17,64 @@ func arrivalFingerprint(
 	projection projectioncontract.Result,
 	route routecontract.Result,
 	computation arrivalComputation,
+	samples []positionSample,
 	config Config,
 ) string {
 	digest := sha256.New()
 
+	writeFingerprintString(digest, FingerprintVersion)
 	writeFingerprintString(
 		digest,
-		FingerprintVersion,
-	)
-	writeFingerprintString(
-		digest,
-		projection.Provenance.
-			InputFingerprint,
+		projection.Provenance.InputFingerprint,
 	)
 	writeFingerprintString(
 		digest,
-		route.Provenance.
-			InputFingerprint,
+		route.Provenance.InputFingerprint,
 	)
 	writeFingerprintString(
 		digest,
-		route.Destination.
-			Airport.ICAOCode,
+		route.Destination.Airport.ICAOCode,
 	)
-	writeFingerprintString(
+	writeFingerprintString(digest, string(computation.mode))
+	writeFingerprintTime(digest, computation.earliestTime)
+	writeFingerprintTime(digest, computation.estimatedTime)
+	writeFingerprintTime(digest, computation.latestTime)
+	writeFingerprintFloat(
 		digest,
-		string(computation.mode),
-	)
-	writeFingerprintTime(
-		digest,
-		computation.earliestTime,
-	)
-	writeFingerprintTime(
-		digest,
-		computation.estimatedTime,
-	)
-	writeFingerprintTime(
-		digest,
-		computation.latestTime,
+		computation.estimatedClosingSpeedMPS,
 	)
 	writeFingerprintFloat(
 		digest,
-		computation.
-			estimatedGroundSpeedMPS,
+		computation.closingSpeedStdDevMPS,
+	)
+	writeFingerprintInt(digest, computation.speedSampleCount)
+	writeFingerprintFloat(
+		digest,
+		computation.remainingDistanceM,
 	)
 	writeFingerprintFloat(
 		digest,
-		computation.
-			groundSpeedStdDevMPS,
-	)
-	writeFingerprintInt(
-		digest,
-		computation.speedSampleCount,
-	)
-	writeFingerprintFloat(
-		digest,
-		computation.
-			remainingDistanceM,
-	)
-	writeFingerprintFloat(
-		digest,
-		computation.
-			lastPositionUncertaintyM,
+		computation.lastPositionUncertaintyM,
 	)
 	writeFingerprintDuration(
 		digest,
-		computation.
-			extrapolationDuration,
+		computation.extrapolationDuration,
 	)
-	writeConfigFingerprint(
+	writeFingerprintString(
 		digest,
-		config,
+		positionSamplesFingerprint(samples),
 	)
+	writeConfigFingerprint(digest, config)
 
 	return fingerprintPrefix +
-		hex.EncodeToString(
-			digest.Sum(nil),
-		)
+		hex.EncodeToString(digest.Sum(nil))
 }
 
 func unavailableFingerprint(
 	projectionFingerprint string,
 	routeFingerprint string,
 	reason string,
+	positionEvidenceFingerprint string,
 	config Config,
 ) string {
 	digest := sha256.New()
@@ -108,54 +83,57 @@ func unavailableFingerprint(
 		digest,
 		UnavailableFingerprintVersion,
 	)
-	writeFingerprintString(
-		digest,
-		projectionFingerprint,
-	)
-	writeFingerprintString(
-		digest,
-		routeFingerprint,
-	)
-	writeFingerprintString(
-		digest,
-		reason,
-	)
-	writeConfigFingerprint(
-		digest,
-		config,
-	)
+	writeFingerprintString(digest, projectionFingerprint)
+	writeFingerprintString(digest, routeFingerprint)
+	writeFingerprintString(digest, reason)
+	writeFingerprintString(digest, positionEvidenceFingerprint)
+	writeConfigFingerprint(digest, config)
 
 	return fingerprintPrefix +
-		hex.EncodeToString(
-			digest.Sum(nil),
+		hex.EncodeToString(digest.Sum(nil))
+}
+
+func positionSamplesFingerprint(
+	samples []positionSample,
+) string {
+	digest := sha256.New()
+	writeFingerprintString(
+		digest,
+		"estimated-arrival-position-samples-v1",
+	)
+	writeFingerprintInt(digest, len(samples))
+	for _, sample := range samples {
+		writeFingerprintString(digest, string(sample.source))
+		writeFingerprintString(digest, sample.sourceID)
+		writeFingerprintString(digest, sample.sourceName)
+		writeFingerprintInt(digest, sample.sequence)
+		writeFingerprintTime(digest, sample.timeValue)
+		writeFingerprintFloat(digest, sample.latitude)
+		writeFingerprintFloat(digest, sample.longitude)
+		writeFingerprintFloat(
+			digest,
+			sample.horizontalUncertaintyM,
 		)
+	}
+
+	return fingerprintPrefix +
+		hex.EncodeToString(digest.Sum(nil))
 }
 
 func writeConfigFingerprint(
 	digest hash.Hash,
 	config Config,
 ) {
+	config = config.normalized()
+	writeFingerprintFloat(digest, config.ArrivalRadiusM)
 	writeFingerprintFloat(
 		digest,
-		config.ArrivalRadiusM,
+		config.MinimumDestinationConfidenceScore,
 	)
-	writeFingerprintFloat(
-		digest,
-		config.
-			MinimumDestinationConfidenceScore,
-	)
-	writeFingerprintInt(
-		digest,
-		config.MinimumSpeedSampleCount,
-	)
-	writeFingerprintInt(
-		digest,
-		config.MaximumSpeedSampleCount,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.MinimumGroundSpeedMPS,
-	)
+	writeFingerprintInt(digest, config.MinimumSpeedSampleCount)
+	writeFingerprintInt(digest, config.MaximumSpeedSampleCount)
+	writeFingerprintFloat(digest, config.MinimumGroundSpeedMPS)
+	writeFingerprintFloat(digest, config.MaximumGroundSpeedMPS)
 	writeFingerprintFloat(
 		digest,
 		config.SpeedUncertaintyMultiplier,
@@ -166,36 +144,23 @@ func writeConfigFingerprint(
 	)
 	writeFingerprintDuration(
 		digest,
-		config.
-			MaximumEstimatedArrivalDuration,
+		config.MaximumEstimatedArrivalDuration,
 	)
 	writeFingerprintFloat(
 		digest,
-		config.
-			MaximumExtrapolationConfidenceLoss,
+		config.MaximumExtrapolationConfidenceLoss,
 	)
 	writeFingerprintFloat(
 		digest,
-		config.
-			ProjectionConfidenceWeight,
+		config.ProjectionConfidenceWeight,
 	)
 	writeFingerprintFloat(
 		digest,
-		config.
-			DestinationConfidenceWeight,
+		config.DestinationConfidenceWeight,
 	)
-	writeFingerprintFloat(
-		digest,
-		config.SpeedStabilityWeight,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.MediumConfidenceMinimum,
-	)
-	writeFingerprintFloat(
-		digest,
-		config.HighConfidenceMinimum,
-	)
+	writeFingerprintFloat(digest, config.SpeedStabilityWeight)
+	writeFingerprintFloat(digest, config.MediumConfidenceMinimum)
+	writeFingerprintFloat(digest, config.HighConfidenceMinimum)
 }
 
 func writeFingerprintString(
@@ -214,22 +179,14 @@ func writeFingerprintFloat(
 	digest hash.Hash,
 	value float64,
 ) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%.17g|",
-		value,
-	)
+	_, _ = fmt.Fprintf(digest, "%.17g|", value)
 }
 
 func writeFingerprintInt(
 	digest hash.Hash,
 	value int,
 ) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%d|",
-		value,
-	)
+	_, _ = fmt.Fprintf(digest, "%d|", value)
 }
 
 func writeFingerprintTime(
@@ -238,9 +195,7 @@ func writeFingerprintTime(
 ) {
 	writeFingerprintString(
 		digest,
-		value.UTC().Format(
-			time.RFC3339Nano,
-		),
+		value.UTC().Format(time.RFC3339Nano),
 	)
 }
 
@@ -248,9 +203,5 @@ func writeFingerprintDuration(
 	digest hash.Hash,
 	value time.Duration,
 ) {
-	_, _ = fmt.Fprintf(
-		digest,
-		"%d|",
-		value.Nanoseconds(),
-	)
+	_, _ = fmt.Fprintf(digest, "%d|", value.Nanoseconds())
 }

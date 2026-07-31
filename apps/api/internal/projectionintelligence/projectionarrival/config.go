@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const defaultMaximumGroundSpeedMPS = 400.0
+
 var (
 	ErrArrivalRadiusInvalid = errors.New(
 		"arrival radius must be finite and greater than zero",
@@ -18,7 +20,10 @@ var (
 		"speed sample policy is invalid",
 	)
 	ErrMinimumGroundSpeedInvalid = errors.New(
-		"minimum ground speed must be finite and greater than zero",
+		"minimum closing speed must be finite and greater than zero",
+	)
+	ErrMaximumGroundSpeedInvalid = errors.New(
+		"maximum ground speed must be finite and greater than minimum closing speed",
 	)
 	ErrSpeedUncertaintyMultiplierInvalid = errors.New(
 		"speed uncertainty multiplier must be finite and greater than zero",
@@ -28,6 +33,9 @@ var (
 	)
 	ErrMaximumArrivalDurationInvalid = errors.New(
 		"maximum estimated arrival duration must be greater than zero",
+	)
+	ErrArrivalDurationPolicyInvalid = errors.New(
+		"minimum arrival interval must not exceed maximum estimated arrival duration",
 	)
 	ErrExtrapolationConfidenceLossInvalid = errors.New(
 		"maximum extrapolation confidence loss must be finite and between zero and one",
@@ -48,6 +56,7 @@ type Config struct {
 	MinimumSpeedSampleCount int
 	MaximumSpeedSampleCount int
 	MinimumGroundSpeedMPS   float64
+	MaximumGroundSpeedMPS   float64
 
 	SpeedUncertaintyMultiplier      float64
 	MinimumArrivalInterval          time.Duration
@@ -63,7 +72,17 @@ type Config struct {
 	HighConfidenceMinimum   float64
 }
 
+func (config Config) normalized() Config {
+	if config.MaximumGroundSpeedMPS == 0 {
+		config.MaximumGroundSpeedMPS =
+			defaultMaximumGroundSpeedMPS
+	}
+	return config
+}
+
 func (config Config) Validate() error {
+	config = config.normalized()
+
 	if !positiveFinite(config.ArrivalRadiusM) {
 		return fmt.Errorf(
 			"%w: %f",
@@ -99,6 +118,16 @@ func (config Config) Validate() error {
 			config.MinimumGroundSpeedMPS,
 		)
 	}
+	if !positiveFinite(config.MaximumGroundSpeedMPS) ||
+		config.MaximumGroundSpeedMPS <=
+			config.MinimumGroundSpeedMPS {
+		return fmt.Errorf(
+			"%w: minimum=%f maximum=%f",
+			ErrMaximumGroundSpeedInvalid,
+			config.MinimumGroundSpeedMPS,
+			config.MaximumGroundSpeedMPS,
+		)
+	}
 	if !positiveFinite(
 		config.SpeedUncertaintyMultiplier,
 	) {
@@ -119,6 +148,15 @@ func (config Config) Validate() error {
 		return fmt.Errorf(
 			"%w: %s",
 			ErrMaximumArrivalDurationInvalid,
+			config.MaximumEstimatedArrivalDuration,
+		)
+	}
+	if config.MinimumArrivalInterval >
+		config.MaximumEstimatedArrivalDuration {
+		return fmt.Errorf(
+			"%w: minimum_interval=%s maximum_duration=%s",
+			ErrArrivalDurationPolicyInvalid,
+			config.MinimumArrivalInterval,
 			config.MaximumEstimatedArrivalDuration,
 		)
 	}

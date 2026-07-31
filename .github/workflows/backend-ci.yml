@@ -193,6 +193,9 @@ jobs:
       - name: Run projection continuation review audit
         run: go run ./tools/projectioncontinuationreviewaudit -strict
 
+      - name: Run projection arrival review audit
+        run: go run ./tools/projectionarrivalreviewaudit -strict
+
       - name: Run pinned Go vulnerability analysis
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 

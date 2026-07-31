@@ -1280,3 +1280,17 @@ effective weighted support, disagreement-aware confidence, zero-confidence statu
 semantics, near-antipodal rejection, fallback cause preservation, permanent strict
 review audit, exact engineering-closure commit and Continuous Integration evidence,
 and zero open, unclassified or deferred findings.
+
+<!-- PROJECTION-ARRIVAL-REVIEW-HARDENING:DOCUMENT-INDEX -->
+
+## Document 142 — Projection Arrival Review Hardening
+
+`142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` records signed destination closing
+speed, bounded physical ground speed, preservation of slow and receding samples,
+radial radius-entry uncertainty, complete Estimated Arrival interval bounds, explicit
+nanosecond ceiling and overflow rejection, strict current-trajectory identity,
+canonical used-sample fingerprint lineage, observed current-endpoint provenance,
+confidence contribution reconstruction, duration-policy coherence, focused regression
+tests, permanent review audit integration, deliberately retained idiomatic optional
+contracts, and the exact Continuous Integration gates still required for formal
+closure.
