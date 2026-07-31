@@ -56,10 +56,12 @@ func TestServiceAllowsDefaultProjectionDuration(t *testing.T) {
 			composer.calls,
 		)
 	}
-	if composer.request.RequestedDuration != 0 {
+	expectedDuration := DefaultPolicy().Horizon.DefaultDuration
+	if composer.request.RequestedDuration != expectedDuration {
 		t.Fatalf(
-			"composer requested duration = %s, want zero default sentinel",
+			"composer requested duration = %s, want canonical default %s",
 			composer.request.RequestedDuration,
+			expectedDuration,
 		)
 	}
 }

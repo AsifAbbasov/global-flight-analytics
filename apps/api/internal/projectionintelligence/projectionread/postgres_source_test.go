@@ -131,6 +131,12 @@ func TestLoadRouteUsesLatestResultAtOrBeforeAsOf(
 		rowQueue: []scriptedRow{
 			{
 				values: []any{
+					current.ID,
+					string(routecontract.SchemaVersionV1),
+					asOfTime,
+					asOfTime.UnixNano(),
+					route.Provenance.InputFingerprint,
+					string(route.Status),
 					payload,
 				},
 			},

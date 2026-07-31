@@ -2,6 +2,7 @@ package projectionread
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionhorizon"
@@ -306,9 +307,13 @@ func (policy Policy) Validate() error {
 			"projection read data-source windows are invalid",
 		)
 	}
-	if policy.DataSource.SourceName == "" {
+	normalizedSourceName := strings.TrimSpace(
+		policy.DataSource.SourceName,
+	)
+	if normalizedSourceName == "" ||
+		normalizedSourceName != policy.DataSource.SourceName {
 		return fmt.Errorf(
-			"projection read source name is required",
+			"projection read source name must be non-empty and canonical",
 		)
 	}
 	if policy.Neighbors.MaximumCandidateCount <

@@ -30,10 +30,15 @@ func (
 }
 
 type composerStub struct {
-	result  projectionproduction.Result
-	err     error
-	request projectionproduction.Request
-	calls   int
+	result                   projectionproduction.Result
+	err                      error
+	request                  projectionproduction.Request
+	calls                    int
+	buildValidResult         bool
+	preserveConfiguredResult bool
+	transform                func(
+		projectionproduction.Result,
+	) (projectionproduction.Result, error)
 }
 
 func (
@@ -43,7 +48,24 @@ func (
 ) (projectionproduction.Result, error) {
 	stub.calls++
 	stub.request = request
-	return stub.result.Clone(), stub.err
+
+	result := stub.result.Clone()
+	err := stub.err
+	buildValidResult := stub.buildValidResult ||
+		(!stub.preserveConfiguredResult && err == nil)
+	if buildValidResult {
+		components, buildErr := buildAlgorithmComponents(
+			DefaultPolicy(),
+		)
+		if buildErr != nil {
+			return projectionproduction.Result{}, buildErr
+		}
+		result, err = components.composer.Compose(request)
+	}
+	if err == nil && stub.transform != nil {
+		return stub.transform(result.Clone())
+	}
+	return result.Clone(), err
 }
 
 func TestServiceLoadsOneConsistentProductionSnapshot(
@@ -74,9 +96,7 @@ func TestServiceLoadsOneConsistentProductionSnapshot(
 		},
 	}
 	composer := &composerStub{
-		result: projectionproduction.Result{
-			Version: projectionproduction.Version,
-		},
+		buildValidResult: true,
 	}
 	service, err := NewService(
 		ServiceConfig{
@@ -146,9 +166,7 @@ func TestServiceUsesAuditableUnavailableRouteWithoutSnapshotRoute(
 		},
 	}
 	composer := &composerStub{
-		result: projectionproduction.Result{
-			Version: projectionproduction.Version,
-		},
+		buildValidResult: true,
 	}
 	service, err := NewService(
 		ServiceConfig{

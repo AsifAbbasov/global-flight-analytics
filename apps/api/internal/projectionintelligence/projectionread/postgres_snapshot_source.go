@@ -20,8 +20,7 @@ func (
 		source.snapshotExecutor == nil {
 		return Snapshot{}, ErrServiceUnavailable
 	}
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
+	if err := validateReadContext(ctx); err != nil {
 		return Snapshot{}, err
 	}
 

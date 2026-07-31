@@ -3,6 +3,7 @@ package projectionread
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/repository/postgres"
@@ -85,7 +86,9 @@ func newPostgresDataSource(
 		policy.RecentRouteWindow <= 0 ||
 		policy.RecentRouteWindow >
 			policy.RouteHistoryWindow ||
-		policy.SourceName == "" {
+		strings.TrimSpace(policy.SourceName) == "" ||
+		strings.TrimSpace(policy.SourceName) !=
+			policy.SourceName {
 		return nil, fmt.Errorf(
 			"Projection Intelligence PostgreSQL data-source policy is invalid",
 		)

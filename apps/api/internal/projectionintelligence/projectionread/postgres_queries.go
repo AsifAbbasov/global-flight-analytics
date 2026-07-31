@@ -1,7 +1,14 @@
 package projectionread
 
 const routeAtOrBeforeSQL = `
-	SELECT route_json
+	SELECT
+		trajectory_id::text,
+		schema_version,
+		as_of_time,
+		as_of_time_unix_nano,
+		input_fingerprint,
+		route_status,
+		route_json
 	FROM flight_route_results
 	WHERE trajectory_id = $1::uuid
 	  AND schema_version = $2

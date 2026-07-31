@@ -68,10 +68,7 @@ func (
 		return projectionproduction.Result{},
 			ErrServiceUnavailable
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if err := ctx.Err(); err != nil {
+	if err := validateReadContext(ctx); err != nil {
 		return projectionproduction.Result{}, err
 	}
 
@@ -90,18 +87,23 @@ func (
 	); err != nil {
 		return projectionproduction.Result{},
 			fmt.Errorf(
-				"%w: %v",
+				"%w: %w",
 				ErrInvalidRequest,
 				err,
 			)
 	}
+	canonicalRequestedDuration := request.RequestedDuration
+	if canonicalRequestedDuration == 0 {
+		canonicalRequestedDuration =
+			service.policy.Horizon.DefaultDuration
+	}
 
-	generatedAt := service.now().UTC()
-	if generatedAt.IsZero() ||
-		asOfTime.After(generatedAt) {
+	requestValidatedAt := service.now().UTC()
+	if requestValidatedAt.IsZero() ||
+		asOfTime.After(requestValidatedAt) {
 		return projectionproduction.Result{},
 			fmt.Errorf(
-				"%w: as-of time must not exceed generation time",
+				"%w: as-of time must not exceed request validation time",
 				ErrInvalidRequest,
 			)
 	}
@@ -116,6 +118,24 @@ func (
 	if err != nil {
 		return projectionproduction.Result{},
 			classifySnapshotError(err)
+	}
+	if err := validateSnapshotPostconditions(
+		snapshot,
+		trajectoryID,
+		asOfTime,
+	); err != nil {
+		return projectionproduction.Result{}, err
+	}
+
+	generatedAt := service.now().UTC()
+	if generatedAt.IsZero() ||
+		generatedAt.Before(requestValidatedAt) ||
+		asOfTime.After(generatedAt) {
+		return projectionproduction.Result{},
+			fmt.Errorf(
+				"%w: generation time is invalid after snapshot acquisition",
+				ErrInvalidRequest,
+			)
 	}
 
 	route := unavailableRoute(
@@ -151,9 +171,8 @@ func (
 			Route:                         route,
 			RouteHistory:                  routeHistoryPointer,
 			AsOfTime:                      asOfTime,
-			RequestedDuration: request.
-				RequestedDuration,
-			GeneratedAt: generatedAt,
+			RequestedDuration:             canonicalRequestedDuration,
+			GeneratedAt:                   generatedAt,
 		},
 	)
 	if err != nil {
@@ -162,6 +181,13 @@ func (
 				"compose Projection Intelligence result: %w",
 				err,
 			)
+	}
+	if err := validateComposedResult(
+		result,
+		snapshot.CurrentTrajectory,
+		asOfTime,
+	); err != nil {
+		return projectionproduction.Result{}, err
 	}
 
 	return result.Clone(), nil

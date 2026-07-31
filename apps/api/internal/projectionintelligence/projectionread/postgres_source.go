@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -34,10 +33,8 @@ func (
 		return trajectory.FlightTrajectory{},
 			ErrServiceUnavailable
 	}
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
-		return trajectory.FlightTrajectory{},
-			err
+	if err := validateReadContext(ctx); err != nil {
+		return trajectory.FlightTrajectory{}, err
 	}
 
 	item, err :=
@@ -101,25 +98,26 @@ func (
 		return routecontract.Result{},
 			ErrServiceUnavailable
 	}
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
-		return routecontract.Result{},
-			err
+	if err := validateReadContext(ctx); err != nil {
+		return routecontract.Result{}, err
 	}
 
-	var payload []byte
-	err := source.client.QueryRow(
-		ctx,
-		routeAtOrBeforeSQL,
-		strings.TrimSpace(
-			trajectoryID,
+	normalizedTrajectoryID := strings.TrimSpace(
+		trajectoryID,
+	)
+	normalizedAsOfTime := asOfTime.UTC()
+	result, err := scanRouteSnapshotResult(
+		source.client.QueryRow(
+			ctx,
+			routeAtOrBeforeSQL,
+			normalizedTrajectoryID,
+			string(
+				routecontract.SchemaVersionV1,
+			),
+			normalizedAsOfTime,
 		),
-		string(
-			routecontract.SchemaVersionV1,
-		),
-		asOfTime.UTC(),
-	).Scan(
-		&payload,
+		normalizedTrajectoryID,
+		normalizedAsOfTime,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return routecontract.Result{},
@@ -128,19 +126,7 @@ func (
 	if err != nil {
 		return routecontract.Result{},
 			fmt.Errorf(
-				"query route result at or before as-of time: %w",
-				err,
-			)
-	}
-
-	var result routecontract.Result
-	if err := json.Unmarshal(
-		payload,
-		&result,
-	); err != nil {
-		return routecontract.Result{},
-			fmt.Errorf(
-				"decode Route Intelligence result: %w",
+				"query and validate route result at or before as-of time: %w",
 				err,
 			)
 	}
@@ -162,10 +148,8 @@ func (
 		return nil,
 			ErrServiceUnavailable
 	}
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
-		return nil,
-			err
+	if err := validateReadContext(ctx); err != nil {
+		return nil, err
 	}
 
 	origin, destination, available :=
@@ -332,10 +316,8 @@ func (
 		return projectionroutefrequency.HistorySummary{},
 			ErrServiceUnavailable
 	}
-	ctx = nonNilContext(ctx)
-	if err := ctx.Err(); err != nil {
-		return projectionroutefrequency.HistorySummary{},
-			err
+	if err := validateReadContext(ctx); err != nil {
+		return projectionroutefrequency.HistorySummary{}, err
 	}
 
 	origin, destination, available :=
@@ -603,6 +585,7 @@ func (
 	}
 
 	if item.UpdatedAt.IsZero() ||
+		item.UpdatedAt.Before(item.EndTime) ||
 		item.UpdatedAt.After(cutoff) {
 		item.UpdatedAt =
 			item.EndTime
@@ -833,14 +816,4 @@ func routeHistoryFingerprint(
 		hex.EncodeToString(
 			digest[:],
 		)
-}
-
-func nonNilContext(
-	ctx context.Context,
-) context.Context {
-	if ctx == nil {
-		return context.Background()
-	}
-
-	return ctx
 }

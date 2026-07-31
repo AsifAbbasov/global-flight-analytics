@@ -15,6 +15,18 @@ var (
 	ErrInvalidRequest = errors.New(
 		"Projection Intelligence read request is invalid",
 	)
+	ErrContextRequired = errors.New(
+		"Projection Intelligence read context is required",
+	)
+	ErrSnapshotIdentityMismatch = errors.New(
+		"Projection Intelligence snapshot identity is invalid",
+	)
+	ErrComposedResultInvalid = errors.New(
+		"Projection Intelligence composed result is invalid",
+	)
+	ErrRouteSnapshotInvalid = errors.New(
+		"Projection Intelligence route snapshot is invalid",
+	)
 	ErrTrajectoryNotFound = errors.New(
 		"Projection Intelligence trajectory was not found",
 	)
