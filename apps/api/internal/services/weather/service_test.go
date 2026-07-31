@@ -11,6 +11,60 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/openmeteo"
 )
 
+func TestGetAndStoreCurrentWeatherRejectsNilContextBeforeSideEffects(
+	t *testing.T,
+) {
+	client := &fakeCurrentWeatherClient{
+		snapshot: makeCurrentWeatherSnapshot(),
+	}
+	repository := &fakeCurrentSnapshotRepository{
+		snapshotID: "weather-snapshot-nil-context",
+	}
+
+	service := New(
+		Config{
+			Client:     client,
+			Repository: repository,
+		},
+	)
+
+	result, err := service.GetAndStoreCurrentWeather(
+		nil,
+		CurrentWeatherRequest{
+			Latitude:  40.4675,
+			Longitude: 50.0467,
+		},
+	)
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"expected context required error, got %v",
+			err,
+		)
+	}
+
+	if result.SnapshotID != "" ||
+		!result.StoredAt.IsZero() {
+		t.Fatalf(
+			"expected zero result before weather retrieval, got %+v",
+			result,
+		)
+	}
+
+	if client.called {
+		t.Fatal(
+			"expected weather client not to be called",
+		)
+	}
+	if repository.called {
+		t.Fatal(
+			"expected weather repository not to be called",
+		)
+	}
+}
+
 func TestGetAndStoreCurrentWeatherSuccess(t *testing.T) {
 	client := &fakeCurrentWeatherClient{
 		snapshot: makeCurrentWeatherSnapshot(),

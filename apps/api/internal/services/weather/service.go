@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	ErrContextRequired           = errors.New("weather service context is required")
 	ErrWeatherClientRequired     = errors.New("weather client is required")
 	ErrWeatherRepositoryRequired = errors.New("weather repository is required")
 	ErrInvalidWeatherCoordinates = errors.New("invalid weather coordinates")
@@ -55,7 +56,7 @@ func New(config Config) *Service {
 
 func (service *Service) GetAndStoreCurrentWeather(ctx context.Context, request CurrentWeatherRequest) (CurrentWeatherResult, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return CurrentWeatherResult{}, ErrContextRequired
 	}
 
 	if service == nil || service.client == nil {
