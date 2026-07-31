@@ -1,6 +1,6 @@
 # Projection Production Review Hardening
 
-Status: reopened — Historical Projector output-lineage correction implemented, exact Continuous Integration and formal reclosure pending
+Status: closed after Historical Projector output-lineage correction and formal reclosure
 
 ```text
 REVIEW_BASELINE_COMMIT=298d3fdb2d11b1797ce3728b116702b0a978d870
@@ -16,6 +16,12 @@ PRIOR_FORMAL_CLOSURE_BACKEND_RACE_SAFETY_JOB=91144310170
 PRIOR_FORMAL_CLOSURE_BACKEND_QUALITY_JOB=91144310191
 PRIOR_FORMAL_CLOSURE_POSTGRESQL_16_INTEGRATION_JOB=91144310201
 PRIOR_FORMAL_CLOSURE_BACKEND_CONTAINER_JOB=91144541785
+CORRECTIVE_ENGINEERING_COMMIT=2f352821f7ef5d1a26bbb0899bad7fc431d6363c
+CORRECTIVE_ENGINEERING_GITHUB_ACTIONS_RUN=30629428359
+CORRECTIVE_ENGINEERING_BACKEND_QUALITY_JOB=91152099577
+CORRECTIVE_ENGINEERING_POSTGRESQL_16_INTEGRATION_JOB=91152099674
+CORRECTIVE_ENGINEERING_BACKEND_RACE_SAFETY_JOB=91152099675
+CORRECTIVE_ENGINEERING_BACKEND_CONTAINER_JOB=91152326899
 FORMAL_CLOSURE_REOPENED_BASELINE=0f1a31f56f4baf232e978d240216068a001a184e
 REOPEN_CONFIRMED_FINDING=HISTORICAL_PROJECTOR_OUTPUT_LINEAGE_BINDING
 ACCEPTED_CRITICAL_FINDINGS=5
@@ -33,19 +39,19 @@ UNAVAILABLE_HISTORICAL_REJECTION=CI_CONFIRMED
 LIMITED_EVIDENCE_NOTICES=CI_CONFIRMED
 DEPENDENCY_ERROR_CHAIN_PRESERVATION=CI_CONFIRMED
 REQUEST_AND_COMPOSITION_FINGERPRINTS=CI_CONFIRMED
-HISTORICAL_PROJECTOR_OUTPUT_LINEAGE_BINDING=IMPLEMENTED_PENDING_EXACT_CI
-HISTORICAL_PROJECTION_PROVENANCE_RECONSTRUCTION=IMPLEMENTED_PENDING_EXACT_CI
-HISTORICAL_SELECTED_NEIGHBOR_PROVENANCE=IMPLEMENTED_PENDING_EXACT_CI
-PERMANENT_REVIEW_AUDIT=UPDATED_PENDING_EXACT_CI
-ENGINEERING_IMPLEMENTATION=CORRECTIVE_IMPLEMENTATION_COMPLETE_PENDING_EXACT_CI
-ENGINEERING_DEBT=OPEN_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
-OPEN_CONFIRMED_FINDINGS=0_PENDING_EXACT_CI
-UNCLASSIFIED_FINDINGS=0_PENDING_EXACT_CI
-DEFERRED_FINDINGS=0_PENDING_EXACT_CI
-ADDITIONAL_CODE_FIXES_REQUIRED=NO_PENDING_EXACT_CI
-FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=YES
-PROJECTION_PRODUCTION_FORMAL_CLOSURE=REOPENED_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
-PROJECTION_PRODUCTION_REVIEW_STATUS=OPEN_PENDING_EXACT_CI_AND_FORMAL_RECLOSURE
+HISTORICAL_PROJECTOR_OUTPUT_LINEAGE_BINDING=CI_CONFIRMED
+HISTORICAL_PROJECTION_PROVENANCE_RECONSTRUCTION=CI_CONFIRMED
+HISTORICAL_SELECTED_NEIGHBOR_PROVENANCE=CI_CONFIRMED
+PERMANENT_REVIEW_AUDIT=CI_CONFIRMED
+ENGINEERING_IMPLEMENTATION=COMPLETE
+ENGINEERING_DEBT=CLOSED
+OPEN_CONFIRMED_FINDINGS=0
+UNCLASSIFIED_FINDINGS=0
+DEFERRED_FINDINGS=0
+ADDITIONAL_CODE_FIXES_REQUIRED=NO
+FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
+PROJECTION_PRODUCTION_FORMAL_CLOSURE=COMPLETE
+PROJECTION_PRODUCTION_REVIEW_STATUS=CLOSED
 ```
 
 ## 1. Scope
@@ -384,10 +390,36 @@ TestComposeReturnsHistoricalProjectionLineageErrorWhenConfigured
 ```
 
 The permanent audit now requires the adapter, independent source validator, typed
-lineage receipt, malicious lineage tests, runtime wiring, reopened documentation, and
-exact prior closure evidence. Formal reclosure remains blocked until this corrective
-engineering commit and the later formal-reclosure commit each pass the exact required
-Backend Continuous Integration jobs.
+lineage receipt, malicious lineage tests, runtime wiring, exact prior closure evidence,
+and the exact corrective engineering Continuous Integration evidence.
+
+## 16. Corrective engineering and formal reclosure evidence
+
+The corrective output-lineage engineering commit is:
+
+```text
+2f352821f7ef5d1a26bbb0899bad7fc431d6363c
+```
+
+Its exact push-triggered Backend Continuous Integration evidence is:
+
+```text
+run: 30629428359
+Backend Quality: 91152099577 — success
+PostgreSQL 16 Integration: 91152099674 — success
+Backend Race Safety: 91152099675 — success
+Backend Container: 91152326899 — success
+```
+
+The run completed successfully on the exact corrective commit. The permanent Projection
+Production review audit passed with the sealed Historical Projector adapter, independent
+continuation-fingerprint reconstruction, exact selected-neighbor provenance binding,
+and malicious output-lineage regression tests enabled.
+
+All confirmed Projection Production findings are therefore resolved in the formal
+reclosure record. The formal-reclosure commit that contains this record must itself pass
+Backend Quality, Backend Race Safety, PostgreSQL 16 Integration, and Backend Container
+before the external final closure verdict is issued.
 
 No statement in this document closes `projectionread` or the final end-to-end project
 reconciliation.

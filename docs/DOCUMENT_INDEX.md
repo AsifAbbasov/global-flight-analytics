@@ -1315,13 +1315,13 @@ Continuous Integration evidence, and zero open, unclassified or deferred finding
 
 ## Document 144 — Projection Production Review Hardening
 
-`144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` records the completed single-plan,
-immutable-snapshot, route-binding, evidence-graph, projector-postcondition,
-Estimated Arrival delta, fallback, error-chain, and fingerprint hardening; the exact
-first engineering and formal-closure Continuous Integration evidence; and the later
-formal reopen for one Historical Projector output-lineage finding. The corrective
-record adds a production Historical Projection adapter, typed approved-lineage
-receipt, independent continuation fingerprint and canonical provenance
-reconstruction, exact selected-neighbor provenance binding, malicious lineage drift
-tests, and a permanent strict audit. Exact Continuous Integration and formal
-reclosure for the corrective increment are pending.
+`144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` is the formally reclosed review
+record for the completed single-plan, immutable-snapshot, route-binding,
+evidence-graph, projector-postcondition, Estimated Arrival delta, fallback,
+error-chain, and fingerprint hardening, together with the later Historical Projector
+output-lineage correction. The final record includes the sealed production Historical
+Projection adapter, typed approved-lineage receipt, independent continuation
+fingerprint and canonical provenance reconstruction, exact selected-neighbor
+provenance binding, malicious lineage-drift tests, permanent strict audit, exact
+corrective engineering commit and Continuous Integration evidence, and zero open,
+unclassified, or deferred findings.
