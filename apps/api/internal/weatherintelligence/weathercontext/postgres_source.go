@@ -158,7 +158,8 @@ func (
 			ErrServiceUnavailable
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return domainweather.CurrentSnapshot{},
+			ErrSnapshotContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return domainweather.CurrentSnapshot{}, err

@@ -54,7 +54,7 @@ func (
 		return Result{}, ErrServiceUnavailable
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return Result{}, ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
