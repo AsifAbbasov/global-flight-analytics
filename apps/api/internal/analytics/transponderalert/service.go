@@ -109,7 +109,8 @@ func (service *Service) GetLatest(
 	icao24 string,
 ) (LatestEvidence, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return LatestEvidence{},
+			ErrLatestEvidenceContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return LatestEvidence{}, err

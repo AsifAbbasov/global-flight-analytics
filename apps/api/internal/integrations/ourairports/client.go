@@ -103,7 +103,8 @@ func (client *Client) LoadAirportsConditional(
 	conditionalRequest ConditionalRequest,
 ) (LoadResult, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return LoadResult{},
+			ErrLoadContextRequired
 	}
 
 	request, err := http.NewRequestWithContext(

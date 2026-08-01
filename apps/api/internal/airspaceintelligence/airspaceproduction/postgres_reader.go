@@ -46,7 +46,7 @@ func (reader *PostgresObservationReader) ListAirspaceObservations(
 		return nil, ErrPostgresPoolRequired
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return nil, ErrObservationContextRequired
 	}
 	if err := validateObservationQuery(query); err != nil {
 		return nil, err

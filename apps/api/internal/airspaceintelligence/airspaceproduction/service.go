@@ -119,7 +119,8 @@ func (service *Service) GetAirspaceRegionAnalytics(
 			ErrObservationReaderRequired
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return airspaceregionanalytics.Result{},
+			ErrProductionContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return airspaceregionanalytics.Result{}, err
