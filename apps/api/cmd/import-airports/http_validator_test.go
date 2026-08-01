@@ -14,9 +14,11 @@ type recordingHTTPValidatorRepository struct {
 	getValidator sourcehttp.Validator
 	getExists    bool
 	getErr       error
+	getCalls     int
 
 	upsertedValidators []sourcehttp.Validator
 	upsertErr          error
+	upsertCalls        int
 }
 
 func (repository *recordingHTTPValidatorRepository) Get(
@@ -24,6 +26,8 @@ func (repository *recordingHTTPValidatorRepository) Get(
 	sourceName string,
 	resourceURL string,
 ) (sourcehttp.Validator, bool, error) {
+	repository.getCalls++
+
 	if repository.getErr != nil {
 		return sourcehttp.Validator{}, false, repository.getErr
 	}
@@ -35,6 +39,8 @@ func (repository *recordingHTTPValidatorRepository) Upsert(
 	ctx context.Context,
 	validator sourcehttp.Validator,
 ) error {
+	repository.upsertCalls++
+
 	if repository.upsertErr != nil {
 		return repository.upsertErr
 	}
@@ -45,6 +51,99 @@ func (repository *recordingHTTPValidatorRepository) Upsert(
 	)
 
 	return nil
+}
+
+func TestLoadConditionalRequestRejectsNilContextBeforeRepositoryRead(
+	t *testing.T,
+) {
+	repository := &recordingHTTPValidatorRepository{}
+
+	_, err := loadConditionalRequest(
+		nil,
+		repository,
+	)
+
+	if !errors.Is(
+		err,
+		errHTTPValidatorContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if repository.getCalls != 0 {
+		t.Fatalf(
+			"repository reads = %d, want 0",
+			repository.getCalls,
+		)
+	}
+}
+
+func TestPersistHTTPValidatorIfChangedRejectsNilContextBeforeRepositoryWrite(
+	t *testing.T,
+) {
+	repository := &recordingHTTPValidatorRepository{}
+
+	written, err := persistHTTPValidatorIfChanged(
+		nil,
+		repository,
+		ourairports.ConditionalRequest{},
+		ourairports.LoadResult{
+			ETag: `"validator-a"`,
+		},
+	)
+
+	if written {
+		t.Fatal(
+			"nil-context validator state was reported as written",
+		)
+	}
+	if !errors.Is(
+		err,
+		errHTTPValidatorContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if repository.upsertCalls != 0 {
+		t.Fatalf(
+			"repository writes = %d, want 0",
+			repository.upsertCalls,
+		)
+	}
+}
+
+func TestPersistHTTPValidatorRejectsNilContextBeforeRepositoryWrite(
+	t *testing.T,
+) {
+	repository := &recordingHTTPValidatorRepository{}
+
+	err := persistHTTPValidator(
+		nil,
+		repository,
+		ourairports.LoadResult{
+			ETag: `"validator-a"`,
+		},
+	)
+
+	if !errors.Is(
+		err,
+		errHTTPValidatorContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if repository.upsertCalls != 0 {
+		t.Fatalf(
+			"repository writes = %d, want 0",
+			repository.upsertCalls,
+		)
+	}
 }
 
 func TestLoadConditionalRequestReturnsEmptyRequestWhenValidatorDoesNotExist(

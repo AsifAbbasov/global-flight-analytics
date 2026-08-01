@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/sourcehttp"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/ourairports"
+)
+
+var errHTTPValidatorContextRequired = errors.New(
+	"OurAirports HTTP validator context is required",
 )
 
 type HTTPValidatorRepository interface {
@@ -26,6 +31,11 @@ func loadConditionalRequest(
 	ctx context.Context,
 	repository HTTPValidatorRepository,
 ) (ourairports.ConditionalRequest, error) {
+	if ctx == nil {
+		return ourairports.ConditionalRequest{},
+			errHTTPValidatorContextRequired
+	}
+
 	validator, exists, err := repository.Get(
 		ctx,
 		ourairports.SourceName,
@@ -54,6 +64,10 @@ func persistHTTPValidatorIfChanged(
 	previousRequest ourairports.ConditionalRequest,
 	result ourairports.LoadResult,
 ) (bool, error) {
+	if ctx == nil {
+		return false, errHTTPValidatorContextRequired
+	}
+
 	if sameHTTPValidators(previousRequest, result) {
 		return false, nil
 	}
@@ -80,6 +94,10 @@ func persistHTTPValidator(
 	repository HTTPValidatorRepository,
 	result ourairports.LoadResult,
 ) error {
+	if ctx == nil {
+		return errHTTPValidatorContextRequired
+	}
+
 	validator := sourcehttp.Validator{
 		SourceName:   ourairports.SourceName,
 		ResourceURL:  ourairports.AirportsCSVURL,
