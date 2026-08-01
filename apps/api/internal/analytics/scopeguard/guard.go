@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	ErrContextRequired   = errors.New("analytical scope context is required")
 	ErrEvaluatorRequired = errors.New("trajectory eligibility evaluator is required")
 	ErrCapabilityUnknown = errors.New("analytics capability is unknown")
 	ErrDecisionMissing   = errors.New("trajectory eligibility decision is missing")
@@ -104,14 +105,13 @@ func (guard *Guard) Run(
 	if operation == nil {
 		return Decision{}, ErrOperationRequired
 	}
+	if ctx == nil {
+		return Decision{}, ErrContextRequired
+	}
 
 	decision, err := guard.Require(item, capability)
 	if err != nil {
 		return decision, err
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	if err := operation(ctx, item); err != nil {

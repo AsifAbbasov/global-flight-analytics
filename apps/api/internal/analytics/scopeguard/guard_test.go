@@ -238,7 +238,63 @@ func TestRunBlocksDeniedOperation(t *testing.T) {
 	}
 }
 
-func TestRunExecutesAllowedOperationWithNonNilContext(t *testing.T) {
+func TestRunRejectsNilContextBeforeEvaluationAndOperation(t *testing.T) {
+	evaluationCalls := 0
+	guard := mustGuard(t, Config{
+		Evaluator: evaluatorFunction(func(
+			item trajectory.FlightTrajectory,
+			now time.Time,
+		) trajectoryeligibility.Evaluation {
+			evaluationCalls++
+			return allowedEvaluation(
+				trajectoryeligibility.CapabilityTrafficMetrics,
+			)
+		}),
+	})
+
+	operationCalls := 0
+	decision, err := guard.Run(
+		nil,
+		trajectory.FlightTrajectory{ICAO24: "ABC123"},
+		trajectoryeligibility.CapabilityTrafficMetrics,
+		func(
+			ctx context.Context,
+			item trajectory.FlightTrajectory,
+		) error {
+			operationCalls++
+			return nil
+		},
+	)
+	if !errors.Is(err, ErrContextRequired) {
+		t.Fatalf(
+			"expected context required error, got %v",
+			err,
+		)
+	}
+	if decision.Capability != "" ||
+		decision.Allowed ||
+		len(decision.Reasons) != 0 ||
+		!decision.EvaluatedAt.IsZero() {
+		t.Fatalf(
+			"expected empty decision, got %#v",
+			decision,
+		)
+	}
+	if evaluationCalls != 0 {
+		t.Fatalf(
+			"expected no evaluation, got %d calls",
+			evaluationCalls,
+		)
+	}
+	if operationCalls != 0 {
+		t.Fatalf(
+			"expected no operation, got %d calls",
+			operationCalls,
+		)
+	}
+}
+
+func TestRunExecutesAllowedOperationWithSuppliedContext(t *testing.T) {
 	guard := mustGuard(t, Config{
 		Evaluator: evaluatorFunction(func(
 			item trajectory.FlightTrajectory,
@@ -253,7 +309,7 @@ func TestRunExecutesAllowedOperationWithNonNilContext(t *testing.T) {
 	called := 0
 	item := trajectory.FlightTrajectory{ICAO24: "ABC123"}
 	decision, err := guard.Run(
-		nil,
+		context.Background(),
 		item,
 		trajectoryeligibility.CapabilityTrafficMetrics,
 		func(ctx context.Context, actual trajectory.FlightTrajectory) error {
