@@ -15,6 +15,7 @@
     "lib/api/client.ts",
     "lib/analytics/historical-analytics-comparison-model.ts",
     "lib/product/application-status.ts",
+    "lib/product/runtime-resilience-model.ts",
     "lib/traffic/aircraft-explorer-model.ts",
     "lib/traffic/traffic-workspace-model.ts",
     "lib/traffic/regional-traffic-brief-model.ts",

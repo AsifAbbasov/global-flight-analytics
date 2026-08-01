@@ -1,5 +1,7 @@
-import type { Metadata } from 'next'
+// FRONTEND_PRODUCT_HARDENING_V1
+import type { Metadata, Viewport } from 'next'
 
+import { RuntimeResilienceBoundary } from '@/components/product/runtime-resilience-boundary'
 import { QueryProvider } from '@/providers/query-provider'
 
 import './globals.css'
@@ -20,6 +22,13 @@ export const metadata: Metadata = {
   ],
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  colorScheme: 'dark',
+  themeColor: '#020617',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +37,11 @@ export default function RootLayout({
   return (
     <html lang='en' className='h-full antialiased'>
       <body className='flex min-h-full flex-col bg-slate-950 text-slate-100'>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <RuntimeResilienceBoundary>
+            {children}
+          </RuntimeResilienceBoundary>
+        </QueryProvider>
       </body>
     </html>
   )

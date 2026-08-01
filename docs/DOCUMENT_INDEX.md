@@ -1487,3 +1487,13 @@ Historical Intelligence aggregate client, global, airport and route scope contro
 server-catalog metric filtering, bucket evidence visualization, previous-period and
 persisted-record comparisons, eight dependency-free model tests, exact baseline and
 the requirement for exact-commit Continuous Integration evidence before formal closure.
+
+<!-- FRONTEND-PRODUCT-HARDENING:DOCUMENT-INDEX -->
+
+## Document 161 — Frontend Product Hardening
+
+`161_FRONTEND_PRODUCT_HARDENING.md` records keyboard skip links, mobile navigation,
+forced-colors and coarse-pointer contracts, route and global error recovery, loading
+and not-found surfaces, runtime connectivity announcements, bounded React Query retry
+policy, dynamic research workspace delivery, fifteen dependency-free tests, exact
+baseline and the remaining requirement for exact-commit release evidence.

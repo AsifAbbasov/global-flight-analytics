@@ -1,14 +1,13 @@
 // FRONTEND_SHAREABLE_WORKSPACE_STATE_V1
 // FRONTEND_UNIFIED_AIRPORT_ANALYTICS_WORKSPACE_V1
 // FRONTEND_HISTORICAL_ANALYTICS_COMPARISON_V1
+// FRONTEND_PRODUCT_HARDENING_V1
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AnalyticsOverview } from '@/components/analytics/analytics-overview'
-import { HistoricalAnalyticsComparisonWorkspace } from '@/components/analytics/historical-analytics-comparison-workspace'
-import { UnifiedAirportAnalyticsWorkspace } from '@/components/analytics/unified-airport-analytics-workspace'
-import { TrafficDashboard } from '@/components/traffic-dashboard'
 import {
   type TrafficWorkspacePanel,
   type TrafficWorkspaceSelection,
@@ -20,6 +19,42 @@ import {
 } from '@/lib/traffic/workspace-url-state'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
+
+const UnifiedAirportAnalyticsWorkspace = dynamic(
+  () =>
+    import(
+      '@/components/analytics/unified-airport-analytics-workspace'
+    ).then(module => module.UnifiedAirportAnalyticsWorkspace),
+  {
+    loading: () => (
+      <ResearchSectionLoading label='Airport Intelligence' />
+    ),
+  }
+)
+
+const HistoricalAnalyticsComparisonWorkspace = dynamic(
+  () =>
+    import(
+      '@/components/analytics/historical-analytics-comparison-workspace'
+    ).then(module => module.HistoricalAnalyticsComparisonWorkspace),
+  {
+    loading: () => (
+      <ResearchSectionLoading label='Historical Analytics' />
+    ),
+  }
+)
+
+const TrafficDashboard = dynamic(
+  () =>
+    import('@/components/traffic-dashboard').then(
+      module => module.TrafficDashboard
+    ),
+  {
+    loading: () => (
+      <ResearchSectionLoading label='Live traffic workspace' />
+    ),
+  }
+)
 
 interface RegionalTrafficExperienceProps {
   regions: Region[]
@@ -179,6 +214,31 @@ export function RegionalTrafficExperience({
         />
       </div>
     </>
+  )
+}
+
+function ResearchSectionLoading({ label }: { label: string }) {
+  return (
+    <section
+      role='status'
+      aria-live='polite'
+      aria-busy='true'
+      className='mt-8 rounded-2xl border border-white/10 bg-slate-900/55 p-6'
+    >
+      <span className='sr-only'>Loading {label}.</span>
+      <div aria-hidden='true' className='animate-pulse'>
+        <div className='h-3 w-40 rounded bg-slate-800' />
+        <div className='mt-4 h-8 max-w-xl rounded bg-slate-800/80' />
+        <div className='mt-5 grid gap-4 lg:grid-cols-3'>
+          {Array.from({ length: 3 }, (_, index) => (
+            <div
+              key={index}
+              className='h-32 rounded-xl border border-white/5 bg-slate-950/70'
+            />
+          ))}
+        </div>
+      </div>
+    </section>
   )
 }
 

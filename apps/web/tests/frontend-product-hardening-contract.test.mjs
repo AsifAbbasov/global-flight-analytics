@@ -1,0 +1,89 @@
+// FRONTEND_PRODUCT_HARDENING_V1
+
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+function source(relativePath) {
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), 'utf8')
+}
+
+test('application shell publishes keyboard skip links and a focusable main landmark', () => {
+  const shell = source('components/product/application-shell.tsx')
+  assert.match(shell, /href='#main-content'/)
+  assert.match(shell, /href='#live-traffic'/)
+  assert.match(shell, /<main id='main-content' tabIndex=\{-1\}/)
+  assert.match(shell, /id='top'/)
+})
+
+test('application shell exposes desktop and mobile navigation for every research section', () => {
+  const shell = source('components/product/application-shell.tsx')
+  assert.match(shell, /<details className='relative lg:hidden'>/)
+  assert.match(shell, /<summary/)
+  assert.match(shell, /aria-label='Mobile primary navigation'/)
+  for (const target of [
+    '#overview',
+    '#airport-intelligence',
+    '#historical-analytics',
+    '#live-traffic',
+    '#research-scope',
+  ]) {
+    assert.match(shell, new RegExp(target))
+  }
+})
+
+test('global styles preserve focus reduced motion forced colors and coarse pointer targets', () => {
+  const styles = source('app/globals.css')
+  assert.match(styles, /\.skip-link/)
+  assert.match(styles, /prefers-reduced-motion: reduce/)
+  assert.match(styles, /forced-colors: active/)
+  assert.match(styles, /pointer: coarse/)
+  assert.match(styles, /min-height: 44px/)
+})
+
+test('segment and global error boundaries expose explicit recovery actions', () => {
+  const segmentError = source('app/error.tsx')
+  const globalError = source('app/global-error.tsx')
+  assert.match(segmentError, /role='alert'/)
+  assert.match(segmentError, /onClick=\{reset\}/)
+  assert.match(segmentError, /Return to home/)
+  assert.match(globalError, /role='alert'/)
+  assert.match(globalError, /onClick=\{reset\}/)
+  assert.match(globalError, /<html lang='en'>/)
+})
+
+test('loading and not-found routes remain accessible and actionable', () => {
+  const loading = source('app/loading.tsx')
+  const notFound = source('app/not-found.tsx')
+  assert.match(loading, /role='status'/)
+  assert.match(loading, /aria-busy='true'/)
+  assert.match(loading, /Loading aviation research workspace/)
+  assert.match(notFound, /id='not-found-title'/)
+  assert.match(notFound, /href='\/'/)
+})
+
+test('query provider uses bounded retry reconnect and garbage collection policy', () => {
+  const provider = source('providers/query-provider.tsx')
+  assert.match(provider, /shouldRetryFrontendQuery/)
+  assert.match(provider, /frontendRetryDelayMilliseconds/)
+  assert.match(provider, /refetchOnReconnect: true/)
+  assert.match(provider, /gcTime: 5 \* 60_000/)
+  assert.match(provider, /networkMode: 'online'/)
+})
+
+test('heavy research workspaces are split behind deterministic loading fallbacks', () => {
+  const experience = source('components/regional-traffic-experience.tsx')
+  assert.match(experience, /import dynamic from 'next\/dynamic'/)
+  assert.match(experience, /HistoricalAnalyticsComparisonWorkspace = dynamic/)
+  assert.match(experience, /UnifiedAirportAnalyticsWorkspace = dynamic/)
+  assert.match(experience, /TrafficDashboard = dynamic/)
+  assert.match(experience, /ResearchSectionLoading/)
+})
+
+test('root layout installs the runtime connectivity boundary and viewport policy', () => {
+  const layout = source('app/layout.tsx')
+  assert.match(layout, /RuntimeResilienceBoundary/)
+  assert.match(layout, /export const viewport: Viewport/)
+  assert.match(layout, /themeColor: '#020617'/)
+  assert.match(layout, /<RuntimeResilienceBoundary>/)
+})

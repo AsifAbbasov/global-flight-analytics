@@ -1,6 +1,7 @@
 // FRONTEND_APPLICATION_SHELL_V1
 // FRONTEND_UNIFIED_AIRPORT_ANALYTICS_WORKSPACE_V1
 // FRONTEND_HISTORICAL_ANALYTICS_COMPARISON_V1
+// FRONTEND_PRODUCT_HARDENING_V1
 import type { ReactNode } from 'react'
 
 import {
@@ -39,7 +40,16 @@ export function ApplicationShell({
   })
 
   return (
-    <div className='relative min-h-screen overflow-hidden bg-slate-950 text-slate-100'>
+    <div
+      id='top'
+      className='relative min-h-screen overflow-hidden bg-slate-950 text-slate-100'
+    >
+      <a className='skip-link' href='#main-content'>
+        Skip to main content
+      </a>
+      <a className='skip-link skip-link-secondary' href='#live-traffic'>
+        Skip to live workspace
+      </a>
       <div
         aria-hidden='true'
         className='pointer-events-none absolute inset-x-0 top-0 h-[46rem] bg-[radial-gradient(circle_at_15%_10%,rgba(14,165,233,0.16),transparent_34%),radial-gradient(circle_at_86%_4%,rgba(16,185,129,0.12),transparent_30%)]'
@@ -80,16 +90,36 @@ export function ApplicationShell({
             ))}
           </nav>
 
+          <details className='relative lg:hidden'>
+            <summary className='flex min-h-11 cursor-pointer list-none items-center rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-200 [&::-webkit-details-marker]:hidden'>
+              Navigate
+            </summary>
+            <nav
+              aria-label='Mobile primary navigation'
+              className='absolute right-0 top-[calc(100%+0.5rem)] z-20 w-64 rounded-xl border border-white/10 bg-slate-950/98 p-2 shadow-2xl shadow-black/40'
+            >
+              {navigationItems.map(item => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className='block min-h-11 rounded-lg px-3 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white'
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </details>
+
           <a
             href='#live-traffic'
-            className='shrink-0 rounded-lg border border-sky-400/35 bg-sky-400/10 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:border-sky-300/60 hover:bg-sky-400/15 sm:px-4 sm:text-sm'
+            className='hidden min-h-11 shrink-0 items-center rounded-lg border border-sky-400/35 bg-sky-400/10 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:border-sky-300/60 hover:bg-sky-400/15 sm:inline-flex sm:px-4 sm:text-sm'
           >
             Open workspace
           </a>
         </div>
       </header>
 
-      <main id='top' className='relative'>
+      <main id='main-content' tabIndex={-1} className='relative outline-none'>
         <section className='mx-auto max-w-[1600px] px-4 pb-6 pt-14 sm:px-8 sm:pt-20'>
           <div className='grid items-end gap-10 xl:grid-cols-[minmax(0,1fr)_420px]'>
             <div>

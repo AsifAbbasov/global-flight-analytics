@@ -63,3 +63,81 @@ body {
   color: #e5e7eb !important;
   z-index: 10 !important;
 }
+
+/* FRONTEND_PRODUCT_HARDENING_V1 */
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 1rem;
+  z-index: 100;
+  min-height: 44px;
+  transform: translateY(-160%);
+  border: 1px solid rgb(125 211 252 / 70%);
+  border-radius: 0.5rem;
+  background: #e0f2fe;
+  color: #020617;
+  font-weight: 700;
+  padding: 0.7rem 1rem;
+  transition: transform 120ms ease-out;
+}
+
+.skip-link-secondary {
+  left: 13rem;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+:target {
+  scroll-margin-top: 7rem;
+}
+
+button,
+summary,
+a,
+input,
+select {
+  touch-action: manipulation;
+}
+
+code,
+kbd,
+samp,
+pre {
+  overflow-wrap: anywhere;
+}
+
+[aria-busy='true'] {
+  cursor: progress;
+}
+
+@media (pointer: coarse) {
+  button,
+  summary,
+  select,
+  input[type='search'],
+  input[type='text'] {
+    min-height: 44px;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid CanvasText;
+  }
+
+  .skip-link {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}
+
+@media (max-width: 639px) {
+  .skip-link-secondary {
+    left: 1rem;
+    top: 4.25rem;
+  }
+}
