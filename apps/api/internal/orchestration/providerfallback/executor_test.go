@@ -67,6 +67,59 @@ func (
 
 var _ ProviderExecutor[executorTestValue] = (*ingestionorchestrator.Orchestrator[executorTestValue])(nil)
 
+func TestExecutorRejectsNilContextBeforeProviderCalls(
+	t *testing.T,
+) {
+	providerExecutor := &providerExecutorStub{
+		results: make(
+			map[providerpolicy.Provider]executorResult,
+		),
+		errors: make(
+			map[providerpolicy.Provider]error,
+		),
+	}
+	recorder := &fallbackRecorderStub{}
+
+	executor, err := NewExecutor[executorTestValue](
+		providerExecutor,
+		New(nil),
+		recorder,
+	)
+	if err != nil {
+		t.Fatalf(
+			"create fallback executor: %v",
+			err,
+		)
+	}
+
+	_, err = executor.Execute(
+		nil,
+		testAttempts(),
+	)
+
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if len(providerExecutor.calls) != 0 {
+		t.Fatalf(
+			"provider calls = %d, want 0",
+			len(providerExecutor.calls),
+		)
+	}
+	if len(recorder.decisions) != 0 {
+		t.Fatalf(
+			"recorded decisions = %d, want 0",
+			len(recorder.decisions),
+		)
+	}
+}
+
 func TestExecutorUsesPrimaryProvider(
 	t *testing.T,
 ) {

@@ -13,6 +13,10 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"provider fallback context is required",
+	)
+
 	ErrProviderExecutorRequired = errors.New(
 		"provider fallback executor dependency is required",
 	)
@@ -150,7 +154,7 @@ func (
 	}
 
 	if ctx == nil {
-		ctx = context.Background()
+		return ExecuteResult[T]{}, ErrContextRequired
 	}
 
 	candidates := make(
