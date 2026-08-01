@@ -59,15 +59,15 @@ func (
 	ctx context.Context,
 	request RecentRequest,
 ) ([]trajectory.FlightTrajectory, error) {
+	if ctx == nil {
+		return nil, ErrQueryContextRequired
+	}
+
 	window, err := request.Normalize(
 		service.now(),
 	)
 	if err != nil {
 		return nil, err
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	items, err :=
@@ -97,16 +97,16 @@ func (
 	ctx context.Context,
 	trajectoryIDs []string,
 ) ([]trajectory.FlightTrajectory, error) {
+	if ctx == nil {
+		return nil, ErrQueryContextRequired
+	}
+
 	normalizedIDs, err :=
 		NormalizeTrajectoryIDs(
 			trajectoryIDs,
 		)
 	if err != nil {
 		return nil, err
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	items, err :=

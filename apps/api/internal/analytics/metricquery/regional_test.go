@@ -86,7 +86,7 @@ func TestRecentWithinBoundsQueriesRegionalRepository(t *testing.T) {
 	}
 
 	items, err := service.RecentWithinBounds(
-		nil,
+		context.Background(),
 		RecentRequest{
 			WindowMinutes: 30,
 			Limit:         200,

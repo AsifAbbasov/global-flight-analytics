@@ -121,6 +121,10 @@ func (service *Service) RecentWithinBounds(
 	request RecentRequest,
 	bounds Bounds,
 ) ([]trajectory.FlightTrajectory, error) {
+	if ctx == nil {
+		return nil, ErrQueryContextRequired
+	}
+
 	window, err := request.Normalize(service.now())
 	if err != nil {
 		return nil, err
@@ -132,10 +136,6 @@ func (service *Service) RecentWithinBounds(
 	repository, ok := service.repository.(RegionalRepository)
 	if !ok {
 		return nil, ErrRegionalRepositoryUnsupported
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	items, err := repository.ListTrajectoriesWithinBounds(

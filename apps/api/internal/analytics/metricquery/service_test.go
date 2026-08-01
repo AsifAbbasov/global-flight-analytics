@@ -58,7 +58,10 @@ func TestRecentQueriesNormalizedWindow(t *testing.T) {
 		t.Fatalf("expected service, got %v", err)
 	}
 
-	items, err := service.Recent(nil, RecentRequest{WindowMinutes: 30, Limit: 50})
+	items, err := service.Recent(
+		context.Background(),
+		RecentRequest{WindowMinutes: 30, Limit: 50},
+	)
 	if err != nil {
 		t.Fatalf("expected recent trajectories, got %v", err)
 	}
