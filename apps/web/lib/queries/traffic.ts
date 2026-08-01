@@ -7,9 +7,8 @@ import {
 
 import { APIRequestError } from '@/lib/api/client'
 import { getCurrentTraffic } from '@/lib/api/traffic'
+import { normalizeLiveTrafficRefreshInterval } from '@/lib/traffic/live-traffic-status-model'
 import type { TrafficAircraft } from '@/types/traffic'
-
-const currentTrafficRefreshIntervalMilliseconds = 60_000
 
 const trafficQueryKeys = {
   all: ['traffic'] as const,
@@ -23,6 +22,7 @@ const trafficQueryKeys = {
 
 interface UseCurrentTrafficOptions {
   initialData?: TrafficAircraft[]
+  refreshIntervalMilliseconds?: number | false
 }
 
 export function useCurrentTraffic(
@@ -30,6 +30,12 @@ export function useCurrentTraffic(
   options: UseCurrentTrafficOptions = {}
 ): UseQueryResult<TrafficAircraft[], Error> {
   const normalizedRegionCode = normalizeRegionCode(regionCode)
+  const refreshIntervalMilliseconds =
+    options.refreshIntervalMilliseconds === false
+      ? false
+      : normalizeLiveTrafficRefreshInterval(
+          options.refreshIntervalMilliseconds
+        )
 
   return useQuery({
     queryKey: trafficQueryKeys.current(normalizedRegionCode),
@@ -39,7 +45,7 @@ export function useCurrentTraffic(
       }),
     enabled: normalizedRegionCode.length > 0,
     initialData: options.initialData,
-    refetchInterval: currentTrafficRefreshIntervalMilliseconds,
+    refetchInterval: refreshIntervalMilliseconds,
     refetchIntervalInBackground: false,
     retry: shouldRetryTrafficQuery,
   })

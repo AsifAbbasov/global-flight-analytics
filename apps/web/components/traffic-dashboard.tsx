@@ -1,7 +1,7 @@
-// FRONTEND_TRAFFIC_WORKSPACE_V1
+// FRONTEND_LIVE_TRAFFIC_CONTROL_V1
 'use client'
 
-import { useState, type ChangeEvent } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 
 import { AircraftDetailPanel } from '@/components/aircraft/aircraft-detail-panel'
 import { AircraftExplorer } from '@/components/aircraft/aircraft-explorer'
@@ -11,6 +11,7 @@ import { StabilityIntelligencePanel } from '@/components/aircraft/stability-inte
 import { WeatherContextPanel } from '@/components/aircraft/weather-context-panel'
 import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
+import { LiveTrafficControl } from '@/components/traffic/live-traffic-control'
 import { RegionalTrafficBrief } from '@/components/traffic/regional-traffic-brief'
 import { getRequestErrorMessage } from '@/lib/api/client'
 import { useProjectionIntelligence } from '@/lib/queries/projection-intelligence'
@@ -21,6 +22,10 @@ import {
   useStabilityIntelligence,
 } from '@/lib/queries/stability-intelligence'
 import { useCurrentTraffic } from '@/lib/queries/traffic'
+import {
+  defaultLiveTrafficRefreshIntervalMilliseconds,
+  type LiveTrafficRefreshIntervalMilliseconds,
+} from '@/lib/traffic/live-traffic-status-model'
 import { useLatestAircraftTrajectory } from '@/lib/queries/trajectory'
 import { useWeatherContext } from '@/lib/queries/weather-context'
 import {
@@ -60,12 +65,33 @@ export function TrafficDashboard({
 }: TrafficDashboardProps) {
   const [shareViewStatus, setShareViewStatus] =
     useState<ShareViewStatus>('idle')
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true)
+  const [refreshIntervalMilliseconds, setRefreshIntervalMilliseconds] =
+    useState<LiveTrafficRefreshIntervalMilliseconds>(
+      defaultLiveTrafficRefreshIntervalMilliseconds
+    )
+  const [statusNow, setStatusNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const intervalID = window.setInterval(() => {
+      setStatusNow(Date.now())
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalID)
+    }
+  }, [])
 
   const initialData =
     selectedRegion.code === 'world' && initialError === null
       ? initialTraffic
       : undefined
-  const trafficQuery = useCurrentTraffic(selectedRegion.code, { initialData })
+  const trafficQuery = useCurrentTraffic(selectedRegion.code, {
+    initialData,
+    refreshIntervalMilliseconds: autoRefreshEnabled
+      ? refreshIntervalMilliseconds
+      : false,
+  })
   const routeContextQuery = useAircraftRouteContext(selectedAircraftICAO24)
   const trajectoryQuery = useLatestAircraftTrajectory(selectedAircraftICAO24)
   const routeIntelligenceTrajectoryID =
@@ -188,47 +214,24 @@ export function TrafficDashboard({
           </div>
         </div>
 
-        <div
-          aria-live='polite'
-          className='mt-3 flex flex-wrap items-center gap-3 text-sm'
-        >
-          <span className='text-slate-300'>Aircraft: {traffic.length}</span>
-          <span className='text-slate-500'>View: {selectedRegion.name}</span>
-          {selectedAircraftICAO24 ? (
-            <span className='text-sky-300'>
-              Selected: {selectedAircraftICAO24.toUpperCase()}
-            </span>
-          ) : null}
-          {trafficQuery.dataUpdatedAt > 0 ? (
-            <span className='text-slate-500'>
-              Updated {formatTimestamp(trafficQuery.dataUpdatedAt)}
-            </span>
-          ) : null}
-          {regionsWarning ? (
-            <span className='text-amber-300'>{regionsWarning}</span>
-          ) : null}
-          {isInitialLoading ? (
-            <span className='text-sky-300'>Loading current traffic…</span>
-          ) : null}
-          {isRefreshing ? (
-            <span className='text-sky-300'>Updating current traffic…</span>
-          ) : null}
-          {errorMessage ? (
-            <>
-              <span className='text-amber-300'>{errorMessage}</span>
-              <button
-                type='button'
-                onClick={() => {
-                  void trafficQuery.refetch()
-                }}
-                disabled={trafficQuery.isFetching}
-                className='rounded-md border border-amber-400/50 px-3 py-1 font-medium text-amber-200 disabled:opacity-60'
-              >
-                Retry
-              </button>
-            </>
-          ) : null}
-        </div>
+        <LiveTrafficControl
+          regionName={selectedRegion.name}
+          aircraftCount={traffic.length}
+          selectedAircraftICAO24={selectedAircraftICAO24}
+          dataUpdatedAt={trafficQuery.dataUpdatedAt}
+          now={statusNow}
+          isInitialLoading={isInitialLoading}
+          isRefreshing={isRefreshing}
+          errorMessage={errorMessage}
+          regionsWarning={regionsWarning}
+          autoRefreshEnabled={autoRefreshEnabled}
+          refreshIntervalMilliseconds={refreshIntervalMilliseconds}
+          onAutoRefreshEnabledChange={setAutoRefreshEnabled}
+          onRefreshIntervalChange={setRefreshIntervalMilliseconds}
+          onRetry={() => {
+            void trafficQuery.refetch()
+          }}
+        />
       </section>
 
       <div className='mt-4' aria-busy={trafficQuery.isFetching}>
@@ -509,12 +512,4 @@ function SelectedAircraftContext({
       </div>
     </div>
   )
-}
-
-function formatTimestamp(value: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(new Date(value))
 }

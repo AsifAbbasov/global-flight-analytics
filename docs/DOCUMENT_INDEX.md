@@ -1437,3 +1437,13 @@ formal closure.
 workspace-panel state, browser Back and Forward restoration, canonical query serialization,
 the explicit copy-link action, six dependency-free model tests, exact baseline and the
 requirement for exact-commit Continuous Integration evidence before formal closure.
+
+<!-- FRONTEND-LIVE-TRAFFIC-CONTROL:DOCUMENT-INDEX -->
+
+## Document 156 — Frontend Live Traffic Control
+
+`156_FRONTEND_LIVE_TRAFFIC_CONTROL.md` records explicit current, aging and stale
+snapshot semantics, bounded automatic refresh choices, pause and resume controls,
+countdown and retained-snapshot failure presentation, six dependency-free model tests,
+exact baseline and the requirement for exact-commit Continuous Integration evidence
+before formal closure.
