@@ -16,6 +16,7 @@
     "lib/product/application-status.ts",
     "lib/traffic/aircraft-explorer-model.ts",
     "lib/traffic/traffic-workspace-model.ts",
+    "lib/traffic/regional-traffic-brief-model.ts",
     "types/traffic.ts",
     "tests/test-globals.d.ts"
   ]

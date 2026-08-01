@@ -11,6 +11,7 @@ import { StabilityIntelligencePanel } from '@/components/aircraft/stability-inte
 import { WeatherContextPanel } from '@/components/aircraft/weather-context-panel'
 import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
+import { RegionalTrafficBrief } from '@/components/traffic/regional-traffic-brief'
 import { getRequestErrorMessage } from '@/lib/api/client'
 import { useProjectionIntelligence } from '@/lib/queries/projection-intelligence'
 import { useAircraftRouteContext } from '@/lib/queries/route-context'
@@ -195,6 +196,12 @@ export function TrafficDashboard({
       <div className='mt-4' aria-busy={trafficQuery.isFetching}>
         <TrafficGlobe aircraft={traffic} region={selectedRegion} />
       </div>
+
+      <RegionalTrafficBrief
+        aircraft={traffic}
+        regionName={selectedRegion.name}
+        isFetching={trafficQuery.isFetching}
+      />
 
       <section className='mt-8 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-6'>
         <h2 className='text-xl font-semibold'>

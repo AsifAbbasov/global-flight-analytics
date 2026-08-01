@@ -1418,3 +1418,13 @@ local-only mutation authorization startup default, exact health, readiness and v
 checks, frozen pnpm frontend setup, permanent quickstart verification, Backend
 Continuous Integration reachability, exact baseline and the requirement for
 exact-commit Continuous Integration evidence before formal closure.
+
+<!-- FRONTEND-REGIONAL-TRAFFIC-BRIEF:DOCUMENT-INDEX -->
+
+## Document 154 — Frontend Regional Traffic Brief
+
+`154_FRONTEND_REGIONAL_TRAFFIC_BRIEF.md` records the deterministic current-snapshot
+composition brief, airborne altitude bands, leading attributed airlines and origin
+countries, explicit evidence boundaries, five dependency-free model tests, exact
+baseline and the requirement for exact-commit Continuous Integration evidence before
+formal closure.
