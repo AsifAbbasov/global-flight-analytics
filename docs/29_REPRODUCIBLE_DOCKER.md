@@ -133,6 +133,13 @@ docker compose up \
 
 Compose waits for PostgreSQL health, runs migrations to successful completion, and then starts the API.
 
+<!-- RECRUITER-QUICKSTART-V1:DOCUMENT-29 -->
+The API service receives an overridable local-only `API_MUTATION_KEY_SHA256` digest.
+No raw key is shipped, so state-changing routes remain inaccessible by default while
+read-only health, readiness, version and research endpoints can start normally. To
+exercise a mutation route locally, generate a raw key, calculate its SHA-256 digest and
+pass the digest through the host environment before starting Compose.
+
 Check service state:
 
 ```bash
@@ -147,6 +154,22 @@ curl \
   --silent \
   --show-error \
   http://127.0.0.1:8080/api/v1/health
+```
+
+Check API readiness and build provenance:
+
+```bash
+curl \
+  --fail \
+  --silent \
+  --show-error \
+  http://127.0.0.1:8080/api/v1/ready
+
+curl \
+  --fail \
+  --silent \
+  --show-error \
+  http://127.0.0.1:8080/api/v1/version
 ```
 
 ---

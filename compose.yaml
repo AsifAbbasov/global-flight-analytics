@@ -79,6 +79,8 @@ services:
       API_IDLE_TIMEOUT: 60s
       API_RATE_LIMIT_MAX: 120
       API_RATE_LIMIT_WINDOW: 1m
+      # Local-only startup digest. Override it to exercise mutation routes.
+      API_MUTATION_KEY_SHA256: ${API_MUTATION_KEY_SHA256:-c2508a15a4cdd287252b1556e79c7c16e7d2b77ae4dbd1df5ad8856a0a509feb}
     depends_on:
       postgres:
         condition: service_healthy

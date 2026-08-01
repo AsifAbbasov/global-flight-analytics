@@ -14,6 +14,7 @@ on:
       - '.github/workflows/backend-ci.yml'
       - 'scripts/**'
       - 'docs/**'
+      - 'README.md'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -33,6 +34,7 @@ on:
       - '.github/workflows/backend-ci.yml'
       - 'scripts/**'
       - 'docs/**'
+      - 'README.md'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -224,6 +226,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Verify recruiter quickstart contract
+        run: bash scripts/verify-recruiter-quickstart.sh
 
       - name: Validate Docker Compose configuration
         run: docker compose config > /dev/null

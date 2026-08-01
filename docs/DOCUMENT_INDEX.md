@@ -1407,3 +1407,14 @@ cancellation, the compatibility-preserving context-aware pool constructor, serve
 lifecycle propagation, focused cancellation and classification regression tests,
 permanent context-ownership enforcement, exact baseline and the requirement for
 exact-commit Continuous Integration evidence before formal closure.
+
+
+<!-- RECRUITER-QUICKSTART:DOCUMENT-INDEX -->
+
+## Document 153 — Recruiter Quickstart
+
+`153_RECRUITER_QUICKSTART.md` records the reproducible reviewer startup path, the
+local-only mutation authorization startup default, exact health, readiness and version
+checks, frozen pnpm frontend setup, permanent quickstart verification, Backend
+Continuous Integration reachability, exact baseline and the requirement for
+exact-commit Continuous Integration evidence before formal closure.

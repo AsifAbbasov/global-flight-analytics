@@ -6,6 +6,56 @@ The project is not a flight tracker clone, not regulated aviation software, not 
 
 The platform is centered on trajectory quality, feature engineering, historical patterns, context-aware analytics, confidence, explainability, and map-based visualization.
 
+<!-- RECRUITER-QUICKSTART-V1 -->
+## Run the Local Demo
+
+A reviewer can start the database, migrations, API and frontend without inventing
+configuration or replacing the repository infrastructure.
+
+### Prerequisites
+
+- Docker with Compose version 2
+- Node.js 24.9.0
+- pnpm 11.8.0
+
+Run from the repository root:
+
+```bash
+docker compose config
+docker compose up --build --detach
+docker compose ps
+```
+
+Verify the real backend lifecycle endpoints:
+
+```bash
+curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health
+curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/ready
+curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/version
+```
+
+Start the typed Next.js frontend in a second terminal:
+
+```bash
+pnpm install --frozen-lockfile
+test -f apps/web/.env.local || cp apps/web/.env.example apps/web/.env.local
+pnpm dev:web
+```
+
+Open `http://localhost:3000`. The frontend reads the local Go API through
+`NEXT_PUBLIC_API_BASE_URL=http://localhost:8080`.
+
+Stop the environment while preserving PostgreSQL data:
+
+```bash
+docker compose down
+```
+
+Use `docker compose down --volumes` only when a clean local database is intended.
+The Compose mutation-key digest is a local startup default with no raw key shipped;
+state-changing routes therefore remain inaccessible until a developer explicitly
+provides their own `API_MUTATION_KEY_SHA256`.
+
 ## Architecture Baseline
 
 ```text
