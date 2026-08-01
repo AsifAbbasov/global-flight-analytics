@@ -1428,3 +1428,12 @@ composition brief, airborne altitude bands, leading attributed airlines and orig
 countries, explicit evidence boundaries, five dependency-free model tests, exact
 baseline and the requirement for exact-commit Continuous Integration evidence before
 formal closure.
+
+<!-- FRONTEND-SHAREABLE-WORKSPACE-STATE:DOCUMENT-INDEX -->
+
+## Document 155 — Frontend Shareable Workspace State
+
+`155_FRONTEND_SHAREABLE_WORKSPACE_STATE.md` records URL-addressable region, aircraft and
+workspace-panel state, browser Back and Forward restoration, canonical query serialization,
+the explicit copy-link action, six dependency-free model tests, exact baseline and the
+requirement for exact-commit Continuous Integration evidence before formal closure.

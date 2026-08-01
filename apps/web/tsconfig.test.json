@@ -17,6 +17,7 @@
     "lib/traffic/aircraft-explorer-model.ts",
     "lib/traffic/traffic-workspace-model.ts",
     "lib/traffic/regional-traffic-brief-model.ts",
+    "lib/traffic/workspace-url-state.ts",
     "types/traffic.ts",
     "tests/test-globals.d.ts"
   ]

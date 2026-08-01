@@ -26,6 +26,7 @@ import { useWeatherContext } from '@/lib/queries/weather-context'
 import {
   buildTrafficWorkspaceSelection,
   type TrafficWorkspacePanel,
+  type TrafficWorkspaceSelection,
 } from '@/lib/traffic/traffic-workspace-model'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
@@ -33,25 +34,32 @@ import type { TrafficAircraft } from '@/types/traffic'
 interface TrafficDashboardProps {
   regions: Region[]
   selectedRegion: Region
+  selectedAircraftICAO24: string | null
+  workspacePanel: TrafficWorkspacePanel
   onSelectedRegionCodeChange: (regionCode: string) => void
+  onWorkspaceSelectionChange: (selection: TrafficWorkspaceSelection) => void
+  onWorkspacePanelChange: (panel: TrafficWorkspacePanel) => void
   initialTraffic: TrafficAircraft[]
   initialError: string | null
   regionsWarning: string | null
 }
 
+type ShareViewStatus = 'idle' | 'copied' | 'unavailable'
+
 export function TrafficDashboard({
   regions,
   selectedRegion,
+  selectedAircraftICAO24,
+  workspacePanel,
   onSelectedRegionCodeChange,
+  onWorkspaceSelectionChange,
+  onWorkspacePanelChange,
   initialTraffic,
   initialError,
   regionsWarning,
 }: TrafficDashboardProps) {
-  const [selectedAircraftICAO24, setSelectedAircraftICAO24] = useState<
-    string | null
-  >(null)
-  const [workspacePanel, setWorkspacePanel] =
-    useState<TrafficWorkspacePanel>('aircraft')
+  const [shareViewStatus, setShareViewStatus] =
+    useState<ShareViewStatus>('idle')
 
   const initialData =
     selectedRegion.code === 'world' && initialError === null
@@ -102,14 +110,29 @@ export function TrafficDashboard({
       : null
 
   const selectAircraft = (icao24: string | null) => {
-    const selection = buildTrafficWorkspaceSelection(icao24)
-    setSelectedAircraftICAO24(selection.icao24)
-    setWorkspacePanel(selection.panel)
+    onWorkspaceSelectionChange(buildTrafficWorkspaceSelection(icao24))
   }
 
   const changeRegion = (regionCode: string) => {
-    selectAircraft(null)
     onSelectedRegionCodeChange(regionCode)
+  }
+
+  const copyCurrentViewLink = async () => {
+    if (
+      typeof window === 'undefined' ||
+      typeof navigator === 'undefined' ||
+      navigator.clipboard?.writeText === undefined
+    ) {
+      setShareViewStatus('unavailable')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setShareViewStatus('copied')
+    } catch {
+      setShareViewStatus('unavailable')
+    }
   }
 
   return (
@@ -138,16 +161,31 @@ export function TrafficDashboard({
               ))}
             </select>
           </div>
-          <button
-            type='button'
-            onClick={() => {
-              void trafficQuery.refetch()
-            }}
-            disabled={trafficQuery.isFetching}
-            className='rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-60'
-          >
-            {trafficQuery.isFetching ? 'Refreshing traffic…' : 'Refresh traffic'}
-          </button>
+          <div className='flex flex-wrap gap-2'>
+            <button
+              type='button'
+              onClick={() => {
+                void copyCurrentViewLink()
+              }}
+              className='rounded-lg border border-sky-400/35 bg-sky-400/5 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/10'
+            >
+              {shareViewStatus === 'copied'
+                ? 'View link copied'
+                : shareViewStatus === 'unavailable'
+                  ? 'Clipboard unavailable'
+                  : 'Copy view link'}
+            </button>
+            <button
+              type='button'
+              onClick={() => {
+                void trafficQuery.refetch()
+              }}
+              disabled={trafficQuery.isFetching}
+              className='rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-60'
+            >
+              {trafficQuery.isFetching ? 'Refreshing traffic…' : 'Refresh traffic'}
+            </button>
+          </div>
         </div>
 
         <div
@@ -231,7 +269,7 @@ export function TrafficDashboard({
             <WorkspaceTabs
               activePanel={workspacePanel}
               selectedAircraftICAO24={selectedAircraftICAO24}
-              onPanelChange={setWorkspacePanel}
+              onPanelChange={onWorkspacePanelChange}
             />
 
             <div
@@ -249,13 +287,13 @@ export function TrafficDashboard({
                 />
               ) : selectedAircraftICAO24 === null ? (
                 <IntelligenceSelectionPrompt
-                  onOpenAircraft={() => setWorkspacePanel('aircraft')}
+                  onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
                 />
               ) : (
                 <div className='space-y-4'>
                   <SelectedAircraftContext
                     icao24={selectedAircraftICAO24}
-                    onOpenAircraft={() => setWorkspacePanel('aircraft')}
+                    onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
                     onClear={() => selectAircraft(null)}
                   />
                   <AircraftDetailPanel
