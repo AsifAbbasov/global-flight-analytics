@@ -13,6 +13,7 @@
   },
   "include": [
     "lib/api/client.ts",
+    "lib/analytics/historical-analytics-comparison-model.ts",
     "lib/product/application-status.ts",
     "lib/traffic/aircraft-explorer-model.ts",
     "lib/traffic/traffic-workspace-model.ts",
@@ -22,6 +23,7 @@
     "lib/traffic/traffic-data-quality-model.ts",
     "lib/analytics/airport-intelligence-workspace-model.ts",
     "lib/traffic/workspace-url-state.ts",
+    "types/historical-intelligence.ts",
     "types/traffic.ts",
     "types/airport-intelligence.ts",
     "tests/test-globals.d.ts"

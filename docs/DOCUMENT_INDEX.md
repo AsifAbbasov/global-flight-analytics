@@ -1477,3 +1477,13 @@ Intelligence ranking, search and deterministic sorting, digital airport passport
 completed-day history, trend and continuity evidence, merged limitations, runtime API
 validation, eight dependency-free model tests, exact baseline and the requirement for
 exact-commit Continuous Integration evidence before formal closure.
+
+<!-- FRONTEND-HISTORICAL-ANALYTICS-COMPARISON:DOCUMENT-INDEX -->
+
+## Document 160 — Frontend Historical Analytics and Comparison
+
+`160_FRONTEND_HISTORICAL_ANALYTICS_COMPARISON.md` records the typed production
+Historical Intelligence aggregate client, global, airport and route scope controls,
+server-catalog metric filtering, bucket evidence visualization, previous-period and
+persisted-record comparisons, eight dependency-free model tests, exact baseline and
+the requirement for exact-commit Continuous Integration evidence before formal closure.
