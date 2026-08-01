@@ -1,31 +1,54 @@
+// BACKEND_STARTUP_CONTEXT_HARDENING_V1
 package database
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var (
+	errPostgresContextRequired = errors.New(
+		"postgres context is required",
+	)
+	errPostgresConnectTimeoutInvalid = errors.New(
+		"postgres connect timeout must be greater than zero",
+	)
 )
 
 func NewPostgresPool(
 	databaseURL string,
 	connectTimeout time.Duration,
 ) (*pgxpool.Pool, error) {
+	return NewPostgresPoolContext(
+		context.Background(),
+		databaseURL,
+		connectTimeout,
+	)
+}
+
+func NewPostgresPoolContext(
+	ctx context.Context,
+	databaseURL string,
+	connectTimeout time.Duration,
+) (*pgxpool.Pool, error) {
+	if ctx == nil {
+		return nil, errPostgresContextRequired
+	}
 	if connectTimeout <= 0 {
-		return nil, fmt.Errorf(
-			"postgres connect timeout must be greater than zero",
-		)
+		return nil, errPostgresConnectTimeoutInvalid
 	}
 
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
+	connectCtx, cancel := context.WithTimeout(
+		ctx,
 		connectTimeout,
 	)
 	defer cancel()
 
 	pool, err := pgxpool.New(
-		ctx,
+		connectCtx,
 		databaseURL,
 	)
 	if err != nil {
@@ -33,7 +56,7 @@ func NewPostgresPool(
 	}
 
 	if err := pool.Ping(
-		ctx,
+		connectCtx,
 	); err != nil {
 		pool.Close()
 

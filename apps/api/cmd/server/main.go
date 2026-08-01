@@ -1,3 +1,4 @@
+// BACKEND_STARTUP_CONTEXT_HARDENING_V1
 package main
 
 import (
@@ -132,6 +133,7 @@ func run(
 	}
 
 	dbPool, err := openServerDatabase(
+		ctx,
 		cfg,
 		log,
 	)
@@ -210,12 +212,19 @@ func run(
 }
 
 func openServerDatabase(
+	ctx context.Context,
 	cfg config.ServerConfig,
 	log *slog.Logger,
 ) (
 	*pgxpool.Pool,
 	error,
 ) {
+	if ctx == nil {
+		return nil, errServerContextRequired
+	}
+	if log == nil {
+		log = slog.Default()
+	}
 	if cfg.Database == nil {
 		log.Warn(
 			"database url is not set; starting api without database connection",
@@ -223,7 +232,8 @@ func openServerDatabase(
 		return nil, nil
 	}
 
-	dbPool, err := database.NewPostgresPool(
+	dbPool, err := database.NewPostgresPoolContext(
+		ctx,
 		cfg.Database.URL,
 		cfg.Database.ConnectTimeout,
 	)

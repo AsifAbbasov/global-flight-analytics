@@ -1397,3 +1397,13 @@ hero, startup snapshot status semantics, stable page navigation, research-scope
 communication, deterministic global styling, five status-model regression tests,
 exact baseline and the requirement for exact-commit Continuous Integration evidence
 before formal closure.
+
+<!-- BACKEND-STARTUP-CONTEXT-HARDENING:DOCUMENT-INDEX -->
+
+## Document 152 — Backend Startup Context Hardening
+
+`152_BACKEND_STARTUP_CONTEXT_HARDENING.md` records caller-owned PostgreSQL startup
+cancellation, the compatibility-preserving context-aware pool constructor, server
+lifecycle propagation, focused cancellation and classification regression tests,
+permanent context-ownership enforcement, exact baseline and the requirement for
+exact-commit Continuous Integration evidence before formal closure.

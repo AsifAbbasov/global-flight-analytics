@@ -1,6 +1,8 @@
 package database
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -49,16 +51,73 @@ func TestNewPostgresPoolRejectsNonPositiveConnectTimeout(
 					)
 				}
 
-				expectedError := "postgres connect timeout must be greater than zero"
-
-				if err.Error() != expectedError {
+				if !errors.Is(
+					err,
+					errPostgresConnectTimeoutInvalid,
+				) {
 					t.Fatalf(
-						"expected error %q, got %q",
-						expectedError,
-						err.Error(),
+						"expected invalid timeout classification, got %v",
+						err,
 					)
 				}
 			},
+		)
+	}
+}
+
+func TestNewPostgresPoolContextRequiresContext(
+	t *testing.T,
+) {
+	pool, err := NewPostgresPoolContext(
+		nil,
+		"postgres://example.invalid/database",
+		time.Second,
+	)
+
+	if pool != nil {
+		pool.Close()
+		t.Fatal(
+			"expected nil postgres pool when context is missing",
+		)
+	}
+	if !errors.Is(
+		err,
+		errPostgresContextRequired,
+	) {
+		t.Fatalf(
+			"expected context-required error, got %v",
+			err,
+		)
+	}
+}
+
+func TestNewPostgresPoolContextPreservesCallerCancellation(
+	t *testing.T,
+) {
+	ctx, cancel := context.WithCancel(
+		context.Background(),
+	)
+	cancel()
+
+	pool, err := NewPostgresPoolContext(
+		ctx,
+		"postgres://postgres:postgres@127.0.0.1:5432/global_flight_analytics?sslmode=disable",
+		time.Second,
+	)
+
+	if pool != nil {
+		pool.Close()
+		t.Fatal(
+			"expected nil postgres pool after caller cancellation",
+		)
+	}
+	if !errors.Is(
+		err,
+		context.Canceled,
+	) {
+		t.Fatalf(
+			"expected caller cancellation, got %v",
+			err,
 		)
 	}
 }
