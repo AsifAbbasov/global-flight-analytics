@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "rm -rf .test-dist; tsc -p tsconfig.test.json && node --test tests/api-client.test.mjs; status=$?; rm -rf .test-dist; exit $status",
+    "test": "rm -rf .test-dist; tsc -p tsconfig.test.json && node --test tests/*.test.mjs; status=$?; rm -rf .test-dist; exit $status",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },

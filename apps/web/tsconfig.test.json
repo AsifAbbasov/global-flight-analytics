@@ -11,5 +11,10 @@
     "outDir": ".test-dist",
     "types": []
   },
-  "include": ["lib/api/client.ts", "tests/test-globals.d.ts"]
+  "include": [
+    "lib/api/client.ts",
+    "lib/traffic/aircraft-explorer-model.ts",
+    "types/traffic.ts",
+    "tests/test-globals.d.ts"
+  ]
 }

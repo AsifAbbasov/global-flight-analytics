@@ -1367,3 +1367,13 @@ of caller-cancellation versus request-timeout classification, the first dependen
 frontend contract test harness, six API-client regression tests, Frontend Continuous
 Integration enforcement, exact baseline and scope boundaries, and the requirement for
 exact-commit Continuous Integration evidence before formal closure.
+
+<!-- FRONTEND-AIRCRAFT-EXPLORER:DOCUMENT-INDEX -->
+
+## Document 149 — Frontend Aircraft Explorer
+
+`149_FRONTEND_AIRCRAFT_EXPLORER.md` records the searchable and sortable regional
+aircraft index, shared map and detail-panel selection, bounded result rendering,
+deterministic filtering and sorting semantics, five dependency-free model tests,
+exact baseline and scope boundaries, and the requirement for exact-commit
+Continuous Integration evidence before formal closure.
