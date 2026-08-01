@@ -18,6 +18,7 @@
     "lib/traffic/traffic-workspace-model.ts",
     "lib/traffic/regional-traffic-brief-model.ts",
     "lib/traffic/live-traffic-status-model.ts",
+    "lib/traffic/traffic-snapshot-export.ts",
     "lib/traffic/workspace-url-state.ts",
     "types/traffic.ts",
     "tests/test-globals.d.ts"

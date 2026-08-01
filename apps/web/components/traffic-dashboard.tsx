@@ -1,4 +1,4 @@
-// FRONTEND_LIVE_TRAFFIC_CONTROL_V1
+// FRONTEND_RESEARCH_SNAPSHOT_EXPORT_V1
 'use client'
 
 import { useEffect, useState, type ChangeEvent } from 'react'
@@ -12,6 +12,7 @@ import { WeatherContextPanel } from '@/components/aircraft/weather-context-panel
 import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
 import { LiveTrafficControl } from '@/components/traffic/live-traffic-control'
+import { TrafficSnapshotExport } from '@/components/traffic/traffic-snapshot-export'
 import { RegionalTrafficBrief } from '@/components/traffic/regional-traffic-brief'
 import { getRequestErrorMessage } from '@/lib/api/client'
 import { useProjectionIntelligence } from '@/lib/queries/projection-intelligence'
@@ -231,6 +232,14 @@ export function TrafficDashboard({
           onRetry={() => {
             void trafficQuery.refetch()
           }}
+        />
+
+        <TrafficSnapshotExport
+          aircraft={traffic}
+          regionCode={selectedRegion.code}
+          regionName={selectedRegion.name}
+          snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
+          selectedAircraftICAO24={selectedAircraftICAO24}
         />
       </section>
 

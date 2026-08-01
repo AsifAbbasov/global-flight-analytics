@@ -1447,3 +1447,13 @@ snapshot semantics, bounded automatic refresh choices, pause and resume controls
 countdown and retained-snapshot failure presentation, six dependency-free model tests,
 exact baseline and the requirement for exact-commit Continuous Integration evidence
 before formal closure.
+
+<!-- FRONTEND-RESEARCH-SNAPSHOT-EXPORT:DOCUMENT-INDEX -->
+
+## Document 157 — Frontend Research Snapshot Export
+
+`157_FRONTEND_RESEARCH_SNAPSHOT_EXPORT.md` records deterministic CSV and GeoJSON
+exports for the current regional traffic snapshot, fixed schemas, provenance metadata,
+invalid-coordinate exclusion accounting, seven dependency-free model tests, exact
+baseline and the requirement for exact-commit Continuous Integration evidence before
+formal closure.
