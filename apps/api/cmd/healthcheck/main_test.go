@@ -183,6 +183,48 @@ func TestLoadHealthcheckConfigRejectsInvalidValues(
 	}
 }
 
+type countingHTTPClient struct {
+	callCount int
+}
+
+func (client *countingHTTPClient) Do(
+	*http.Request,
+) (*http.Response, error) {
+	client.callCount++
+
+	return nil, errors.New(
+		"unexpected HTTP request",
+	)
+}
+
+func TestCheckHealthRejectsNilContextBeforeHTTPRequest(
+	t *testing.T,
+) {
+	client := &countingHTTPClient{}
+
+	err := checkHealth(
+		nil,
+		client,
+		"http://127.0.0.1:8080/api/v1/ready",
+	)
+
+	if !errors.Is(
+		err,
+		errHealthcheckContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if client.callCount != 0 {
+		t.Fatalf(
+			"HTTP calls = %d, want 0",
+			client.callCount,
+		)
+	}
+}
+
 func TestCheckHealthAcceptsHealthyResponse(
 	t *testing.T,
 ) {

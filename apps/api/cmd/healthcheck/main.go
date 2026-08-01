@@ -20,6 +20,9 @@ const (
 )
 
 var (
+	errHealthcheckContextRequired = errors.New(
+		"healthcheck context is required",
+	)
 	errHealthcheckURLInvalid = errors.New(
 		"healthcheck URL is invalid",
 	)
@@ -210,7 +213,7 @@ func checkHealth(
 	endpoint string,
 ) error {
 	if ctx == nil {
-		ctx = context.Background()
+		return errHealthcheckContextRequired
 	}
 
 	if client == nil {
