@@ -12,16 +12,22 @@ status service or regulated aviation software. Every analytical surface keeps it
 window, confidence, provenance and limitations visible.
 
 <!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
+<!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
 ## Portfolio Release Status
 
-The repository contains a portfolio-ready implementation of the modular monolith,
-PostgreSQL data layer, production Go API and typed Next.js research interface. The local
-release command verifies source closure. Exact-commit Continuous Integration and public
-deployment remain separate evidence that must be captured after the final commit exists.
-Those operational steps require the owner's cloud accounts, database credentials, allowed
-origins and final deployment URLs.
+Source implementation and exact-commit Continuous Integration are closed for release
+`49e474e929dcca5b687464f0a47ce73fcd5a52a7`:
 
-No screenshot, live URL or green check is claimed unless it has been produced for the
+- Backend CI run `30715613342` completed successfully;
+- Frontend CI run `30715613361` completed successfully.
+
+Repository-side backend deployment preparation is also closed through a CI-gated free
+Render Blueprint, a direct Neon migration command and an API-only production smoke
+contract. Creating the Neon and Render resources still requires owner-controlled accounts,
+credentials and the final API URL.
+
+The Next.js visual and public deployment phase is deliberately deferred for a separate
+creative pass. No screenshot, live URL or green check is claimed unless it has been produced for the
 exact commit being reviewed.
 
 ## What Is Implemented
@@ -164,6 +170,34 @@ API_BASE_URL=https://your-api.example \
 EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
 pnpm smoke:production
 ```
+
+## Prepare and Verify the Production API
+
+Validate repository-side backend operations:
+
+```bash
+pnpm test:backend-operations-contract
+pnpm verify:backend-operations-contract
+```
+
+Run production migrations against the direct Neon connection string:
+
+```bash
+PRODUCTION_DATABASE_MIGRATION_URL='paste the direct Neon URL in this terminal only' \
+EXPECTED_RELEASE_SHA="$(git rev-parse HEAD)" \
+pnpm migrate:production-database
+```
+
+After the CI-gated Render API deploy completes, verify lifecycle and build provenance:
+
+```bash
+API_BASE_URL=https://your-api.example \
+EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
+pnpm smoke:api-production
+```
+
+The full `pnpm smoke:production` browser and CORS contract remains intentionally tied to
+the later Next.js creative and public deployment phase.
 
 ## Reviewer Guide
 

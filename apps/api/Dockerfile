@@ -1,12 +1,14 @@
 ARG GO_IMAGE=golang:1.26.5-alpine3.24
 ARG APP_VERSION=1.0.0
-ARG VCS_REF=unknown
+ARG VCS_REF=
+ARG RENDER_GIT_COMMIT=unknown
 ARG BUILD_DATE=unknown
 
 FROM ${GO_IMAGE} AS builder
 
 ARG APP_VERSION
 ARG VCS_REF
+ARG RENDER_GIT_COMMIT
 ARG BUILD_DATE
 
 WORKDIR /workspace/apps/api
@@ -19,6 +21,7 @@ RUN go mod download && \
 COPY apps/api/ ./
 
 RUN set -eux; \
+    effective_vcs_ref="${VCS_REF:-${RENDER_GIT_COMMIT:-unknown}}"; \
     mkdir -p /out; \
     for command in \
         healthcheck \
@@ -34,7 +37,7 @@ RUN set -eux; \
         if [ "$command" = "server" ]; then \
             ldflags="$ldflags \
                 -X github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo.version=${APP_VERSION} \
-                -X github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo.revision=${VCS_REF} \
+                -X github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo.revision=${effective_vcs_ref} \
                 -X github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo.builtAt=${BUILD_DATE}"; \
         fi; \
         CGO_ENABLED=0 go build \

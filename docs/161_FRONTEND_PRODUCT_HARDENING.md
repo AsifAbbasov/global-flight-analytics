@@ -60,9 +60,15 @@ rendering.
 ## Verification
 
 The increment adds seven runtime-resilience model tests and eight static product
-contracts. The expected frontend test count is eighty-two. Installation must also pass
-ESLint without warnings, TypeScript, production build, dependency policy, exact target
-manifest, rollback verification and Git 2.15 compatibility.
+contracts. The final frontend test count is eighty-two. Installation also passed ESLint
+without warnings, TypeScript, production build, dependency policy, exact target manifest,
+rollback verification and Git 2.15 compatibility.
 
-Formal closure still requires exact-commit Continuous Integration evidence and belongs
-to the final Release and Portfolio Closure increment.
+Formal exact-commit closure was completed by source release
+`49e474e929dcca5b687464f0a47ce73fcd5a52a7`. Frontend Continuous Integration run
+`30715613361` completed successfully for that exact SHA, including release contracts,
+dependency security, production dependency audit, ESLint, TypeScript, all eighty-two
+frontend tests and the production build.
+
+The later Next.js visual and public deployment phase is deliberately deferred by the
+owner for a separate creative pass. That decision does not reopen this hardening scope.

@@ -13,6 +13,8 @@ printf '%s\n' "RELEASE_COMMIT=$(git rev-parse HEAD)"
 bash scripts/verify-recruiter-quickstart.sh
 pnpm run test:release-contract
 pnpm run verify:release-contract
+pnpm run test:backend-operations-contract
+pnpm run verify:backend-operations-contract
 pnpm install --frozen-lockfile
 pnpm run test:web-dependency-policy
 pnpm run verify:web-dependencies
@@ -44,6 +46,7 @@ git diff --check
 
 printf '%s\n' 'RELEASE_RECRUITER_QUICKSTART=PASS'
 printf '%s\n' 'RELEASE_PORTFOLIO_CONTRACT_TESTS=PASS'
+printf '%s\n' 'RELEASE_BACKEND_OPERATIONS=PASS'
 printf '%s\n' 'RELEASE_FRONTEND=PASS'
 printf '%s\n' 'RELEASE_BACKEND=PASS'
 printf '%s\n' 'RELEASE_COMPOSE=PASS'

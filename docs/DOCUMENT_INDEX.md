@@ -1496,7 +1496,8 @@ the requirement for exact-commit Continuous Integration evidence before formal c
 forced-colors and coarse-pointer contracts, route and global error recovery, loading
 and not-found surfaces, runtime connectivity announcements, bounded React Query retry
 policy, dynamic research workspace delivery, fifteen dependency-free tests, exact
-baseline and the remaining requirement for exact-commit release evidence.
+baseline and final Frontend Continuous Integration evidence for release SHA
+`49e474e929dcca5b687464f0a47ce73fcd5a52a7`.
 
 <!-- RELEASE-PORTFOLIO-CLOSURE:DOCUMENT-INDEX -->
 
@@ -1504,15 +1505,14 @@ baseline and the remaining requirement for exact-commit release evidence.
 
 `162_RELEASE_AND_PORTFOLIO_CLOSURE.md` records the source-release definition,
 independent source, exact-commit Continuous Integration and public-deployment states,
-the exact baseline, evidence policy, remaining external actions and final portfolio MVP
-scope boundary.
+the exact release SHA, Backend and Frontend Continuous Integration run identifiers,
+evidence policy, deferred Next.js phase and final portfolio MVP scope boundary.
 
 ## Document 163 — Production Deployment Runbook
 
 `163_PRODUCTION_DEPLOYMENT_RUNBOOK.md` records the direct migration and pooled runtime
-Neon connection policy, reproducible release image, Render-compatible Docker service,
-Vercel monorepo frontend, exact CORS configuration, production smoke command and rollback
-procedure.
+Neon connection policy, free-plan Render Blueprint, explicit direct-database migration,
+API-only production smoke, deferred Next.js phase and rollback procedure.
 
 ## Document 164 — Recruiter Demo Script
 
@@ -1525,3 +1525,12 @@ engineering decision prompts, likely reviewer questions and evidence-safe demo d
 canonical data, analytical, HTTP and frontend boundaries, PostgreSQL and backend-owned
 analytics decisions, reliability policies, evidence boundary and deliberately excluded
 complexity.
+
+<!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 166 — Backend Operations and Continuous Integration Evidence Closure
+
+`166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md` records exact product-release
+Continuous Integration evidence, the free-plan Render Docker Blueprint, direct Neon
+migration workflow, API-only production smoke contract, deferred Next.js creative phase,
+remaining owner-controlled cloud actions and the final evidence-only attestation rule.
