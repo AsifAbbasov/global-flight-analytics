@@ -1457,3 +1457,13 @@ exports for the current regional traffic snapshot, fixed schemas, provenance met
 invalid-coordinate exclusion accounting, seven dependency-free model tests, exact
 baseline and the requirement for exact-commit Continuous Integration evidence before
 formal closure.
+
+<!-- FRONTEND-TRAFFIC-DATA-QUALITY-LENS:DOCUMENT-INDEX -->
+
+## Document 158 — Frontend Traffic Data Quality Lens
+
+`158_FRONTEND_TRAFFIC_DATA_QUALITY_LENS.md` records browser-side structural checks for
+identifiers, coordinates, motion, observation recency, airborne altitude and descriptive
+attribution, deterministic issue ordering, seven dependency-free model tests, exact
+baseline and the requirement for exact-commit Continuous Integration evidence before
+formal closure.

@@ -1,4 +1,4 @@
-// FRONTEND_RESEARCH_SNAPSHOT_EXPORT_V1
+// FRONTEND_TRAFFIC_DATA_QUALITY_LENS_V1
 'use client'
 
 import { useEffect, useState, type ChangeEvent } from 'react'
@@ -13,6 +13,7 @@ import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
 import { LiveTrafficControl } from '@/components/traffic/live-traffic-control'
 import { TrafficSnapshotExport } from '@/components/traffic/traffic-snapshot-export'
+import { TrafficDataQualityLens } from '@/components/traffic/traffic-data-quality-lens'
 import { RegionalTrafficBrief } from '@/components/traffic/regional-traffic-brief'
 import { getRequestErrorMessage } from '@/lib/api/client'
 import { useProjectionIntelligence } from '@/lib/queries/projection-intelligence'
@@ -250,6 +251,13 @@ export function TrafficDashboard({
       <RegionalTrafficBrief
         aircraft={traffic}
         regionName={selectedRegion.name}
+        isFetching={trafficQuery.isFetching}
+      />
+
+      <TrafficDataQualityLens
+        aircraft={traffic}
+        regionName={selectedRegion.name}
+        snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
         isFetching={trafficQuery.isFetching}
       />
 
