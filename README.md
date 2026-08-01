@@ -1,24 +1,111 @@
 # Global Flight Analytics
 
-Global Flight Analytics is an open-data aviation research and analytics platform.
+[![Backend CI](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/frontend-ci.yml)
 
-The project is not a flight tracker clone, not regulated aviation software, not a flight planning system, and not a commercial aviation data platform.
+Global Flight Analytics is a full-stack open-data aviation research platform built to
+show how production engineering, data quality, temporal analytics and explainable
+inference can coexist in one coherent product.
 
-The platform is centered on trajectory quality, feature engineering, historical patterns, context-aware analytics, confidence, explainability, and map-based visualization.
+It is not air traffic control, navigation guidance, ticketing, a commercial flight
+status service or regulated aviation software. Every analytical surface keeps its data
+window, confidence, provenance and limitations visible.
+
+<!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
+## Portfolio Release Status
+
+The repository contains a portfolio-ready implementation of the modular monolith,
+PostgreSQL data layer, production Go API and typed Next.js research interface. The local
+release command verifies source closure. Exact-commit Continuous Integration and public
+deployment remain separate evidence that must be captured after the final commit exists.
+Those operational steps require the owner's cloud accounts, database credentials, allowed
+origins and final deployment URLs.
+
+No screenshot, live URL or green check is claimed unless it has been produced for the
+exact commit being reviewed.
+
+## What Is Implemented
+
+### Product experience
+
+- live regional and world traffic exploration;
+- synchronized map, aircraft index and detail intelligence;
+- Airport Intelligence ranking, digital passport, completed-day history and trends;
+- Historical Intelligence across global, airport and route scopes;
+- previous-period and persisted-record comparison;
+- browser-side snapshot data-quality evidence;
+- deterministic CSV and GeoJSON research exports;
+- shareable workspace state and explicit live-refresh controls;
+- responsive navigation, keyboard access, offline awareness and recoverable errors.
+
+### Analytical platform
+
+- canonical flight-state normalization and PostgreSQL persistence;
+- provider budgets, health-aware selection, retry, fallback and ingestion evidence;
+- trajectory construction, segmentation, reconciliation and quality contracts;
+- Route Intelligence with evidence, confidence and limitations;
+- Airport, Historical, Weather, Projection and Stability Intelligence;
+- materialized analytical records with versioned contracts and provenance;
+- read-snapshot consistency, nullable telemetry integrity and exact pagination.
+
+### Engineering depth
+
+- Go modular monolith with explicit bounded contexts;
+- PostgreSQL migrations, constraints, repositories and repeatable-read boundaries;
+- Next.js, TypeScript, TanStack Query, MapLibre and dependency-free contract tests;
+- non-root scratch container with build provenance and lifecycle health checks;
+- protected mutation routes and unauthenticated read-only research routes;
+- deterministic dependency policy, vulnerability checks and architecture audits;
+- rollback-safe incremental installers and exact changed-file manifests.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Sources[Open aviation and weather sources]
+    Providers[Governed source adapters]
+    Ingestion[Ingestion and canonical flight state]
+    Quality[Data quality and provenance]
+    Trajectory[Track builder and trajectories]
+    Intelligence[Route, Airport, Historical, Weather and Projection Intelligence]
+    Storage[(PostgreSQL)]
+    API[Go Fiber API]
+    Web[Next.js research interface]
+
+    Sources --> Providers --> Ingestion --> Quality --> Trajectory --> Intelligence
+    Ingestion --> Storage
+    Trajectory --> Storage
+    Intelligence --> Storage
+    Storage --> API --> Web
+```
+
+The production architecture is a modular monolith, not a collection of premature
+microservices. The backend is the single authority for persistence and analytical
+semantics; the frontend validates transport contracts and renders evidence without
+recomputing server-owned metrics.
+
+## Technology
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, TanStack Query, MapLibre, Three.js |
+| Backend | Go, Fiber, pgx |
+| Database | PostgreSQL |
+| Local runtime | Docker Compose |
+| Production path | Vercel frontend, Render-compatible Docker API, Neon PostgreSQL |
+| Quality gates | Go tests and vet, architecture audits, Node contract tests, ESLint, TypeScript, production builds, dependency policy |
 
 <!-- RECRUITER-QUICKSTART-V1 -->
 ## Run the Local Demo
 
-A reviewer can start the database, migrations, API and frontend without inventing
-configuration or replacing the repository infrastructure.
-
 ### Prerequisites
 
-- Docker with Compose version 2
-- Node.js 24.9.0
-- pnpm 11.8.0
+- Docker with Compose version 2;
+- Node.js 24.9.0;
+- pnpm 11.8.0;
+- Go version declared by `apps/api/go.mod` for backend development.
 
-Run from the repository root:
+Start PostgreSQL, migrations and the API from the repository root:
 
 ```bash
 docker compose config
@@ -53,114 +140,48 @@ docker compose down
 
 Use `docker compose down --volumes` only when a clean local database is intended.
 The Compose mutation-key digest is a local startup default with no raw key shipped;
-state-changing routes therefore remain inaccessible until a developer explicitly
-provides their own `API_MUTATION_KEY_SHA256`.
+state-changing routes remain inaccessible until a developer supplies their own secret.
 
-## Architecture Baseline
+## Verify a Release Candidate
 
-```text
-Open Data Sources
-↓
-Source Adapters
-↓
-Canonical Flight State
-↓
-Data Quality and Provenance Layer
-↓
-Track Builder
-↓
-Trajectory Segment
-↓
-Flight Trajectory
-↓
-Feature Engineering Layer
-↓
-Context Enrichment Layer
-↓
-Analytical Core
-↓
-Confidence and Explainability Layer
-↓
-API
-↓
-Frontend
+Run the complete reviewer-oriented source gate:
+
+```bash
+pnpm verify:release
 ```
 
-## Analytical Core
+The command verifies the portfolio contract, recruiter quickstart, frozen dependency
+graph, frontend tests, ESLint, TypeScript, production build, Go formatting, Go tests,
+Go vet, core architecture audits, Docker Compose configuration and whitespace integrity.
+The much broader PostgreSQL, race, container and domain audit matrix remains enforced by
+the existing GitHub Actions workflows.
 
-```text
-Trajectory Intelligence Core
-Route Intelligence
-Historical Trajectory Similarity Engine
-Historical Pattern-Based Trajectory Intelligence
-Weather-Aware Trajectory Intelligence
-Estimated Time of Arrival and Projection Intelligence
-Multi-Aircraft Context Intelligence
-Separation Risk and Airspace Interaction Intelligence
-Airport and Region Intelligence
-Confidence and Explainability Engine
+After a real deployment, validate the public frontend and API together:
+
+```bash
+FRONTEND_URL=https://your-frontend.example \
+API_BASE_URL=https://your-api.example \
+EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
+pnpm smoke:production
 ```
 
-## MVP Focus
+## Reviewer Guide
 
-The first implementation focuses on a reliable trajectory pipeline:
+- [`docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md`](docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md) — release definition and evidence policy;
+- [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md) — Neon, Docker API and Vercel deployment path;
+- [`docs/164_RECRUITER_DEMO_SCRIPT.md`](docs/164_RECRUITER_DEMO_SCRIPT.md) — seven-minute product and code walkthrough;
+- [`docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md`](docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md) — architecture, boundaries and trade-offs;
+- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — complete engineering record.
 
-```text
-OpenSky or compatible provider
-Canonical FlightState
-Data Quality
-Track Builder
-TrajectorySegment
-FlightTrajectory
-API
-MapLibre frontend
-Aircraft detail panel
-```
+## Evidence Boundaries
 
-Advanced prediction, machine learning, satellite fusion, FLARM, fuel analytics, emission analytics, and climate routing are deferred to later versions or the research backlog.
+The project uses open and incomplete observations. It does not invent filed flight plans,
+confirmed incidents, operational airport capacity, safety guarantees or authoritative
+flight status. Missing evidence remains missing; unavailable comparisons are not converted
+into zero; optional identity fields do not invalidate positional evidence.
 
-## Documentation
-
-The current documentation baseline is in:
-
-```text
-docs/DOCUMENT_INDEX.md
-docs/22_RESEARCH_AUDIT_DEDUPLICATION.md
-docs/23_ANALYTICAL_CORE_ARCHITECTURE.md
-docs/24_MVP_VERSION_ROADMAP.md
-docs/25_IMPLEMENTATION_SEQUENCE.md
-docs/26_RESEARCH_BACKLOG_AND_SCOPE_GUARDS.md
-docs/27_ENGINEERING_PRINCIPLES.md
-docs/28_RESEARCH_AND_ANALYTICAL_DECISION_METHOD.md
-docs/29_REPRODUCIBLE_DOCKER.md
-docs/30_AIRPORT_INTELLIGENCE_IMPLEMENTATION_ALIGNMENT.md
-docs/31_STAGE_8_HISTORICAL_INTELLIGENCE_COMPLETION.md
-docs/32_STAGE_9_PROJECTION_AND_ESTIMATED_TIME_OF_ARRIVAL_COMPLETION.md
-docs/33_STAGE_10_WEATHER_CONTEXT_COMPLETION.md
-docs/34_STAGE_11_AIRSPACE_INTELLIGENCE_COMPLETION.md
-docs/35_STAGE_12_STABILITY_AND_EXPLAINABILITY_COMPLETION.md
-```
-
-Existing foundation documents remain in `docs/01_*` through `docs/21_ENGINEERING_AMENDMENTS_v1.1.md`.
-
-## First Coding Slice
-
-```text
-1. OpenSky or compatible provider
-2. Canonical FlightState model
-3. aircraft_states table
-4. data normalization
-5. duplicate removal
-6. gap detection
-7. motion plausibility check
-8. trajectory_segments table
-9. Track Builder
-10. track_quality_score
-11. /api/aircraft/live
-12. /api/aircraft/{icao24}
-13. MapLibre frontend
-14. Aircraft detail panel
-```
+Machine learning, satellite fusion, fuel and emissions analytics, billing, authentication,
+push notifications, Kubernetes and microservices remain outside the portfolio MVP.
 
 <!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
 ## Free Data and Evidence Boundaries

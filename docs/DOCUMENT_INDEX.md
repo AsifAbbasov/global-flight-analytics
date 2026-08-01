@@ -1497,3 +1497,31 @@ forced-colors and coarse-pointer contracts, route and global error recovery, loa
 and not-found surfaces, runtime connectivity announcements, bounded React Query retry
 policy, dynamic research workspace delivery, fifteen dependency-free tests, exact
 baseline and the remaining requirement for exact-commit release evidence.
+
+<!-- RELEASE-PORTFOLIO-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 162 — Release and Portfolio Closure
+
+`162_RELEASE_AND_PORTFOLIO_CLOSURE.md` records the source-release definition,
+independent source, exact-commit Continuous Integration and public-deployment states,
+the exact baseline, evidence policy, remaining external actions and final portfolio MVP
+scope boundary.
+
+## Document 163 — Production Deployment Runbook
+
+`163_PRODUCTION_DEPLOYMENT_RUNBOOK.md` records the direct migration and pooled runtime
+Neon connection policy, reproducible release image, Render-compatible Docker service,
+Vercel monorepo frontend, exact CORS configuration, production smoke command and rollback
+procedure.
+
+## Document 164 — Recruiter Demo Script
+
+`164_RECRUITER_DEMO_SCRIPT.md` provides a bounded seven-minute product and code walkthrough,
+engineering decision prompts, likely reviewer questions and evidence-safe demo discipline.
+
+## Document 165 — System Architecture and Decisions
+
+`165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md` records the modular-monolith topology, provider,
+canonical data, analytical, HTTP and frontend boundaries, PostgreSQL and backend-owned
+analytics decisions, reliability policies, evidence boundary and deliberately excluded
+complexity.

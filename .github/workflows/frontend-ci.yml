@@ -8,6 +8,16 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - '.github/workflows/frontend-ci.yml'
+      - '.github/workflows/backend-ci.yml'
+      - 'README.md'
+      - 'scripts/verify-release-portfolio.sh'
+      - 'scripts/verify-release-portfolio.test.mjs'
+      - 'scripts/verify-release.sh'
+      - 'scripts/smoke-production-release.sh'
+      - 'docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md'
+      - 'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
+      - 'docs/164_RECRUITER_DEMO_SCRIPT.md'
+      - 'docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md'
 
   push:
     branches:
@@ -18,6 +28,16 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - '.github/workflows/frontend-ci.yml'
+      - '.github/workflows/backend-ci.yml'
+      - 'README.md'
+      - 'scripts/verify-release-portfolio.sh'
+      - 'scripts/verify-release-portfolio.test.mjs'
+      - 'scripts/verify-release.sh'
+      - 'scripts/smoke-production-release.sh'
+      - 'docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md'
+      - 'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
+      - 'docs/164_RECRUITER_DEMO_SCRIPT.md'
+      - 'docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md'
 
 permissions:
   contents: read
@@ -58,6 +78,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify release and portfolio contract
+        run: |
+          pnpm run test:release-contract
+          pnpm run verify:release-contract
+
       - name: Verify dependency security policy
         run: |
           pnpm run test:web-dependency-policy
@@ -83,3 +108,5 @@ jobs:
 # STAGE-14-1-FRONTEND-TOOLCHAIN-FIX
 
 # STAGE-14-7-FRONTEND-DEPENDENCY-SECURITY
+
+# RELEASE-PORTFOLIO-CLOSURE-V1

@@ -12,6 +12,7 @@ on:
       - '.dockerignore'
       - 'compose.yaml'
       - '.github/workflows/backend-ci.yml'
+      - '.github/workflows/frontend-ci.yml'
       - 'scripts/**'
       - 'docs/**'
       - 'README.md'
@@ -32,6 +33,7 @@ on:
       - '.dockerignore'
       - 'compose.yaml'
       - '.github/workflows/backend-ci.yml'
+      - '.github/workflows/frontend-ci.yml'
       - 'scripts/**'
       - 'docs/**'
       - 'README.md'
@@ -229,6 +231,9 @@ jobs:
 
       - name: Verify recruiter quickstart contract
         run: bash scripts/verify-recruiter-quickstart.sh
+
+      - name: Verify release and portfolio contract
+        run: bash scripts/verify-release-portfolio.sh
 
       - name: Validate Docker Compose configuration
         run: docker compose config > /dev/null
@@ -583,3 +588,5 @@ jobs:
         run: go run ./cmd/verify-postgres-feature-pipeline
 
 # STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1
+
+# RELEASE-PORTFOLIO-CLOSURE-V1

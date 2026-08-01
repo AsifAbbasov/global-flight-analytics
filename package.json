@@ -9,7 +9,11 @@
     "test:web-dependency-policy": "node --test scripts/verify-frontend-dependency-security.test.mjs",
     "verify:stage14": "bash scripts/verify-stage-14-completion.sh",
     "dev:api": "cd apps/api && go run ./cmd/server",
-    "test:api": "cd apps/api && go test ./..."
+    "test:api": "cd apps/api && go test ./...",
+    "test:release-contract": "node --test scripts/verify-release-portfolio.test.mjs",
+    "verify:release-contract": "bash scripts/verify-release-portfolio.sh",
+    "verify:release": "bash scripts/verify-release.sh",
+    "smoke:production": "bash scripts/smoke-production-release.sh"
   },
   "packageManager": "pnpm@11.8.0"
 }
