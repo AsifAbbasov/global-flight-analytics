@@ -1,3 +1,4 @@
+// FRONTEND_APPLICATION_SHELL_V1
 'use client'
 
 import { useMemo, useState } from 'react'
@@ -41,20 +42,24 @@ export function RegionalTrafficExperience({
 
   return (
     <>
-      <AnalyticsOverview selectedRegion={selectedRegion} />
+      <div id='overview' className='scroll-mt-28'>
+        <AnalyticsOverview selectedRegion={selectedRegion} />
+      </div>
 
-      <TrafficDashboard
-        regions={regions}
-        selectedRegion={selectedRegion}
-        onSelectedRegionCodeChange={nextRegionCode => {
-          if (regions.some(region => region.code === nextRegionCode)) {
-            setSelectedRegionCode(nextRegionCode)
-          }
-        }}
-        initialTraffic={initialTraffic}
-        initialError={initialError}
-        regionsWarning={regionsWarning}
-      />
+      <div id='live-traffic' className='scroll-mt-28'>
+        <TrafficDashboard
+          regions={regions}
+          selectedRegion={selectedRegion}
+          onSelectedRegionCodeChange={nextRegionCode => {
+            if (regions.some(region => region.code === nextRegionCode)) {
+              setSelectedRegionCode(nextRegionCode)
+            }
+          }}
+          initialTraffic={initialTraffic}
+          initialError={initialError}
+          regionsWarning={regionsWarning}
+        />
+      </div>
     </>
   )
 }

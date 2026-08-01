@@ -1,4 +1,6 @@
+// FRONTEND_APPLICATION_SHELL_V1
 import { RegionalTrafficExperience } from '@/components/regional-traffic-experience'
+import { ApplicationShell } from '@/components/product/application-shell'
 import { getRegions } from '@/lib/api/regions'
 import { getCurrentTraffic } from '@/lib/api/traffic'
 import type { Region } from '@/types/region'
@@ -42,20 +44,19 @@ export default async function Home() {
     : 'The region list is temporarily unavailable. World view remains available; reload the page to retry.'
 
   return (
-    <main className='min-h-screen bg-slate-950 p-4 text-white sm:p-8'>
-      <h1 className='text-3xl font-bold'>Global Flight Analytics</h1>
-
-      <p className='mt-2 text-slate-400'>
-        Current air traffic from the Go API and PostgreSQL.
-      </p>
-
+    <ApplicationShell
+      initialTrafficCount={initialTraffic.length}
+      regionCount={regions.length}
+      trafficUnavailable={initialError !== null}
+      regionsUnavailable={regionsWarning !== null}
+    >
       <RegionalTrafficExperience
         regions={regions}
         initialTraffic={initialTraffic}
         initialError={initialError}
         regionsWarning={regionsWarning}
       />
-    </main>
+    </ApplicationShell>
   )
 }
 

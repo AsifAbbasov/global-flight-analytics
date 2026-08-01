@@ -13,6 +13,7 @@
   },
   "include": [
     "lib/api/client.ts",
+    "lib/product/application-status.ts",
     "lib/traffic/aircraft-explorer-model.ts",
     "lib/traffic/traffic-workspace-model.ts",
     "types/traffic.ts",

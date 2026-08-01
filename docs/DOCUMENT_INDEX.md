@@ -1387,3 +1387,13 @@ workspace tabs, permanently visible map context, shared map and explorer selecti
 deterministic ICAO24 normalization and panel transitions, four dependency-free state
 model tests, exact baseline and scope boundaries, and the requirement for exact-commit
 Continuous Integration evidence before formal closure.
+
+<!-- FRONTEND-APPLICATION-SHELL:DOCUMENT-INDEX -->
+
+## Document 151 — Frontend Application Shell
+
+`151_FRONTEND_APPLICATION_SHELL.md` records the product-level application header,
+hero, startup snapshot status semantics, stable page navigation, research-scope
+communication, deterministic global styling, five status-model regression tests,
+exact baseline and the requirement for exact-commit Continuous Integration evidence
+before formal closure.
