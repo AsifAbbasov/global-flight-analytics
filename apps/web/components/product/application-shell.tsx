@@ -1,4 +1,5 @@
 // FRONTEND_APPLICATION_SHELL_V1
+// FRONTEND_UNIFIED_AIRPORT_ANALYTICS_WORKSPACE_V1
 import type { ReactNode } from 'react'
 
 import {
@@ -16,6 +17,7 @@ interface ApplicationShellProps {
 
 const navigationItems = [
   { href: '#overview', label: 'Overview' },
+  { href: '#airport-intelligence', label: 'Airport Intelligence' },
   { href: '#live-traffic', label: 'Live workspace' },
   { href: '#research-scope', label: 'Research scope' },
 ] as const

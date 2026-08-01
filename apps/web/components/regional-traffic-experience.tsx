@@ -1,9 +1,11 @@
 // FRONTEND_SHAREABLE_WORKSPACE_STATE_V1
+// FRONTEND_UNIFIED_AIRPORT_ANALYTICS_WORKSPACE_V1
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 
 import { AnalyticsOverview } from '@/components/analytics/analytics-overview'
+import { UnifiedAirportAnalyticsWorkspace } from '@/components/analytics/unified-airport-analytics-workspace'
 import { TrafficDashboard } from '@/components/traffic-dashboard'
 import {
   type TrafficWorkspacePanel,
@@ -150,6 +152,10 @@ export function RegionalTrafficExperience({
     <>
       <div id='overview' className='scroll-mt-28'>
         <AnalyticsOverview selectedRegion={selectedRegion} />
+      </div>
+
+      <div id='airport-intelligence' className='scroll-mt-28'>
+        <UnifiedAirportAnalyticsWorkspace />
       </div>
 
       <div id='live-traffic' className='scroll-mt-28'>

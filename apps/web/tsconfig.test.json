@@ -20,8 +20,10 @@
     "lib/traffic/live-traffic-status-model.ts",
     "lib/traffic/traffic-snapshot-export.ts",
     "lib/traffic/traffic-data-quality-model.ts",
+    "lib/analytics/airport-intelligence-workspace-model.ts",
     "lib/traffic/workspace-url-state.ts",
     "types/traffic.ts",
+    "types/airport-intelligence.ts",
     "tests/test-globals.d.ts"
   ]
 }
