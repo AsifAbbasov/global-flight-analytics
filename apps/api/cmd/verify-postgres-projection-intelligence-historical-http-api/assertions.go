@@ -153,7 +153,8 @@ func verifyHistoricalService(
 			)
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return projectionproduction.Result{},
+			ErrVerificationContextRequired
 	}
 
 	operationContext, cancel := context.WithTimeout(
@@ -204,7 +205,8 @@ func verifyHistoricalEndpoint(
 			)
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return response.SuccessResponse[dto.ProjectionIntelligenceResponse]{},
+			ErrVerificationContextRequired
 	}
 
 	request := httptest.NewRequest(

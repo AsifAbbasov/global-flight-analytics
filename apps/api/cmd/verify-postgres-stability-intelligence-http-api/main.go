@@ -550,7 +550,8 @@ func (
 		timeout = verificationHTTPServiceTimeout
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return stabilityproduction.Result{},
+			ErrRuntimeStabilityContextRequired
 	}
 
 	boundedContext, cancel := context.WithTimeout(

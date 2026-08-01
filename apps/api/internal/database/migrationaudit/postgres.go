@@ -27,7 +27,8 @@ func (loader *PostgresStateLoader) Load(
 	ctx context.Context,
 ) (DatabaseState, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return DatabaseState{},
+			ErrContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return DatabaseState{}, err

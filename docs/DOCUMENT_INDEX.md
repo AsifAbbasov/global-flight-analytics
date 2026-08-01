@@ -1345,3 +1345,15 @@ twelve formally closed Projection Intelligence module reviews, the classificatio
 external static review declared at `a1689dc`, the retained evidence-based correctness requirements,
 implementation commit `fb7fecd759a26c8d65d979ab8f541284ed82ed36`, GitHub Actions run `30658968264`,
 the permanent cross-module audit, and formal closure with zero open confirmed cross-module findings.
+
+<!-- BACKEND-CONTEXT-OWNERSHIP-AUDIT-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 147 — Backend Context Ownership Audit Closure
+
+`147_BACKEND_CONTEXT_OWNERSHIP_AUDIT_CLOSURE.md` records the repository-wide
+caller-context ownership review, the original twenty-four concrete replacements,
+the correction of all runtime and verification-side findings, zero retained or
+deferred replacements, abstract-syntax-tree enforcement for `context.Background()`
+and `context.TODO()` parameter replacement, permanent Backend Quality integration,
+focused regression evidence, exact grouped engineering commits and GitHub Actions
+runs, and formal source closure with zero open, unclassified, or deferred findings.

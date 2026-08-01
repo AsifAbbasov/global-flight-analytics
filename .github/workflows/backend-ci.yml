@@ -91,6 +91,9 @@ jobs:
       - name: Run code review policy audit
         run: go run ./tools/codereviewaudit -strict
 
+      - name: Run backend context ownership audit
+        run: go run ./tools/backendcontextownershipaudit -strict
+
       - name: Run Stage 14 completion source audit
         run: go run ./tools/stage14finalaudit -strict
 

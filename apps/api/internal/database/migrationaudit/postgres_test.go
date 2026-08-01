@@ -5,6 +5,22 @@ import (
 	"testing"
 )
 
+func TestPostgresStateLoaderRejectsNilContextBeforePoolAccess(
+	t *testing.T,
+) {
+	loader := &PostgresStateLoader{}
+
+	_, err := loader.Load(nil)
+
+	if !errors.Is(err, ErrContextRequired) {
+		t.Fatalf(
+			"Load() error = %v, want %v",
+			err,
+			ErrContextRequired,
+		)
+	}
+}
+
 func TestNewPostgresStateLoaderRequiresPool(t *testing.T) {
 	_, err := NewPostgresStateLoader(nil)
 	if !errors.Is(err, ErrPostgresPoolRequired) {
