@@ -51,6 +51,55 @@ func (recorder *fallbackDecisionRecorderStub) RecordFallbackDecision(
 	)
 }
 
+func TestTrafficFallbackProviderRejectsNilContextBeforeProviderCalls(
+	t *testing.T,
+) {
+	primaryProvider := &fallbackTrafficProviderStub{
+		sourceName: "airplanes.live",
+	}
+	secondaryProvider := &fallbackTrafficProviderStub{
+		sourceName: "opensky",
+	}
+	recorder := &fallbackDecisionRecorderStub{}
+
+	provider := mustTrafficFallbackProvider(
+		t,
+		primaryProvider,
+		secondaryProvider,
+		recorder,
+	)
+
+	_, err := provider.LoadByPointWithSource(
+		nil,
+		40.4093,
+		49.8671,
+		100,
+	)
+	if !errors.Is(
+		err,
+		errTrafficFallbackContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if primaryProvider.calls != 0 ||
+		secondaryProvider.calls != 0 {
+		t.Fatalf(
+			"provider calls primary=%d secondary=%d, want 0 and 0",
+			primaryProvider.calls,
+			secondaryProvider.calls,
+		)
+	}
+	if len(recorder.decisions) != 0 {
+		t.Fatalf(
+			"fallback decisions = %d, want 0",
+			len(recorder.decisions),
+		)
+	}
+}
+
 func TestTrafficFallbackProviderUsesPrimaryWhenAvailable(
 	t *testing.T,
 ) {

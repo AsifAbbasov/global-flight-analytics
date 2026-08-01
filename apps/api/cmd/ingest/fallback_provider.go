@@ -20,6 +20,9 @@ import (
 )
 
 var (
+	errTrafficFallbackContextRequired = errors.New(
+		"traffic fallback provider context is required",
+	)
 	errTrafficFallbackPrimaryRequired = errors.New(
 		"primary traffic fallback provider is required",
 	)
@@ -121,7 +124,8 @@ func (provider *trafficFallbackProvider) LoadByPointWithSource(
 			errTrafficFallbackPrimaryRequired
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return trafficingestion.LoadResult{},
+			errTrafficFallbackContextRequired
 	}
 
 	configuredSelections := []trafficProviderSelection{
