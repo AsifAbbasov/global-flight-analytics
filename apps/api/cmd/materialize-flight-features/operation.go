@@ -15,6 +15,10 @@ import (
 const commandReportVersion = "flight-feature-materialization-report-v1"
 
 var (
+	errCommandContextRequired = errors.New(
+		"flight feature materialization context is required",
+	)
+
 	errTrajectoryReaderRequired = errors.New(
 		"flight feature trajectory reader is required",
 	)
@@ -91,7 +95,7 @@ func (operation *materializationOperation) Execute(
 	options commandOptions,
 ) (commandReport, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return commandReport{}, errCommandContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return commandReport{}, err

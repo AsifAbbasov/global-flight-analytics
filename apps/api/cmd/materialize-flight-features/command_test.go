@@ -46,6 +46,49 @@ func TestParseCommandOptionsRejectsAmbiguousSelector(t *testing.T) {
 	}
 }
 
+func TestOperationRejectsNilContextBeforeSideEffects(
+	t *testing.T,
+) {
+	reader := &fakeTrajectoryReader{}
+	processor := &fakeFeatureProcessor{}
+
+	operation, err := newMaterializationOperation(
+		reader,
+		processor,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = operation.Execute(
+		nil,
+		commandOptions{
+			TrajectoryID: "8f42d9a8-5ad6-4a90-a38c-5f2c6348a318",
+		},
+	)
+	if !errors.Is(
+		err,
+		errCommandContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if reader.callCount != 0 {
+		t.Fatalf(
+			"trajectory reader calls = %d, want 0",
+			reader.callCount,
+		)
+	}
+	if processor.callCount != 0 {
+		t.Fatalf(
+			"feature processor calls = %d, want 0",
+			processor.callCount,
+		)
+	}
+}
+
 func TestOperationDefaultsAsOfTimeToTrajectoryEnd(t *testing.T) {
 	endTime := time.Date(2026, time.July, 18, 10, 0, 0, 0, time.UTC)
 	item := trajectory.FlightTrajectory{
@@ -112,15 +155,18 @@ func TestOperationRejectsAsOfBeforeTrajectoryEnd(t *testing.T) {
 }
 
 type fakeTrajectoryReader struct {
-	byID   trajectory.FlightTrajectory
-	latest trajectory.FlightTrajectory
-	err    error
+	byID      trajectory.FlightTrajectory
+	latest    trajectory.FlightTrajectory
+	err       error
+	callCount int
 }
 
 func (reader *fakeTrajectoryReader) GetTrajectoryByID(
 	context.Context,
 	string,
 ) (trajectory.FlightTrajectory, error) {
+	reader.callCount++
+
 	if reader.err != nil {
 		return trajectory.FlightTrajectory{}, reader.err
 	}
@@ -131,6 +177,8 @@ func (reader *fakeTrajectoryReader) GetLatestTrajectoryByICAO24(
 	context.Context,
 	string,
 ) (trajectory.FlightTrajectory, error) {
+	reader.callCount++
+
 	if reader.err != nil {
 		return trajectory.FlightTrajectory{}, reader.err
 	}
@@ -138,14 +186,16 @@ func (reader *fakeTrajectoryReader) GetLatestTrajectoryByICAO24(
 }
 
 type fakeFeatureProcessor struct {
-	request extractor.Request
-	err     error
+	request   extractor.Request
+	err       error
+	callCount int
 }
 
 func (processor *fakeFeatureProcessor) Process(
 	_ context.Context,
 	request extractor.Request,
 ) (featurepipeline.Result, error) {
+	processor.callCount++
 	processor.request = request
 	if processor.err != nil {
 		return featurepipeline.Result{}, processor.err
