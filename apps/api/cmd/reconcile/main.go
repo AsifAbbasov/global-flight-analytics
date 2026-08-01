@@ -19,6 +19,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var errReconciliationBatchContextRequired = errors.New(
+	"reconciliation batch context is required",
+)
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf(
@@ -49,6 +53,10 @@ func runReconciliationBatch(
 	observe func(reconciliationworker.RunResult),
 ) (reconciliationBatchSummary, error) {
 	summary := reconciliationBatchSummary{}
+
+	if ctx == nil {
+		return summary, errReconciliationBatchContextRequired
+	}
 
 	for summary.ProcessedCount < maximumTasks {
 		if err := ctx.Err(); err != nil {

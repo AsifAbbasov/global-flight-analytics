@@ -18,6 +18,49 @@ func (function reconciliationTaskRunnerFunction) RunOnce(
 	return function(ctx)
 }
 
+func TestRunReconciliationBatchRejectsNilContextBeforeClaim(
+	t *testing.T,
+) {
+	runCount := 0
+
+	summary, err := runReconciliationBatch(
+		nil,
+		10,
+		reconciliationTaskRunnerFunction(
+			func(
+				context.Context,
+			) (reconciliationworker.RunResult, error) {
+				runCount++
+
+				return reconciliationworker.RunResult{}, nil
+			},
+		),
+		nil,
+	)
+
+	if !errors.Is(
+		err,
+		errReconciliationBatchContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if runCount != 0 {
+		t.Fatalf(
+			"task claims = %d, want 0",
+			runCount,
+		)
+	}
+	if summary != (reconciliationBatchSummary{}) {
+		t.Fatalf(
+			"summary = %+v, want empty summary",
+			summary,
+		)
+	}
+}
+
 func TestRunReconciliationBatchStopsCleanlyBeforeClaimOnCancellation(
 	t *testing.T,
 ) {
