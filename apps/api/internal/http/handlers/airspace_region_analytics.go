@@ -76,7 +76,7 @@ func (handler *AirspaceRegionAnalyticsHandler) GetByRegionCode(
 	}
 
 	result, err := handler.reader.GetAirspaceRegionAnalytics(
-		ctx.Context(),
+		ctx.UserContext(),
 		request,
 	)
 	if err != nil {

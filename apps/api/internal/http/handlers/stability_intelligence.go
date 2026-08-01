@@ -82,7 +82,7 @@ func (
 	}
 
 	result, err := handler.reader.Get(
-		ctx.Context(),
+		ctx.UserContext(),
 		request,
 	)
 	if err != nil {

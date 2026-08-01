@@ -16,6 +16,7 @@ import (
 
 const (
 	defaultBaseURL          = "https://api.open-meteo.com"
+	defaultHTTPTimeout      = 10 * time.Second
 	maxWeatherResponseBytes = 1 << 20
 )
 
@@ -43,6 +44,7 @@ type Config struct {
 type Client struct {
 	baseURL          string
 	httpClient       *http.Client
+	requestTimeout   time.Duration
 	responseObserver integrationcommon.ProviderResponseObserver
 }
 
@@ -70,14 +72,24 @@ func New(
 		return nil, ErrInvalidBaseURL
 	}
 
+	if config.Timeout < 0 {
+		return nil, ErrInvalidTimeout
+	}
+
 	httpClient := config.HTTPClient
+	requestTimeout := config.Timeout
 	if httpClient == nil {
-		if config.Timeout <= 0 {
+		if requestTimeout <= 0 {
 			return nil, ErrInvalidTimeout
 		}
 
 		httpClient = &http.Client{
-			Timeout: config.Timeout,
+			Timeout: requestTimeout,
+		}
+	} else if requestTimeout == 0 {
+		requestTimeout = httpClient.Timeout
+		if requestTimeout <= 0 {
+			requestTimeout = defaultHTTPTimeout
 		}
 	}
 
@@ -87,6 +99,7 @@ func New(
 			"/",
 		),
 		httpClient:       httpClient,
+		requestTimeout:   requestTimeout,
 		responseObserver: config.ResponseObserver,
 	}, nil
 }
@@ -155,8 +168,18 @@ func (client *Client) GetCurrentWeather(
 
 	endpoint.RawQuery = query.Encode()
 
+	requestContext := ctx
+	var cancel context.CancelFunc = func() {}
+	if ctx != nil {
+		requestContext, cancel = context.WithTimeout(
+			ctx,
+			client.requestTimeout,
+		)
+	}
+	defer cancel()
+
 	httpRequest, err := http.NewRequestWithContext(
-		ctx,
+		requestContext,
 		http.MethodGet,
 		endpoint.String(),
 		nil,

@@ -36,7 +36,7 @@ func (handler *WeatherHandler) GetCurrent(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, "INVALID_WEATHER_COORDINATES", "Invalid weather coordinates")
 	}
 
-	result, err := handler.service.GetAndStoreCurrentWeather(c.Context(), weatherservice.CurrentWeatherRequest{
+	result, err := handler.service.GetAndStoreCurrentWeather(c.UserContext(), weatherservice.CurrentWeatherRequest{
 		Latitude:  latitude,
 		Longitude: longitude,
 	})

@@ -116,6 +116,20 @@ func registerMiddleware(
 			resolveClientIP,
 		),
 	)
+
+	requestTimeout, err := internalmiddleware.NewRequestTimeout(
+		cfg.Protection.RequestTimeout,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"create api request timeout middleware: %w",
+			err,
+		)
+	}
+	app.Use(
+		requestTimeout,
+	)
+
 	app.Use(
 		internalmiddleware.SecurityHeaders(),
 	)

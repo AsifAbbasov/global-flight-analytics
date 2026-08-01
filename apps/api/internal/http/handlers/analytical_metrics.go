@@ -147,7 +147,7 @@ func (handler *AnalyticalMetricsHandler) GetActiveAircraft(
 	}
 
 	items, err := handler.recentTrajectoriesForRegion(
-		ctx.Context(),
+		ctx.UserContext(),
 		recentRequest,
 		selectedRegion,
 	)
@@ -158,7 +158,7 @@ func (handler *AnalyticalMetricsHandler) GetActiveAircraft(
 	normalizedWindow, _ := recentRequest.Normalize(time.Now())
 
 	execution, err := handler.metrics.ActiveAircraft(
-		ctx.Context(),
+		ctx.UserContext(),
 		metricexecution.ActiveAircraftRequest{
 			Trajectories: items,
 			PublicationMetadata: trajectoryPublicationMetadataForRegion(
@@ -220,7 +220,7 @@ func (handler *AnalyticalMetricsHandler) GetTrafficDensity(
 	}
 
 	items, err := handler.recentTrajectoriesForRegion(
-		ctx.Context(),
+		ctx.UserContext(),
 		recentRequest,
 		selectedRegion,
 	)
@@ -231,7 +231,7 @@ func (handler *AnalyticalMetricsHandler) GetTrafficDensity(
 	normalizedWindow, _ := recentRequest.Normalize(time.Now())
 
 	execution, err := handler.metrics.TrafficDensity(
-		ctx.Context(),
+		ctx.UserContext(),
 		metricexecution.TrafficDensityRequest{
 			Trajectories:         items,
 			AreaSquareKilometers: area,
@@ -294,7 +294,7 @@ func (handler *AnalyticalMetricsHandler) GetAirportActivity(
 	}
 
 	selectedAirport, err := handler.airports.GetByICAO(
-		ctx.Context(),
+		ctx.UserContext(),
 		airportICAO,
 	)
 	if err != nil {
@@ -318,7 +318,7 @@ func (handler *AnalyticalMetricsHandler) GetAirportActivity(
 	}
 
 	items, err := regionalQuery.RecentWithinBounds(
-		ctx.Context(),
+		ctx.UserContext(),
 		recentRequest,
 		bounds,
 	)
@@ -329,7 +329,7 @@ func (handler *AnalyticalMetricsHandler) GetAirportActivity(
 	normalizedWindow, _ := recentRequest.Normalize(time.Now())
 
 	execution, err := handler.metrics.AirportActivity(
-		ctx.Context(),
+		ctx.UserContext(),
 		metricexecution.AirportActivityRequest{
 			Airport:          selectedAirport,
 			Trajectories:     items,
@@ -365,7 +365,7 @@ func (handler *AnalyticalMetricsHandler) GetCoverageScore(
 	}
 
 	execution, err := handler.metrics.CoverageScore(
-		ctx.Context(),
+		ctx.UserContext(),
 		metricexecution.CoverageScoreRequest{
 			Snapshot:            input.snapshot,
 			PublicationMetadata: input.metadata,
@@ -394,7 +394,7 @@ func (handler *AnalyticalMetricsHandler) GetDataFreshness(
 	}
 
 	execution, err := handler.metrics.DataFreshness(
-		ctx.Context(),
+		ctx.UserContext(),
 		metricexecution.DataFreshnessRequest{
 			Snapshot: input.snapshot,
 			MaxAge: dataqualityintegration.

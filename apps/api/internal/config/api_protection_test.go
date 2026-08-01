@@ -261,6 +261,7 @@ func clearAPIProtectionEnvironment(
 		apiAllowedOriginsEnvironmentVariable,
 		apiBodyLimitBytesEnvironmentVariable,
 		apiReadTimeoutEnvironmentVariable,
+		apiRequestTimeoutEnvironmentVariable,
 		apiWriteTimeoutEnvironmentVariable,
 		apiIdleTimeoutEnvironmentVariable,
 		apiRateLimitMaxEnvironmentVariable,

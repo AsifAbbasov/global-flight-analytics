@@ -1534,3 +1534,22 @@ complexity.
 Continuous Integration evidence, the free-plan Render Docker Blueprint, direct Neon
 migration workflow, API-only production smoke contract, deferred Next.js creative phase,
 remaining owner-controlled cloud actions and the final evidence-only attestation rule.
+
+---
+
+### Document 167 — Backend Timeout Consistency Audit Closure
+
+Path:
+
+```text
+docs/167_BACKEND_TIMEOUT_CONSISTENCY_AUDIT_CLOSURE.md
+```
+
+Purpose:
+
+```text
+Records the repository-wide timeout ownership audit, application request deadline
+propagation, bounded provider HTTP execution, permanent timeout consistency audit gate,
+regression evidence, configuration contract, and deliberate separation
+between interactive HTTP budgets and administrative PostgreSQL operations.
+```

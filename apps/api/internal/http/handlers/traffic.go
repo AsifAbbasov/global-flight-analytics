@@ -29,9 +29,9 @@ func (h *TrafficHandler) GetCurrent(c *fiber.Ctx) error {
 	)
 
 	if regionCode == "" {
-		items, err = h.service.GetCurrent(c.Context())
+		items, err = h.service.GetCurrent(c.UserContext())
 	} else {
-		items, err = h.service.GetCurrentByRegion(c.Context(), regionCode)
+		items, err = h.service.GetCurrentByRegion(c.UserContext(), regionCode)
 	}
 
 	if err != nil {

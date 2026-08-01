@@ -20,7 +20,7 @@ func NewFlightHandler(service *flight.Service) *FlightHandler {
 }
 
 func (h *FlightHandler) List(c *fiber.Ctx) error {
-	items, err := h.service.List(c.Context())
+	items, err := h.service.List(c.UserContext())
 	if err != nil {
 		return response.Error(c, fiber.StatusInternalServerError, "FLIGHT_LIST_FAILED", "Failed to load flights")
 	}
@@ -31,7 +31,7 @@ func (h *FlightHandler) List(c *fiber.Ctx) error {
 func (h *FlightHandler) GetByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	item, err := h.service.GetByID(c.Context(), id)
+	item, err := h.service.GetByID(c.UserContext(), id)
 	if err != nil {
 		if errors.Is(err, flight.ErrNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "FLIGHT_NOT_FOUND", "Flight not found")

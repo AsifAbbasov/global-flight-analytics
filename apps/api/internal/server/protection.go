@@ -89,6 +89,20 @@ func normalizeProtectionConfig(
 		)
 	}
 
+	if config.RequestTimeout == 0 {
+		config.RequestTimeout = config.WriteTimeout
+	}
+	if config.RequestTimeout < 0 {
+		return ProtectionConfig{}, fmt.Errorf(
+			"request timeout must be greater than zero",
+		)
+	}
+	if config.RequestTimeout > config.WriteTimeout {
+		return ProtectionConfig{}, fmt.Errorf(
+			"request timeout must not exceed write timeout",
+		)
+	}
+
 	if config.IdleTimeout == 0 {
 		config.IdleTimeout = defaultIdleTimeout
 	}
@@ -277,7 +291,8 @@ func safeAPIError(
 		return "NOT_FOUND", "Resource not found"
 	case fiber.StatusMethodNotAllowed:
 		return "METHOD_NOT_ALLOWED", "Method not allowed"
-	case fiber.StatusRequestTimeout:
+	case fiber.StatusRequestTimeout,
+		fiber.StatusGatewayTimeout:
 		return "REQUEST_TIMEOUT", "Request timed out"
 	case fiber.StatusRequestEntityTooLarge:
 		return "PAYLOAD_TOO_LARGE", "Request payload is too large"

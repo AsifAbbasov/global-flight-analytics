@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	DefaultBaseURL  = "https://opensky-network.org/api"
-	DefaultTokenURL = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+	DefaultBaseURL     = "https://opensky-network.org/api"
+	DefaultTokenURL    = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
+	DefaultHTTPTimeout = 15 * time.Second
 )
 
 var (
@@ -34,7 +35,7 @@ func DefaultConfig() Config {
 	return Config{
 		BaseURL:         DefaultBaseURL,
 		TokenURL:        DefaultTokenURL,
-		HTTPClient:      &http.Client{Timeout: 15 * time.Second},
+		HTTPClient:      &http.Client{Timeout: DefaultHTTPTimeout},
 		UserAgent:       "global-flight-analytics",
 		PollingInterval: 10 * time.Second,
 	}

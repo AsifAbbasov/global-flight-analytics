@@ -48,7 +48,7 @@ func (h *RouteIntelligenceHandler) ProcessByTrajectoryID(c *fiber.Ctx) error {
 	if err != nil {
 		return routeIntelligenceRequestError(c, err)
 	}
-	result, err := h.pipeline.Process(c.Context(), routepipeline.Request{TrajectoryID: id})
+	result, err := h.pipeline.Process(c.UserContext(), routepipeline.Request{TrajectoryID: id})
 	if err != nil {
 		return writeRouteIntelligenceError(c, err, "ROUTE_INTELLIGENCE_PROCESS_FAILED", "Failed to process Route Intelligence")
 	}
@@ -63,7 +63,7 @@ func (h *RouteIntelligenceHandler) GetLatestByTrajectoryID(c *fiber.Ctx) error {
 	if err != nil {
 		return routeIntelligenceRequestError(c, err)
 	}
-	record, err := h.store.GetLatest(c.Context(), id, routecontract.SchemaVersionV1)
+	record, err := h.store.GetLatest(c.UserContext(), id, routecontract.SchemaVersionV1)
 	if err != nil {
 		return writeRouteIntelligenceError(c, err, "ROUTE_INTELLIGENCE_LOAD_FAILED", "Failed to load the latest Route Intelligence result")
 	}
@@ -82,7 +82,7 @@ func (h *RouteIntelligenceHandler) ListHistoryByTrajectoryID(c *fiber.Ctx) error
 	if err != nil {
 		return routeIntelligenceRequestError(c, err)
 	}
-	page, err := h.store.List(c.Context(), query)
+	page, err := h.store.List(c.UserContext(), query)
 	if err != nil {
 		return writeRouteIntelligenceError(c, err, "ROUTE_INTELLIGENCE_HISTORY_LOAD_FAILED", "Failed to load Route Intelligence history")
 	}

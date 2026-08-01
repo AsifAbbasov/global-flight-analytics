@@ -44,7 +44,7 @@ func (handler *RouteContextHandler) GetByICAO24(
 	}
 
 	item, err := handler.service.GetByICAO24(
-		ctx.Context(),
+		ctx.UserContext(),
 		ctx.Params("icao24"),
 	)
 	if err != nil {

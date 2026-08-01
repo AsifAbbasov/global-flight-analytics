@@ -103,7 +103,7 @@ func (handler *HistoricalIntelligenceHandler) GetLatest(
 	}
 
 	record, err := handler.store.GetLatest(
-		ctx.Context(),
+		ctx.UserContext(),
 		query,
 	)
 	if err != nil {
@@ -171,7 +171,7 @@ func (handler *HistoricalIntelligenceHandler) ListHistory(
 	}
 
 	page, err := handler.store.List(
-		ctx.Context(),
+		ctx.UserContext(),
 		query,
 	)
 	if err != nil {

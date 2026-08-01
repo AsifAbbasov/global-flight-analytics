@@ -27,7 +27,7 @@ func (handler *TrajectoryHandler) GetLatestByICAO24(c *fiber.Ctx) error {
 
 	icao24 := c.Params("icao24")
 
-	item, err := handler.service.GetLatestTrajectoryByICAO24(c.Context(), icao24)
+	item, err := handler.service.GetLatestTrajectoryByICAO24(c.UserContext(), icao24)
 	if err != nil {
 		if errors.Is(err, trafficquery.ErrInvalidICAO24) {
 			return response.Error(c, fiber.StatusBadRequest, "INVALID_ICAO24", "Invalid ICAO24")
@@ -54,7 +54,7 @@ func (handler *TrajectoryHandler) GetByID(c *fiber.Ctx) error {
 
 	trajectoryID := c.Params("id")
 
-	item, err := handler.service.GetTrajectoryByID(c.Context(), trajectoryID)
+	item, err := handler.service.GetTrajectoryByID(c.UserContext(), trajectoryID)
 	if err != nil {
 		if errors.Is(err, trafficquery.ErrInvalidTrajectoryID) {
 			return response.Error(c, fiber.StatusBadRequest, "INVALID_TRAJECTORY_ID", "Invalid trajectory id")

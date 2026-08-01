@@ -20,7 +20,7 @@ func NewAirportHandler(service *airport.Service) *AirportHandler {
 }
 
 func (h *AirportHandler) List(c *fiber.Ctx) error {
-	items, err := h.service.List(c.Context())
+	items, err := h.service.List(c.UserContext())
 	if err != nil {
 		return response.Error(c, fiber.StatusInternalServerError, "AIRPORT_LIST_FAILED", "Failed to load airports")
 	}
@@ -31,7 +31,7 @@ func (h *AirportHandler) List(c *fiber.Ctx) error {
 func (h *AirportHandler) GetByICAO(c *fiber.Ctx) error {
 	icao := c.Params("icao")
 
-	item, err := h.service.GetByICAO(c.Context(), icao)
+	item, err := h.service.GetByICAO(c.UserContext(), icao)
 	if err != nil {
 		if errors.Is(err, airport.ErrNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "AIRPORT_NOT_FOUND", "Airport not found")

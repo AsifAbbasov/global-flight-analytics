@@ -16,9 +16,10 @@ type APIProtectionConfig struct {
 
 	BodyLimitBytes int
 
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
+	ReadTimeout    time.Duration
+	RequestTimeout time.Duration
+	WriteTimeout   time.Duration
+	IdleTimeout    time.Duration
 
 	RateLimitMax    int
 	RateLimitWindow time.Duration

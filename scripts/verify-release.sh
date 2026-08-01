@@ -37,6 +37,7 @@ fi
   go run ./tools/projectaudit -mode all -strict
   go run ./tools/codereviewaudit -strict
   go run ./tools/backendcontextownershipaudit -strict
+  go run ./tools/backendtimeoutconsistencyaudit -strict
   go run ./tools/stage14finalaudit -strict
   go run ./tools/analyticalcorefinalaudit -strict
 )

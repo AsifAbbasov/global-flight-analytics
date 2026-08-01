@@ -15,6 +15,7 @@ const (
 	apiAllowedOriginsEnvironmentVariable    = "API_ALLOWED_ORIGINS"
 	apiBodyLimitBytesEnvironmentVariable    = "API_BODY_LIMIT_BYTES"
 	apiReadTimeoutEnvironmentVariable       = "API_READ_TIMEOUT"
+	apiRequestTimeoutEnvironmentVariable    = "API_REQUEST_TIMEOUT"
 	apiWriteTimeoutEnvironmentVariable      = "API_WRITE_TIMEOUT"
 	apiIdleTimeoutEnvironmentVariable       = "API_IDLE_TIMEOUT"
 	apiRateLimitMaxEnvironmentVariable      = "API_RATE_LIMIT_MAX"
@@ -66,6 +67,37 @@ func loadAPIProtectionConfig() (
 		return APIProtectionConfig{}, err
 	}
 
+	requestTimeout := writeTimeout
+	requestTimeoutValue := optionalTrimmedStringEnvironmentVariable(
+		apiRequestTimeoutEnvironmentVariable,
+	)
+	if requestTimeoutValue != "" {
+		requestTimeout, err = time.ParseDuration(
+			requestTimeoutValue,
+		)
+		if err != nil {
+			return APIProtectionConfig{}, fmt.Errorf(
+				"parse %s as duration: %w",
+				apiRequestTimeoutEnvironmentVariable,
+				err,
+			)
+		}
+		if requestTimeout <= 0 {
+			return APIProtectionConfig{}, fmt.Errorf(
+				"%s must be greater than zero",
+				apiRequestTimeoutEnvironmentVariable,
+			)
+		}
+	}
+
+	if requestTimeout > writeTimeout {
+		return APIProtectionConfig{}, fmt.Errorf(
+			"%s must not exceed %s",
+			apiRequestTimeoutEnvironmentVariable,
+			apiWriteTimeoutEnvironmentVariable,
+		)
+	}
+
 	idleTimeout, err := optionalPositiveDurationEnvironmentVariable(
 		apiIdleTimeoutEnvironmentVariable,
 		defaultAPIIdleTimeout,
@@ -100,6 +132,7 @@ func loadAPIProtectionConfig() (
 		AllowedOrigins:        allowedOrigins,
 		BodyLimitBytes:        bodyLimitBytes,
 		ReadTimeout:           readTimeout,
+		RequestTimeout:        requestTimeout,
 		WriteTimeout:          writeTimeout,
 		IdleTimeout:           idleTimeout,
 		RateLimitMax:          rateLimitMax,

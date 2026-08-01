@@ -30,7 +30,7 @@ func (h *FlightStateHandler) ListByFlightID(
 	)
 
 	items, err := h.service.ListByFlightID(
-		c.Context(),
+		c.UserContext(),
 		flightID,
 	)
 	if err != nil {
@@ -58,7 +58,7 @@ func (h *FlightStateHandler) GetLatestByICAO24(
 	)
 
 	item, err := h.service.GetLatestByICAO24(
-		c.Context(),
+		c.UserContext(),
 		icao24,
 	)
 	if err != nil {

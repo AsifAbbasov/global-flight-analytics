@@ -100,6 +100,9 @@ jobs:
       - name: Run backend context ownership audit
         run: go run ./tools/backendcontextownershipaudit -strict
 
+      - name: Run backend timeout consistency audit
+        run: go run ./tools/backendtimeoutconsistencyaudit -strict
+
       - name: Run Stage 14 completion source audit
         run: go run ./tools/stage14finalaudit -strict
 

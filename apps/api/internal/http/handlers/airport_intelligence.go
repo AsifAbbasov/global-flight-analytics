@@ -42,7 +42,7 @@ func (handler *AirportIntelligenceHandler) GetOverview(ctx *fiber.Ctx) error {
 	if err != nil {
 		return airportIntelligenceRequestError(ctx, err)
 	}
-	result, err := handler.service.GetOverview(ctx.Context(), ctx.Params("icao"), request)
+	result, err := handler.service.GetOverview(ctx.UserContext(), ctx.Params("icao"), request)
 	if err != nil {
 		return writeAirportIntelligenceError(ctx, err)
 	}
@@ -56,7 +56,7 @@ func (handler *AirportIntelligenceHandler) GetHistory(ctx *fiber.Ctx) error {
 	if err != nil {
 		return airportIntelligenceRequestError(ctx, err)
 	}
-	result, err := handler.service.GetHistory(ctx.Context(), ctx.Params("icao"), request)
+	result, err := handler.service.GetHistory(ctx.UserContext(), ctx.Params("icao"), request)
 	if err != nil {
 		return writeAirportIntelligenceError(ctx, err)
 	}
@@ -70,7 +70,7 @@ func (handler *AirportIntelligenceHandler) GetTrends(ctx *fiber.Ctx) error {
 	if err != nil {
 		return airportIntelligenceRequestError(ctx, err)
 	}
-	result, err := handler.service.GetTrends(ctx.Context(), ctx.Params("icao"), request)
+	result, err := handler.service.GetTrends(ctx.UserContext(), ctx.Params("icao"), request)
 	if err != nil {
 		return writeAirportIntelligenceError(ctx, err)
 	}
@@ -88,7 +88,7 @@ func (handler *AirportIntelligenceHandler) GetRanking(ctx *fiber.Ctx) error {
 	if err != nil {
 		return airportIntelligenceRequestError(ctx, err)
 	}
-	result, err := handler.service.GetRanking(ctx.Context(), request)
+	result, err := handler.service.GetRanking(ctx.UserContext(), request)
 	if err != nil {
 		return writeAirportIntelligenceError(ctx, err)
 	}

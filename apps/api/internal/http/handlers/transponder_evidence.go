@@ -43,7 +43,7 @@ func (handler *TransponderEvidenceHandler) GetLatest(
 	}
 
 	result, err := handler.reader.GetLatest(
-		ctx.Context(),
+		ctx.UserContext(),
 		ctx.Params("icao24"),
 	)
 	if err != nil {

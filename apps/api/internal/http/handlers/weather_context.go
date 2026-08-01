@@ -178,7 +178,7 @@ func (handler *WeatherContextHandler) GetByTrajectoryID(
 	}
 
 	result, err := handler.reader.GetWeatherContext(
-		ctx.Context(),
+		ctx.UserContext(),
 		request,
 	)
 	if err != nil {

@@ -42,7 +42,7 @@ func (
 	}
 
 	metric, err := h.service.CalculateActiveAircraft(
-		c.Context(),
+		c.UserContext(),
 		metrics.ActiveAircraftRequest{
 			RegionCode:    c.Query("region"),
 			WindowMinutes: windowMinutes,

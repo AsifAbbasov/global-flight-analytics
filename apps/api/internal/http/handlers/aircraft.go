@@ -20,7 +20,7 @@ func NewAircraftHandler(service *aircraft.Service) *AircraftHandler {
 }
 
 func (h *AircraftHandler) List(c *fiber.Ctx) error {
-	items, err := h.service.List(c.Context())
+	items, err := h.service.List(c.UserContext())
 	if err != nil {
 		return response.Error(c, fiber.StatusInternalServerError, "AIRCRAFT_LIST_FAILED", "Failed to load aircraft")
 	}
@@ -31,7 +31,7 @@ func (h *AircraftHandler) List(c *fiber.Ctx) error {
 func (h *AircraftHandler) GetByICAO24(c *fiber.Ctx) error {
 	icao24 := c.Params("icao24")
 
-	item, err := h.service.GetByICAO24(c.Context(), icao24)
+	item, err := h.service.GetByICAO24(c.UserContext(), icao24)
 	if err != nil {
 		if errors.Is(err, aircraft.ErrNotFound) {
 			return response.Error(c, fiber.StatusNotFound, "AIRCRAFT_NOT_FOUND", "Aircraft not found")

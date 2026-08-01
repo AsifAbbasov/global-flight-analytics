@@ -67,7 +67,7 @@ func (
 	}
 
 	items, err := handler.recentTrajectoriesForRegion(
-		ctx.Context(),
+		ctx.UserContext(),
 		recentRequest,
 		selectedRegion,
 	)

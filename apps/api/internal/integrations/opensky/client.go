@@ -62,6 +62,13 @@ func NewClientWithResponseObserver(
 	if err := config.Validate(); err != nil {
 		return nil, err
 	}
+
+	ownedHTTPClient := *config.HTTPClient
+	if ownedHTTPClient.Timeout <= 0 {
+		ownedHTTPClient.Timeout = DefaultHTTPTimeout
+	}
+	config.HTTPClient = &ownedHTTPClient
+
 	client := &Client{
 		config:           config,
 		responseObserver: responseObserver,

@@ -100,7 +100,7 @@ func (
 
 	result, err :=
 		handler.reader.GetProjectionIntelligence(
-			ctx.Context(),
+			ctx.UserContext(),
 			request,
 		)
 	if err != nil {
