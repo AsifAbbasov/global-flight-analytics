@@ -32,6 +32,57 @@ func (
 	)
 }
 
+func TestExecuteTrajectoryResultRejectsNilContextBeforeOperation(
+	t *testing.T,
+) {
+	executor := resultTestExecutor(
+		t,
+		true,
+		nil,
+	)
+	request := completeExecutionRequest[int]()
+
+	operationCalls := 0
+	request.Operation = func(
+		context.Context,
+		trajectory.FlightTrajectory,
+	) (TrajectoryCalculation[int], error) {
+		operationCalls++
+
+		return TrajectoryCalculation[int]{}, nil
+	}
+
+	execution, err := ExecuteTrajectoryResult(
+		nil,
+		executor,
+		request,
+	)
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if operationCalls != 0 {
+		t.Fatalf(
+			"operation calls = %d, want 0",
+			operationCalls,
+		)
+	}
+	if !reflect.DeepEqual(
+		execution,
+		TrajectoryExecution[int]{},
+	) {
+		t.Fatalf(
+			"execution = %#v, want empty execution",
+			execution,
+		)
+	}
+}
+
 func TestExecuteTrajectoryResultCreatesCompleteResult(
 	t *testing.T,
 ) {
@@ -60,7 +111,7 @@ func TestExecuteTrajectoryResultCreatesCompleteResult(
 	}
 
 	execution, err := ExecuteTrajectoryResult(
-		nil,
+		context.Background(),
 		executor,
 		request,
 	)

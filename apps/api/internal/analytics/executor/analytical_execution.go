@@ -15,6 +15,9 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"analytics executor context is required",
+	)
 	ErrExecutorRequired = errors.New(
 		"analytics executor is required",
 	)
@@ -89,6 +92,10 @@ func ExecuteTrajectoryResult[T any](
 		return TrajectoryExecution[T]{},
 			ErrResultOperationRequired
 	}
+	if ctx == nil {
+		return TrajectoryExecution[T]{},
+			ErrContextRequired
+	}
 
 	decision, err := executor.scopeGuard.Require(
 		request.Trajectory,
@@ -123,10 +130,6 @@ func ExecuteTrajectoryResult[T any](
 				"require analytical scope: %w",
 				err,
 			)
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	calculation, operationErr :=
