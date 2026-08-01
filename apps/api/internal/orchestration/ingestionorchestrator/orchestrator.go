@@ -13,6 +13,10 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"ingestion orchestration context is required",
+	)
+
 	ErrBudgetManagerRequired = errors.New(
 		"provider budget manager is required",
 	)
@@ -225,7 +229,7 @@ func (
 	}
 
 	if ctx == nil {
-		ctx = context.Background()
+		return ExecuteResult[T]{}, ErrContextRequired
 	}
 
 	result, err := orchestrator.coalescer.Do(
@@ -314,7 +318,7 @@ func (
 		return ExecuteResult[T]{}, ErrFunctionRequired
 	}
 	if ctx == nil {
-		ctx = context.Background()
+		return ExecuteResult[T]{}, ErrContextRequired
 	}
 
 	result, err := orchestrator.coalescer.Do(

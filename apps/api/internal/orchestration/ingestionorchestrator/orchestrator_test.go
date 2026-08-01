@@ -141,6 +141,92 @@ func (
 	}, nil
 }
 
+func TestExecuteMethodsRejectNilContextBeforeSideEffects(
+	t *testing.T,
+) {
+	budgetManager := &budgetManagerStub{}
+	coalescer := &coalescerStub{}
+
+	orchestrator, err := New(
+		Config[orchestrationTestValue]{
+			BudgetManager: budgetManager,
+			Coalescer:     coalescer,
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"create orchestrator: %v",
+			err,
+		)
+	}
+
+	providerExecutionCount := 0
+	providerFunction := func(
+		_ context.Context,
+	) (orchestrationTestValue, error) {
+		providerExecutionCount++
+
+		return orchestrationTestValue(
+			"unexpected",
+		), nil
+	}
+
+	_, executeErr := orchestrator.Execute(
+		nil,
+		providerpolicy.ProviderAirplanesLive,
+		"traffic:nil-context",
+		providerFunction,
+	)
+	_, publicationErr := orchestrator.ExecutePublication(
+		nil,
+		providerpolicy.ProviderOurAirports,
+		"airports:nil-context",
+		"publication-nil-context",
+		providerFunction,
+	)
+
+	for operation, operationErr := range map[string]error{
+		"execute":             executeErr,
+		"execute publication": publicationErr,
+	} {
+		if !errors.Is(
+			operationErr,
+			ErrContextRequired,
+		) {
+			t.Fatalf(
+				"%s error = %v, want context required",
+				operation,
+				operationErr,
+			)
+		}
+	}
+
+	if coalescer.callCount != 0 {
+		t.Fatalf(
+			"coalescer calls = %d, want 0",
+			coalescer.callCount,
+		)
+	}
+	if budgetManager.acquireCallCount != 0 {
+		t.Fatalf(
+			"budget acquire calls = %d, want 0",
+			budgetManager.acquireCallCount,
+		)
+	}
+	if budgetManager.acquirePublicationCallCount != 0 {
+		t.Fatalf(
+			"publication budget acquire calls = %d, want 0",
+			budgetManager.acquirePublicationCallCount,
+		)
+	}
+	if providerExecutionCount != 0 {
+		t.Fatalf(
+			"provider executions = %d, want 0",
+			providerExecutionCount,
+		)
+	}
+}
+
 func TestExecuteCombinesCoalescingBudgetAndProviderExecution(
 	t *testing.T,
 ) {
