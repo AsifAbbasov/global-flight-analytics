@@ -60,6 +60,11 @@ func executeTrajectoryMetric[T any](
 			ErrMetricOperationRequired
 	}
 
+	if ctx == nil {
+		return Execution[T]{},
+			ErrMetricExecutionContextRequired
+	}
+
 	filtered, err :=
 		service.executor.FilterTrajectories(
 			trajectories,
@@ -131,10 +136,6 @@ func executeTrajectoryMetric[T any](
 			Result:   result,
 			Scope:    scope,
 		}, nil
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -233,6 +234,11 @@ func executeSnapshotMetric[T any](
 			ErrMetricOperationRequired
 	}
 
+	if ctx == nil {
+		return Execution[T]{},
+			ErrMetricExecutionContextRequired
+	}
+
 	filtered, err :=
 		service.executor.FilterTrajectories(
 			nil,
@@ -251,10 +257,6 @@ func executeSnapshotMetric[T any](
 		capability,
 		0,
 	)
-
-	if ctx == nil {
-		ctx = context.Background()
-	}
 
 	if err := ctx.Err(); err != nil {
 		return buildFailedExecution[T](

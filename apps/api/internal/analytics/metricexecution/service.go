@@ -10,6 +10,9 @@ import (
 )
 
 var (
+	ErrMetricExecutionContextRequired = errors.New(
+		"metric execution context is required",
+	)
 	ErrExecutorRequired = errors.New(
 		"analytics executor is required",
 	)
