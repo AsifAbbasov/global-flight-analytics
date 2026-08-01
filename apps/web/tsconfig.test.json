@@ -14,6 +14,7 @@
   "include": [
     "lib/api/client.ts",
     "lib/traffic/aircraft-explorer-model.ts",
+    "lib/traffic/traffic-workspace-model.ts",
     "types/traffic.ts",
     "tests/test-globals.d.ts"
   ]

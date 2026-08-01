@@ -1377,3 +1377,13 @@ aircraft index, shared map and detail-panel selection, bounded result rendering,
 deterministic filtering and sorting semantics, five dependency-free model tests,
 exact baseline and scope boundaries, and the requirement for exact-commit
 Continuous Integration evidence before formal closure.
+
+<!-- FRONTEND-TRAFFIC-WORKSPACE:DOCUMENT-INDEX -->
+
+## Document 150 — Frontend Traffic Workspace
+
+`150_FRONTEND_TRAFFIC_WORKSPACE.md` records the accessible Aircraft and Intelligence
+workspace tabs, permanently visible map context, shared map and explorer selection,
+deterministic ICAO24 normalization and panel transitions, four dependency-free state
+model tests, exact baseline and scope boundaries, and the requirement for exact-commit
+Continuous Integration evidence before formal closure.
