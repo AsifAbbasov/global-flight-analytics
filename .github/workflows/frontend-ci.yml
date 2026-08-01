@@ -72,6 +72,9 @@ jobs:
       - name: Run TypeScript validation
         run: pnpm --filter web typecheck
 
+      - name: Run frontend contract tests
+        run: pnpm --filter web test
+
       - name: Build production frontend
         run: pnpm --filter web build
 

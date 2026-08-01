@@ -1357,3 +1357,13 @@ deferred replacements, abstract-syntax-tree enforcement for `context.Background(
 and `context.TODO()` parameter replacement, permanent Backend Quality integration,
 focused regression evidence, exact grouped engineering commits and GitHub Actions
 runs, and formal source closure with zero open, unclassified, or deferred findings.
+
+<!-- FRONTEND-API-CLIENT-ABORT-TESTING-HARDENING:DOCUMENT-INDEX -->
+
+## Document 148 — Frontend API Client Abort and Testing Hardening
+
+`148_FRONTEND_API_CLIENT_ABORT_AND_TESTING_HARDENING.md` records the correction
+of caller-cancellation versus request-timeout classification, the first dependency-free
+frontend contract test harness, six API-client regression tests, Frontend Continuous
+Integration enforcement, exact baseline and scope boundaries, and the requirement for
+exact-commit Continuous Integration evidence before formal closure.

@@ -15,3 +15,6 @@ build
 
 # Local installer backup directories
 /.*-backups/
+
+# Frontend contract test build output
+/apps/web/.test-dist/

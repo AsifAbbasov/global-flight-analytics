@@ -1,6 +1,8 @@
 const defaultAPIBaseURL = 'http://localhost:8080'
 const defaultRequestTimeoutMilliseconds = 10_000
 
+type RequestAbortCause = 'caller' | 'timeout'
+
 export type APIRequestMethod = 'GET' | 'POST'
 
 export interface APIRequestOptions {
@@ -48,11 +50,16 @@ export async function requestAPIData<T>(
   }
 
   const requestController = new AbortController()
-  let timedOut = false
-  const handleCallerAbort = () => requestController.abort()
+  let abortCause: RequestAbortCause | null = null
+  const abortRequest = (cause: RequestAbortCause) => {
+    if (requestController.signal.aborted) return
+    abortCause = cause
+    requestController.abort()
+  }
+  const handleCallerAbort = () => abortRequest('caller')
 
   if (options.signal?.aborted) {
-    requestController.abort()
+    handleCallerAbort()
   } else {
     options.signal?.addEventListener('abort', handleCallerAbort, {
       once: true,
@@ -60,8 +67,7 @@ export async function requestAPIData<T>(
   }
 
   const timeoutID = setTimeout(() => {
-    timedOut = true
-    requestController.abort()
+    abortRequest('timeout')
   }, timeoutMilliseconds)
 
   try {
@@ -91,7 +97,9 @@ export async function requestAPIData<T>(
 
     return payload.data
   } catch (error) {
-    if (timedOut) throw new APIRequestError('The API request timed out.')
+    if (abortCause === 'timeout') {
+      throw new APIRequestError('The API request timed out.')
+    }
     throw error
   } finally {
     clearTimeout(timeoutID)
