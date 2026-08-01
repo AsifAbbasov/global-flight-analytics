@@ -13,6 +13,54 @@ type testValue string
 
 func (testValue) RequestCoalescingValue() {}
 
+func TestDoRejectsNilContextBeforeExecution(
+	t *testing.T,
+) {
+	group := New[testValue]()
+	var executionCount atomic.Int32
+
+	_, err := group.Do(
+		nil,
+		"traffic:nil-context",
+		func(
+			_ context.Context,
+		) (testValue, error) {
+			executionCount.Add(1)
+
+			return testValue(
+				"unexpected",
+			), nil
+		},
+	)
+
+	if !errors.Is(
+		err,
+		ErrContextRequired,
+	) {
+		t.Fatalf(
+			"error = %v, want context required",
+			err,
+		)
+	}
+	if executionCount.Load() != 0 {
+		t.Fatalf(
+			"executions = %d, want 0",
+			executionCount.Load(),
+		)
+	}
+
+	group.mu.Lock()
+	callCount := len(group.calls)
+	group.mu.Unlock()
+
+	if callCount != 0 {
+		t.Fatalf(
+			"in-flight calls = %d, want 0",
+			callCount,
+		)
+	}
+}
+
 func TestSameKeySharesOneInFlightExecution(
 	t *testing.T,
 ) {

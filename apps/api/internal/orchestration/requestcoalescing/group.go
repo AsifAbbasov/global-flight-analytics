@@ -8,6 +8,10 @@ import (
 )
 
 var (
+	ErrContextRequired = errors.New(
+		"request coalescing context is required",
+	)
+
 	ErrKeyRequired = errors.New(
 		"request coalescing key is required",
 	)
@@ -73,7 +77,7 @@ func (group *Group[T]) Do(
 	}
 
 	if ctx == nil {
-		ctx = context.Background()
+		return zero, ErrContextRequired
 	}
 
 	group.mu.Lock()
