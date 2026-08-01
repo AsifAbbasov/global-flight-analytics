@@ -61,7 +61,8 @@ func (resolver *Resolver) Resolve(
 	input Input,
 ) (Resolution, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Resolution{},
+			ErrRouteResolutionContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Resolution{}, err

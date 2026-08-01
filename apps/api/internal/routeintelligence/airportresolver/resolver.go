@@ -58,7 +58,8 @@ func (resolver *Resolver) Resolve(
 	query Query,
 ) (Result, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Result{},
+			ErrAirportResolutionContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Result{}, err

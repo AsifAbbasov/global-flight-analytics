@@ -93,7 +93,8 @@ func (service *Service) GetByICAO24(
 	icao24 string,
 ) (Context, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Context{},
+			ErrRouteContextRequired
 	}
 	if service.trajectoryReader == nil {
 		return Context{}, ErrTrajectoryReaderRequired

@@ -49,7 +49,8 @@ func (builder *Builder) Build(
 	input Input,
 ) (Result, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Result{},
+			ErrEndpointEvidenceContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Result{}, err

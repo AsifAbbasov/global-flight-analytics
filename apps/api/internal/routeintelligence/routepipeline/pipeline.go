@@ -110,7 +110,8 @@ func (pipeline *Pipeline) Process(
 	request Request,
 ) (Result, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		return Result{},
+			ErrRoutePipelineContextRequired
 	}
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
