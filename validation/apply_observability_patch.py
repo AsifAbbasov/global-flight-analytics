@@ -84,6 +84,10 @@ def main() -> None:
         content = destination.read_text().rstrip("\n") + suffix
         destination.write_text(content.rstrip("\n") + "\n")
 
+    subprocess.run(
+        ["python", str(SCRIPT_DIR / "apply_observability_fixes.py")],
+        check=True,
+    )
     subprocess.run(["gofmt", "-w", str(root / "apps/api")], check=True)
     subprocess.run(["git", "-C", str(root), "diff", "--check"], check=True)
     print("OBSERVABILITY_PATCH_APPLICATION=PASS")
