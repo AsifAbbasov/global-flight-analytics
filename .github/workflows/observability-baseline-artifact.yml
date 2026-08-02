@@ -19,7 +19,9 @@ jobs:
           fetch-depth: 1
 
       - name: Fetch exact main baseline
-        run: git fetch --no-tags --depth=1 origin 76e8744513bc1ad7d185692ea9ad3222bc961e0c
+        run: |
+          git fetch --no-tags --depth=1 origin 76e8744513bc1ad7d185692ea9ad3222bc961e0c
+          git branch --force installer-baseline 76e8744513bc1ad7d185692ea9ad3222bc961e0c
 
       - name: Build clean baseline repository archive
         shell: bash
