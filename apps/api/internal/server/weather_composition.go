@@ -12,6 +12,7 @@ import (
 type weatherCompositionConfig struct {
 	databasePool     *pgxpool.Pool
 	openMeteoTimeout time.Duration
+	metricsRecorder  weatherProviderRecorder
 }
 
 type weatherRouteDependencies struct {
@@ -26,6 +27,7 @@ func composeWeatherRouteDependencies(
 ) (weatherRouteDependencies, error) {
 	client, err := composeWeatherProvider(
 		config.openMeteoTimeout,
+		config.metricsRecorder,
 	)
 	if err != nil {
 		return weatherRouteDependencies{},

@@ -82,6 +82,8 @@ services:
       API_RATE_LIMIT_WINDOW: 1m
       # Local-only startup digest. Override it to exercise mutation routes.
       API_MUTATION_KEY_SHA256: ${API_MUTATION_KEY_SHA256:-c2508a15a4cdd287252b1556e79c7c16e7d2b77ae4dbd1df5ad8856a0a509feb}
+      # SHA-256 of local key: 0123456789abcdef0123456789abcdef
+      METRICS_KEY_SHA256: ${METRICS_KEY_SHA256:-3eb1bd439947eb762998e566ccc2e099c791118b2f40579cc4f7da2b5061b7f9}
     depends_on:
       postgres:
         condition: service_healthy

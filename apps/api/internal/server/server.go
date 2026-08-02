@@ -6,6 +6,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	internalmiddleware "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/security/clientidentity"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -42,6 +43,26 @@ func New(
 		return nil, err
 	}
 
+	metricsAuthorization, err := observability.NewAuthorization(
+		observability.AuthorizationConfig{
+			ExpectedDigest: normalizedConfig.MetricsKeyDigest,
+			Configured:     normalizedConfig.MetricsKeyConfigured,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"create metrics authorization middleware: %w",
+			err,
+		)
+	}
+	app.Get(
+		observability.MetricsPath,
+		metricsAuthorization,
+		observability.FiberHandler(
+			normalizedConfig.ObservabilityRegistry,
+		),
+	)
+
 	v1 := app.Group(
 		"/api",
 	).Group(
@@ -72,6 +93,10 @@ func New(
 			v1,
 			normalizedConfig.DatabasePool,
 			normalizedConfig.OpenMeteoTimeout,
+			observability.NewProviderRecorder(
+				normalizedConfig.ObservabilityRegistry,
+				nil,
+			),
 			mutationAuthorization,
 		); err != nil {
 			return nil, err
@@ -109,6 +134,11 @@ func registerMiddleware(
 	)
 	app.Use(
 		internalmiddleware.RequestID(),
+	)
+	app.Use(
+		observability.HTTPMiddleware(
+			cfg.ObservabilityRegistry,
+		),
 	)
 	app.Use(
 		internalmiddleware.RequestLogger(

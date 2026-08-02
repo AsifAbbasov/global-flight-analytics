@@ -41,6 +41,7 @@ func TestRegisterWeatherRouteRejectsNonPositiveOpenMeteoTimeout(
 					v1,
 					nil,
 					test.timeout,
+					nil,
 				)
 
 				if err == nil {
@@ -76,6 +77,7 @@ func TestRegisterWeatherRouteAcceptsPositiveOpenMeteoTimeout(
 		v1,
 		nil,
 		5*time.Second,
+		nil,
 	)
 	if err != nil {
 		t.Fatalf(

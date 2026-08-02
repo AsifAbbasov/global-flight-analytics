@@ -17,6 +17,7 @@ func registerDatabaseRoutes(
 	v1 fiber.Router,
 	dbPool *pgxpool.Pool,
 	openMeteoTimeout time.Duration,
+	metricsRecorder weatherProviderRecorder,
 	mutationAuthorization fiber.Handler,
 ) error {
 	return registerDatabaseRouteGroups(
@@ -24,6 +25,7 @@ func registerDatabaseRoutes(
 			v1,
 			dbPool,
 			openMeteoTimeout,
+			metricsRecorder,
 			mutationAuthorization,
 		),
 	)
@@ -33,6 +35,7 @@ func databaseRouteGroups(
 	v1 fiber.Router,
 	dbPool *pgxpool.Pool,
 	openMeteoTimeout time.Duration,
+	metricsRecorder weatherProviderRecorder,
 	mutationAuthorization fiber.Handler,
 ) []databaseRouteGroup {
 	return []databaseRouteGroup{
@@ -71,6 +74,7 @@ func databaseRouteGroups(
 					v1,
 					dbPool,
 					openMeteoTimeout,
+					metricsRecorder,
 				)
 			},
 		},

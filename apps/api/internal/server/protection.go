@@ -10,6 +10,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	internalmiddleware "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -28,6 +29,16 @@ func normalizeConfig(
 ) (Config, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
+	}
+	if cfg.ObservabilityRegistry == nil {
+		cfg.ObservabilityRegistry = observability.NewRegistry(
+			observability.BuildInfo{},
+		)
+	}
+	if cfg.MetricsKeyConfigured && cfg.MetricsKeyDigest.IsZero() {
+		return Config{}, fmt.Errorf(
+			"configured metrics key digest must not be zero",
+		)
 	}
 
 	protection, err := normalizeProtectionConfig(
@@ -320,7 +331,8 @@ func shouldSkipRateLimit(
 	switch c.Path() {
 	case "/api/v1/health",
 		"/api/v1/ready",
-		"/api/v1/version":
+		"/api/v1/version",
+		observability.MetricsPath:
 		return true
 	default:
 		return false

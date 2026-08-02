@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/buildinfo"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerbudget"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerdecision"
@@ -62,6 +65,14 @@ func run() error {
 		)
 	}
 
+	observabilityConfig, err := config.LoadObservabilityConfig()
+	if err != nil {
+		return fmt.Errorf(
+			"load observability configuration: %w",
+			err,
+		)
+	}
+
 	operationContext, stop := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGINT,
@@ -80,6 +91,35 @@ func run() error {
 		)
 	}
 	defer dbPool.Close()
+
+	build := buildinfo.Current()
+	metricsRegistry := observability.NewRegistry(
+		observability.BuildInfo{
+			Version:  build.Version,
+			Revision: build.Revision,
+		},
+	)
+	postgresCollector, err := observability.NewPostgresCollector(dbPool)
+	if err != nil {
+		return fmt.Errorf("create PostgreSQL metrics collector: %w", err)
+	}
+	if err := metricsRegistry.RegisterCollector(postgresCollector); err != nil {
+		return fmt.Errorf("register PostgreSQL metrics collector: %w", err)
+	}
+	if _, err := observability.StartMetricsServer(
+		operationContext,
+		observability.MetricsServerConfig{
+			Address:  observabilityConfig.IngestMetricsAddress,
+			Registry: metricsRegistry,
+			Authorization: observability.AuthorizationConfig{
+				ExpectedDigest: observabilityConfig.MetricsKeyDigest,
+				Configured:     observabilityConfig.MetricsKeyConfigured,
+			},
+			Logger: slog.Default(),
+		},
+	); err != nil {
+		return fmt.Errorf("start ingestion metrics server: %w", err)
+	}
 
 	budgetStore, err := postgres.NewProviderBudgetStore(
 		dbPool,
@@ -120,7 +160,10 @@ func run() error {
 
 	responseObserver, err := providerresponse.NewIntegrationObserverWithRecorder(
 		responseController,
-		providerHealthCollector,
+		observability.NewProviderRecorder(
+			metricsRegistry,
+			providerHealthCollector,
+		),
 	)
 	if err != nil {
 		return fmt.Errorf(
@@ -156,6 +199,20 @@ func run() error {
 	}
 
 	trafficProvider := trafficSelection.Provider
+
+	providerDecisionMetrics, err :=
+		observability.NewProviderDecisionCollector(
+			providerDecisionCollector,
+			trafficSelection.ProviderIDs,
+		)
+	if err != nil {
+		return fmt.Errorf("create provider decision metrics collector: %w", err)
+	}
+	if err := metricsRegistry.RegisterCollector(
+		providerDecisionMetrics,
+	); err != nil {
+		return fmt.Errorf("register provider decision metrics collector: %w", err)
+	}
 
 	flightStateRepository := postgres.NewFlightStateRepository(
 		dbPool,
@@ -262,6 +319,13 @@ func run() error {
 					status = "failed"
 					lastError = result.Err.Error()
 				}
+
+				metricsRegistry.ObserveIngestionCycle(
+					status,
+					result.FinishedAt.Sub(result.StartedAt),
+					result.ConsecutiveFailures,
+					result.NextDelay,
+				)
 
 				fmt.Printf(
 					"ingest_cycle=%d status=%s started_at=%s finished_at=%s duration=%s consecutive_failures=%d retry_at=%s next_delay=%s error=%q\n",

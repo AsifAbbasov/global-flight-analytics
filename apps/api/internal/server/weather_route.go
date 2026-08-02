@@ -12,6 +12,7 @@ func registerWeatherRoute(
 	v1 fiber.Router,
 	dbPool *pgxpool.Pool,
 	openMeteoTimeout time.Duration,
+	metricsRecorder weatherProviderRecorder,
 ) error {
 	if openMeteoTimeout <= 0 {
 		return fmt.Errorf(
@@ -24,6 +25,7 @@ func registerWeatherRoute(
 			weatherCompositionConfig{
 				databasePool:     dbPool,
 				openMeteoTimeout: openMeteoTimeout,
+				metricsRecorder:  metricsRecorder,
 			},
 		)
 	if err != nil {

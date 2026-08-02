@@ -16,6 +16,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/database"
 	applogger "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/logger"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/server"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -132,6 +133,15 @@ func run(
 		)
 	}
 
+	observabilityConfig, err := config.LoadObservabilityConfig()
+	if err != nil {
+		return fmt.Errorf(
+			"%w: %w",
+			errServerConfigurationLoad,
+			err,
+		)
+	}
+
 	dbPool, err := openServerDatabase(
 		ctx,
 		cfg,
@@ -149,11 +159,42 @@ func run(
 		}()
 	}
 
+	build := buildinfo.Current()
+	metricsRegistry := observability.NewRegistry(
+		observability.BuildInfo{
+			Version:  build.Version,
+			Revision: build.Revision,
+		},
+	)
+	if dbPool != nil {
+		postgresCollector, collectorErr :=
+			observability.NewPostgresCollector(dbPool)
+		if collectorErr != nil {
+			return fmt.Errorf(
+				"%w: initialize PostgreSQL metrics collector: %w",
+				errServerInitialization,
+				collectorErr,
+			)
+		}
+		if collectorErr := metricsRegistry.RegisterCollector(
+			postgresCollector,
+		); collectorErr != nil {
+			return fmt.Errorf(
+				"%w: register PostgreSQL metrics collector: %w",
+				errServerInitialization,
+				collectorErr,
+			)
+		}
+	}
+
 	app, err := server.New(
 		server.Config{
-			DatabasePool:     dbPool,
-			Logger:           log,
-			OpenMeteoTimeout: cfg.OpenMeteoTimeout,
+			DatabasePool:          dbPool,
+			Logger:                log,
+			OpenMeteoTimeout:      cfg.OpenMeteoTimeout,
+			ObservabilityRegistry: metricsRegistry,
+			MetricsKeyDigest:      observabilityConfig.MetricsKeyDigest,
+			MetricsKeyConfigured:  observabilityConfig.MetricsKeyConfigured,
 			Protection: server.ProtectionConfig{
 				AllowedOrigins:        cfg.APIProtection.AllowedOrigins,
 				BodyLimitBytes:        cfg.APIProtection.BodyLimitBytes,
@@ -179,7 +220,6 @@ func run(
 	}
 
 	address := ":" + cfg.Port
-	build := buildinfo.Current()
 	log.Info(
 		"api server starting",
 		"address",

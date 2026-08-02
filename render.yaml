@@ -37,6 +37,8 @@ services:
         value: 1m
       - key: API_MUTATION_KEY_SHA256
         sync: false
+      - key: METRICS_KEY_SHA256
+        sync: false
       - key: MIGRATIONS_DIR
         value: /app/migrations
       - key: MIGRATION_TIMEOUT

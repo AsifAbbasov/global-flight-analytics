@@ -1553,3 +1553,22 @@ propagation, bounded provider HTTP execution, permanent timeout consistency audi
 regression evidence, configuration contract, and deliberate separation
 between interactive HTTP budgets and administrative PostgreSQL operations.
 ```
+
+---
+
+### Document 168 — Backend Observability and Service-Level Objectives Closure
+
+Path:
+
+```text
+docs/168_BACKEND_OBSERVABILITY_AND_SLO_CLOSURE.md
+```
+
+Purpose:
+
+```text
+Records the protected Prometheus-compatible observability foundation, bounded metric
+labels, API and ingestion instrumentation, provider and fallback evidence, PostgreSQL and
+reconciliation state collectors, service-level objectives, alert thresholds, permanent
+observability audit gate, and deployment boundary.
+```

@@ -103,6 +103,9 @@ jobs:
       - name: Run backend timeout consistency audit
         run: go run ./tools/backendtimeoutconsistencyaudit -strict
 
+      - name: Run backend observability audit
+        run: go run ./tools/backendobservabilityaudit -strict
+
       - name: Run Stage 14 completion source audit
         run: go run ./tools/stage14finalaudit -strict
 
@@ -314,6 +317,8 @@ jobs:
           database_name="gfa-postgres-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           database_url="postgres://postgres:postgres@${database_name}:5432/global_flight_analytics_container?sslmode=disable"
           mutation_key_sha256="78fd029a7217aaf71651a747b370be0a76fccebac79bfa02457be3448b636f26"
+          metrics_key="0123456789abcdef0123456789abcdef"
+          metrics_key_sha256="3eb1bd439947eb762998e566ccc2e099c791118b2f40579cc4f7da2b5061b7f9"
           container_id=""
           database_id=""
 
@@ -376,6 +381,7 @@ jobs:
               --env DATABASE_CONNECT_TIMEOUT=5s \
               --env OPEN_METEO_TIMEOUT=5s \
               --env API_MUTATION_KEY_SHA256="$mutation_key_sha256" \
+              --env METRICS_KEY_SHA256="$metrics_key_sha256" \
               global-flight-analytics-api:ci
           )"
 
@@ -457,6 +463,33 @@ jobs:
             exit 1
           fi
 
+          metrics_unauthorized_status="$(
+            curl \
+              --silent \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              http://127.0.0.1:18080/internal/metrics
+          )"
+          if [ "$metrics_unauthorized_status" != "401" ]; then
+            printf '%s\n' "Expected unauthorized metrics status 401, got $metrics_unauthorized_status"
+            exit 1
+          fi
+
+          metrics_payload="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "X-Internal-API-Key: $metrics_key" \
+              http://127.0.0.1:18080/internal/metrics
+          )"
+          printf '%s\n' "$metrics_payload" | grep -F \
+            'global_flight_analytics_build_info' \
+            > /dev/null
+          printf '%s\n' "$metrics_payload" | grep -F \
+            'global_flight_analytics_postgres_pool_total_connections' \
+            > /dev/null
+
   backend-race:
     name: Backend Race Safety
     runs-on: ubuntu-latest
@@ -492,6 +525,7 @@ jobs:
             ./internal/integrations/openmeteo \
             ./internal/integrations/opensky \
             ./internal/middleware \
+            ./internal/observability \
             ./internal/orchestration/requestcoalescing \
             ./internal/orchestration/ingestionorchestrator \
             ./internal/orchestration/providerbudget \

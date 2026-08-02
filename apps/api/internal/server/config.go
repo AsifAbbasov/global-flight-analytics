@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/security/internalapikey"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -29,10 +30,13 @@ type ProtectionConfig struct {
 }
 
 type Config struct {
-	DatabasePool     *pgxpool.Pool
-	Logger           *slog.Logger
-	OpenMeteoTimeout time.Duration
-	Protection       ProtectionConfig
+	DatabasePool          *pgxpool.Pool
+	Logger                *slog.Logger
+	OpenMeteoTimeout      time.Duration
+	ObservabilityRegistry *observability.Registry
+	MetricsKeyDigest      internalapikey.Digest
+	MetricsKeyConfigured  bool
+	Protection            ProtectionConfig
 }
 
 // STAGE-14-5-MUTATION-ENDPOINT-PROTECTION

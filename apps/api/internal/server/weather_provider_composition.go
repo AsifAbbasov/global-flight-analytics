@@ -12,8 +12,13 @@ import (
 	weatherservice "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/weather"
 )
 
+type weatherProviderRecorder interface {
+	providerresponse.ObservationRecorder
+}
+
 func composeWeatherProvider(
 	openMeteoTimeout time.Duration,
+	metricsRecorder weatherProviderRecorder,
 ) (
 	weatherservice.CurrentWeatherClient,
 	error,
@@ -27,6 +32,7 @@ func composeWeatherProvider(
 	observer, err :=
 		composeWeatherResponseObserver(
 			controller,
+			metricsRecorder,
 		)
 	if err != nil {
 		return nil, err
@@ -84,6 +90,7 @@ func composeWeatherResponseController() (
 
 func composeWeatherResponseObserver(
 	controller *providerresponse.Controller,
+	recorder weatherProviderRecorder,
 ) (
 	*providerresponse.IntegrationObserver,
 	error,
@@ -93,6 +100,14 @@ func composeWeatherResponseObserver(
 			NewIntegrationObserver(
 				controller,
 			)
+	if recorder != nil {
+		observer, err =
+			providerresponse.
+				NewIntegrationObserverWithRecorder(
+					controller,
+					recorder,
+				)
+	}
 	if err != nil {
 		return nil, fmt.Errorf(
 			"initialize provider response observer: %w",
