@@ -13,6 +13,10 @@ on:
       - 'scripts/verify-release-portfolio.sh'
       - 'scripts/verify-release-portfolio.test.mjs'
       - 'scripts/verify-release.sh'
+      - 'scripts/verify-dependency-maintenance.mjs'
+      - 'scripts/verify-dependency-maintenance.test.mjs'
+      - '.github/dependabot.yml'
+      - 'docs/170_DEPENDENCY_MAINTENANCE_CLOSURE.md'
       - 'scripts/smoke-production-release.sh'
       - 'docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md'
       - 'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
@@ -33,6 +37,10 @@ on:
       - 'scripts/verify-release-portfolio.sh'
       - 'scripts/verify-release-portfolio.test.mjs'
       - 'scripts/verify-release.sh'
+      - 'scripts/verify-dependency-maintenance.mjs'
+      - 'scripts/verify-dependency-maintenance.test.mjs'
+      - '.github/dependabot.yml'
+      - 'docs/170_DEPENDENCY_MAINTENANCE_CLOSURE.md'
       - 'scripts/smoke-production-release.sh'
       - 'docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md'
       - 'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
@@ -65,7 +73,7 @@ jobs:
           version: 11.8.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24.9.0'
           cache: pnpm
@@ -77,6 +85,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Verify dependency maintenance contract
+        run: |
+          pnpm run test:dependency-maintenance
+          pnpm run verify:dependency-maintenance
 
       - name: Verify release and portfolio contract
         run: |

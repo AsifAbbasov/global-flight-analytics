@@ -10,6 +10,8 @@ printf '%s\n' "RELEASE_PNPM_VERSION=$(pnpm --version)"
 printf '%s\n' "RELEASE_GO_VERSION=$(go version)"
 printf '%s\n' "RELEASE_COMMIT=$(git rev-parse HEAD)"
 
+pnpm run test:dependency-maintenance
+pnpm run verify:dependency-maintenance
 bash scripts/verify-recruiter-quickstart.sh
 pnpm run test:release-contract
 pnpm run verify:release-contract

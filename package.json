@@ -17,7 +17,9 @@
     "test:backend-operations-contract": "node --test scripts/verify-backend-operations.test.mjs",
     "verify:backend-operations-contract": "bash scripts/verify-backend-operations.sh",
     "migrate:production-database": "bash scripts/migrate-production-database.sh",
-    "smoke:api-production": "bash scripts/smoke-api-production.sh"
+    "smoke:api-production": "bash scripts/smoke-api-production.sh",
+    "test:dependency-maintenance": "node --test scripts/verify-dependency-maintenance.test.mjs",
+    "verify:dependency-maintenance": "node scripts/verify-dependency-maintenance.mjs"
   },
   "packageManager": "pnpm@11.8.0"
 }

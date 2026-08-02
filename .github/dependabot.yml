@@ -1,38 +1,68 @@
 version: 2
-
 updates:
-  - package-ecosystem: gomod
-    directory: /apps/api
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - backend
+    groups:
+      setup-actions:
+        patterns:
+          - "actions/setup-go"
+          - "actions/setup-node"
+        update-types:
+          - "minor"
+          - "patch"
 
-  - package-ecosystem: npm
-    directory: /
+  - package-ecosystem: "gomod"
+    directory: "/apps/api"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - frontend
+    groups:
+      fiber-runtime:
+        patterns:
+          - "github.com/gofiber/fiber/v2"
+        update-types:
+          - "minor"
+          - "patch"
 
-  - package-ecosystem: docker
-    directory: /apps/api
+  - package-ecosystem: "docker"
+    directory: "/apps/api"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 3
-    labels:
-      - dependencies
-      - container
 
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - continuous-integration
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      react-runtime:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "minor"
+          - "patch"
+      tailwind-toolchain:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+        update-types:
+          - "minor"
+          - "patch"
+      three-runtime:
+        patterns:
+          - "three"
+          - "@types/three"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"

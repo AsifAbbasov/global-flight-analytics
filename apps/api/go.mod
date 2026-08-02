@@ -3,7 +3,7 @@ module github.com/AsifAbbasov/global-flight-analytics/apps/api
 go 1.26.5
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.13
+	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1

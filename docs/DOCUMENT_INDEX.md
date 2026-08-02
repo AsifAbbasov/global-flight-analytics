@@ -1579,3 +1579,10 @@ observability audit gate, and deployment boundary.
 ## Document 169 — Release Truth and Deployment Revision Closure
 
 `169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md` separates historical deployment evidence, intended Render revision, observed API revision and current repository `HEAD`; removes the local-HEAD-equals-deployment assumption and installs permanent release truth gates.
+
+
+## Document 170 — Dependency Maintenance Closure
+
+- File: `170_DEPENDENCY_MAINTENANCE_CLOSURE.md`
+- Status: `CLOSED`
+- Purpose: closes the safe dependency update wave, groups related Dependabot updates, removes invalid label references, and defers TypeScript major migration behind an explicit compatibility stage.
