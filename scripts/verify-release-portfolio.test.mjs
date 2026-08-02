@@ -25,6 +25,8 @@ test('README presents the implemented product instead of an obsolete first slice
   assert.match(portfolio, /## What Is Implemented/)
   assert.match(portfolio, /pnpm verify:release/)
   assert.match(portfolio, /pnpm smoke:production/)
+  assert.match(portfolio, /https:\/\/global-flight-analytics-web\.vercel\.app/)
+  assert.match(portfolio, /https:\/\/global-flight-analytics-api\.onrender\.com/)
   assert.doesNotMatch(portfolio, /## MVP Focus/)
   assert.doesNotMatch(portfolio, /## First Coding Slice/)
 })
@@ -67,15 +69,19 @@ test('deployment runbook separates direct migration and pooled runtime database 
   assert.match(runbook, /API_PORT=10000/)
   assert.match(runbook, /\/api\/v1\/ready/)
   assert.match(runbook, /Root Directory.*apps\/web/i)
+  assert.match(runbook, /PRODUCTION_RELEASE_SMOKE=PASS/)
   assert.doesNotMatch(runbook, /postgres(ql)?:\/\/[^\s]+:[^\s]+@[^\s]+\.neon\.tech/i)
 })
 
-test('closure document distinguishes source readiness CI evidence and public deployment', async () => {
+test('closure document distinguishes source CI deployment and remaining visual work', async () => {
   const closure = await text('docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md')
   assert.match(closure, /Source implementation/i)
   assert.match(closure, /Exact-commit Continuous Integration/i)
-  assert.match(closure, /Public deployment/i)
-  assert.match(closure, /pending until/i)
+  assert.match(closure, /Public production endpoints/i)
+  assert.match(closure, /PUBLIC_API_DEPLOYMENT=CLOSED/)
+  assert.match(closure, /PUBLIC_NEXTJS_DEPLOYMENT=CLOSED/)
+  assert.match(closure, /FULL_BROWSER_PRODUCTION_SMOKE=CLOSED/)
+  assert.match(closure, /FRONTEND_VISUAL_REDESIGN=PLANNED_SEPARATE_PHASE/)
   assert.match(closure, /03ac45dc2a515c77af8d992aa6489816f1cbe927/)
 })
 
