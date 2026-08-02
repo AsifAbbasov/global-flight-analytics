@@ -54,15 +54,35 @@ require_literal "$REPOSITORY_ROOT/docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md" \
 require_literal "$REPOSITORY_ROOT/docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md" \
   '30715613361' \
   'release closure does not record Frontend CI evidence'
+require_literal "$REPOSITORY_ROOT/docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md" \
+  'PUBLIC_API_DEPLOYMENT=CLOSED' \
+  'verified public API deployment evidence is missing'
+require_literal "$REPOSITORY_ROOT/docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md" \
+  'FULL_BROWSER_PRODUCTION_SMOKE=CLOSED' \
+  'verified full production smoke evidence is missing'
 require_literal "$REPOSITORY_ROOT/docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md" \
-  'Next.js visual and public deployment phase is deliberately deferred' \
-  'deferred frontend phase is not explicit'
+  'FRONTEND_VISUAL_REDESIGN=PLANNED_SEPARATE_PHASE' \
+  'remaining frontend visual phase is not explicit'
+require_literal "$REPOSITORY_ROOT/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md" \
+  'https://global-flight-analytics-api.onrender.com' \
+  'verified production API URL is missing from the runbook'
+require_literal "$REPOSITORY_ROOT/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md" \
+  'https://global-flight-analytics-web.vercel.app' \
+  'verified production frontend URL is missing from the runbook'
 require_literal "$REPOSITORY_ROOT/.github/workflows/backend-ci.yml" \
   'Verify backend operations contract' \
   'Backend CI does not execute the operations contract'
 
 if grep -F 'preDeployCommand:' "$REPOSITORY_ROOT/render.yaml" >/dev/null; then
   fail 'free Render Blueprint must not claim unavailable pre-deploy commands'
+fi
+
+if grep -E 'postgres(ql)?://[^[:space:]]+:[^[:space:]]+@[^[:space:]]+\.neon\.tech' \
+  "$REPOSITORY_ROOT/docs/161_FRONTEND_PRODUCT_HARDENING.md" \
+  "$REPOSITORY_ROOT/docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md" \
+  "$REPOSITORY_ROOT/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md" \
+  "$REPOSITORY_ROOT/docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md" >/dev/null; then
+  fail 'production closure documentation contains what appears to be a real Neon credential'
 fi
 
 printf '%s\n' 'BACKEND_OPERATIONS_CONTRACT=PASS'
