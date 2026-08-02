@@ -62,6 +62,33 @@ jobs:
       - name: Validate Docker Compose configuration
         run: docker compose config > /dev/null
 
+      - name: Prepare exact validation payload artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p validation-artifact
+          cp \
+            validation/apply_observability_patch.py \
+            validation/apply_observability_fixes.py \
+            validation/payload.00.b64 \
+            validation/payload.01.b64 \
+            validation/payload.02.b64 \
+            validation/payload.03.b64 \
+            validation/payload.04.b64 \
+            validation-artifact/
+          (
+            cd validation-artifact
+            sha256sum * > SHA256SUMS
+          )
+
+      - name: Upload exact validation payload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: observability-exact-payload
+          path: validation-artifact
+          if-no-files-found: error
+          retention-days: 7
+
   race:
     name: Observability Race Safety
     runs-on: ubuntu-latest
