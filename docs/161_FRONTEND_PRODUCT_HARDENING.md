@@ -70,5 +70,28 @@ Formal exact-commit closure was completed by source release
 dependency security, production dependency audit, ESLint, TypeScript, all eighty-two
 frontend tests and the production build.
 
-The later Next.js visual and public deployment phase is deliberately deferred by the
-owner for a separate creative pass. That decision does not reopen this hardening scope.
+## Public deployment evidence
+
+The existing frontend source was deployed publicly on Vercel from application revision
+`6bca02a8ed1487195b165ae9ced3ca687a373666`:
+
+```text
+https://global-flight-analytics-web.vercel.app
+```
+
+The browser-to-API production smoke verified frontend identity, API health, PostgreSQL
+readiness, version metadata, and exact-origin CORS:
+
+```text
+PRODUCTION_FRONTEND=PASS
+PRODUCTION_API_HEALTH=PASS
+PRODUCTION_API_READINESS=PASS
+PRODUCTION_API_VERSION=PASS
+PRODUCTION_CORS=PASS
+PRODUCTION_RELEASE_SMOKE=PASS
+```
+
+The current public interface is therefore technically deployed and integrated. A separate
+visual and interaction redesign remains planned. That future creative phase does not
+reopen this hardening increment and is not implemented by the production-evidence
+documentation update.
