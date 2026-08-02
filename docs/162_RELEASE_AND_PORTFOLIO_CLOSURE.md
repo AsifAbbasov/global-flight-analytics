@@ -1,17 +1,19 @@
 # Release and Portfolio Closure
 
-Status: Source implementation and exact-commit Continuous Integration closed; public cloud deployment remains an owner-controlled operation
-Project: Global Flight Analytics
-Source release SHA: `49e474e929dcca5b687464f0a47ce73fcd5a52a7`
+Status: Public production deployment verified; frontend visual redesign remains a separate product phase
+Original source release SHA: `49e474e929dcca5b687464f0a47ce73fcd5a52a7`
+Production application SHA: `6bca02a8ed1487195b165ae9ced3ca687a373666`
+Production migration evidence SHA: `31deab02507adc49bd296761d1551834e214b768`
 Backend Continuous Integration: run `30715613342`, completed successfully
 Frontend Continuous Integration: run `30715613361`, completed successfully
 Original release-closure baseline: `03ac45dc2a515c77af8d992aa6489816f1cbe927`
-Date: 2026-08-01
+Production verification date: 2026-08-02
 
 ## Purpose
 
-This closure makes the implemented system understandable, reproducible and verifiable
-without hiding open-data limitations or claiming cloud evidence that does not exist.
+This closure records the implemented system, exact source and Continuous Integration
+evidence, and the verified public production deployment without hiding open-data,
+free-tier, or visual-design limitations.
 
 ## Release state
 
@@ -20,14 +22,27 @@ SOURCE_IMPLEMENTATION=CLOSED
 BACKEND_CI=CLOSED
 FRONTEND_CI=CLOSED
 EXACT_COMMIT_CI_EVIDENCE=CLOSED
-PUBLIC_API_DEPLOYMENT=PENDING_OWNER_CREDENTIALS
-NEXTJS_CREATIVE_PHASE=DEFERRED_BY_OWNER
-FULL_BROWSER_PRODUCTION_SMOKE=DEFERRED_WITH_NEXTJS_PHASE
+PRODUCTION_DATABASE_MIGRATION=CLOSED
+PUBLIC_API_DEPLOYMENT=CLOSED
+PUBLIC_NEXTJS_DEPLOYMENT=CLOSED
+PRODUCTION_CORS=CLOSED
+FULL_BROWSER_PRODUCTION_SMOKE=CLOSED
+FRONTEND_VISUAL_REDESIGN=PLANNED_SEPARATE_PHASE
 ```
+
+## Public production endpoints
+
+- Frontend: `https://global-flight-analytics-web.vercel.app`
+- API: `https://global-flight-analytics-api.onrender.com`
+- Database: owner-controlled Neon PostgreSQL in the Frankfurt region
+
+The public URLs contain no credentials. Database connection strings, mutation keys,
+metrics keys, deployment tokens, and provider credentials remain exclusively in platform
+secret stores.
 
 ## Exact evidence
 
-The source release is the full commit:
+The original portfolio source release is:
 
 `49e474e929dcca5b687464f0a47ce73fcd5a52a7`
 
@@ -43,32 +58,70 @@ Backend Container successfully. Frontend CI completed release contracts, depende
 security, production dependency audit, ESLint, TypeScript, eighty-two frontend tests and
 the production build successfully.
 
+Production migrations `019` through `029` were applied through the direct TLS Neon
+connection workflow with evidence SHA
+`31deab02507adc49bd296761d1551834e214b768`. The running API uses the pooled Neon
+connection string.
+
+Render and Vercel deployed application revision
+`6bca02a8ed1487195b165ae9ced3ca687a373666`. The API version endpoint reported that
+same revision during the production smoke test.
+
+## Verified production smoke
+
+The complete browser-to-API release smoke passed with the exact public frontend and API
+origins:
+
+```text
+PRODUCTION_FRONTEND=PASS
+PRODUCTION_API_HEALTH=PASS
+PRODUCTION_API_READINESS=PASS
+PRODUCTION_API_VERSION=PASS
+PRODUCTION_CORS=PASS
+PRODUCTION_RELEASE_SMOKE=PASS
+```
+
+The API-only lifecycle and revision smoke also passed before the full browser and CORS
+verification.
+
 ## Independent release states
 
-A release keeps separate evidence for:
+The release keeps separate evidence for:
 
 1. source implementation;
 2. exact-commit Continuous Integration;
-3. public API deployment;
-4. public Next.js deployment and browser-to-API smoke.
+3. production database migration;
+4. public API deployment;
+5. public Next.js deployment;
+6. exact-origin CORS behavior;
+7. browser-to-API production smoke.
 
-The first two states are closed. Public deployment remains pending until the owner's Neon and Render resources exist and the API-only production smoke passes. The Next.js visual and public deployment phase is intentionally deferred for a separate creative pass.
+All seven states are closed for the deployment recorded above. Future visual redesign
+work does not invalidate this production evidence and must remain a separate product
+increment with its own verification.
 
-## Repository-side operations
+## Free-tier operational boundary
 
-Document 166 adds the free-plan Render Blueprint, direct production migration workflow,
-API-only smoke command and permanent backend operations contracts. Those assets close
-repository-side deployment preparation without pretending cloud resources were created.
+The Render API currently uses a free instance. It can spin down after inactivity and may
+require a cold start before the first request succeeds. The production smoke scripts use
+bounded retries for that operational boundary. This limitation affects initial latency,
+not the recorded application revision, PostgreSQL readiness contract, or CORS policy.
 
 ## Evidence policy
 
-Placeholders, guessed run identifiers, screenshots from another commit and unverified
-URLs are prohibited release evidence. A public API may be called deployed only after the
-API-only production smoke passes against its exact build revision. Full browser release
-evidence remains tied to the later Next.js phase.
+Placeholders, guessed run identifiers, screenshots from another commit, unverified URLs,
+and secret-bearing connection strings are prohibited release evidence. Public deployment
+is recorded only because the exact URLs, API revision, readiness, frontend identity, and
+CORS behavior were verified together.
+
+## Remaining product phase
+
+The current frontend is publicly deployed and technically integrated. A substantial visual
+and interaction redesign remains planned as a separate frontend phase. This closure does
+not claim that the present interface is the final design and does not modify frontend code.
 
 ## Scope boundary
 
 This closure does not add authentication, billing, paid infrastructure, Kubernetes,
-microservices, machine learning, satellite fusion, safety certification or proprietary
-aviation feeds.
+microservices, machine learning, satellite fusion, safety certification, proprietary
+aviation feeds, or a custom domain.
