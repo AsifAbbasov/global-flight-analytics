@@ -1506,13 +1506,15 @@ baseline and final Frontend Continuous Integration evidence for release SHA
 `162_RELEASE_AND_PORTFOLIO_CLOSURE.md` records the source-release definition,
 independent source, exact-commit Continuous Integration and public-deployment states,
 the exact release SHA, Backend and Frontend Continuous Integration run identifiers,
-evidence policy, deferred Next.js phase and final portfolio MVP scope boundary.
+evidence policy, verified Neon, Render and Vercel deployment, exact-origin
+Cross-Origin Resource Sharing, full production smoke and final portfolio MVP scope boundary.
 
 ## Document 163 — Production Deployment Runbook
 
 `163_PRODUCTION_DEPLOYMENT_RUNBOOK.md` records the direct migration and pooled runtime
 Neon connection policy, free-plan Render Blueprint, explicit direct-database migration,
-API-only production smoke, deferred Next.js phase and rollback procedure.
+verified public API and Next.js deployment, exact-origin Cross-Origin Resource Sharing,
+full production smoke and rollback procedure.
 
 ## Document 164 — Recruiter Demo Script
 
@@ -1532,8 +1534,9 @@ complexity.
 
 `166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md` records exact product-release
 Continuous Integration evidence, the free-plan Render Docker Blueprint, direct Neon
-migration workflow, API-only production smoke contract, deferred Next.js creative phase,
-remaining owner-controlled cloud actions and the final evidence-only attestation rule.
+migration workflow, verified public API and Next.js deployment, exact-origin
+Cross-Origin Resource Sharing, full production smoke, free-tier operational boundary and
+the final evidence-only attestation rule.
 
 ---
 
