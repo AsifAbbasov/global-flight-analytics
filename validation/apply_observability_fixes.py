@@ -15,6 +15,22 @@ def replace_once(relative_path: str, old: str, new: str) -> None:
     path.write_text(content.replace(old, new, 1))
 
 
+def replace_exact(
+    relative_path: str,
+    old: str,
+    new: str,
+    expected_count: int,
+) -> None:
+    path = ROOT / relative_path
+    content = path.read_text()
+    count = content.count(old)
+    if count != expected_count:
+        raise SystemExit(
+            f"OBSERVABILITY_FIX_ERROR={relative_path} replacement count {count}, expected {expected_count}"
+        )
+    path.write_text(content.replace(old, new))
+
+
 replace_once(
     "apps/api/internal/observability/metrics_server.go",
     '\tif ctx == nil {\n\t\tctx = context.Background()\n\t}\n\treturn server.server.Shutdown(ctx)\n',
@@ -61,20 +77,16 @@ replace_once(
     '\t"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"\n',
     '',
 )
-replace_once(
+replace_exact(
     "apps/api/internal/server/database_routes.go",
     '\tmetricsRegistry *observability.Registry,\n',
     '\tmetricsRecorder weatherProviderRecorder,\n',
+    2,
 )
 replace_once(
     "apps/api/internal/server/database_routes.go",
     '\t\t\tmetricsRegistry,\n\t\t\tmutationAuthorization,\n',
     '\t\t\tmetricsRecorder,\n\t\t\tmutationAuthorization,\n',
-)
-replace_once(
-    "apps/api/internal/server/database_routes.go",
-    '\tmetricsRegistry *observability.Registry,\n',
-    '\tmetricsRecorder weatherProviderRecorder,\n',
 )
 replace_once(
     "apps/api/internal/server/database_routes.go",
