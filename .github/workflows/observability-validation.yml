@@ -1,0 +1,208 @@
+name: Observability Validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: observability-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Observability Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Apply observability candidate
+        run: python validation/apply_observability_patch.py --allow-nonbaseline
+
+      - name: Verify patch hygiene
+        run: git diff --check
+
+      - name: Verify Go formatting
+        shell: bash
+        run: |
+          unformatted_files="$(cd apps/api && gofmt -l .)"
+          if [ -n "$unformatted_files" ]; then
+            printf '%s\n' "$unformatted_files"
+            exit 1
+          fi
+
+      - name: Run all backend tests
+        working-directory: apps/api
+        run: go test -count=1 ./...
+
+      - name: Run Go vet
+        working-directory: apps/api
+        run: go vet ./...
+
+      - name: Run observability and architecture audits
+        working-directory: apps/api
+        run: |
+          go run ./tools/backendobservabilityaudit -strict
+          go run ./tools/backendtimeoutconsistencyaudit -strict
+          go run ./tools/backendcontextownershipaudit -strict
+          go run ./tools/projectaudit -mode all -strict
+          go run ./tools/codereviewaudit -strict
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config > /dev/null
+
+  race:
+    name: Observability Race Safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Apply observability candidate
+        run: python validation/apply_observability_patch.py --allow-nonbaseline
+
+      - name: Run observability race tests
+        working-directory: apps/api
+        run: |
+          go test -count=1 -race \
+            ./cmd/ingest \
+            ./cmd/server \
+            ./internal/config \
+            ./internal/observability \
+            ./internal/orchestration/providerdecision \
+            ./internal/orchestration/providerresponse \
+            ./internal/server \
+            ./internal/services/providerhealth
+
+  postgres:
+    name: Observability PostgreSQL 16
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.14-alpine3.24
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: global_flight_analytics_observability
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d global_flight_analytics_observability"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/global_flight_analytics_observability?sslmode=disable
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Apply observability candidate
+        run: python validation/apply_observability_patch.py --allow-nonbaseline
+
+      - name: Apply production migrations
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/global_flight_analytics_observability?sslmode=disable
+          DATABASE_CONNECT_TIMEOUT: 10s
+          MIGRATIONS_DIR: ${{ github.workspace }}/database/migrations
+          MIGRATION_TIMEOUT: 2m
+        run: go run ./cmd/migrate
+
+      - name: Run observability PostgreSQL tests
+        working-directory: apps/api
+        run: go test -count=1 ./internal/observability ./internal/repository/postgres
+
+  container:
+    name: Observability Container
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Apply observability candidate
+        run: python validation/apply_observability_patch.py --allow-nonbaseline
+
+      - name: Build backend container
+        run: |
+          docker build \
+            --file apps/api/Dockerfile \
+            --tag global-flight-analytics-observability:validation \
+            .
+
+      - name: Verify protected metrics endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id=""
+          cleanup() {
+            if [ -n "$container_id" ]; then
+              docker logs "$container_id" || true
+              docker rm --force "$container_id" > /dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          metrics_key="0123456789abcdef0123456789abcdef"
+          metrics_key_sha256="3eb1bd439947eb762998e566ccc2e099c791118b2f40579cc4f7da2b5061b7f9"
+          container_id="$(
+            docker run \
+              --detach \
+              --publish 127.0.0.1:18081:8080 \
+              --env API_PORT=8080 \
+              --env OPEN_METEO_TIMEOUT=5s \
+              --env METRICS_KEY_SHA256="$metrics_key_sha256" \
+              global-flight-analytics-observability:validation
+          )"
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18081/api/v1/health > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:18081/api/v1/health > /dev/null
+
+          unauthorized_status="$(
+            curl --silent --output /dev/null --write-out '%{http_code}' \
+              http://127.0.0.1:18081/internal/metrics
+          )"
+          test "$unauthorized_status" = "401"
+
+          metrics_payload="$(
+            curl --fail --silent \
+              --header "X-Internal-API-Key: $metrics_key" \
+              http://127.0.0.1:18081/internal/metrics
+          )"
+          printf '%s\n' "$metrics_payload" | grep -F \
+            'global_flight_analytics_build_info' > /dev/null
+          printf '%s\n' "$metrics_payload" | grep -F \
+            'global_flight_analytics_http_requests_total' > /dev/null
