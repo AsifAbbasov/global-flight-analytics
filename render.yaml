@@ -11,7 +11,6 @@ services:
     dockerContext: .
     dockerCommand: /app/server
     healthCheckPath: /api/v1/ready
-    maxShutdownDelaySeconds: 30
     envVars:
       - key: DATABASE_URL
         sync: false
