@@ -1,0 +1,48 @@
+name: Observability Baseline Artifact
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-artifact:
+    name: Exact Baseline Repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout validation branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Fetch exact main baseline
+        run: git fetch --no-tags --depth=1 origin 76e8744513bc1ad7d185692ea9ad3222bc961e0c
+
+      - name: Build clean baseline repository archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline_root="$RUNNER_TEMP/global-flight-analytics"
+          git clone --no-local "$GITHUB_WORKSPACE" "$baseline_root"
+          git -C "$baseline_root" checkout -B main 76e8744513bc1ad7d185692ea9ad3222bc961e0c
+          git -C "$baseline_root" clean -fdx
+          test -z "$(git -C "$baseline_root" status --porcelain --untracked-files=all)"
+          test "$(git -C "$baseline_root" rev-parse HEAD)" = "76e8744513bc1ad7d185692ea9ad3222bc961e0c"
+          tar -czf "$RUNNER_TEMP/global-flight-analytics-baseline.tar.gz" \
+            -C "$RUNNER_TEMP" global-flight-analytics
+          sha256sum "$RUNNER_TEMP/global-flight-analytics-baseline.tar.gz" \
+            > "$RUNNER_TEMP/global-flight-analytics-baseline.tar.gz.sha256"
+
+      - name: Upload exact baseline repository
+        uses: actions/upload-artifact@v4
+        with:
+          name: global-flight-analytics-baseline-76e8744
+          path: |
+            ${{ runner.temp }}/global-flight-analytics-baseline.tar.gz
+            ${{ runner.temp }}/global-flight-analytics-baseline.tar.gz.sha256
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
