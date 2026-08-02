@@ -26,6 +26,10 @@ TypeScript remains on major version 5. The proposed 5-to-7 jump is a separate co
 
 Related React, Tailwind, Three.js, Fiber and setup-action updates are grouped. The existing Docker update ecosystem is preserved. Invalid label references are removed so Dependabot no longer reports missing-label configuration errors.
 
+## Follow-up reconciliation
+
+A second Dependabot cycle opened new pull requests from the updated policy. Safe patch updates for React types, TanStack Query and the Next.js toolchain are consolidated in Document 171. ESLint 10, Node type definitions 26 and MapLibre 6 remain explicit major migrations and are deferred by policy.
+
 ## Permanent verification
 
 The stable `pnpm verify:release` entry point remains unchanged. Its shell implementation executes dependency maintenance tests and the dependency contract verifier before the existing release verification. Backend CI and Frontend CI also execute the dependency maintenance contract directly.
@@ -43,5 +47,6 @@ TYPESCRIPT_MAJOR_MIGRATION=DEFERRED_BY_POLICY
 DEPENDABOT_GROUPING=PASS
 DEPENDABOT_DOCKER_ECOSYSTEM=PRESERVED
 DEPENDABOT_LABEL_ERRORS=REMOVED
+DEPENDABOT_FOLLOW_UP_RECONCILIATION=PASS
 DEPENDENCY_MAINTENANCE_DEBT=CLOSED
 ```

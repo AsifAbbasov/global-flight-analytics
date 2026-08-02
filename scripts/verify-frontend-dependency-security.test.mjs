@@ -26,11 +26,11 @@ overrides:
 
 const secureWebPackage = JSON.stringify({
   dependencies: {
-    next: "16.2.11",
+    next: "16.2.12",
     sharp: "0.35.3",
   },
   devDependencies: {
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.2.12",
   },
 });
 
@@ -55,15 +55,15 @@ importers:
   apps/web:
     dependencies:
       next:
-        specifier: 16.2.11
-        version: 16.2.11(react@19.2.4)
+        specifier: 16.2.12
+        version: 16.2.12(react@19.2.4)
       sharp:
         specifier: 0.35.3
         version: 0.35.3
     devDependencies:
       eslint-config-next:
-        specifier: 16.2.11
-        version: 16.2.11
+        specifier: 16.2.12
+        version: 16.2.12
 
 packages:
   postcss@8.5.18:
@@ -73,7 +73,7 @@ packages:
     resolution: {integrity: sha512-sharp}
 
 snapshots:
-  next@16.2.11(react@19.2.4):
+  next@16.2.12(react@19.2.4):
     dependencies:
       postcss: 8.5.18
   postcss@8.5.18: {}
@@ -141,13 +141,13 @@ test("web application pins the patched Next.js toolchain", () => {
 
 test("vulnerable Next.js release fails", () => {
   const vulnerablePackage = secureWebPackage.replaceAll(
-    "16.2.11",
+    "16.2.12",
     "16.2.9",
   );
 
   assert.throws(
     () => verify({ webPackageText: vulnerablePackage }),
-    /must pin next and eslint-config-next 16\.2\.11/,
+    /must pin next and eslint-config-next 16\.2\.12/,
   );
 });
 
@@ -203,7 +203,7 @@ test("missing direct sharp pin fails", () => {
     () =>
       verify({
         webPackageText: JSON.stringify({
-          dependencies: { next: "16.2.11" },
+          dependencies: { next: "16.2.12" },
         }),
       }),
     /must pin sharp 0\.35\.3/,

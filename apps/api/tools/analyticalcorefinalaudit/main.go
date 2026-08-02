@@ -1126,8 +1126,8 @@ func auditFrontendContracts(
 				Name: "Frontend Next security release",
 				Path: "apps/web/package.json",
 				Required: []string{
-					`"next": "16.2.11"`,
-					`"eslint-config-next": "16.2.11"`,
+					`"next": "16.2.12"`,
+					`"eslint-config-next": "16.2.12"`,
 				},
 				Forbidden: []string{
 					`"next": "16.2.9"`,
@@ -1138,8 +1138,8 @@ func auditFrontendContracts(
 				Name: "Frontend dependency security policy",
 				Path: "scripts/verify-frontend-dependency-security.mjs",
 				Required: []string{
-					`MINIMUM_SAFE_NEXT_VERSION = "16.2.11"`,
-					`PINNED_NEXT_VERSION = "16.2.11"`,
+					`MINIMUM_SAFE_NEXT_VERSION = "16.2.12"`,
+					`PINNED_NEXT_VERSION = "16.2.12"`,
 					`MINIMUM_SAFE_POSTCSS_VERSION = "8.5.18"`,
 					`PINNED_POSTCSS_VERSION = "8.5.18"`,
 					"webPinsNextSecurityRelease",

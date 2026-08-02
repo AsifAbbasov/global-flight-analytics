@@ -1586,3 +1586,10 @@ observability audit gate, and deployment boundary.
 - File: `170_DEPENDENCY_MAINTENANCE_CLOSURE.md`
 - Status: `CLOSED`
 - Purpose: closes the safe dependency update wave, groups related Dependabot updates, removes invalid label references, and defers TypeScript major migration behind an explicit compatibility stage.
+
+
+## Document 171 — Dependabot Follow-up Reconciliation
+
+- File: `171_DEPENDABOT_FOLLOW_UP_RECONCILIATION.md`
+- Status: `CLOSED`
+- Purpose: reconciles the regenerated Dependabot follow-up wave, applies safe patch updates, groups the Next.js toolchain, and defers ESLint 10, Node type definitions 26, MapLibre 6 and TypeScript 7 behind explicit migration stages.

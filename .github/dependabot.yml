@@ -48,6 +48,13 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      next-toolchain:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+        update-types:
+          - "minor"
+          - "patch"
       tailwind-toolchain:
         patterns:
           - "tailwindcss"
@@ -64,5 +71,14 @@ updates:
           - "patch"
     ignore:
       - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "maplibre-gl"
         update-types:
           - "version-update:semver-major"
