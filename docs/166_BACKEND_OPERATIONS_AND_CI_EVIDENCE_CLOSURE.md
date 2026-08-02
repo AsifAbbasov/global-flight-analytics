@@ -1,8 +1,10 @@
 # Backend Operations and Continuous Integration Evidence Closure
 
+<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
+
 Status: Backend operations, production database migration, public API deployment, and production smoke verified
 Original product release SHA: `49e474e929dcca5b687464f0a47ce73fcd5a52a7`
-Production application SHA: `6bca02a8ed1487195b165ae9ced3ca687a373666`
+Historically verified production application SHA (2026-08-02): `6bca02a8ed1487195b165ae9ced3ca687a373666`
 Production migration evidence SHA: `31deab02507adc49bd296761d1551834e214b768`
 Backend Continuous Integration: run `30715613342`, completed successfully
 Frontend Continuous Integration: run `30715613361`, completed successfully
@@ -73,9 +75,13 @@ not expose its contents or any database credential.
 
 ## Production API evidence
 
-Render deployed application revision:
+During the production verification performed on 2026-08-02, Render served
+application revision:
 
 `6bca02a8ed1487195b165ae9ced3ca687a373666`
+
+The stable public API alias is mutable. This is evidence for the recorded verification
+event and is not a perpetual assertion about the revision currently served by that alias.
 
 The API established its PostgreSQL connection, started on the Render-assigned port, and
 returned repeated `200` responses from `/api/v1/ready`.

@@ -13,6 +13,7 @@ window, confidence, provenance and limitations visible.
 
 <!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
 <!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
+<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
 ## Portfolio Release Status
 
 Source implementation and exact-commit Continuous Integration are closed for the original
@@ -21,8 +22,9 @@ portfolio release `49e474e929dcca5b687464f0a47ce73fcd5a52a7`:
 - Backend CI run `30715613342` completed successfully;
 - Frontend CI run `30715613361` completed successfully.
 
-The public production application is deployed from revision
-`6bca02a8ed1487195b165ae9ced3ca687a373666`:
+The production verification completed on 2026-08-02 used application revision
+`6bca02a8ed1487195b165ae9ced3ca687a373666`. This is immutable historical evidence for that verification event,
+not a claim that the mutable production aliases still serve the same revision:
 
 - Frontend: `https://global-flight-analytics-web.vercel.app`
 - API: `https://global-flight-analytics-api.onrender.com`
@@ -185,9 +187,10 @@ the existing GitHub Actions workflows.
 Validate the verified public frontend and API together:
 
 ```bash
+DEPLOYED_API_REVISION='<full SHA from the intended Render deployment>'
 FRONTEND_URL="https://global-flight-analytics-web.vercel.app" \
 API_BASE_URL="https://global-flight-analytics-api.onrender.com" \
-EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
+EXPECTED_API_REVISION="$DEPLOYED_API_REVISION" \
 pnpm smoke:production
 ```
 
@@ -211,8 +214,9 @@ pnpm migrate:production-database
 After the CI-gated Render API deploy completes, verify lifecycle and build provenance:
 
 ```bash
+DEPLOYED_API_REVISION='<full SHA from the intended Render deployment>'
 API_BASE_URL="https://global-flight-analytics-api.onrender.com" \
-EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
+EXPECTED_API_REVISION="$DEPLOYED_API_REVISION" \
 pnpm smoke:api-production
 ```
 
@@ -227,6 +231,7 @@ repeat the same revision-specific verification.
 - [`docs/164_RECRUITER_DEMO_SCRIPT.md`](docs/164_RECRUITER_DEMO_SCRIPT.md) — seven-minute product and code walkthrough;
 - [`docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md`](docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md) — architecture, boundaries and trade-offs;
 - [`docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md`](docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md) — verified backend operations and cloud evidence;
+- [`docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md`](docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md) — historical-versus-current deployment revision contract;
 - [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — complete engineering record.
 
 ## Evidence Boundaries

@@ -1575,3 +1575,7 @@ labels, API and ingestion instrumentation, provider and fallback evidence, Postg
 reconciliation state collectors, service-level objectives, alert thresholds, permanent
 observability audit gate, and deployment boundary.
 ```
+
+## Document 169 — Release Truth and Deployment Revision Closure
+
+`169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md` separates historical deployment evidence, intended Render revision, observed API revision and current repository `HEAD`; removes the local-HEAD-equals-deployment assumption and installs permanent release truth gates.

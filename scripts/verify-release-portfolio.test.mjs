@@ -102,3 +102,21 @@ test('architecture document records modular monolith boundaries and rejected com
   assert.match(architecture, /Why not microservices/i)
   assert.match(architecture, /Evidence boundary/)
 })
+
+
+test('release truth separates historical evidence from mutable deployment aliases', async () => {
+  const readme = await text('README.md')
+  const closure = await text('docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md')
+  const runbook = await text('docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md')
+  const operations = await text('docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md')
+  const truth = await text('docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md')
+
+  assert.match(readme, /RELEASE-TRUTH-DEPLOYMENT-REVISION-V1/)
+  assert.doesNotMatch(readme, /The public production application is deployed from revision/)
+  assert.match(runbook, /DEPLOYED_API_REVISION/)
+  assert.doesNotMatch(runbook, /EXPECTED_API_REVISION="\$\(git rev-parse HEAD\)"/)
+  assert.match(closure, /Historically verified production application SHA/)
+  assert.match(operations, /Historically verified production application SHA/)
+  assert.match(truth, /EXPLICIT_DEPLOYMENT_REVISION_INPUT=REQUIRED/)
+  assert.match(truth, /RELEASE_TRUTH_CONTRACT=PASS/)
+})

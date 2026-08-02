@@ -36,13 +36,16 @@ for required_file in \
   docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md \
   docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md \
   docs/164_RECRUITER_DEMO_SCRIPT.md \
-  docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md
+  docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md \
+  docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md
 do
   require_file "$required_file"
 done
 
 require_literal README.md '<!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->' \
   'README release marker is missing'
+require_literal README.md '<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->' \
+  'README release truth marker is missing'
 require_literal README.md '## What Is Implemented' \
   'README implementation summary is missing'
 require_literal README.md 'pnpm verify:release' \
@@ -74,6 +77,8 @@ printf '%s\n' "$readme_portfolio_section" | grep -F 'Creating the Neon and Rende
   fail 'README still claims that production infrastructure has not been created'
 printf '%s\n' "$readme_portfolio_section" | grep -F 'public deployment phase is deliberately deferred' >/dev/null && \
   fail 'README still claims that public frontend deployment is deferred'
+printf '%s\n' "$readme_portfolio_section" | grep -F 'The public production application is deployed from revision' >/dev/null && \
+  fail 'README presents historical deployment evidence as a perpetually current revision'
 
 require_literal package.json '"verify:release": "bash scripts/verify-release.sh"' \
   'root verify:release script is missing'
@@ -119,6 +124,8 @@ require_literal docs/DOCUMENT_INDEX.md '## Document 164 — Recruiter Demo Scrip
   'Document 164 index entry is missing'
 require_literal docs/DOCUMENT_INDEX.md '## Document 165 — System Architecture and Decisions' \
   'Document 165 index entry is missing'
+require_literal docs/DOCUMENT_INDEX.md '## Document 169 — Release Truth and Deployment Revision Closure' \
+  'Document 169 index entry is missing'
 
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_API_DEPLOYMENT=CLOSED' \
   'release closure does not record verified public API deployment'
@@ -128,16 +135,27 @@ require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'FULL_BROWSER_PRODUCTI
   'release closure does not record verified browser production smoke'
 require_literal docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md 'PRODUCTION_RELEASE_SMOKE=PASS' \
   'deployment runbook does not record the verified full production smoke'
+require_literal docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md 'RELEASE_TRUTH_CONTRACT=PASS' \
+  'release truth closure marker is missing'
+require_literal docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md 'EXPLICIT_DEPLOYMENT_REVISION_INPUT=REQUIRED' \
+  'release truth closure does not require an explicit deployment revision'
 
 for release_document in \
   docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md \
   docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md \
   docs/164_RECRUITER_DEMO_SCRIPT.md \
-  docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md
+  docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md \
+  docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md
 do
   grep -F 'REPLACE_WITH_' "$REPOSITORY_ROOT/$release_document" >/dev/null && \
     fail "unresolved release placeholder remains in $release_document"
 done
+
+if grep -F 'EXPECTED_API_REVISION="$(git rev-parse HEAD)"' \
+  "$REPOSITORY_ROOT/README.md" \
+  "$REPOSITORY_ROOT/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md" >/dev/null; then
+  fail 'release documentation derives deployed runtime revision from local HEAD'
+fi
 
 if grep -E 'postgres(ql)?://[^[:space:]]+:[^[:space:]]+@[^[:space:]]+\.neon\.tech' \
   "$REPOSITORY_ROOT/docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md" \

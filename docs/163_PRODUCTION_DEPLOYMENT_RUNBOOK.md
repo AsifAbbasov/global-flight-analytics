@@ -1,5 +1,7 @@
 # Production Deployment Runbook
 
+<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
+
 ## Purpose
 
 This runbook deploys the complete production path without changing the application
@@ -24,7 +26,7 @@ The deployment completed on 2026-08-02 with these public endpoints:
 
 Evidence revisions:
 
-- production application SHA: `6bca02a8ed1487195b165ae9ced3ca687a373666`;
+- historically verified production application SHA (2026-08-02): `6bca02a8ed1487195b165ae9ced3ca687a373666`;
 - production migration evidence SHA: `31deab02507adc49bd296761d1551834e214b768`.
 
 Verified markers:
@@ -52,10 +54,12 @@ pnpm verify:release
 pnpm verify:backend-operations-contract
 ```
 
-Record the full SHA. Use the same application SHA for the Render deployment, Vercel
-deployment, API revision check, and full production smoke. A migration may be executed
-from an earlier compatible SHA when later commits do not change the migration catalog;
-record both revisions explicitly when that occurs.
+Record the source candidate SHA separately from the deployment revision. After Render
+selects or completes a deployment, copy the full SHA from Render deployment metadata into
+`DEPLOYED_API_REVISION`. Use that explicit value for the API revision check and full
+production smoke. Do not infer the deployed revision from the current local `HEAD`; the
+repository may advance independently. A migration may be executed from an earlier compatible
+SHA when later commits do not change the migration catalog; record every revision explicitly.
 
 ## 2. Create Neon PostgreSQL
 
@@ -125,8 +129,9 @@ Integration behavior.
 After the service is live and `/api/v1/ready` returns `200`, run:
 
 ```bash
+DEPLOYED_API_REVISION='<full SHA from the intended Render deployment>'
 API_BASE_URL=https://global-flight-analytics-api.onrender.com \
-EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
+EXPECTED_API_REVISION="$DEPLOYED_API_REVISION" \
 pnpm smoke:api-production
 ```
 
@@ -189,9 +194,10 @@ API startup, and repeated `/api/v1/ready status=200` logs.
 ## 7. Run the full production smoke
 
 ```bash
+DEPLOYED_API_REVISION='<full SHA from the intended Render deployment>'
 FRONTEND_URL="https://global-flight-analytics-web.vercel.app" \
 API_BASE_URL="https://global-flight-analytics-api.onrender.com" \
-EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
+EXPECTED_API_REVISION="$DEPLOYED_API_REVISION" \
 pnpm smoke:production
 ```
 

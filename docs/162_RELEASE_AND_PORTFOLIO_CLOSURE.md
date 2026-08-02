@@ -1,8 +1,10 @@
 # Release and Portfolio Closure
 
+<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
+
 Status: Public production deployment verified; frontend visual redesign remains a separate product phase
 Original source release SHA: `49e474e929dcca5b687464f0a47ce73fcd5a52a7`
-Production application SHA: `6bca02a8ed1487195b165ae9ced3ca687a373666`
+Historically verified production application SHA (2026-08-02): `6bca02a8ed1487195b165ae9ced3ca687a373666`
 Production migration evidence SHA: `31deab02507adc49bd296761d1551834e214b768`
 Backend Continuous Integration: run `30715613342`, completed successfully
 Frontend Continuous Integration: run `30715613361`, completed successfully
@@ -63,9 +65,19 @@ connection workflow with evidence SHA
 `31deab02507adc49bd296761d1551834e214b768`. The running API uses the pooled Neon
 connection string.
 
-Render and Vercel deployed application revision
-`6bca02a8ed1487195b165ae9ced3ca687a373666`. The API version endpoint reported that
-same revision during the production smoke test.
+During the production verification performed on 2026-08-02, Render and Vercel
+served application revision `6bca02a8ed1487195b165ae9ced3ca687a373666`. The API version endpoint reported that
+same revision during that revision-specific smoke test. The public aliases are mutable,
+so this document does not assert that they continue to serve the historical SHA.
+
+## Release truth and evidence freshness
+
+Source revision, intended deployment revision, observed runtime revision, and current
+repository `HEAD` are independent facts. Future deployment verification must obtain the
+intended revision from Render deployment metadata, pass it explicitly as
+`EXPECTED_API_REVISION`, and compare it with `/api/v1/version`. A local `git rev-parse HEAD`
+must never be substituted automatically unless that exact commit is the deployment being
+verified.
 
 ## Verified production smoke
 
