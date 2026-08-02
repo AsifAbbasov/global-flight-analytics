@@ -3,17 +3,23 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import subprocess
 import zlib
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PAYLOAD_BYTES = b"".join(
-    (SCRIPT_DIR / name).read_bytes()
-    for name in ['payload.00.b85', 'payload.01.b85', 'payload.02.b85', 'payload.03.b85']
-)
-PAYLOAD = json.loads(zlib.decompress(base64.b85decode(PAYLOAD_BYTES)).decode())
+PART_NAMES = ['payload.00.b64', 'payload.01.b64', 'payload.02.b64', 'payload.03.b64', 'payload.04.b64']
+EXPECTED_ENCODED_SHA256 = 'bc778a1b6f29f734fd7250b0cb99f614d83f241879f61aa502dae600ddc67359'
+EXPECTED_CANONICAL_SHA256 = '2924879280d1105a6474a0deb0a7926c03cbd27cc4fd07e213dd9fc91a50eb7a'
+PAYLOAD_BYTES = b"".join((SCRIPT_DIR / name).read_bytes() for name in PART_NAMES)
+if hashlib.sha256(PAYLOAD_BYTES).hexdigest() != EXPECTED_ENCODED_SHA256:
+    raise SystemExit("OBSERVABILITY_PATCH_ERROR=encoded payload checksum mismatch")
+CANONICAL_BYTES = zlib.decompress(base64.b64decode(PAYLOAD_BYTES, validate=True))
+if hashlib.sha256(CANONICAL_BYTES).hexdigest() != EXPECTED_CANONICAL_SHA256:
+    raise SystemExit("OBSERVABILITY_PATCH_ERROR=canonical payload checksum mismatch")
+PAYLOAD = json.loads(CANONICAL_BYTES.decode("utf-8"))
 
 
 def fail(message: str) -> None:
@@ -78,14 +84,8 @@ def main() -> None:
         content = destination.read_text().rstrip("\n") + suffix
         destination.write_text(content.rstrip("\n") + "\n")
 
-    subprocess.run(
-        ["gofmt", "-w", str(root / "apps/api")],
-        check=True,
-    )
-    subprocess.run(
-        ["git", "-C", str(root), "diff", "--check"],
-        check=True,
-    )
+    subprocess.run(["gofmt", "-w", str(root / "apps/api")], check=True)
+    subprocess.run(["git", "-C", str(root), "diff", "--check"], check=True)
     print("OBSERVABILITY_PATCH_APPLICATION=PASS")
 
 
