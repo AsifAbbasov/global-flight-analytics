@@ -49,8 +49,14 @@ require_literal README.md 'pnpm verify:release' \
   'README release verification command is missing'
 require_literal README.md 'pnpm smoke:production' \
   'README production smoke command is missing'
-require_literal README.md 'No screenshot, live URL or green check is claimed unless it has been produced for the' \
-  'README exact-evidence policy is missing'
+require_literal README.md 'https://global-flight-analytics-web.vercel.app' \
+  'README verified frontend URL is missing'
+require_literal README.md 'https://global-flight-analytics-api.onrender.com' \
+  'README verified API URL is missing'
+require_literal README.md 'PRODUCTION_RELEASE_SMOKE=PASS' \
+  'README verified full production smoke marker is missing'
+require_literal README.md 'Visual and interaction redesign remains a separate product phase' \
+  'README remaining frontend redesign boundary is missing'
 
 readme_portfolio_section="$(
   awk '
@@ -64,6 +70,10 @@ printf '%s\n' "$readme_portfolio_section" | grep -F '## MVP Focus' >/dev/null &&
   fail 'obsolete MVP Focus heading remains in the portfolio entry section'
 printf '%s\n' "$readme_portfolio_section" | grep -F '## First Coding Slice' >/dev/null && \
   fail 'obsolete First Coding Slice heading remains in the portfolio entry section'
+printf '%s\n' "$readme_portfolio_section" | grep -F 'Creating the Neon and Render resources still requires' >/dev/null && \
+  fail 'README still claims that production infrastructure has not been created'
+printf '%s\n' "$readme_portfolio_section" | grep -F 'public deployment phase is deliberately deferred' >/dev/null && \
+  fail 'README still claims that public frontend deployment is deferred'
 
 require_literal package.json '"verify:release": "bash scripts/verify-release.sh"' \
   'root verify:release script is missing'
@@ -110,6 +120,15 @@ require_literal docs/DOCUMENT_INDEX.md '## Document 164 — Recruiter Demo Scrip
 require_literal docs/DOCUMENT_INDEX.md '## Document 165 — System Architecture and Decisions' \
   'Document 165 index entry is missing'
 
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_API_DEPLOYMENT=CLOSED' \
+  'release closure does not record verified public API deployment'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_NEXTJS_DEPLOYMENT=CLOSED' \
+  'release closure does not record verified public Next.js deployment'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'FULL_BROWSER_PRODUCTION_SMOKE=CLOSED' \
+  'release closure does not record verified browser production smoke'
+require_literal docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md 'PRODUCTION_RELEASE_SMOKE=PASS' \
+  'deployment runbook does not record the verified full production smoke'
+
 for release_document in \
   docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md \
   docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md \
@@ -121,8 +140,9 @@ do
 done
 
 if grep -E 'postgres(ql)?://[^[:space:]]+:[^[:space:]]+@[^[:space:]]+\.neon\.tech' \
+  "$REPOSITORY_ROOT/docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md" \
   "$REPOSITORY_ROOT/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md" >/dev/null; then
-  fail 'deployment runbook contains what appears to be a real Neon credential'
+  fail 'release documentation contains what appears to be a real Neon credential'
 fi
 
 printf '%s\n' 'RELEASE_PORTFOLIO_CONTRACT=PASS'
