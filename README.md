@@ -15,20 +15,40 @@ window, confidence, provenance and limitations visible.
 <!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
 ## Portfolio Release Status
 
-Source implementation and exact-commit Continuous Integration are closed for release
-`49e474e929dcca5b687464f0a47ce73fcd5a52a7`:
+Source implementation and exact-commit Continuous Integration are closed for the original
+portfolio release `49e474e929dcca5b687464f0a47ce73fcd5a52a7`:
 
 - Backend CI run `30715613342` completed successfully;
 - Frontend CI run `30715613361` completed successfully.
 
-Repository-side backend deployment preparation is also closed through a CI-gated free
-Render Blueprint, a direct Neon migration command and an API-only production smoke
-contract. Creating the Neon and Render resources still requires owner-controlled accounts,
-credentials and the final API URL.
+The public production application is deployed from revision
+`6bca02a8ed1487195b165ae9ced3ca687a373666`:
 
-The Next.js visual and public deployment phase is deliberately deferred for a separate
-creative pass. No screenshot, live URL or green check is claimed unless it has been produced for the
-exact commit being reviewed.
+- Frontend: `https://global-flight-analytics-web.vercel.app`
+- API: `https://global-flight-analytics-api.onrender.com`
+- Database: owner-controlled Neon PostgreSQL
+
+Production migrations `019` through `029` were applied through the direct TLS Neon
+workflow. Render uses the pooled Neon connection string, and Vercel uses the public Render
+API origin. The exact Vercel origin is configured in Render Cross-Origin Resource Sharing.
+
+Verified production evidence:
+
+```text
+PRODUCTION_DATABASE_MIGRATION=PASS
+PRODUCTION_API_SMOKE=PASS
+PRODUCTION_FRONTEND=PASS
+PRODUCTION_API_HEALTH=PASS
+PRODUCTION_API_READINESS=PASS
+PRODUCTION_API_VERSION=PASS
+PRODUCTION_CORS=PASS
+PRODUCTION_RELEASE_SMOKE=PASS
+```
+
+Visual and interaction redesign remains a separate product phase. The current frontend is
+publicly deployed and technically integrated, but it is not presented as the final visual
+design. Live URLs and green checks are recorded only because they were verified against the
+exact revisions documented in the release closure.
 
 ## What Is Implemented
 
@@ -98,7 +118,7 @@ recomputing server-owned metrics.
 | Backend | Go, Fiber, pgx |
 | Database | PostgreSQL |
 | Local runtime | Docker Compose |
-| Production path | Vercel frontend, Render-compatible Docker API, Neon PostgreSQL |
+| Production path | Vercel frontend, Render Docker API, Neon PostgreSQL |
 | Quality gates | Go tests and vet, architecture audits, Node contract tests, ESLint, TypeScript, production builds, dependency policy |
 
 <!-- RECRUITER-QUICKSTART-V1 -->
@@ -162,11 +182,11 @@ Go vet, core architecture audits, Docker Compose configuration and whitespace in
 The much broader PostgreSQL, race, container and domain audit matrix remains enforced by
 the existing GitHub Actions workflows.
 
-After a real deployment, validate the public frontend and API together:
+Validate the verified public frontend and API together:
 
 ```bash
-FRONTEND_URL=https://your-frontend.example \
-API_BASE_URL=https://your-api.example \
+FRONTEND_URL="https://global-flight-analytics-web.vercel.app" \
+API_BASE_URL="https://global-flight-analytics-api.onrender.com" \
 EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
 pnpm smoke:production
 ```
@@ -191,20 +211,22 @@ pnpm migrate:production-database
 After the CI-gated Render API deploy completes, verify lifecycle and build provenance:
 
 ```bash
-API_BASE_URL=https://your-api.example \
+API_BASE_URL="https://global-flight-analytics-api.onrender.com" \
 EXPECTED_API_REVISION="$(git rev-parse HEAD)" \
 pnpm smoke:api-production
 ```
 
-The full `pnpm smoke:production` browser and CORS contract remains intentionally tied to
-the later Next.js creative and public deployment phase.
+The full `pnpm smoke:production` browser and CORS contract has been executed successfully
+against the stable Vercel and Render production origins. Future application revisions must
+repeat the same revision-specific verification.
 
 ## Reviewer Guide
 
-- [`docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md`](docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md) — release definition and evidence policy;
-- [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md) — Neon, Docker API and Vercel deployment path;
+- [`docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md`](docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md) — release definition and production evidence policy;
+- [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md) — Neon, Render and Vercel deployment path;
 - [`docs/164_RECRUITER_DEMO_SCRIPT.md`](docs/164_RECRUITER_DEMO_SCRIPT.md) — seven-minute product and code walkthrough;
 - [`docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md`](docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md) — architecture, boundaries and trade-offs;
+- [`docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md`](docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md) — verified backend operations and cloud evidence;
 - [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — complete engineering record.
 
 ## Evidence Boundaries
@@ -635,20 +657,17 @@ Trajectory feature extraction now uses one canonical point-evidence sequence for
 
 Flight Feature validation now separates evidence incompleteness from mathematical integrity: partial groups may remain limited only when their evidence is explainable and internally valid, while non-finite values, impossible ranges, inconsistent relationships, residual unavailable payloads, and unsupported zero-evidence claims are rejected. Quality limitations are rebuilt from current group evidence on every validation pass, and all tolerance comparisons use a dimensionless relative policy. Validator generation six and processing generation twelve isolate the corrected trust-gate semantics.
 
-
 <!-- HISTORICAL-CONTRACT-REVIEW-HARDENING:README -->
 
 ## Historical Contract Review Hardening
 
 Historical Intelligence now uses one production metric catalog for metric identity, unit, aggregation, value kind, builder ownership, and scope; rejects fractional count values and contradictory confidence/status evidence; binds comparisons to current summaries; completes the versioned schema registry; and aligns aggregate region normalization with the contract. Contract generation two isolates the corrected trust boundary.
 
-
 <!-- HISTORICAL-WINDOW-REVIEW-HARDENING:README -->
 
 ## Historical Window Review Hardening
 
 Historical Intelligence window planning now enforces bucket limits during generation, preserves cancellation on every iteration, constructs previous windows without saturated `time.Duration`, canonicalizes mutable plans before analytics and fingerprinting, binds all derived evidence into fingerprint generation two, and keeps execution limits outside semantic identity. Custom one-bucket planning and optional absent windows remain intentional domain contracts.
-
 
 <!-- HISTORICAL-READ-REVIEW-HARDENING:README -->
 
@@ -674,20 +693,17 @@ denominator, recomputes complete-route distance from validated coordinates, bind
 and defines active routes as unique directional route pairs. A permanent strict
 audit protects the version-two builder boundary in Backend Continuous Integration.
 
-
 <!-- HISTORICAL-COMPARISON-REVIEW-HARDENING:README -->
 
 ## Historical Comparison Review Hardening
 
 Historical Comparison now rejects unequal per-bucket coverage profiles, binds explicit current-and-previous quality evidence and previous-period limitations into accepted partial comparisons, constructs both-period provenance and fingerprints atomically inside `Attach`, uses explicit `Scope.Equal`, rejects non-finite percentage arithmetic with a comparison-owned error, and protects the version-two boundary with permanent tests and Backend Continuous Integration audit enforcement.
 
-
 <!-- HISTORICAL-SIMILARITY-REVIEW-HARDENING:README -->
 
 ## Historical Similarity Review Hardening
 
 Historical Similarity now separates route-shape similarity from evidence confidence, binds trajectory quality, segment status, coverage gaps, point retention, and observation cadence, bounds sampling and input points, removes the duplicate public Rank workflow, canonicalizes equal timestamps, fingerprints the exact prepared representation, verifies all component and confidence mathematics, uses worst-endpoint scoring and great-circle resampling, and installs a permanent strict Backend Continuous Integration audit.
-
 
 <!-- HISTORICAL-AGGREGATE-REVIEW-HARDENING:README -->
 
@@ -700,7 +716,6 @@ idempotent replay, exposes a narrow Writer interface to materialization, rejects
 nil contexts and causally invalid storage timestamps, and protects migration 029
 with permanent tests and Backend Continuous Integration audit enforcement.
 
-
 <!-- HISTORICAL-MATERIALIZATION-REVIEW-HARDENING:README -->
 
 ## Historical Materialization Review Hardening
@@ -711,7 +726,6 @@ metadata, exposes period-specific read summaries, preserves Historical
 Comparison provenance ownership, returns the canonical persisted result, rejects
 nil context, identifies orchestration failure stages, and is protected by a
 permanent strict Backend Continuous Integration audit.
-
 
 <!-- HISTORICAL-REPLAY-REVIEW-HARDENING:README -->
 
