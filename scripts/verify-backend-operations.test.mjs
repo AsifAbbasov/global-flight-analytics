@@ -8,13 +8,17 @@ const root = resolve(import.meta.dirname, '..')
 const read = path => readFileSync(resolve(root, path), 'utf8')
 
 const releaseSHA = '49e474e929dcca5b687464f0a47ce73fcd5a52a7'
+const productionSHA = '6bca02a8ed1487195b165ae9ced3ca687a373666'
 
-test('README records exact CI closure and separates the deferred frontend phase', () => {
+test('README records exact CI closure and verified public deployment', () => {
   const source = read('README.md')
   assert.match(source, new RegExp(releaseSHA))
   assert.match(source, /Backend CI run `30715613342`/)
   assert.match(source, /Frontend CI run `30715613361`/)
-  assert.match(source, /Next\.js visual and public deployment phase is deliberately deferred/)
+  assert.match(source, new RegExp(productionSHA))
+  assert.match(source, /https:\/\/global-flight-analytics-web\.vercel\.app/)
+  assert.match(source, /https:\/\/global-flight-analytics-api\.onrender\.com/)
+  assert.match(source, /visual and interaction redesign remains a separate product phase/i)
 })
 
 test('root package publishes backend operations commands', () => {
@@ -83,14 +87,21 @@ test('Backend CI permanently enforces operations contracts and Blueprint changes
   assert.match(source, /bash scripts\/verify-backend-operations\.sh/)
 })
 
-test('closure documents record exact evidence without claiming public deployment', () => {
+test('closure documents record exact production evidence without exposing secrets', () => {
   const hardening = read('docs/161_FRONTEND_PRODUCT_HARDENING.md')
   const release = read('docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md')
   const operations = read('docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md')
   assert.match(hardening, /30715613361/)
+  assert.match(hardening, /PRODUCTION_RELEASE_SMOKE=PASS/)
   assert.match(release, /EXACT_COMMIT_CI_EVIDENCE=CLOSED/)
-  assert.match(operations, /PUBLIC_API_DEPLOYMENT=PENDING_OWNER_CREDENTIALS/)
-  assert.match(operations, /NEXTJS_CREATIVE_PHASE=DEFERRED_BY_OWNER/)
+  assert.match(release, /PUBLIC_API_DEPLOYMENT=CLOSED/)
+  assert.match(release, /PUBLIC_NEXTJS_DEPLOYMENT=CLOSED/)
+  assert.match(operations, /PRODUCTION_DATABASE_MIGRATION=CLOSED/)
+  assert.match(operations, /FULL_BROWSER_PRODUCTION_SMOKE=CLOSED/)
+  assert.match(operations, /FRONTEND_VISUAL_REDESIGN=PLANNED_SEPARATE_PHASE/)
+  for (const source of [hardening, release, operations]) {
+    assert.doesNotMatch(source, /postgres(ql)?:\/\/[^\s]+:[^\s]+@[^\s]+\.neon\.tech/i)
+  }
 })
 
 test('deployment runbook distinguishes free-plan migration from paid pre-deploy automation', () => {
@@ -99,4 +110,5 @@ test('deployment runbook distinguishes free-plan migration from paid pre-deploy 
   assert.match(source, /pnpm migrate:production-database/)
   assert.match(source, /paid Render service/)
   assert.match(source, /pre-deploy command/)
+  assert.match(source, /PRODUCTION_RELEASE_SMOKE=PASS/)
 })
