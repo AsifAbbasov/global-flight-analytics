@@ -22,6 +22,7 @@ test('scheduled production ingestion remains bounded and serialized', () => {
   assert.match(workflow, /cancel-in-progress: false/)
   assert.match(workflow, /go run \.\/cmd\/ingest --once/)
   assert.match(workflow, /PRODUCTION_INGESTION_DATABASE_URL/)
+  assert.match(workflow, /TRAFFIC_INGESTION_RADIUS: '250'/)
   assert.match(workflow, /node-version: '24\.9\.0'/)
 })
 
