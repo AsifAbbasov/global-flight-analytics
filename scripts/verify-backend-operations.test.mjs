@@ -76,6 +76,17 @@ test('Docker and Backend CI use one Render-aware revision fallback', () => {
   assert.doesNotMatch(containerJob, /--build-arg VCS_REF=/)
 })
 
+test('production historical materializer ships in the backend runtime image', () => {
+  const dockerfile = read('apps/api/Dockerfile')
+  const workflow = read('.github/workflows/backend-ci.yml')
+  const containerJob = workflow.slice(workflow.indexOf('  backend-container:'))
+
+  assert.ok(dockerfile.includes('        materialize-historical-intelligence \\\n'))
+  assert.match(containerJob, /Verify production historical materializer binary/)
+  assert.match(containerJob, /\/app\/materialize-historical-intelligence/)
+  assert.match(containerJob, /\n\s+-h \\\n\s+> \/dev\/null 2>&1/)
+})
+
 test('API production smoke verifies lifecycle and exact build provenance', () => {
   const source = read('scripts/smoke-api-production.sh')
   for (const endpoint of ['/api/v1/health', '/api/v1/ready', '/api/v1/version']) {
