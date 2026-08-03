@@ -4,6 +4,11 @@ import "time"
 
 const ProviderOpenMeteo = "open_meteo"
 
+type CurrentWeatherRequest struct {
+	Latitude  float64
+	Longitude float64
+}
+
 type CurrentMetricAvailability struct {
 	TemperatureCelsius       bool
 	RelativeHumidityPercent  bool
