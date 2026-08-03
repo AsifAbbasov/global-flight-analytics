@@ -20,7 +20,7 @@ import {
 const secureWorkspace = `packages:
   - 'apps/*'
 overrides:
-  'postcss@<8.5.18': 8.5.18
+  'postcss@<8.5.23': 8.5.23
   'sharp@<0.35.0': 0.35.3
 `;
 
@@ -66,7 +66,7 @@ importers:
         version: 16.2.12
 
 packages:
-  postcss@8.5.18:
+  postcss@8.5.23:
     resolution: {integrity: sha512-postcss}
 
   sharp@0.35.3:
@@ -75,8 +75,8 @@ packages:
 snapshots:
   next@16.2.12(react@19.2.4):
     dependencies:
-      postcss: 8.5.18
-  postcss@8.5.18: {}
+      postcss: 8.5.23
+  postcss@8.5.23: {}
 
   sharp@0.35.3: {}
 `;
@@ -108,7 +108,7 @@ test("PostCSS resolutions are collected deterministically", () => {
     collectPostCSSVersions(
       `${secureLockfile}\n  postcss@8.5.12:\n    resolution: {integrity: sha512-second}\n`,
     ),
-    ["8.5.12", "8.5.18"],
+    ["8.5.12", "8.5.23"],
   );
 });
 
@@ -158,19 +158,19 @@ test("Next.js PostCSS and web Sharp resolutions are recognized", () => {
 
 test("secure dependency graph passes", () => {
   const result = verify();
-  assert.deepEqual(result.postcssVersions, ["8.5.18"]);
+  assert.deepEqual(result.postcssVersions, ["8.5.23"]);
   assert.deepEqual(result.sharpVersions, ["0.35.3"]);
 });
 
 test("vulnerable PostCSS resolution fails", () => {
   const vulnerableLockfile = secureLockfile.replaceAll(
-    "8.5.18",
-    "8.5.17",
+    "8.5.23",
+    "8.5.22",
   );
 
   assert.throws(
     () => verify({ lockfileText: vulnerableLockfile }),
-    /vulnerable PostCSS versions: 8\.5\.17/,
+    /vulnerable PostCSS versions: 8\.5\.22/,
   );
 });
 
