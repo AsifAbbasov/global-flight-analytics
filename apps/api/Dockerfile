@@ -28,6 +28,7 @@ RUN set -eux; \
         import-airports \
         ingest \
         materialize-flight-features \
+        materialize-historical-intelligence \
         migrate \
         reconcile \
         server \

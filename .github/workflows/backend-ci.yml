@@ -308,6 +308,16 @@ jobs:
           test "$image_revision" = "$GFA_VCS_REF"
           test "$image_created" = "$GFA_BUILD_DATE"
 
+      - name: Verify production historical materializer binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            global-flight-analytics-api:ci \
+            /app/materialize-historical-intelligence \
+            -h \
+            > /dev/null 2>&1
+
       - name: Run container health smoke test
         shell: bash
         run: |
