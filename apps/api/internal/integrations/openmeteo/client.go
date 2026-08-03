@@ -48,10 +48,7 @@ type Client struct {
 	responseObserver integrationcommon.ProviderResponseObserver
 }
 
-type CurrentWeatherRequest struct {
-	Latitude  float64
-	Longitude float64
-}
+type CurrentWeatherRequest = weather.CurrentWeatherRequest
 
 func New(
 	config Config,

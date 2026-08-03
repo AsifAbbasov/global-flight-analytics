@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	domainweather "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/openmeteo"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/ingestionorchestrator"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 )
@@ -30,7 +29,7 @@ func (ExecutionValue) RequestCoalescingValue() {}
 type Delegate interface {
 	GetCurrentWeather(
 		ctx context.Context,
-		request openmeteo.CurrentWeatherRequest,
+		request domainweather.CurrentWeatherRequest,
 	) (domainweather.CurrentSnapshot, error)
 }
 
@@ -74,7 +73,7 @@ func (
 	client *Client,
 ) GetCurrentWeather(
 	ctx context.Context,
-	request openmeteo.CurrentWeatherRequest,
+	request domainweather.CurrentWeatherRequest,
 ) (domainweather.CurrentSnapshot, error) {
 	result, err := client.executor.Execute(
 		ctx,
@@ -112,7 +111,7 @@ func (
 }
 
 func currentWeatherRequestKey(
-	request openmeteo.CurrentWeatherRequest,
+	request domainweather.CurrentWeatherRequest,
 ) string {
 	return fmt.Sprintf(
 		"current:%g:%g",

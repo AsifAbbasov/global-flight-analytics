@@ -8,7 +8,6 @@ import (
 
 	aviationconstraints "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/constraints"
 	domainweather "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/openmeteo"
 )
 
 var (
@@ -19,7 +18,7 @@ var (
 )
 
 type CurrentWeatherClient interface {
-	GetCurrentWeather(ctx context.Context, request openmeteo.CurrentWeatherRequest) (domainweather.CurrentSnapshot, error)
+	GetCurrentWeather(ctx context.Context, request domainweather.CurrentWeatherRequest) (domainweather.CurrentSnapshot, error)
 }
 
 type CurrentSnapshotRepository interface {
@@ -36,10 +35,7 @@ type Service struct {
 	repository CurrentSnapshotRepository
 }
 
-type CurrentWeatherRequest struct {
-	Latitude  float64
-	Longitude float64
-}
+type CurrentWeatherRequest = domainweather.CurrentWeatherRequest
 
 type CurrentWeatherResult struct {
 	SnapshotID string
@@ -72,10 +68,7 @@ func (service *Service) GetAndStoreCurrentWeather(ctx context.Context, request C
 		return CurrentWeatherResult{}, ErrInvalidWeatherCoordinates
 	}
 
-	snapshot, err := service.client.GetCurrentWeather(ctx, openmeteo.CurrentWeatherRequest{
-		Latitude:  request.Latitude,
-		Longitude: request.Longitude,
-	})
+	snapshot, err := service.client.GetCurrentWeather(ctx, request)
 	if err != nil {
 		return CurrentWeatherResult{}, fmt.Errorf("get current weather: %w", err)
 	}

@@ -1,9 +1,9 @@
 package weatherprovider
 
-import "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/openmeteo"
+import domainweather "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/weather"
 
 func CurrentWeatherRequestKey(
-	request openmeteo.CurrentWeatherRequest,
+	request domainweather.CurrentWeatherRequest,
 ) string {
 	return currentWeatherRequestKey(
 		request,
