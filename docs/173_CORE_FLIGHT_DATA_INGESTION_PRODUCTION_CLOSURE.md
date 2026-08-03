@@ -148,6 +148,19 @@ PRODUCTION_TRAFFIC_FRESHNESS=PASS
 
 A successful ingestion process without fresh public data is not accepted as production closure.
 
+### Validated regional query radius
+
+The first production runtime activation on 2026-08-03 proved that the original one-hundred-nautical-mile query completed successfully but returned zero aircraft around Baku. A direct provider diagnostic immediately afterward returned:
+
+```text
+radius 100 nautical miles: total=0
+radius 250 nautical miles: total=1
+provider HTTP status: 200
+provider message: No error
+```
+
+The production workflow therefore uses a two-hundred-fifty-nautical-mile radius. This is a coverage correction based on observed provider behavior, not a claim of guaranteed regional availability.
+
 ---
 
 ## 7. Schedule Limitations

@@ -55,6 +55,10 @@ assert(
   'production ingestion workflow must use the dedicated database secret'
 )
 assert(
+  workflow.includes("TRAFFIC_INGESTION_RADIUS: '250'"),
+  'production ingestion workflow must use the validated 250 nautical mile coverage radius'
+)
+assert(
   workflow.includes("node-version: '24.9.0'"),
   'production ingestion workflow must pin Node.js 24.9.0'
 )
