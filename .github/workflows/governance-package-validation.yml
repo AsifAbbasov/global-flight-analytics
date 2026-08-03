@@ -58,6 +58,10 @@ jobs:
         run: |
           set -euo pipefail
           sed -i '810c\  assert.match(codeql, /build-mode:/);' scripts/governance-package-validation-runner.mjs
+          sed -i "905c\  assert(types.has(type), 'active main rule missing: ' + type);" scripts/governance-package-validation-runner.mjs
+          sed -i "908c\  assert(JSON.stringify(rules).includes(context), 'required status context missing: ' + context);" scripts/governance-package-validation-runner.mjs
+          sed -i "967c\  for (const run of selected) console.log(run.name + ' run_id=' + run.id + ' conclusion=success');" scripts/governance-package-validation-runner.mjs
+          sed -i "970c\  for (const run of selected) console.log(run.name + ' run_id=' + run.id + ' conclusion=' + run.conclusion);" scripts/governance-package-validation-runner.mjs
           node --check scripts/governance-package-validation-runner.mjs
 
       - name: Validate package against exact baseline
