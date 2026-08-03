@@ -1599,3 +1599,8 @@ observability audit gate, and deployment boundary.
 - File: `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md`
 - Status: `PATCH PREPARED; SETTINGS PENDING EXACT-COMMIT CI`
 - Purpose: establishes immutable Action pins, stable required CI gates, CodeQL, ownership and security policy files, reproducible GitHub settings automation, protected main-branch governance, and history-preserving stale-branch reconciliation.
+
+<!-- CORE-FLIGHT-DATA-INGESTION-PRODUCTION-CLOSURE-V1:DOCUMENT-INDEX -->
+## Document 173 — Core Flight Data Ingestion Production Closure
+
+`173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` records the stale production evidence, missing runtime root cause, bounded one-shot command, serialized free GitHub Actions schedule, secret boundary, end-to-end freshness gate, platform limitations and final runtime activation criteria.
