@@ -161,10 +161,19 @@ jobs:
           NODE
           node --check scripts/governance-package-validation-runner.mjs
           actual_sha="$(sha256sum scripts/governance-package-validation-runner.mjs | awk '{print $1}')"
-          test "$actual_sha" = "ffdf6bcaef4c099f4e1a271acbfe521c5a0c0f1b07b4a5ab95d3a3ae5a3b6a17"
-          printf '%s\n' "BYTE_IDENTICAL_INSTALLER_SHA=PASS sha=$actual_sha"
+          printf '%s\n' "VALIDATED_INSTALLER_SHA=$actual_sha"
+          test "$actual_sha" = "eb49a6e8dcf5b528010c1fd0abc7bc4bf56e9c8f067ab2274e61195289c557c5"
+          printf '%s\n' "VALIDATED_INSTALLER_SHA_IDENTITY=PASS sha=$actual_sha"
 
-      - name: Validate byte-identical package against exact baseline
+      - name: Validate exact installer against exact baseline
         env:
           PROJECT_ROOT: ${{ github.workspace }}
         run: node scripts/governance-package-validation-runner.mjs --validate-baseline-only
+
+      - name: Upload exact validated installer
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: exact-validated-governance-installer
+          path: scripts/governance-package-validation-runner.mjs
+          if-no-files-found: error
+          retention-days: 1
