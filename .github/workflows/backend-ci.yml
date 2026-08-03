@@ -268,7 +268,7 @@ jobs:
           docker build \
             --pull \
             --build-arg APP_VERSION="$app_version" \
-            --build-arg VCS_REF="$GITHUB_SHA" \
+            --build-arg RENDER_GIT_COMMIT="$GITHUB_SHA" \
             --build-arg BUILD_DATE="$build_date" \
             --file apps/api/Dockerfile \
             --tag global-flight-analytics-api:ci \
