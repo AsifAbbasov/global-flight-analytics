@@ -53,8 +53,8 @@ for (const [name, actual] of expected) {
   if (actual !== targets[name]) fail(`unexpected ${name} version: ${actual}`);
 }
 if (!goMod.includes('github.com/gofiber/fiber/v2 v2.52.14')) fail('Fiber v2.52.14 is missing');
-if (backendCI.includes('actions/setup-go@v6') || !backendCI.includes('actions/setup-go@v7')) fail('setup-go v7 contract failed');
-if (frontendCI.includes('actions/setup-node@v6') || !frontendCI.includes('actions/setup-node@v7')) fail('setup-node v7 contract failed');
+if (!/actions\/setup-go@[0-9a-f]{40}\s+# v7/.test(backendCI)) fail('setup-go v7 immutable pin contract failed');
+if (!/actions\/setup-node@[0-9a-f]{40}\s+# v7/.test(frontendCI)) fail('setup-node v7 immutable pin contract failed');
 if (!backendCI.includes('Verify dependency maintenance contract') || !frontendCI.includes('Verify dependency maintenance contract')) fail('dependency maintenance is not enforced by both CI workflows');
 for (const literal of ['react-runtime:', 'next-toolchain:', 'tailwind-toolchain:', 'three-runtime:', 'fiber-runtime:', 'setup-actions:', 'package-ecosystem: "docker"', 'version-update:semver-major']) {
   if (!dependabot.includes(literal)) fail(`Dependabot contract is missing ${literal}`);

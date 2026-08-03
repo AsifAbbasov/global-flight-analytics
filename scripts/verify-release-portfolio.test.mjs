@@ -42,7 +42,10 @@ test('root package publishes one release verification and one production smoke e
 test('backend and frontend CI both enforce the release contract', async () => {
   const backend = await text('.github/workflows/backend-ci.yml')
   const frontend = await text('.github/workflows/frontend-ci.yml')
-  assert.equal((backend.match(/- '\.github\/workflows\/frontend-ci\.yml'/g) ?? []).length, 2)
+  const trigger = backend.slice(0, backend.indexOf('\npermissions:\n'))
+  assert.match(trigger, /on:\n  pull_request:\n\n  push:/)
+  const trackedFrontendWorkflowPath = "- '.github/workflows/frontend-ci.yml'"
+  assert.equal(backend.split(trackedFrontendWorkflowPath).length - 1, 1)
   assert.match(backend, /Verify release and portfolio contract/)
   assert.match(backend, /bash scripts\/verify-release-portfolio\.sh/)
   assert.match(frontend, /Verify release and portfolio contract/)

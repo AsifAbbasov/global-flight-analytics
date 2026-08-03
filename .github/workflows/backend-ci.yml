@@ -2,25 +2,6 @@ name: Backend CI
 
 on:
   pull_request:
-    paths:
-      - 'apps/api/**'
-      - 'apps/web/types/**'
-      - 'apps/web/components/analytics/**'
-      - 'apps/web/lib/api/analytics.ts'
-      - 'apps/web/lib/queries/analytics.ts'
-      - 'database/**'
-      - '.dockerignore'
-      - 'compose.yaml'
-      - 'render.yaml'
-      - '.github/workflows/backend-ci.yml'
-      - '.github/workflows/frontend-ci.yml'
-      - '.github/dependabot.yml'
-      - 'scripts/**'
-      - 'docs/**'
-      - 'README.md'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
 
   push:
     branches:
@@ -44,6 +25,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -64,10 +46,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: apps/api/go.mod
           cache: true
@@ -237,10 +219,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Node.js for dependency contracts
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '24.9.0'
 
@@ -513,10 +495,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: apps/api/go.mod
           cache: true
@@ -589,10 +571,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: apps/api/go.mod
           cache: true
@@ -642,6 +624,26 @@ jobs:
           MIGRATIONS_DIR: ${{ github.workspace }}/database/migrations
           MIGRATION_TIMEOUT: 2m
         run: go run ./cmd/verify-postgres-feature-pipeline
+
+
+  backend-ci-gate:
+    name: Backend CI Gate
+    if: ${{ always() }}
+    needs:
+      - backend-quality
+      - backend-container
+      - backend-race
+      - postgres-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify backend workflow result
+        shell: bash
+        run: |
+          test "${{ needs.backend-quality.result }}" = "success"
+          test "${{ needs.backend-container.result }}" = "success"
+          test "${{ needs.backend-race.result }}" = "success"
+          test "${{ needs.postgres-integration.result }}" = "success"
 
 # STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1
 

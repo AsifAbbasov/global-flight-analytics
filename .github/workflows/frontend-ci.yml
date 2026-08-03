@@ -2,29 +2,6 @@ name: Frontend CI
 
 on:
   pull_request:
-    paths:
-      - 'apps/web/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - '.github/workflows/frontend-ci.yml'
-      - '.github/workflows/backend-ci.yml'
-      - 'README.md'
-      - 'scripts/verify-release-portfolio.sh'
-      - 'scripts/verify-release-portfolio.test.mjs'
-      - 'scripts/verify-release.sh'
-      - 'scripts/verify-dependency-maintenance.mjs'
-      - 'scripts/verify-dependency-maintenance.test.mjs'
-      - 'scripts/verify-frontend-dependency-security.mjs'
-      - 'scripts/verify-frontend-dependency-security.test.mjs'
-      - '.github/dependabot.yml'
-      - 'docs/170_DEPENDENCY_MAINTENANCE_CLOSURE.md'
-      - 'docs/171_DEPENDABOT_FOLLOW_UP_RECONCILIATION.md'
-      - 'scripts/smoke-production-release.sh'
-      - 'docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md'
-      - 'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
-      - 'docs/164_RECRUITER_DEMO_SCRIPT.md'
-      - 'docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md'
 
   push:
     branches:
@@ -52,6 +29,7 @@ on:
       - 'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
       - 'docs/164_RECRUITER_DEMO_SCRIPT.md'
       - 'docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -71,15 +49,15 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: 11.8.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '24.9.0'
           cache: pnpm
@@ -121,6 +99,20 @@ jobs:
 
       - name: Build production frontend
         run: pnpm --filter web build
+
+
+  frontend-ci-gate:
+    name: Frontend CI Gate
+    if: ${{ always() }}
+    needs:
+      - frontend-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify frontend workflow result
+        shell: bash
+        run: |
+          test "${{ needs.frontend-quality.result }}" = "success"
 
 # STAGE-14-1-ARCHITECTURE-CONSOLIDATION-V1-1
 

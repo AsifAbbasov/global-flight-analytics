@@ -73,9 +73,58 @@ require_literal "$WORKFLOW_FILE" 'Verify recruiter quickstart contract' \
 require_literal "$WORKFLOW_FILE" 'bash scripts/verify-recruiter-quickstart.sh' \
   'Backend CI quickstart verifier command is missing'
 
-readme_path_count="$(grep -F -c -- "- 'README.md'" "$WORKFLOW_FILE")"
-if [ "$readme_path_count" -ne 2 ]; then
-  fail 'Backend CI must trigger on README.md for both push and pull_request'
+trigger_header="$(
+  awk '
+    /^on:/ { capture = 1 }
+    /^permissions:/ { exit }
+    capture { print }
+  ' "$WORKFLOW_FILE"
+)"
+
+pull_request_count="$(
+  printf '%s\n' "$trigger_header" |
+    awk '
+      $0 == "  pull_request:" { count += 1 }
+      END { print count + 0 }
+    '
+)"
+
+if [ "$pull_request_count" -ne 1 ]; then
+  fail 'Backend CI must run for every pull request'
+fi
+
+pull_request_block="$(
+  printf '%s\n' "$trigger_header" |
+    awk '
+      $0 == "  pull_request:" { capture = 1; next }
+      $0 == "  push:" { exit }
+      capture { print }
+    '
+)"
+
+pull_request_paths_count="$(
+  printf '%s\n' "$pull_request_block" |
+    awk '
+      {
+        line = $0
+        sub(/^[[:space:]]*/, "", line)
+        if (line == "paths:") {
+          count += 1
+        }
+      }
+      END { print count + 0 }
+    '
+)"
+
+if [ "$pull_request_paths_count" -ne 0 ]; then
+  fail 'Backend CI pull_request trigger must not use path filters'
+fi
+
+readme_path_count="$(
+  grep -F -c -- "- 'README.md'" "$WORKFLOW_FILE"
+)"
+if [ "$readme_path_count" -ne 1 ]; then
+  fail 'Backend CI push path filters must include README.md exactly once'
 fi
 
 printf '%s\n' "RECRUITER_QUICKSTART_CONTRACT=PASS"

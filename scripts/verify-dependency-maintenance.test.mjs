@@ -40,13 +40,11 @@ test('stable release entry point executes dependency maintenance', () => {
   assert.match(release, /pnpm run verify:dependency-maintenance/);
 });
 
-test('CI setup actions use version 7 only', () => {
+test('CI setup actions use immutable version 7 pins', () => {
   const backend = fs.readFileSync('.github/workflows/backend-ci.yml', 'utf8');
   const frontend = fs.readFileSync('.github/workflows/frontend-ci.yml', 'utf8');
-  assert.match(backend, /actions\/setup-go@v7/);
-  assert.doesNotMatch(backend, /actions\/setup-go@v6/);
-  assert.match(frontend, /actions\/setup-node@v7/);
-  assert.doesNotMatch(frontend, /actions\/setup-node@v6/);
+  assert.match(backend, /actions\/setup-go@[0-9a-f]{40}\s+# v7/);
+  assert.match(frontend, /actions\/setup-node@[0-9a-f]{40}\s+# v7/);
 });
 
 

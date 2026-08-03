@@ -102,12 +102,59 @@ require_literal .github/workflows/frontend-ci.yml 'pnpm run test:release-contrac
 require_literal .github/workflows/frontend-ci.yml 'pnpm run verify:release-contract' \
   'Frontend CI release contract verifier is missing'
 
+backend_trigger_header="$(
+  awk '
+    /^on:/ { capture = 1 }
+    /^permissions:/ { exit }
+    capture { print }
+  ' "$REPOSITORY_ROOT/.github/workflows/backend-ci.yml"
+)"
+
+backend_pull_request_count="$(
+  printf '%s\n' "$backend_trigger_header" |
+    awk '
+      $0 == "  pull_request:" { count += 1 }
+      END { print count + 0 }
+    '
+)"
+
+if [ "$backend_pull_request_count" -ne 1 ]; then
+  fail 'Backend CI must run for every pull request'
+fi
+
+backend_pull_request_block="$(
+  printf '%s\n' "$backend_trigger_header" |
+    awk '
+      $0 == "  pull_request:" { capture = 1; next }
+      $0 == "  push:" { exit }
+      capture { print }
+    '
+)"
+
+backend_pull_request_paths_count="$(
+  printf '%s\n' "$backend_pull_request_block" |
+    awk '
+      {
+        line = $0
+        sub(/^[[:space:]]*/, "", line)
+        if (line == "paths:") {
+          count += 1
+        }
+      }
+      END { print count + 0 }
+    '
+)"
+
+if [ "$backend_pull_request_paths_count" -ne 0 ]; then
+  fail 'Backend CI pull_request trigger must not use path filters'
+fi
+
 backend_frontend_workflow_count="$(
   grep -F -c -- "- '.github/workflows/frontend-ci.yml'" \
     "$REPOSITORY_ROOT/.github/workflows/backend-ci.yml"
 )"
-[ "$backend_frontend_workflow_count" -eq 2 ] || \
-  fail 'Backend CI must track frontend workflow changes for push and pull_request'
+[ "$backend_frontend_workflow_count" -eq 1 ] || \
+  fail 'Backend CI push path filters must track frontend workflow changes exactly once'
 
 require_literal apps/api/.env.example 'Use a direct PostgreSQL connection string for migrations' \
   'API environment example does not distinguish migration connection semantics'

@@ -19,7 +19,9 @@
     "migrate:production-database": "bash scripts/migrate-production-database.sh",
     "smoke:api-production": "bash scripts/smoke-api-production.sh",
     "test:dependency-maintenance": "node --test scripts/verify-dependency-maintenance.test.mjs",
-    "verify:dependency-maintenance": "node scripts/verify-dependency-maintenance.mjs"
+    "verify:dependency-maintenance": "node scripts/verify-dependency-maintenance.mjs",
+    "test:repository-governance": "node --test scripts/verify-repository-governance.test.mjs",
+    "verify:repository-governance": "node scripts/verify-repository-governance.mjs"
   },
   "packageManager": "pnpm@11.8.0"
 }

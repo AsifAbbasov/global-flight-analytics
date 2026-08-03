@@ -81,7 +81,10 @@ test('API production smoke verifies lifecycle and exact build provenance', () =>
 
 test('Backend CI permanently enforces operations contracts and Blueprint changes', () => {
   const source = read('.github/workflows/backend-ci.yml')
-  assert.equal((source.match(/- 'render\.yaml'/g) ?? []).length, 2)
+  const trigger = source.slice(0, source.indexOf('\npermissions:\n'))
+  assert.match(trigger, /on:\n  pull_request:\n\n  push:/)
+  const trackedRenderBlueprintPath = "- 'render.yaml'"
+  assert.equal(source.split(trackedRenderBlueprintPath).length - 1, 1)
   assert.match(source, /Verify backend operations contract/)
   assert.match(source, /node --test scripts\/verify-backend-operations\.test\.mjs/)
   assert.match(source, /bash scripts\/verify-backend-operations\.sh/)

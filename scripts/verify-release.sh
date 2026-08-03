@@ -12,6 +12,8 @@ printf '%s\n' "RELEASE_COMMIT=$(git rev-parse HEAD)"
 
 pnpm run test:dependency-maintenance
 pnpm run verify:dependency-maintenance
+pnpm run test:repository-governance
+pnpm run verify:repository-governance
 bash scripts/verify-recruiter-quickstart.sh
 pnpm run test:release-contract
 pnpm run verify:release-contract
@@ -48,6 +50,7 @@ fi
 docker compose config >/dev/null
 git diff --check
 
+printf '%s\n' 'RELEASE_REPOSITORY_GOVERNANCE=PASS'
 printf '%s\n' 'RELEASE_RECRUITER_QUICKSTART=PASS'
 printf '%s\n' 'RELEASE_PORTFOLIO_CONTRACT_TESTS=PASS'
 printf '%s\n' 'RELEASE_BACKEND_OPERATIONS=PASS'

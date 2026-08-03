@@ -1593,3 +1593,9 @@ observability audit gate, and deployment boundary.
 - File: `171_DEPENDABOT_FOLLOW_UP_RECONCILIATION.md`
 - Status: `CLOSED`
 - Purpose: reconciles the regenerated Dependabot follow-up wave, applies safe patch updates, groups the Next.js toolchain, and defers ESLint 10, Node type definitions 26, MapLibre 6 and TypeScript 7 behind explicit migration stages.
+
+## Document 172 — Repository Governance and Security Automation
+
+- File: `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md`
+- Status: `PATCH PREPARED; SETTINGS PENDING EXACT-COMMIT CI`
+- Purpose: establishes immutable Action pins, stable required CI gates, CodeQL, ownership and security policy files, reproducible GitHub settings automation, protected main-branch governance, and history-preserving stale-branch reconciliation.
