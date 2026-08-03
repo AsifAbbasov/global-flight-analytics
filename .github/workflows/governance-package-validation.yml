@@ -62,6 +62,76 @@ jobs:
           sed -i "908c\  assert(JSON.stringify(rules).includes(context), 'required status context missing: ' + context);" scripts/governance-package-validation-runner.mjs
           sed -i "967c\  for (const run of selected) console.log(run.name + ' run_id=' + run.id + ' conclusion=success');" scripts/governance-package-validation-runner.mjs
           sed -i "970c\  for (const run of selected) console.log(run.name + ' run_id=' + run.id + ' conclusion=' + run.conclusion);" scripts/governance-package-validation-runner.mjs
+          node <<'NODE'
+          const fs = require('node:fs')
+          const file = 'scripts/governance-package-validation-runner.mjs'
+          let source = fs.readFileSync(file, 'utf8')
+          const pattern = /function rollbackRepository\(cwd, baseline\) \{[\s\S]*?\n\}\n\nfunction applyWithRollback\(cwd, baseline, patch, validation\) \{[\s\S]*?\n\}\n\n(?=function replaceExactly)/
+          const replacement = `function collectUntrackedFiles(cwd) {
+            return run(
+              'git',
+              ['ls-files', '--others', '--exclude-standard'],
+              { cwd, capture: true }
+            ).split('\\n').filter(Boolean).sort();
+          }
+
+          function rollbackRepository(cwd, baseline, preservedUntracked = []) {
+            run('git', ['reset', '--hard', baseline], { cwd });
+
+            const preserved = new Set(preservedUntracked);
+            for (const relative of collectUntrackedFiles(cwd)) {
+              if (preserved.has(relative)) continue;
+              fs.rmSync(path.join(cwd, relative), {
+                recursive: true,
+                force: true,
+              });
+            }
+
+            const head = run(
+              'git',
+              ['rev-parse', 'HEAD'],
+              { cwd, capture: true }
+            );
+            const trackedStatus = run(
+              'git',
+              ['diff', '--name-only'],
+              { cwd, capture: true }
+            );
+            const actualUntracked = collectUntrackedFiles(cwd);
+            const expectedUntracked = [...preserved].sort();
+
+            if (
+              head !== baseline ||
+              trackedStatus !== '' ||
+              JSON.stringify(actualUntracked) !== JSON.stringify(expectedUntracked)
+            ) {
+              throw new Error('repository rollback verification failed');
+            }
+          }
+
+          function applyWithRollback(cwd, baseline, patch, validation) {
+            const preservedUntracked = collectUntrackedFiles(cwd);
+
+            try {
+              patch();
+              validation();
+            } catch (error) {
+              rollbackRepository(cwd, baseline, preservedUntracked);
+              console.log('REAL_REPOSITORY_ROLLBACK=PASS');
+              throw error;
+            }
+          }
+
+          `
+          if (!pattern.test(source)) {
+            throw new Error('rollback source block was not found exactly once')
+          }
+          source = source.replace(pattern, replacement)
+          if (pattern.test(source)) {
+            throw new Error('rollback source block replacement was incomplete')
+          }
+          fs.writeFileSync(file, source)
+          NODE
           node --check scripts/governance-package-validation-runner.mjs
 
       - name: Validate package against exact baseline
