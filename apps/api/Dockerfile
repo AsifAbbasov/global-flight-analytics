@@ -69,13 +69,14 @@ FROM scratch AS runtime
 
 ARG APP_VERSION
 ARG VCS_REF
+ARG RENDER_GIT_COMMIT
 ARG BUILD_DATE
 
 LABEL org.opencontainers.image.title="Global Flight Analytics API"
 LABEL org.opencontainers.image.description="Container image for the Global Flight Analytics Go backend"
 LABEL org.opencontainers.image.source="https://github.com/AsifAbbasov/global-flight-analytics"
 LABEL org.opencontainers.image.version="${APP_VERSION}"
-LABEL org.opencontainers.image.revision="${VCS_REF}"
+LABEL org.opencontainers.image.revision="${VCS_REF:-${RENDER_GIT_COMMIT:-unknown}}"
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
 WORKDIR /app

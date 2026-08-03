@@ -61,11 +61,19 @@ test('production migration command requires a direct TLS database connection', (
   assert.match(source, /production migrations require a clean working tree/)
 })
 
-test('Docker build provenance falls back to the Render commit SHA', () => {
-  const source = read('apps/api/Dockerfile')
-  assert.match(source, /ARG RENDER_GIT_COMMIT/)
-  assert.match(source, /effective_vcs_ref=\"\$\{VCS_REF:-\$\{RENDER_GIT_COMMIT:-unknown\}\}\"/)
-  assert.match(source, /buildinfo\.revision=\$\{effective_vcs_ref\}/)
+test('Docker and Backend CI use one Render-aware revision fallback', () => {
+  const dockerfile = read('apps/api/Dockerfile')
+  const runtimeStage = dockerfile.slice(dockerfile.indexOf('FROM scratch AS runtime'))
+  const workflow = read('.github/workflows/backend-ci.yml')
+  const containerJob = workflow.slice(workflow.indexOf('  backend-container:'))
+
+  assert.match(dockerfile, /ARG RENDER_GIT_COMMIT/)
+  assert.match(dockerfile, /effective_vcs_ref=\"\$\{VCS_REF:-\$\{RENDER_GIT_COMMIT:-unknown\}\}\"/)
+  assert.match(dockerfile, /buildinfo\.revision=\$\{effective_vcs_ref\}/)
+  assert.match(runtimeStage, /ARG RENDER_GIT_COMMIT/)
+  assert.match(runtimeStage, /org\.opencontainers\.image\.revision=\"\$\{VCS_REF:-\$\{RENDER_GIT_COMMIT:-unknown\}\}\"/)
+  assert.match(containerJob, /--build-arg RENDER_GIT_COMMIT=\"\$GITHUB_SHA\"/)
+  assert.doesNotMatch(containerJob, /--build-arg VCS_REF=/)
 })
 
 test('API production smoke verifies lifecycle and exact build provenance', () => {
