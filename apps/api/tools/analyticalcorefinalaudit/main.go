@@ -1116,7 +1116,7 @@ func auditFrontendContracts(
 				Name: "Frontend PostCSS security release",
 				Path: "pnpm-workspace.yaml",
 				Required: []string{
-					`'postcss@<8.5.18': 8.5.18`,
+					`'postcss@<8.5.23': 8.5.23`,
 				},
 				Forbidden: []string{
 					`'postcss@<8.5.10': 8.5.15`,
@@ -1140,8 +1140,8 @@ func auditFrontendContracts(
 				Required: []string{
 					`MINIMUM_SAFE_NEXT_VERSION = "16.2.12"`,
 					`PINNED_NEXT_VERSION = "16.2.12"`,
-					`MINIMUM_SAFE_POSTCSS_VERSION = "8.5.18"`,
-					`PINNED_POSTCSS_VERSION = "8.5.18"`,
+					`MINIMUM_SAFE_POSTCSS_VERSION = "8.5.23"`,
+					`PINNED_POSTCSS_VERSION = "8.5.23"`,
 					"webPinsNextSecurityRelease",
 					"webImporterUsesPinnedNext",
 					"webImporterUsesPinnedESLintConfigNext",
