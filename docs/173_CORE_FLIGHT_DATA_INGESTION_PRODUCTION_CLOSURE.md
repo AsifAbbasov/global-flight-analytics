@@ -161,6 +161,20 @@ provider message: No error
 
 The production workflow therefore uses a two-hundred-fifty-nautical-mile radius. This is a coverage correction based on observed provider behavior, not a claim of guaranteed regional availability.
 
+### Live quality parent identity
+
+The first two-hundred-fifty-nautical-mile runtime attempt exposed a separate persistence contract defect. Live provider states do not carry application-assigned UUID values. PostgreSQL generates the canonical `flight_states.id`, while the original quality write attempted to find the parent only through the empty incoming identifier.
+
+The live quality repository now resolves the canonical parent through either:
+
+```text
+persisted flight state UUID when one is already known
+or
+the unique source_name + icao24 + observed_at observation identity
+```
+
+The resulting report still stores the actual canonical `flight_states.id` in both parent columns. Foreign-key enforcement and rejected-state separation remain unchanged.
+
 ---
 
 ## 7. Schedule Limitations

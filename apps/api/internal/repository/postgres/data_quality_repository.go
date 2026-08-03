@@ -120,6 +120,29 @@ func (repository *DataQualityRepository) insertFlightStateQuality(
 	quality dataquality.DataQuality,
 	warningsJSON string,
 ) error {
+	if state.ID != "" {
+		return repository.insertFlightStateQualityByID(
+			ctx,
+			state,
+			quality,
+			warningsJSON,
+		)
+	}
+
+	return repository.insertFlightStateQualityByObservationIdentity(
+		ctx,
+		state,
+		quality,
+		warningsJSON,
+	)
+}
+
+func (repository *DataQualityRepository) insertFlightStateQualityByID(
+	ctx context.Context,
+	state flightstate.FlightState,
+	quality dataquality.DataQuality,
+	warningsJSON string,
+) error {
 	const query = `
 		INSERT INTO data_quality_reports (
 			state_id,
@@ -165,7 +188,70 @@ func (repository *DataQualityRepository) insertFlightStateQuality(
 	}
 	if err != nil {
 		return fmt.Errorf(
-			"insert flight state quality report: %w",
+			"insert flight state quality report by id: %w",
+			err,
+		)
+	}
+
+	return nil
+}
+
+func (repository *DataQualityRepository) insertFlightStateQualityByObservationIdentity(
+	ctx context.Context,
+	state flightstate.FlightState,
+	quality dataquality.DataQuality,
+	warningsJSON string,
+) error {
+	const query = `
+		INSERT INTO data_quality_reports (
+			state_id,
+			flight_state_id,
+			validation_status,
+			completeness,
+			confidence,
+			score,
+			missing_fields,
+			warnings_json
+		)
+		SELECT
+			persisted_state.id,
+			persisted_state.id,
+			$4,
+			$5,
+			$6,
+			$7,
+			$8,
+			$9::jsonb
+		FROM flight_states AS persisted_state
+		WHERE persisted_state.source_name = $1
+			AND persisted_state.icao24 = $2
+			AND persisted_state.observed_at = $3
+		RETURNING id::text;
+	`
+
+	var reportID string
+
+	err := repository.db.QueryRow(
+		ctx,
+		query,
+		requiredSourceNameValue(state.SourceName),
+		state.ICAO24,
+		state.ObservedAt,
+		string(quality.ValidationStatus),
+		string(quality.Completeness),
+		string(quality.Confidence),
+		quality.Score,
+		quality.MissingFields,
+		warningsJSON,
+	).Scan(
+		&reportID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrDataQualityFlightStateNotPersisted
+	}
+	if err != nil {
+		return fmt.Errorf(
+			"insert flight state quality report by observation identity: %w",
 			err,
 		)
 	}
