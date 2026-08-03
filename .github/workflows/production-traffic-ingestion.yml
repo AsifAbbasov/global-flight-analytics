@@ -1,0 +1,78 @@
+name: Production Traffic Ingestion
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-traffic-ingestion
+  cancel-in-progress: false
+
+jobs:
+  ingest-once:
+    name: Production Ingestion Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_INGESTION_DATABASE_URL }}
+      DATABASE_CONNECT_TIMEOUT: 10s
+      TRAFFIC_PROVIDER: airplanes.live
+      TRAFFIC_INGESTION_LATITUDE: '40.4093'
+      TRAFFIC_INGESTION_LONGITUDE: '49.8671'
+      TRAFFIC_INGESTION_RADIUS: '100'
+      TRAFFIC_INGESTION_INTERVAL: 10s
+      TRAFFIC_INGESTION_TERMINAL_TIMEOUT: 30s
+      TRAFFIC_INGESTION_STALE_RUN_AFTER: 30m
+      TRAFFIC_INGESTION_MAX_BACKOFF: 2m
+      AIRPLANES_LIVE_TIMEOUT: 15s
+      TRAJECTORY_MAX_TIME_GAP: 90s
+      TRAJECTORY_MAX_GROUND_SPEED_MPS: '420'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.9.0'
+
+      - name: Validate production ingestion secret
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "$DATABASE_URL" ]; then
+            printf '%s\n' 'PRODUCTION_INGESTION_DATABASE_URL is not configured' >&2
+            exit 1
+          fi
+
+          printf '%s\n' 'PRODUCTION_INGESTION_SECRET=PASS'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run one bounded production ingestion cycle
+        run: go run ./cmd/ingest --once
+
+      - name: Verify end-to-end production traffic freshness
+        env:
+          API_BASE_URL: https://global-flight-analytics-api.onrender.com
+          MAX_TRAFFIC_AGE_SECONDS: '1800'
+        run: node ../../scripts/verify-production-traffic-freshness.mjs

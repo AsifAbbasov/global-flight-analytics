@@ -87,6 +87,11 @@ func runAudit(
 			literals: []string{
 				"observability.StartMetricsServer",
 				"observability.NewProviderRecorder",
+			},
+		},
+		{
+			path: "apps/api/cmd/ingest/cycle_observer.go",
+			literals: []string{
 				"metricsRegistry.ObserveIngestionCycle",
 			},
 		},

@@ -753,3 +753,10 @@ evidence, bounded and explainable confidence, weakest-evidence reconciliation,
 the shared ordinal confidence vocabulary, SHA-256 fingerprints, ICAO identifier
 formats, provenance chronology and uniqueness, typed result validation, expanded
 regression tests, and permanent Backend Continuous Integration audit enforcement.
+
+<!-- CORE-FLIGHT-DATA-INGESTION-PRODUCTION-CLOSURE-V1 -->
+## Free Production Traffic Ingestion
+
+The production API remains the only Render service. A serialized GitHub Actions workflow runs the existing ingestion pipeline in explicit one-shot mode every ten minutes and verifies that the public traffic endpoint contains observations no older than thirty minutes.
+
+`PRODUCTION_INGESTION_DATABASE_URL` is stored only as a GitHub Actions repository secret. Scheduled execution is best effort and does not imply continuous, operational or safety-critical tracking. See `docs/173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md`.

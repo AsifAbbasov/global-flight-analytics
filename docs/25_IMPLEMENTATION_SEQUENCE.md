@@ -946,3 +946,12 @@ confidence reasons and evidence bounds, shared ordinal confidence vocabulary,
 cryptographic fingerprint format, ICAO identity, provenance chronology and
 uniqueness, typed result validation, regression tests, and permanent audit
 enforcement.
+
+<!-- CORE-FLIGHT-DATA-INGESTION-PRODUCTION-CLOSURE-V1:IMPLEMENTATION -->
+## Core Flight Data Ingestion Production Closure
+
+Status: IMPLEMENTED PENDING PROTECTED-MAIN AND RUNTIME ACTIVATION EVIDENCE.
+
+The existing provider, canonical processing, quality, trajectory and PostgreSQL path now has a bounded `--once` command mode and a serialized free scheduled workflow. Source closure requires the production ingestion contract tests. Runtime closure additionally requires the repository database secret, a successful manual workflow dispatch, fresh public traffic evidence and a later scheduled run that advances `observed_at`.
+
+This increment does not add a paid Render worker and does not claim guaranteed real-time or operational surveillance continuity.

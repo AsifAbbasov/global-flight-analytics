@@ -21,7 +21,9 @@
     "test:dependency-maintenance": "node --test scripts/verify-dependency-maintenance.test.mjs",
     "verify:dependency-maintenance": "node scripts/verify-dependency-maintenance.mjs",
     "test:repository-governance": "node --test scripts/verify-repository-governance.test.mjs",
-    "verify:repository-governance": "node scripts/verify-repository-governance.mjs"
+    "verify:repository-governance": "node scripts/verify-repository-governance.mjs",
+    "test:production-ingestion-contract": "node --test scripts/verify-production-ingestion-contract.test.mjs scripts/verify-production-traffic-freshness.test.mjs",
+    "verify:production-ingestion-contract": "node scripts/verify-production-ingestion-contract.mjs"
   },
   "packageManager": "pnpm@11.8.0"
 }

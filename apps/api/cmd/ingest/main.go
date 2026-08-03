@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -30,15 +31,26 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := runWithArgs(os.Args[1:]); err != nil {
 		log.Fatalf(
-			"traffic ingest daemon failed: %v",
+			"traffic ingest command failed: %v",
 			err,
 		)
 	}
 }
 
 func run() error {
+	return runWithArgs(nil)
+}
+
+func runWithArgs(
+	args []string,
+) error {
+	commandOptions, err := parseIngestCommandOptions(args)
+	if err != nil {
+		return err
+	}
+
 	_ = godotenv.Load()
 
 	cfg, err := config.LoadIngestConfig()
@@ -106,19 +118,21 @@ func run() error {
 	if err := metricsRegistry.RegisterCollector(postgresCollector); err != nil {
 		return fmt.Errorf("register PostgreSQL metrics collector: %w", err)
 	}
-	if _, err := observability.StartMetricsServer(
-		operationContext,
-		observability.MetricsServerConfig{
-			Address:  observabilityConfig.IngestMetricsAddress,
-			Registry: metricsRegistry,
-			Authorization: observability.AuthorizationConfig{
-				ExpectedDigest: observabilityConfig.MetricsKeyDigest,
-				Configured:     observabilityConfig.MetricsKeyConfigured,
+	if !commandOptions.Once {
+		if _, err := observability.StartMetricsServer(
+			operationContext,
+			observability.MetricsServerConfig{
+				Address:  observabilityConfig.IngestMetricsAddress,
+				Registry: metricsRegistry,
+				Authorization: observability.AuthorizationConfig{
+					ExpectedDigest: observabilityConfig.MetricsKeyDigest,
+					Configured:     observabilityConfig.MetricsKeyConfigured,
+				},
+				Logger: slog.Default(),
 			},
-			Logger: slog.Default(),
-		},
-	); err != nil {
-		return fmt.Errorf("start ingestion metrics server: %w", err)
+		); err != nil {
+			return fmt.Errorf("start ingestion metrics server: %w", err)
+		}
 	}
 
 	budgetStore, err := postgres.NewProviderBudgetStore(
@@ -304,56 +318,46 @@ func run() error {
 		)
 	}
 
+	observer := newIngestionCycleObserver(
+		metricsRegistry,
+		trafficSelection,
+		providerHealthCollector,
+		providerDecisionCollector,
+	)
+
+	if commandOptions.Once {
+		fmt.Printf(
+			"traffic_ingest_once_started mode=%s primary_provider=%s providers=%v terminal_timeout=%s stale_run_after=%s latitude=%f longitude=%f radius_nm=%d\n",
+			trafficSelection.Mode,
+			trafficSelection.ProviderID,
+			trafficSelection.ProviderIDs,
+			daemonConfig.TerminalTimeout,
+			daemonConfig.StaleRunAfter,
+			cfg.TrafficIngestionLatitude,
+			cfg.TrafficIngestionLongitude,
+			cfg.TrafficIngestionRadius,
+		)
+
+		if err := runSingleIngestionCycle(
+			operationContext,
+			cycle.Run,
+			nil,
+			observer,
+		); err != nil {
+			return err
+		}
+
+		fmt.Println("traffic_ingest_once_completed")
+
+		return nil
+	}
+
 	daemon, err := ingestdaemon.New(
 		ingestdaemon.Config{
 			RunCycle:          cycle.Run,
 			Interval:          daemonConfig.Interval,
 			MaxFailureBackoff: daemonConfig.MaxBackoff,
-			Observe: func(
-				result ingestdaemon.CycleResult,
-			) {
-				status := "success"
-				lastError := ""
-
-				if result.Err != nil {
-					status = "failed"
-					lastError = result.Err.Error()
-				}
-
-				metricsRegistry.ObserveIngestionCycle(
-					status,
-					result.FinishedAt.Sub(result.StartedAt),
-					result.ConsecutiveFailures,
-					result.NextDelay,
-				)
-
-				fmt.Printf(
-					"ingest_cycle=%d status=%s started_at=%s finished_at=%s duration=%s consecutive_failures=%d retry_at=%s next_delay=%s error=%q\n",
-					result.Number,
-					status,
-					result.StartedAt.Format(
-						time.RFC3339Nano,
-					),
-					result.FinishedAt.Format(
-						time.RFC3339Nano,
-					),
-					result.FinishedAt.Sub(
-						result.StartedAt,
-					),
-					result.ConsecutiveFailures,
-					result.RetryAt.Format(
-						time.RFC3339Nano,
-					),
-					result.NextDelay,
-					lastError,
-				)
-
-				printTrafficProviderEvidence(
-					trafficSelection.ProviderIDs,
-					providerHealthCollector,
-					providerDecisionCollector,
-				)
-			},
+			Observe:           observer,
 		},
 	)
 	if err != nil {
