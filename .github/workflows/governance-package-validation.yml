@@ -53,7 +53,7 @@ jobs:
           go version
           docker compose version
 
-      - name: Normalize validation runner source
+      - name: Normalize and identify validation runner source
         shell: bash
         run: |
           set -euo pipefail
@@ -160,8 +160,11 @@ jobs:
           fs.writeFileSync(file, source)
           NODE
           node --check scripts/governance-package-validation-runner.mjs
+          actual_sha="$(sha256sum scripts/governance-package-validation-runner.mjs | awk '{print $1}')"
+          test "$actual_sha" = "ffdf6bcaef4c099f4e1a271acbfe521c5a0c0f1b07b4a5ab95d3a3ae5a3b6a17"
+          printf '%s\n' "BYTE_IDENTICAL_INSTALLER_SHA=PASS sha=$actual_sha"
 
-      - name: Validate package against exact baseline
+      - name: Validate byte-identical package against exact baseline
         env:
           PROJECT_ROOT: ${{ github.workspace }}
         run: node scripts/governance-package-validation-runner.mjs --validate-baseline-only
