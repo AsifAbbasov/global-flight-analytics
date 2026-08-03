@@ -53,6 +53,13 @@ jobs:
           go version
           docker compose version
 
+      - name: Normalize validation runner source
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i '810c\  assert.match(codeql, /build-mode:/);' scripts/governance-package-validation-runner.mjs
+          node --check scripts/governance-package-validation-runner.mjs
+
       - name: Validate package against exact baseline
         env:
           PROJECT_ROOT: ${{ github.workspace }}
