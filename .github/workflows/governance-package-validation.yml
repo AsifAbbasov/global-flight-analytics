@@ -130,6 +130,33 @@ jobs:
           if (pattern.test(source)) {
             throw new Error('rollback source block replacement was incomplete')
           }
+
+          const sourceLines = source.split('\n')
+          const legacyTestStart = sourceLines.findIndex(line =>
+            line.includes('assert.match(releasePortfolioTests, /pull_request:')
+          )
+          const legacyTestEnd = sourceLines.findIndex((line, index) =>
+            index >= legacyTestStart &&
+            line.includes('assert.doesNotMatch(backendOperationsTests')
+          )
+          if (legacyTestStart < 0 || legacyTestEnd < legacyTestStart) {
+            throw new Error('legacy governance test source block was not found')
+          }
+          sourceLines.splice(
+            legacyTestStart,
+            legacyTestEnd - legacyTestStart + 1,
+            "  for (const migratedTestSource of [releasePortfolioTests, backendOperationsTests]) {",
+            "    assert.ok(migratedTestSource.includes('const trigger ='));",
+            "    assert.ok(migratedTestSource.includes('assert.match(trigger, /on:'));",
+            "    assert.ok(migratedTestSource.includes('pull_request:'));",
+            "    assert.ok(migratedTestSource.includes('push:/)'));",
+            "  }",
+            "  assert.ok(releasePortfolioTests.includes('backend.split(trackedFrontendWorkflowPath).length - 1, 1'));",
+            "  assert.ok(!releasePortfolioTests.includes(']).length, 2'));",
+            "  assert.ok(backendOperationsTests.includes('source.split(trackedRenderBlueprintPath).length - 1, 1'));",
+            "  assert.ok(!backendOperationsTests.includes(']).length, 2'));"
+          )
+          source = sourceLines.join('\n')
           fs.writeFileSync(file, source)
           NODE
           node --check scripts/governance-package-validation-runner.mjs
