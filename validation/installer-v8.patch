@@ -1,0 +1,129 @@
+--- installer.mjs
++++ installer.mjs
+@@ -440,16 +440,42 @@
+   );
+ }
+ 
++function replaceExactLineOnce(source, predicate, replacement, label) {
++  const newline = source.includes('\r\n') ? '\r\n' : '\n';
++  const lines = source.split(/\r?\n/);
++  const indexes = [];
++
++  for (let index = 0; index < lines.length; index += 1) {
++    if (predicate(lines[index])) indexes.push(index);
++  }
++
++  if (indexes.length !== 1) {
++    throw new Error(`${label}: expected one exact line, found ${indexes.length}`);
++  }
++
++  lines.splice(indexes[0], 1, ...replacement.split('\n'));
++  return lines.join(newline);
++}
++
+ function migrateBackendOperationsTests(source) {
+-  return replacePatternExactly(
++  const legacyLinePattern = /^\s*assert\.equal\(\(source\.match\(\/- 'render\\\.yaml'\/g\) \?\? \[\]\)\.length, 2\);?\s*$/;
++  const migrated = replaceExactLineOnce(
+     source,
+-    /^\s*assert\.equal\(\(source\.match\([^\n]*render[^\n]*yaml[^\n]*\)\s*\?\?\s*\[\]\)\.length,\s*2\)\s*$/m,
++    line => legacyLinePattern.test(line),
+     `  const trigger = source.slice(0, source.indexOf('\\npermissions:\\n'))
+   assert.match(trigger, /on:\\n  pull_request:\\n\\n  push:/)
+   const trackedRenderBlueprintPath = "- 'render.yaml'"
+   assert.equal(source.split(trackedRenderBlueprintPath).length - 1, 1)`,
+     'backend operations test governance trigger migration'
+   );
++
++  if (/source\.match\([^\n]*render[^\n]*yaml[^\n]*length,\s*2/.test(migrated)) {
++    throw new Error('backend operations test governance trigger migration: legacy assertion remains');
++  }
++  if (!migrated.includes('source.split(trackedRenderBlueprintPath).length - 1, 1')) {
++    throw new Error('backend operations test governance trigger migration: replacement assertion missing');
++  }
++  return migrated;
+ }
+ 
+ function assertLegacyWorkflowContractsRemoved(cwd) {
+@@ -1395,6 +1421,45 @@
+   if (cleanupError) throw cleanupError;
+ }
+ 
++function validateMacOSContractOnly() {
++  selfTest();
++  if (!fs.existsSync(PROJECT_ROOT)) throw new Error(`project root not found: ${PROJECT_ROOT}`);
++  if (spawnSync('git', ['cat-file', '-e', `${BASELINE}^{commit}`], { cwd: PROJECT_ROOT, encoding: 'utf8', stdio: 'pipe' }).status !== 0) throw new Error(`exact baseline commit is unavailable: ${BASELINE}`);
++
++  const validationRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gfa-governance-macos-contract-'));
++  let validationError = null;
++  let cleanupError = null;
++
++  try {
++    run('git', ['worktree', 'add', '--detach', validationRoot, BASELINE], { cwd: PROJECT_ROOT });
++    patchRepository(validationRoot, VALIDATED_ACTION_REFS);
++    verifyChangedManifest(validationRoot);
++
++    const migrated = read('scripts/verify-backend-operations.test.mjs', validationRoot);
++    if (migrated.includes("assert.equal((source.match(/- 'render\\\\.yaml'/g) ?? []).length, 2)")) {
++      throw new Error('macOS backend operations contract still contains the legacy two-path assertion');
++    }
++    if (!migrated.includes('source.split(trackedRenderBlueprintPath).length - 1, 1')) {
++      throw new Error('macOS backend operations contract replacement assertion is missing');
++    }
++
++    run('node', ['--test', 'scripts/verify-backend-operations.test.mjs'], { cwd: validationRoot });
++    run('git', ['diff', '--check'], { cwd: validationRoot });
++    console.log('MACOS_EXACT_BASELINE_BACKEND_OPERATIONS_TEST=PASS');
++    console.log('MACOS_EXACT_BASELINE_CONTRACT_MIGRATION=PASS');
++  } catch (error) {
++    validationError = error;
++  } finally {
++    fs.rmSync(validationRoot, { recursive: true, force: true });
++    const prune = spawnSync('git', ['worktree', 'prune', '--expire', 'now'], { cwd: PROJECT_ROOT, encoding: 'utf8', stdio: 'pipe' });
++    if (prune.status !== 0) cleanupError = new Error('macOS contract worktree cleanup failed');
++    else console.log('MACOS_EXACT_BASELINE_WORKTREE_CLEANUP=PASS');
++  }
++
++  if (validationError) throw validationError;
++  if (cleanupError) throw cleanupError;
++}
++
+ function selfTest() {
+   const fake = {
+     checkout: '1'.repeat(40),
+@@ -1617,6 +1682,14 @@
+ `;
+   const migratedBackendOperationsTest = migrateBackendOperationsTests(backendOperationsLegacyFixture);
+   if (!migratedBackendOperationsTest.includes('source.split(trackedRenderBlueprintPath).length - 1, 1')) throw new Error('backend operations migration fixture failed');
++  const backendOperationsCRLFFixture = backendOperationsLegacyFixture.replace(/\n/g, '\r\n');
++  const migratedBackendOperationsCRLF = migrateBackendOperationsTests(backendOperationsCRLFFixture);
++  if (!migratedBackendOperationsCRLF.includes('source.split(trackedRenderBlueprintPath).length - 1, 1')) throw new Error('backend operations CRLF migration fixture failed');
++  if (!migratedBackendOperationsCRLF.includes('\r\n')) throw new Error('backend operations CRLF preservation fixture failed');
++  const backendOperationsSemicolonFixture = backendOperationsLegacyFixture.replace('length, 2)', 'length, 2);');
++  const migratedBackendOperationsSemicolon = migrateBackendOperationsTests(backendOperationsSemicolonFixture);
++  if (!migratedBackendOperationsSemicolon.includes('source.split(trackedRenderBlueprintPath).length - 1, 1')) throw new Error('backend operations semicolon migration fixture failed');
++  expectFailure('backend operations duplicate-anchor negative fixture', () => migrateBackendOperationsTests(`${backendOperationsLegacyFixture}\n${backendOperationsLegacyFixture}`), /found 2/);
+   expectFailure('backend operations missing-anchor negative fixture', () => migrateBackendOperationsTests('assert.match(source, /Verify backend operations contract/)\n'), /found 0/);
+ 
+   const fixtureRoot = fs.mkdtempSync(
+@@ -2225,6 +2298,8 @@
+   console.log('MANIFEST_SELF_TEST=PASS');
+   console.log('SEMANTIC_WORKFLOW_CONTRACT_MIGRATION_SELF_TEST=PASS');
+   console.log('BACKEND_OPERATIONS_CONTRACT_MIGRATION_SELF_TEST=PASS');
++  console.log('BACKEND_OPERATIONS_LF_CRLF_COMPATIBILITY_SELF_TEST=PASS');
++  console.log('MACOS_WORKTREE_CONTRACT_MIGRATION_SELF_TEST=PASS');
+   console.log('GIT_2_15_COMPATIBILITY_SELF_TEST=PASS');
+   console.log('INSTALLER_SELF_TEST=PASS');
+ }
+@@ -2238,6 +2313,11 @@
+   catch (error) { fail(error instanceof Error ? error.message.replace(/\s+/g, ' ') : String(error)); }
+   process.exit(0);
+ }
++if (process.argv.includes('--validate-macos-contract-only')) {
++  try { validateMacOSContractOnly(); }
++  catch (error) { fail(error instanceof Error ? error.message.replace(/\s+/g, ' ') : String(error)); }
++  process.exit(0);
++}
+ 
+ try {
+   selfTest();
