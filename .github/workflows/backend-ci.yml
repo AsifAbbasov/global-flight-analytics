@@ -617,6 +617,7 @@ jobs:
       - name: Run PostgreSQL correctness integration tests
         run: |
           go test -count=1 \
+            ./internal/database/migrationfile \
             ./internal/repository/postgres \
             ./internal/features/featurestore \
             ./internal/routeintelligence/routestore \

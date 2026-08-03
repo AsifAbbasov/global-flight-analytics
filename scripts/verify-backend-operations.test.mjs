@@ -90,6 +90,24 @@ test('Backend CI permanently enforces operations contracts and Blueprint changes
   assert.match(source, /bash scripts\/verify-backend-operations\.sh/)
 })
 
+test('PostgreSQL CI executes the production replay migration integration contract', () => {
+  const workflow = read('.github/workflows/backend-ci.yml')
+  const replayTest = read('apps/api/internal/database/migrationfile/production_replay_migration_integration_test.go')
+  const postgresJobStart = workflow.indexOf('  postgres-integration:')
+  const postgresJobEnd = workflow.indexOf('\n\n  backend-ci-gate:', postgresJobStart)
+
+  assert.notEqual(postgresJobStart, -1, 'missing PostgreSQL integration job')
+  assert.notEqual(postgresJobEnd, -1, 'missing PostgreSQL integration job boundary')
+
+  const postgresJob = workflow.slice(postgresJobStart, postgresJobEnd)
+  assert.match(postgresJob, /TEST_DATABASE_URL:/)
+  assert.match(postgresJob, /go test -count=1/)
+  assert.match(postgresJob, /\.\/internal\/database\/migrationfile/)
+  assert.match(replayTest, /func TestProductionReplayMigrationEnforcesObservationIdentity/)
+  assert.match(replayTest, /os\.Getenv\("TEST_DATABASE_URL"\)/)
+  assert.match(replayTest, /postgresError\.Code != "23505"/)
+})
+
 test('closure documents record exact production evidence without exposing secrets', () => {
   const hardening = read('docs/161_FRONTEND_PRODUCT_HARDENING.md')
   const release = read('docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md')
