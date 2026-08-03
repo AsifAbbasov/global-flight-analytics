@@ -1,0 +1,54 @@
+name: Governance Runner SHA Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Normalized Runner SHA Probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout validation branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.9.0'
+
+      - name: Extract and execute the exact normalization block
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs')
+          const workflow = fs.readFileSync(
+            '.github/workflows/governance-package-validation.yml',
+            'utf8'
+          )
+          const marker = '      - name: Normalize and identify validation runner source\n'
+          const stepStart = workflow.indexOf(marker)
+          const runMarker = '        run: |\n'
+          const runStart = workflow.indexOf(runMarker, stepStart) + runMarker.length
+          const nextStep = workflow.indexOf('\n      - name:', runStart)
+          if (stepStart < 0 || runStart < runMarker.length || nextStep < 0) {
+            throw new Error('normalization workflow block not found')
+          }
+          const script = workflow
+            .slice(runStart, nextStep)
+            .split('\n')
+            .map(line => line.startsWith('          ') ? line.slice(10) : line)
+            .join('\n')
+          fs.writeFileSync('/tmp/normalize-runner.sh', script + '\n')
+          NODE
+          bash /tmp/normalize-runner.sh || true
+          actual_sha="$(sha256sum scripts/governance-package-validation-runner.mjs | awk '{print $1}')"
+          printf '%s\n' "NORMALIZED_RUNNER_SHA=$actual_sha"
+          printf '%s\n' "LOCAL_CANDIDATE_SHA=ffdf6bcaef4c099f4e1a271acbfe521c5a0c0f1b07b4a5ab95d3a3ae5a3b6a17"
