@@ -1,0 +1,63 @@
+name: Production Smoke
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+    inputs:
+      expected_api_revision:
+        description: 'Exact 40-character SHA served by the intended Render deployment'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: false
+
+jobs:
+  production-smoke:
+    name: Production Release Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      FRONTEND_URL: https://global-flight-analytics-web.vercel.app
+      API_BASE_URL: https://global-flight-analytics-api.onrender.com
+      EXPECTED_API_REVISION: ${{ inputs.expected_api_revision || vars.PRODUCTION_API_REVISION }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.9.0'
+
+      - name: Validate explicit deployed revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_API_REVISION" =~ ^[0-9a-f]{40}$ ]]; then
+            printf '%s\n' \
+              'PRODUCTION_SMOKE_REVISION_INPUT=FAIL expected PRODUCTION_API_REVISION repository variable or workflow input with one full lowercase SHA' \
+              >&2
+            exit 1
+          fi
+          printf '%s\n' "PRODUCTION_SMOKE_EXPECTED_REVISION=$EXPECTED_API_REVISION"
+          printf '%s\n' 'PRODUCTION_SMOKE_REVISION_INPUT=PASS'
+
+      - name: Run production release smoke
+        shell: bash
+        run: bash scripts/smoke-production-release.sh
+
+      - name: Record scheduled smoke completion
+        shell: bash
+        run: |
+          printf '%s\n' "PRODUCTION_SMOKE_EVENT=${{ github.event_name }}"
+          printf '%s\n' 'SCHEDULED_PRODUCTION_SMOKE=PASS'
+
+# SCHEDULED-PRODUCTION-SMOKE-V1

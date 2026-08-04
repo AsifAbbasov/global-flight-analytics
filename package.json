@@ -14,6 +14,8 @@
     "verify:release-contract": "bash scripts/verify-release-portfolio.sh",
     "verify:release": "bash scripts/verify-release.sh",
     "smoke:production": "bash scripts/smoke-production-release.sh",
+    "test:scheduled-production-smoke": "node --test scripts/verify-scheduled-production-smoke.test.mjs",
+    "verify:scheduled-production-smoke": "node scripts/verify-scheduled-production-smoke.mjs",
     "test:backend-operations-contract": "node --test scripts/verify-backend-operations.test.mjs",
     "verify:backend-operations-contract": "bash scripts/verify-backend-operations.sh",
     "migrate:production-database": "bash scripts/migrate-production-database.sh",

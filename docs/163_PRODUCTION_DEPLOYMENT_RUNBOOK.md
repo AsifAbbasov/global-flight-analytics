@@ -215,14 +215,45 @@ PRODUCTION_RELEASE_SMOKE=PASS
 This command verifies frontend identity, API lifecycle, exact build provenance, and the
 exact `Access-Control-Allow-Origin` response together.
 
-## 8. Free-tier operational boundary
+## 8. Scheduled production smoke
+
+The repository contains `.github/workflows/production-smoke.yml`. It runs once per day and
+can also be started manually. The workflow verifies the public Vercel frontend, Render API
+lifecycle endpoints, exact Cross-Origin Resource Sharing response, and exact API build
+revision through the existing `scripts/smoke-production-release.sh` contract.
+
+Create this GitHub Actions repository variable before enabling the scheduled evidence:
+
+```text
+PRODUCTION_API_REVISION=<full lowercase SHA copied from the intended Render deployment>
+```
+
+The variable is public deployment metadata, not a credential. Update it only after the new
+Render deployment has been independently identified and manually verified. A manual workflow
+run may provide `expected_api_revision` as an explicit temporary override. The workflow does
+not infer the deployed revision from local `HEAD` or `github.sha`; source state and deployment
+state remain separate facts.
+
+Required successful markers include:
+
+```text
+PRODUCTION_SMOKE_REVISION_INPUT=PASS
+PRODUCTION_RELEASE_SMOKE=PASS
+SCHEDULED_PRODUCTION_SMOKE=PASS
+```
+
+A failed scheduled run is operational evidence that the public path, Cross-Origin Resource
+Sharing configuration, or recorded deployment revision requires investigation. It does not
+automatically redeploy, migrate the database, or change repository state.
+
+## 9. Free-tier operational boundary
 
 The Render free instance can spin down after inactivity and may delay the first request by
 approximately fifty seconds or more. The smoke commands use bounded retries so the first
 request can wake the service before lifecycle validation. This is a latency limitation,
 not a deployment or database-integrity failure.
 
-## 9. Rollback
+## 10. Rollback
 
 1. select the previous successful API deployment;
 2. retain the latest forward-compatible database schema;
