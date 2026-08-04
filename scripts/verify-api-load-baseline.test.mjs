@@ -125,3 +125,13 @@ test('load runner executes the bundled readiness probe instead of trusting image
   assert.match(runner, /API_LOAD_BASELINE_READINESS=PASS/)
   assert.doesNotMatch(runner, /\.State\.Health/)
 })
+
+
+test('load runner raises the isolated rate-limit ceiling without disabling middleware', () => {
+  const runner = fs.readFileSync('scripts/run-api-load-baseline.sh', 'utf8')
+  assert.match(runner, /API_LOAD_RATE_LIMIT_MAX="\$\{API_LOAD_RATE_LIMIT_MAX:-10000\}"/)
+  assert.match(runner, /--env API_RATE_LIMIT_MAX="\$API_LOAD_RATE_LIMIT_MAX"/)
+  assert.match(runner, /API_LOAD_BASELINE_RATE_LIMIT_MAX=\$API_LOAD_RATE_LIMIT_MAX/)
+  assert.doesNotMatch(runner, /API_RATE_LIMIT_MAX=0/)
+  assert.doesNotMatch(runner, /DISABLE_RATE_LIMIT/)
+})

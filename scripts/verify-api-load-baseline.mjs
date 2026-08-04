@@ -63,6 +63,9 @@ for (const literal of [
   '/app/migrate',
   '--no-healthcheck',
   '--env HEALTHCHECK_URL="$api_readiness_url"',
+  'API_LOAD_RATE_LIMIT_MAX="${API_LOAD_RATE_LIMIT_MAX:-10000}"',
+  '--env API_RATE_LIMIT_MAX="$API_LOAD_RATE_LIMIT_MAX"',
+  'API_LOAD_BASELINE_RATE_LIMIT_MAX=$API_LOAD_RATE_LIMIT_MAX',
   'docker exec "$api_id" /app/healthcheck',
   'API_LOAD_BASELINE_READINESS=PASS',
   'API_LOAD_BASELINE_TARGET=PASS',
@@ -115,6 +118,8 @@ for (const literal of [
   'not a Render capacity claim',
   'api-load-baseline.json',
   'API_LOAD_BASELINE=PASS',
+  'rate limiter remains enabled',
+  'API_RATE_LIMIT_MAX=10000',
 ]) {
   if (!document.includes(literal)) fail(`Document 174 is missing ${literal}`)
 }

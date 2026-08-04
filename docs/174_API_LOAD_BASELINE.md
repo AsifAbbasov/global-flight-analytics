@@ -34,6 +34,11 @@ GET /api/v1/traffic/current?limit=100
 The test runs against a freshly migrated PostgreSQL 16 database and the exact backend image
 built for the Continuous Integration source SHA.
 
+The API rate limiter remains enabled in the isolated container. The runner sets
+`API_RATE_LIMIT_MAX=10000` only for this bounded workload so the shared k6 container address
+does not trigger the default production-oriented ceiling before the measured request profile
+finishes. This override is not applied to Render or any external deployment.
+
 ## 3. Initial Objectives
 
 ```text

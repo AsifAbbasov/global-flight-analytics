@@ -17,7 +17,13 @@ done
 API_LOAD_IMAGE="${API_LOAD_IMAGE:-global-flight-analytics-api:performance}"
 K6_IMAGE="${K6_IMAGE:-grafana/k6:1.7.1}"
 POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16.14-alpine3.24}"
+API_LOAD_RATE_LIMIT_MAX="${API_LOAD_RATE_LIMIT_MAX:-10000}"
 PERFORMANCE_SOURCE_SHA="${PERFORMANCE_SOURCE_SHA:-$(git rev-parse HEAD)}"
+
+case "$API_LOAD_RATE_LIMIT_MAX" in
+  *[!0-9]*|"") fail 'API_LOAD_RATE_LIMIT_MAX must be a positive integer' ;;
+  0) fail 'API_LOAD_RATE_LIMIT_MAX must be greater than zero' ;;
+esac
 
 case "$PERFORMANCE_SOURCE_SHA" in
   [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
@@ -105,6 +111,7 @@ api_id="$(
     --env DATABASE_URL="$database_url" \
     --env DATABASE_CONNECT_TIMEOUT=5s \
     --env OPEN_METEO_TIMEOUT=5s \
+    --env API_RATE_LIMIT_MAX="$API_LOAD_RATE_LIMIT_MAX" \
     --env API_MUTATION_KEY_SHA256=78fd029a7217aaf71651a747b370be0a76fccebac79bfa02457be3448b636f26 \
     --env METRICS_KEY_SHA256=3eb1bd439947eb762998e566ccc2e099c791118b2f40579cc4f7da2b5061b7f9 \
     "$API_LOAD_IMAGE"
@@ -131,6 +138,7 @@ done
 printf '%s\n' "API_LOAD_BASELINE_READINESS_URL=$api_readiness_url"
 printf '%s\n' 'API_LOAD_BASELINE_READINESS=PASS'
 
+printf '%s\n' "API_LOAD_BASELINE_RATE_LIMIT_MAX=$API_LOAD_RATE_LIMIT_MAX"
 printf '%s\n' 'API_LOAD_BASELINE_TARGET=PASS'
 
 export PERFORMANCE_SOURCE_SHA API_LOAD_IMAGE K6_IMAGE POSTGRES_IMAGE
