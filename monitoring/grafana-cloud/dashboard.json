@@ -1,0 +1,827 @@
+{
+  "kind": "Dashboard",
+  "apiVersion": "dashboard.grafana.app/v1",
+  "metadata": {
+    "name": "gfa-production-slo",
+    "annotations": {
+      "grafana.app/folder": "gfa-observability",
+      "grafana.app/message": "Global Flight Analytics production SLO dashboard as code"
+    }
+  },
+  "spec": {
+    "uid": "gfa-production-slo",
+    "title": "Global Flight Analytics \u2014 Production SLO",
+    "description": "Production service-level indicators backed by externally scraped Prometheus metrics.",
+    "tags": [
+      "global-flight-analytics",
+      "production",
+      "slo"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 41,
+    "version": 0,
+    "refresh": "1m",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "annotations": {
+      "list": []
+    },
+    "links": [],
+    "templating": {
+      "list": [
+        {
+          "name": "deployment_revision",
+          "label": "Deployment revision",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "__PROMETHEUS_DATASOURCE_UID__"
+          },
+          "query": {
+            "query": "label_values(global_flight_analytics_build_info, deployment_revision)",
+            "refId": "StandardVariableQuery"
+          },
+          "definition": "label_values(global_flight_analytics_build_info, deployment_revision)",
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": false,
+          "refresh": 1,
+          "sort": 1,
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          }
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "API availability",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "(sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\"$deployment_revision\",status_class=~\"2xx|3xx\"}[15m])) / clamp_min(sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\"$deployment_revision\",status_class=~\"2xx|3xx|5xx\"}[15m])), 0.000001)) * 100",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "green",
+                  "value": 99.5
+                }
+              ]
+            },
+            "decimals": 2
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "API p95 latency",
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(global_flight_analytics_http_request_duration_seconds_bucket{deployment_revision=~\"$deployment_revision\"}[15m])))",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 2
+                }
+              ]
+            },
+            "decimals": 3
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "Server-error ratio",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\"$deployment_revision\",status_class=\"5xx\"}[15m])) / clamp_min(sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\"$deployment_revision\"}[15m])), 0.000001)",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 0.01
+                }
+              ]
+            },
+            "decimals": 3
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "Latest ingestion age",
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_ingestion_latest_finished_age_seconds{deployment_revision=~\"$deployment_revision\"}[20m]))",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 120
+                }
+              ]
+            },
+            "decimals": 0
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 5,
+        "type": "stat",
+        "title": "Consecutive ingestion failures",
+        "gridPos": {
+          "x": 0,
+          "y": 5,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_ingestion_consecutive_failures{deployment_revision=~\"$deployment_revision\"}[20m]))",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 3
+                }
+              ]
+            },
+            "decimals": 0
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 6,
+        "type": "stat",
+        "title": "PostgreSQL pool utilization",
+        "gridPos": {
+          "x": 6,
+          "y": 5,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_postgres_pool_acquired_connections{deployment_revision=~\"$deployment_revision\"}[20m])) / clamp_min(max(last_over_time(global_flight_analytics_postgres_pool_max_connections{deployment_revision=~\"$deployment_revision\"}[20m])), 1)",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 0.8
+                }
+              ]
+            },
+            "decimals": 2
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 7,
+        "type": "stat",
+        "title": "Oldest pending reconciliation",
+        "gridPos": {
+          "x": 12,
+          "y": 5,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_reconciliation_oldest_pending_age_seconds{deployment_revision=~\"$deployment_revision\"}[20m]))",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 300
+                }
+              ]
+            },
+            "decimals": 0
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 8,
+        "type": "stat",
+        "title": "Collector scrape success",
+        "gridPos": {
+          "x": 18,
+          "y": 5,
+          "w": 6,
+          "h": 5
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "min(min_over_time(global_flight_analytics_collector_last_scrape_success{deployment_revision=~\"$deployment_revision\"}[20m]))",
+            "legendFormat": "",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            },
+            "decimals": 0
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 9,
+        "type": "timeseries",
+        "title": "Request throughput",
+        "gridPos": {
+          "x": 0,
+          "y": 10,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "sum by (status_class) (rate(global_flight_analytics_http_requests_total{deployment_revision=~\"$deployment_revision\"}[15m]))",
+            "legendFormat": "{{status_class}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ]
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "showPoints": "never",
+              "spanNulls": true
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 10,
+        "type": "timeseries",
+        "title": "Provider outcomes",
+        "gridPos": {
+          "x": 12,
+          "y": 10,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "sum by (provider, outcome) (rate(global_flight_analytics_provider_requests_total{deployment_revision=~\"$deployment_revision\"}[30m]))",
+            "legendFormat": "{{provider}} / {{outcome}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ]
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "showPoints": "never",
+              "spanNulls": true
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 11,
+        "type": "timeseries",
+        "title": "Ingestion and reconciliation freshness",
+        "gridPos": {
+          "x": 0,
+          "y": 17,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_ingestion_latest_finished_age_seconds{deployment_revision=~\"$deployment_revision\"}[20m])) or max(last_over_time(global_flight_analytics_reconciliation_oldest_pending_age_seconds{deployment_revision=~\"$deployment_revision\"}[20m]))",
+            "legendFormat": "freshness",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ]
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "showPoints": "never",
+              "spanNulls": true
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        }
+      },
+      {
+        "id": 12,
+        "type": "timeseries",
+        "title": "PostgreSQL connections",
+        "gridPos": {
+          "x": 12,
+          "y": 17,
+          "w": 12,
+          "h": 7
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__PROMETHEUS_DATASOURCE_UID__"
+        },
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "__PROMETHEUS_DATASOURCE_UID__"
+            },
+            "editorMode": "code",
+            "expr": "max by (__name__) (last_over_time({__name__=~\"global_flight_analytics_postgres_pool_(acquired|idle|total|max)_connections\",deployment_revision=~\"$deployment_revision\"}[20m]))",
+            "legendFormat": "{{__name__}}",
+            "range": true,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "calcs": [
+              "lastNotNull",
+              "max"
+            ]
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "fillOpacity": 10,
+              "showPoints": "never",
+              "spanNulls": true
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": []
+        }
+      }
+    ]
+  }
+}

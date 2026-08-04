@@ -1,0 +1,592 @@
+{
+  "folderUid": "gfa-observability",
+  "title": "global-flight-analytics-production-slo",
+  "interval": 60,
+  "rules": [
+    {
+      "uid": "gfa-api-availability",
+      "title": "API availability below 99.5%",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "(sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\".+\",status_class=~\"2xx|3xx\"}[15m])) / clamp_min(sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\".+\",status_class=~\"2xx|3xx|5xx\"}[15m])), 0.000001)) * 100",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A < 99.5",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "15m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "API availability is below 99.5% for 15 minutes.",
+        "description": "Production SLO alert for api availability below 99.5%.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "critical",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-api-p95-latency",
+      "title": "API p95 latency above 2 seconds",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(global_flight_analytics_http_request_duration_seconds_bucket{deployment_revision=~\".+\"}[15m])))",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A > 2",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "15m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "API p95 latency is above 2 seconds for 15 minutes.",
+        "description": "Production SLO alert for api p95 latency above 2 seconds.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "warning",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-api-server-errors",
+      "title": "API server-error ratio at or above 1%",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\".+\",status_class=\"5xx\"}[15m])) / clamp_min(sum(rate(global_flight_analytics_http_requests_total{deployment_revision=~\".+\"}[15m])), 0.000001)",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A >= 0.01",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "10m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "API server-error ratio is at or above 1%.",
+        "description": "Production SLO alert for api server-error ratio at or above 1%.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "critical",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-ingestion-freshness",
+      "title": "Latest ingestion age above 120 seconds",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_ingestion_latest_finished_age_seconds{deployment_revision=~\".+\"}[20m]))",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A > 120",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "10m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "Latest successful ingestion is older than 120 seconds.",
+        "description": "Production SLO alert for latest ingestion age above 120 seconds.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "critical",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-ingestion-failures",
+      "title": "Three or more consecutive ingestion failures",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_ingestion_consecutive_failures{deployment_revision=~\".+\"}[20m]))",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A >= 3",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "1m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "Traffic ingestion has at least three consecutive failures.",
+        "description": "Production SLO alert for three or more consecutive ingestion failures.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "critical",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-postgres-pool",
+      "title": "PostgreSQL pool utilization above 80%",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_postgres_pool_acquired_connections{deployment_revision=~\".+\"}[20m])) / clamp_min(max(last_over_time(global_flight_analytics_postgres_pool_max_connections{deployment_revision=~\".+\"}[20m])), 1)",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A > 0.8",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "10m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "PostgreSQL acquired connections exceed 80% of the configured maximum.",
+        "description": "Production SLO alert for postgresql pool utilization above 80%.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "warning",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-reconciliation-backlog",
+      "title": "Oldest pending reconciliation above 300 seconds",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "max(last_over_time(global_flight_analytics_reconciliation_oldest_pending_age_seconds{deployment_revision=~\".+\"}[20m]))",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A > 300",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "15m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "Oldest pending reconciliation task is older than 300 seconds.",
+        "description": "Production SLO alert for oldest pending reconciliation above 300 seconds.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "warning",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-collector-health",
+      "title": "Observability collector scrape failed",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "min(min_over_time(global_flight_analytics_collector_last_scrape_success{deployment_revision=~\".+\"}[20m]))",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A < 1",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "2m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "At least one observability collector reports a failed most-recent scrape.",
+        "description": "Production SLO alert for observability collector scrape failed.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "critical",
+        "slo": "true"
+      },
+      "isPaused": false
+    },
+    {
+      "uid": "gfa-metrics-missing",
+      "title": "External metrics missing for 25 minutes",
+      "condition": "B",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 1800,
+            "to": 0
+          },
+          "datasourceUid": "__PROMETHEUS_DATASOURCE_UID__",
+          "model": {
+            "editorMode": "code",
+            "expr": "absent_over_time(global_flight_analytics_build_info{deployment_revision=~\".+\"}[25m])",
+            "hide": false,
+            "instant": true,
+            "intervalMs": 1000,
+            "legendFormat": "__auto",
+            "maxDataPoints": 43200,
+            "range": false,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "$A > 0",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "B",
+            "type": "math"
+          }
+        }
+      ],
+      "noDataState": "Alerting",
+      "execErrState": "Error",
+      "for": "1m",
+      "keepFiringFor": "5m",
+      "orgId": 1,
+      "annotations": {
+        "summary": "Grafana Cloud has not received production build metrics for 25 minutes.",
+        "description": "Production SLO alert for external metrics missing for 25 minutes.",
+        "runbook_url": "https://github.com/AsifAbbasov/global-flight-analytics/blob/main/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md"
+      },
+      "labels": {
+        "service": "global-flight-analytics-api",
+        "environment": "production",
+        "severity": "critical",
+        "slo": "true"
+      },
+      "isPaused": false
+    }
+  ]
+}

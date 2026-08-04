@@ -1,0 +1,52 @@
+name: Provision Grafana Observability
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provision-grafana-observability
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    name: Provision SLO Dashboard and Alerts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GRAFANA_INSTANCE_URL: ${{ vars.GRAFANA_INSTANCE_URL }}
+      GRAFANA_PROMETHEUS_DATASOURCE_UID: ${{ vars.GRAFANA_PROMETHEUS_DATASOURCE_UID }}
+      GRAFANA_EXPECTED_RECEIVER: ${{ vars.GRAFANA_EXPECTED_RECEIVER }}
+      GRAFANA_SERVICE_ACCOUNT_TOKEN: ${{ secrets.GRAFANA_SERVICE_ACCOUNT_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Validate provisioning inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$GRAFANA_INSTANCE_URL"
+          test -n "$GRAFANA_PROMETHEUS_DATASOURCE_UID"
+          test -n "$GRAFANA_SERVICE_ACCOUNT_TOKEN"
+          case "$GRAFANA_INSTANCE_URL" in
+            https://*) ;;
+            *) printf '%s\n' 'GRAFANA_PROVISION_INPUT=FAIL instance URL must use HTTPS' >&2; exit 1 ;;
+          esac
+          printf '%s\n' 'GRAFANA_PROVISION_INPUT=PASS'
+
+      - name: Verify observability contract
+        run: |
+          node --test scripts/verify-grafana-observability.test.mjs
+          node scripts/verify-grafana-observability.mjs
+
+      - name: Provision dashboard and alert rules
+        run: bash scripts/provision-grafana-observability.sh
+
+      - name: Record provisioning completion
+        run: printf '%s\n' 'GRAFANA_OBSERVABILITY_WORKFLOW=PASS'
+
+# GRAFANA-SLO-DASHBOARD-ALERTS-V1
