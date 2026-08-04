@@ -31,7 +31,26 @@ for (const literal of [
 ]) {
   if (!workflow.includes(literal)) fail(`workflow is missing ${literal}`)
 }
-if (workflow.includes('global-flight-analytics-api.onrender.com')) {
+export function containsForbiddenPublicRenderOrigin(text) {
+  const urlPattern = /https?:\/\/[^\s"'`\\]+/g
+
+  for (const match of text.matchAll(urlPattern)) {
+    let candidate
+    try {
+      candidate = new URL(match[0])
+    } catch {
+      continue
+    }
+
+    if (candidate.hostname === 'global-flight-analytics-api.onrender.com') {
+      return true
+    }
+  }
+
+  return false
+}
+
+if (containsForbiddenPublicRenderOrigin(workflow)) {
   fail('load baseline must not target the public Render service')
 }
 if (workflow.includes('schedule:')) {

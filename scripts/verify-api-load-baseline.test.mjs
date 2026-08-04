@@ -8,6 +8,7 @@ import {
   renderMarkdown,
 } from './summarize-api-load-baseline.mjs'
 import { validateEvidence } from './validate-api-load-baseline-evidence.mjs'
+import { containsForbiddenPublicRenderOrigin } from './verify-api-load-baseline.mjs'
 
 function metric(type, values, thresholds = {}) {
   return { type, contains: 'default', values, thresholds }
@@ -134,4 +135,33 @@ test('load runner raises the isolated rate-limit ceiling without disabling middl
   assert.match(runner, /API_LOAD_BASELINE_RATE_LIMIT_MAX=\$API_LOAD_RATE_LIMIT_MAX/)
   assert.doesNotMatch(runner, /API_RATE_LIMIT_MAX=0/)
   assert.doesNotMatch(runner, /DISABLE_RATE_LIMIT/)
+})
+
+test('workflow verifier compares the parsed hostname instead of a URL substring', () => {
+  const targetHostname = 'global-flight-analytics-api.onrender.com'
+
+  assert.equal(
+    containsForbiddenPublicRenderOrigin(
+      `run: curl https://${targetHostname}/api/v1/health`,
+    ),
+    true,
+  )
+  assert.equal(
+    containsForbiddenPublicRenderOrigin(
+      `run: curl https://${targetHostname}.example.com/api/v1/health`,
+    ),
+    false,
+  )
+  assert.equal(
+    containsForbiddenPublicRenderOrigin(
+      `run: curl https://example.com/${targetHostname}/api/v1/health`,
+    ),
+    false,
+  )
+  assert.equal(
+    containsForbiddenPublicRenderOrigin(
+      `run: curl https://${targetHostname}@example.com/api/v1/health`,
+    ),
+    false,
+  )
 })
