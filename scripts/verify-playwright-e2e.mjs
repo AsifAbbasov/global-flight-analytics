@@ -88,6 +88,7 @@ export function validatePlaywrightFoundation(root) {
     [
       "workers: 1",
       "fullyParallel: false",
+      "failOnFlakyTests: isCI",
       "trace: 'retain-on-failure'",
       "screenshot: 'only-on-failure'",
       "video: 'retain-on-failure'",
@@ -120,6 +121,8 @@ export function validatePlaywrightFoundation(root) {
       "getByRole('region', { name: 'Live traffic data controls' })",
       "name: 'Retry traffic request'",
       "page.setViewportSize({ width: 390, height: 844 })",
+      "region=WORLD&view=invalid",
+      "region=world&view=aircraft",
       "region=az&view=aircraft",
     ],
     'Playwright tests',

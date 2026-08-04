@@ -45,6 +45,13 @@ The foundation contains four Chromium end-to-end scenarios:
 Tests use roles, accessible names, form labels, and visible status text. They do not depend
 on generated Tailwind class names or test-only attributes in production components.
 
+The URL-state scenario begins with a deliberately non-canonical query and waits for the client
+to replace it with the canonical workspace URL before interacting. This is the deterministic
+hydration boundary; the test no longer races React hydration.
+
+Continuous Integration sets `failOnFlakyTests: true` through the `CI` environment. A scenario
+that passes only after retry is therefore a failed workflow, not accepted evidence.
+
 ## 4. Isolated Playwright Runtime
 
 The runner installs exactly:

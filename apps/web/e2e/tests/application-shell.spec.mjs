@@ -49,11 +49,16 @@ test('renders an OpenAPI-backed server snapshot', async ({ page }) => {
 test('changing region updates the shareable workspace URL', async ({
   page,
 }) => {
-  await page.goto('/?region=world&view=aircraft#live-traffic', {
+  await page.goto('/?region=WORLD&view=invalid#live-traffic', {
     waitUntil: 'domcontentloaded',
   })
 
+  await expect(page).toHaveURL(
+    /\/\?region=world&view=aircraft#live-traffic$/,
+  )
+
   const region = page.getByRole('combobox', { name: 'Region' })
+  await expect(region).toHaveValue('world')
   await region.selectOption('az')
 
   await expect(page).toHaveURL(

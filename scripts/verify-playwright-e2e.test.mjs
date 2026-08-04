@@ -100,3 +100,22 @@ test('browser tests use semantic locators and no public deployment', () => {
   assert.doesNotMatch(source, /data-testid/)
   assert.doesNotMatch(source, /onrender\.com|vercel\.app/)
 })
+
+test('CI rejects flaky browser tests and waits for hydration', () => {
+  const config = fs.readFileSync(
+    'apps/web/e2e/playwright.config.mjs',
+    'utf8',
+  )
+  const applicationShell = fs.readFileSync(
+    'apps/web/e2e/tests/application-shell.spec.mjs',
+    'utf8',
+  )
+
+  assert.match(config, /failOnFlakyTests: isCI/)
+  assert.match(applicationShell, /region=WORLD&view=invalid/)
+  assert.match(applicationShell, /region=world&view=aircraft/)
+  assert.ok(
+    applicationShell.indexOf('region=world&view=aircraft') <
+      applicationShell.indexOf("region.selectOption('az')"),
+  )
+})

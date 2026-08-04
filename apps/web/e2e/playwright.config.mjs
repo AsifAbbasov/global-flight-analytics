@@ -16,6 +16,7 @@ export default defineConfig({
   testDir: path.join(e2eRoot, 'tests'),
   outputDir: path.join(e2eRoot, 'test-results'),
   fullyParallel: false,
+  failOnFlakyTests: isCI,
   workers: 1,
   retries: isCI ? 1 : 0,
   timeout: 30_000,
