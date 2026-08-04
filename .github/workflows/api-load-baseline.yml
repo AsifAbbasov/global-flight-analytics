@@ -1,0 +1,91 @@
+name: API Load Baseline
+
+on:
+  pull_request:
+
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/api/**'
+      - 'database/**'
+      - '.dockerignore'
+      - '.github/workflows/api-load-baseline.yml'
+      - 'load/k6/**'
+      - 'scripts/run-api-load-baseline.sh'
+      - 'scripts/summarize-api-load-baseline.mjs'
+      - 'scripts/validate-api-load-baseline-evidence.mjs'
+      - 'scripts/verify-api-load-baseline.mjs'
+      - 'scripts/verify-api-load-baseline.test.mjs'
+      - 'docs/174_API_LOAD_BASELINE.md'
+      - 'package.json'
+      - 'scripts/verify-release.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-load-baseline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-load-baseline:
+    name: API Load Baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      PERFORMANCE_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      API_LOAD_IMAGE: global-flight-analytics-api:performance
+      K6_IMAGE: grafana/k6:1.7.1
+      POSTGRES_IMAGE: postgres:16.14-alpine3.24
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.9.0'
+
+      - name: Verify load baseline contract
+        run: |
+          node --test scripts/verify-api-load-baseline.test.mjs
+          node scripts/verify-api-load-baseline.mjs
+          bash -n scripts/run-api-load-baseline.sh
+
+      - name: Build backend performance image
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_date="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          docker build \
+            --pull \
+            --build-arg APP_VERSION="performance-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" \
+            --build-arg RENDER_GIT_COMMIT="$PERFORMANCE_SOURCE_SHA" \
+            --build-arg BUILD_DATE="$build_date" \
+            --file apps/api/Dockerfile \
+            --tag "$API_LOAD_IMAGE" \
+            .
+
+      - name: Run containerized HTTP load baseline
+        run: bash scripts/run-api-load-baseline.sh
+
+      - name: Publish performance summary
+        shell: bash
+        run: cat artifacts/performance/api-load-baseline.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload performance evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api-load-baseline-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/performance/api-load-baseline.json
+            artifacts/performance/api-load-baseline.md
+            artifacts/performance/k6-summary.json
+          if-no-files-found: error
+          retention-days: 30
+
+# API-LOAD-BASELINE-V1
