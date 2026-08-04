@@ -21,6 +21,8 @@ pnpm run test:release-contract
 pnpm run verify:release-contract
 pnpm run test:scheduled-production-smoke
 pnpm run verify:scheduled-production-smoke
+pnpm run test:production-metrics-scrape
+pnpm run verify:production-metrics-scrape
 pnpm run test:backend-operations-contract
 pnpm run verify:backend-operations-contract
 pnpm install --frozen-lockfile

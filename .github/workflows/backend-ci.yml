@@ -19,6 +19,8 @@ on:
       - '.github/workflows/backend-ci.yml'
       - '.github/workflows/frontend-ci.yml'
       - '.github/workflows/production-traffic-ingestion.yml'
+      - '.github/workflows/production-metrics-scrape.yml'
+      - 'monitoring/**'
       - '.github/dependabot.yml'
       - 'scripts/**'
       - 'docs/**'
@@ -237,6 +239,11 @@ jobs:
           node --test scripts/verify-production-ingestion-contract.test.mjs scripts/verify-production-traffic-freshness.test.mjs
           node scripts/verify-production-ingestion-contract.mjs
 
+      - name: Verify production metrics scraper contract
+        run: |
+          node --test scripts/verify-production-metrics-scrape.test.mjs
+          node scripts/verify-production-metrics-scrape.mjs
+
       - name: Verify recruiter quickstart contract
         run: bash scripts/verify-recruiter-quickstart.sh
 
@@ -247,6 +254,19 @@ jobs:
         run: |
           node --test scripts/verify-backend-operations.test.mjs
           bash scripts/verify-backend-operations.sh
+
+      - name: Validate Grafana Alloy scrape configuration
+        run: |
+          docker run --rm \
+            --env PRODUCTION_API_HOST=global-flight-analytics-api.onrender.com \
+            --env PRODUCTION_METRICS_KEY=0123456789abcdef0123456789abcdef \
+            --env GRAFANA_CLOUD_PROMETHEUS_URL=https://prometheus.example.invalid/api/v1/write \
+            --env GRAFANA_CLOUD_PROMETHEUS_USER=123456 \
+            --env GRAFANA_CLOUD_API_KEY=0123456789abcdef0123456789abcdef \
+            --env PRODUCTION_API_REVISION=0123456789abcdef0123456789abcdef01234567 \
+            --volume "${{ github.workspace }}/monitoring/grafana-cloud/config.alloy:/etc/alloy/config.alloy:ro" \
+            grafana/alloy:v1.18.0 \
+            validate /etc/alloy/config.alloy
 
       - name: Validate Docker Compose configuration
         run: docker compose config > /dev/null
