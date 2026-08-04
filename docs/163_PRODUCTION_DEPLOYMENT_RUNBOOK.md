@@ -246,14 +246,66 @@ A failed scheduled run is operational evidence that the public path, Cross-Origi
 Sharing configuration, or recorded deployment revision requires investigation. It does not
 automatically redeploy, migrate the database, or change repository state.
 
-## 9. Free-tier operational boundary
+## 9. External Grafana Cloud metrics scraper
+
+The repository contains `.github/workflows/production-metrics-scrape.yml` and
+`monitoring/grafana-cloud/config.alloy`. The workflow runs four times per hour on an external
+GitHub-hosted runner. Grafana Alloy authenticates to the protected Render
+`/internal/metrics` endpoint, performs several bounded Prometheus scrapes, and forwards the
+samples to Grafana Cloud through `prometheus.remote_write`.
+
+Create a Grafana Cloud stack and copy the Prometheus connection details. Configure these
+GitHub Actions secrets:
+
+```text
+PRODUCTION_METRICS_KEY=<random plaintext key used only by the external scraper>
+GRAFANA_CLOUD_PROMETHEUS_URL=<full HTTPS remote-write URL>
+GRAFANA_CLOUD_PROMETHEUS_QUERY_URL=<full HTTPS instant-query URL>
+GRAFANA_CLOUD_PROMETHEUS_USER=<Grafana Cloud metrics username or tenant ID>
+GRAFANA_CLOUD_API_KEY=<token with metrics write and query access>
+```
+
+Keep the existing repository variable synchronized independently:
+
+```text
+PRODUCTION_API_REVISION=<full lowercase SHA copied from the intended Render deployment>
+```
+
+Hash the plaintext production metrics key locally and configure only the digest in Render:
+
+```bash
+printf '%s' "$PRODUCTION_METRICS_KEY" | shasum -a 256
+```
+
+Set the resulting lowercase digest as `METRICS_KEY_SHA256`. Never place the plaintext key in
+Render source files, repository variables, logs, or documentation. The GitHub secret and the
+Render digest must describe the same key.
+
+Run **Production Metrics Scrape** manually after configuration. A successful execution must
+produce:
+
+```text
+PRODUCTION_METRICS_INPUT=PASS
+PRODUCTION_METRICS_SOURCE_PREFLIGHT=PASS
+GRAFANA_ALLOY_CONFIG=PASS
+GRAFANA_CLOUD_REMOTE_WRITE=PASS
+GRAFANA_CLOUD_QUERY_EVIDENCE=PASS
+```
+
+The final query checks that Grafana Cloud contains `global_flight_analytics_build_info` with
+the exact `deployment_revision` label. This proves that metrics were scraped outside the
+application host, accepted by the external time-series store, and remain tied to explicit
+deployment truth. Dashboard and alert provisioning are handled by the next observability
+increment; this transport workflow does not claim that alert delivery is already configured.
+
+## 10. Free-tier operational boundary
 
 The Render free instance can spin down after inactivity and may delay the first request by
 approximately fifty seconds or more. The smoke commands use bounded retries so the first
 request can wake the service before lifecycle validation. This is a latency limitation,
 not a deployment or database-integrity failure.
 
-## 10. Rollback
+## 11. Rollback
 
 1. select the previous successful API deployment;
 2. retain the latest forward-compatible database schema;

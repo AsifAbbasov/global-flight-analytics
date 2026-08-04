@@ -1,0 +1,38 @@
+prometheus.scrape "gfa_production" {
+  targets = [
+    {
+      "__address__" = sys.env("PRODUCTION_API_HOST"),
+    },
+  ]
+
+  scheme          = "https"
+  metrics_path    = "/internal/metrics"
+  scrape_interval = "15s"
+  scrape_timeout  = "12s"
+  sample_limit    = 5000
+  label_limit     = 16
+
+  http_headers = {
+    "X-Internal-API-Key" = [sys.env("PRODUCTION_METRICS_KEY")],
+  }
+
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  external_labels = {
+    environment         = "production",
+    service             = "global-flight-analytics-api",
+    deployment_revision = sys.env("PRODUCTION_API_REVISION"),
+  }
+
+  endpoint {
+    url            = sys.env("GRAFANA_CLOUD_PROMETHEUS_URL")
+    remote_timeout = "20s"
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROMETHEUS_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}
