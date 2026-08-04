@@ -92,12 +92,16 @@ docker run \
   "$API_LOAD_IMAGE" \
   /app/migrate
 
+api_readiness_url="http://127.0.0.1:8080/api/v1/ready"
+
 api_id="$(
   docker run \
     --detach \
+    --no-healthcheck \
     --name "$api_name" \
     --network "$network_name" \
     --env API_PORT=8080 \
+    --env HEALTHCHECK_URL="$api_readiness_url" \
     --env DATABASE_URL="$database_url" \
     --env DATABASE_CONNECT_TIMEOUT=5s \
     --env OPEN_METEO_TIMEOUT=5s \
@@ -106,25 +110,26 @@ api_id="$(
     "$API_LOAD_IMAGE"
 )"
 
+api_ready=false
 for attempt in $(seq 1 60); do
-  health_status="$(
+  if docker exec "$api_id" /app/healthcheck >/dev/null 2>&1; then
+    api_ready=true
+    break
+  fi
+
+  api_running="$(
     docker inspect \
-      --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' \
+      --format '{{.State.Running}}' \
       "$api_id"
   )"
-  case "$health_status" in
-    healthy) break ;;
-    unhealthy) fail 'API container became unhealthy' ;;
-  esac
+  [ "$api_running" = 'true' ] || fail 'API container exited before readiness'
   sleep 1
 done
 
-final_health_status="$(
-  docker inspect \
-    --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' \
-    "$api_id"
-)"
-[ "$final_health_status" = 'healthy' ] || fail "API container did not become healthy: $final_health_status"
+[ "$api_ready" = 'true' ] || fail "API readiness probe did not pass: $api_readiness_url"
+
+printf '%s\n' "API_LOAD_BASELINE_READINESS_URL=$api_readiness_url"
+printf '%s\n' 'API_LOAD_BASELINE_READINESS=PASS'
 
 printf '%s\n' 'API_LOAD_BASELINE_TARGET=PASS'
 

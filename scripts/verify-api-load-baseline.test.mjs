@@ -116,3 +116,12 @@ test('load runner keeps the target inside an isolated Docker network', () => {
   assert.match(runner, /--network "\$network_name"/)
   assert.doesNotMatch(runner, /--publish/)
 })
+
+test('load runner executes the bundled readiness probe instead of trusting image metadata', () => {
+  const runner = fs.readFileSync('scripts/run-api-load-baseline.sh', 'utf8')
+  assert.match(runner, /--no-healthcheck/)
+  assert.match(runner, /--env HEALTHCHECK_URL="\$api_readiness_url"/)
+  assert.match(runner, /docker exec "\$api_id" \/app\/healthcheck/)
+  assert.match(runner, /API_LOAD_BASELINE_READINESS=PASS/)
+  assert.doesNotMatch(runner, /\.State\.Health/)
+})

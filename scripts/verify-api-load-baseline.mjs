@@ -61,12 +61,19 @@ for (const literal of [
   'docker network create',
   'scripts/wait-for-postgres-container.sh',
   '/app/migrate',
+  '--no-healthcheck',
+  '--env HEALTHCHECK_URL="$api_readiness_url"',
+  'docker exec "$api_id" /app/healthcheck',
+  'API_LOAD_BASELINE_READINESS=PASS',
   'API_LOAD_BASELINE_TARGET=PASS',
   'node scripts/summarize-api-load-baseline.mjs',
   'node scripts/validate-api-load-baseline-evidence.mjs',
   'API_LOAD_BASELINE=PASS',
 ]) {
   if (!runner.includes(literal)) fail(`runner is missing ${literal}`)
+}
+if (runner.includes('.State.Health')) {
+  fail('runner must not trust image health metadata for readiness')
 }
 if (runner.includes('--publish')) fail('load target must remain isolated from host ports')
 
