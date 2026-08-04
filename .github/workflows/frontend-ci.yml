@@ -13,6 +13,7 @@ on:
       - 'pnpm-workspace.yaml'
       - '.github/workflows/frontend-ci.yml'
       - '.github/workflows/backend-ci.yml'
+      - '.github/workflows/production-smoke.yml'
       - 'README.md'
       - 'scripts/verify-release-portfolio.sh'
       - 'scripts/verify-release-portfolio.test.mjs'
@@ -25,6 +26,8 @@ on:
       - 'docs/170_DEPENDENCY_MAINTENANCE_CLOSURE.md'
       - 'docs/171_DEPENDABOT_FOLLOW_UP_RECONCILIATION.md'
       - 'scripts/smoke-production-release.sh'
+      - 'scripts/verify-scheduled-production-smoke.mjs'
+      - 'scripts/verify-scheduled-production-smoke.test.mjs'
       - 'docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md'
       - 'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
       - 'docs/164_RECRUITER_DEMO_SCRIPT.md'
@@ -79,6 +82,11 @@ jobs:
         run: |
           pnpm run test:release-contract
           pnpm run verify:release-contract
+
+      - name: Verify scheduled production smoke contract
+        run: |
+          pnpm run test:scheduled-production-smoke
+          pnpm run verify:scheduled-production-smoke
 
       - name: Verify dependency security policy
         run: |
