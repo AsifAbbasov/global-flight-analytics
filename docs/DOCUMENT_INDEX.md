@@ -1604,3 +1604,14 @@ observability audit gate, and deployment boundary.
 ## Document 173 — Core Flight Data Ingestion Production Closure
 
 `173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` records the stale production evidence, missing runtime root cause, bounded one-shot command, serialized free GitHub Actions schedule, secret boundary, end-to-end freshness gate, platform limitations and final runtime activation criteria.
+
+<!-- OPENAPI-CONTRACT-FOUNDATION-V1:DOCUMENT-INDEX -->
+
+## Document 175 — OpenAPI Contract Foundation
+
+`175_OPENAPI_CONTRACT_FOUNDATION.md`
+
+Defines the source-backed OpenAPI 3.1 contract for eight stable public GET operations,
+typed success and error envelopes, route and DTO drift protection, dedicated Continuous
+Integration verification, release-gate wiring, and the contract boundary required by the
+next Playwright end-to-end increment.

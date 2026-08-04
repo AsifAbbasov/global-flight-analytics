@@ -33,7 +33,9 @@
     "test:repository-governance": "node --test scripts/verify-repository-governance.test.mjs",
     "verify:repository-governance": "node scripts/verify-repository-governance.mjs",
     "test:production-ingestion-contract": "node --test scripts/verify-production-ingestion-contract.test.mjs scripts/verify-production-traffic-freshness.test.mjs",
-    "verify:production-ingestion-contract": "node scripts/verify-production-ingestion-contract.mjs"
+    "verify:production-ingestion-contract": "node scripts/verify-production-ingestion-contract.mjs",
+    "test:openapi-contract": "node --test scripts/verify-openapi-contract.test.mjs",
+    "verify:openapi-contract": "node scripts/verify-openapi-contract.mjs"
   },
   "packageManager": "pnpm@11.8.0"
 }
