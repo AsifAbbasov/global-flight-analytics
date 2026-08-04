@@ -25,6 +25,8 @@ pnpm run test:production-metrics-scrape
 pnpm run verify:production-metrics-scrape
 pnpm run test:grafana-observability
 pnpm run verify:grafana-observability
+pnpm run test:api-load-baseline
+pnpm run verify:api-load-baseline
 pnpm run test:backend-operations-contract
 pnpm run verify:backend-operations-contract
 pnpm install --frozen-lockfile
