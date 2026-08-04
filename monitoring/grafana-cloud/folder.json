@@ -1,0 +1,10 @@
+{
+  "kind": "Folder",
+  "apiVersion": "folder.grafana.app/v1",
+  "metadata": {
+    "name": "gfa-observability"
+  },
+  "spec": {
+    "title": "Global Flight Analytics Observability"
+  }
+}

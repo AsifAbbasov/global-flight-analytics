@@ -20,6 +20,7 @@ on:
       - '.github/workflows/frontend-ci.yml'
       - '.github/workflows/production-traffic-ingestion.yml'
       - '.github/workflows/production-metrics-scrape.yml'
+      - '.github/workflows/provision-grafana-observability.yml'
       - 'monitoring/**'
       - '.github/dependabot.yml'
       - 'scripts/**'
@@ -243,6 +244,12 @@ jobs:
         run: |
           node --test scripts/verify-production-metrics-scrape.test.mjs
           node scripts/verify-production-metrics-scrape.mjs
+
+      - name: Verify Grafana SLO dashboard and alert contract
+        run: |
+          pnpm run test:grafana-observability
+          pnpm run verify:grafana-observability
+          bash -n scripts/provision-grafana-observability.sh
 
       - name: Verify recruiter quickstart contract
         run: bash scripts/verify-recruiter-quickstart.sh

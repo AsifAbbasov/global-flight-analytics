@@ -298,14 +298,64 @@ application host, accepted by the external time-series store, and remain tied to
 deployment truth. Dashboard and alert provisioning are handled by the next observability
 increment; this transport workflow does not claim that alert delivery is already configured.
 
-## 10. Free-tier operational boundary
+## 10. Grafana SLO dashboard and alert provisioning
+
+The repository contains `.github/workflows/provision-grafana-observability.yml`, the versioned
+Grafana resources in `monitoring/grafana-cloud`, and an idempotent provisioning script. The
+workflow creates or updates the `gfa-observability` folder, the `gfa-production-slo` dashboard,
+and nine bounded production alert rules.
+
+Configure these GitHub Actions repository variables:
+
+```text
+GRAFANA_INSTANCE_URL=<Grafana Cloud stack URL, for example https://example.grafana.net>
+GRAFANA_PROMETHEUS_DATASOURCE_UID=<UID of the Grafana Cloud Prometheus datasource>
+GRAFANA_EXPECTED_RECEIVER=<optional exact receiver name from the default notification policy>
+```
+
+Configure this GitHub Actions secret:
+
+```text
+GRAFANA_SERVICE_ACCOUNT_TOKEN=<Grafana service-account token with folder, dashboard, alert-rule, and policy-read permissions>
+```
+
+Run **Provision Grafana Observability** manually. Required evidence markers are:
+
+```text
+GRAFANA_PROVISION_INPUT=PASS
+GRAFANA_OBSERVABILITY_RENDER=PASS
+GRAFANA_FOLDER=PASS
+GRAFANA_SLO_DASHBOARD=PASS
+GRAFANA_ALERT_RULES=PASS
+GRAFANA_NOTIFICATION_POLICY=PASS
+GRAFANA_OBSERVABILITY_PROVISION=PASS
+GRAFANA_OBSERVABILITY_WORKFLOW=PASS
+```
+
+The dashboard includes availability, latency, server-error ratio, ingestion freshness,
+consecutive ingestion failures, PostgreSQL pool utilization, reconciliation backlog,
+collector health, traffic throughput, and provider outcome panels. Every panel can be filtered
+by explicit `deployment_revision` evidence.
+
+The provisioned rules implement the initial objectives from the backend observability closure:
+99.5% availability, two-second p95 latency, one-percent server-error ratio, 120-second ingestion
+freshness, three consecutive ingestion failures, 80% PostgreSQL pool utilization, 300-second
+reconciliation backlog, collector health, and a separate missing-metrics alert.
+
+The script reads the existing notification policy but never overwrites it. A successful
+`GRAFANA_NOTIFICATION_POLICY=PASS` marker proves only that a receiver is routed. Complete
+notification delivery evidence additionally requires a contact-point test and one controlled
+test alert received through the selected destination. Record the receiver, timestamp, and
+resolved notification without committing recipient addresses or tokens.
+
+## 11. Free-tier operational boundary
 
 The Render free instance can spin down after inactivity and may delay the first request by
 approximately fifty seconds or more. The smoke commands use bounded retries so the first
 request can wake the service before lifecycle validation. This is a latency limitation,
 not a deployment or database-integrity failure.
 
-## 11. Rollback
+## 12. Rollback
 
 1. select the previous successful API deployment;
 2. retain the latest forward-compatible database schema;
