@@ -35,15 +35,15 @@ for (const metric of [
 ]) if (!dashboardText.includes(metric)) fail(`dashboard is missing ${metric}`)
 
 const expectedRules = new Map([
-  ['gfa-api-availability', ['15m', 99.5, 'lt']],
-  ['gfa-api-p95-latency', ['15m', 2, 'gt']],
-  ['gfa-api-server-errors', ['10m', 0.01, 'gt']],
-  ['gfa-ingestion-freshness', ['10m', 120, 'gt']],
-  ['gfa-ingestion-failures', ['1m', 3, 'gt']],
-  ['gfa-postgres-pool', ['10m', 0.8, 'gt']],
-  ['gfa-reconciliation-backlog', ['15m', 300, 'gt']],
-  ['gfa-collector-health', ['2m', 1, 'lt']],
-  ['gfa-metrics-missing', ['1m', 0, 'gt']],
+  ['gfa-api-availability', ['15m', '$A < 99.5']],
+  ['gfa-api-p95-latency', ['15m', '$A > 2']],
+  ['gfa-api-server-errors', ['10m', '$A >= 0.01']],
+  ['gfa-ingestion-freshness', ['10m', '$A > 120']],
+  ['gfa-ingestion-failures', ['1m', '$A >= 3']],
+  ['gfa-postgres-pool', ['10m', '$A > 0.8']],
+  ['gfa-reconciliation-backlog', ['15m', '$A > 300']],
+  ['gfa-collector-health', ['2m', '$A < 1']],
+  ['gfa-metrics-missing', ['1m', '$A > 0']],
 ])
 if (alerts.folderUid !== 'gfa-observability' || alerts.title !== 'global-flight-analytics-production-slo' || alerts.interval !== 60) fail('alert group identity is invalid')
 if (!Array.isArray(alerts.rules) || alerts.rules.length !== expectedRules.size) fail('alert rule count is invalid')
@@ -51,11 +51,16 @@ for (const current of alerts.rules) {
   const expected = expectedRules.get(current.uid)
   if (!expected) fail(`unexpected alert rule ${current.uid}`)
   if (current.for !== expected[0]) fail(`${current.uid} has an invalid evaluation duration`)
-  const condition = current.data?.find((item) => item.refId === 'B')?.model?.conditions?.[0]?.evaluator
-  if (!condition || condition.params?.[0] !== expected[1] || condition.type !== expected[2]) fail(`${current.uid} has an invalid threshold`)
+  if (current.condition !== 'B') fail(`${current.uid} condition must be B`)
+  if (!Array.isArray(current.data) || current.data.length !== 2) fail(`${current.uid} must contain query A and Math condition B`)
+  const condition = current.data.find((item) => item.refId === 'B')
+  if (condition?.datasourceUid !== '__expr__' || condition?.model?.type !== 'math') fail(`${current.uid} must use a Grafana-managed Math condition`)
+  if (condition.model.expression !== expected[1]) fail(`${current.uid} has an invalid Math threshold expression`)
+  if (JSON.stringify(condition).includes('classic_conditions')) fail(`${current.uid} still uses a legacy classic condition`)
   if (current.labels?.environment !== 'production' || current.labels?.slo !== 'true') fail(`${current.uid} lacks bounded production labels`)
   if (current.uid !== 'gfa-metrics-missing' && current.noDataState !== 'OK') fail(`${current.uid} must avoid false no-data pages between scheduled scrapes`)
 }
+if (JSON.stringify(alerts).includes('classic_conditions')) fail('alert group still contains a legacy classic condition')
 
 for (const literal of [
   'workflow_dispatch:',
@@ -82,8 +87,16 @@ const entries = {
 for (const [name, command] of Object.entries(entries)) if (packageJson.scripts?.[name] !== command) fail(`package script ${name} is missing`)
 for (const command of ['pnpm run test:grafana-observability', 'pnpm run verify:grafana-observability']) {
   if (!release.includes(command)) fail(`release verification is missing ${command}`)
-  if (!backendCI.includes(command)) fail(`Backend CI is missing ${command}`)
 }
+for (const command of [
+  'node --test scripts/verify-grafana-observability.test.mjs',
+  'node scripts/verify-grafana-observability.mjs',
+  'bash -n scripts/provision-grafana-observability.sh',
+]) if (!backendCI.includes(command)) fail(`Backend CI is missing ${command}`)
+const backendStepStart = backendCI.indexOf('      - name: Verify Grafana SLO dashboard and alert contract')
+const backendStepEnd = backendCI.indexOf('      - name: Verify recruiter quickstart contract', backendStepStart)
+if (backendStepStart < 0 || backendStepEnd <= backendStepStart) fail('Backend CI Grafana contract step boundary is invalid')
+if (backendCI.slice(backendStepStart, backendStepEnd).includes('pnpm ')) fail('Backend CI Grafana contract step must not require pnpm')
 for (const literal of ['GRAFANA_INSTANCE_URL', 'GRAFANA_PROMETHEUS_DATASOURCE_UID', 'GRAFANA_SERVICE_ACCOUNT_TOKEN', 'GRAFANA_ALERT_RULES=PASS', 'notification delivery']) {
   if (!runbook.includes(literal)) fail(`runbook is missing ${literal}`)
 }

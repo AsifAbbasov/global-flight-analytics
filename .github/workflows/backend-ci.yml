@@ -247,8 +247,8 @@ jobs:
 
       - name: Verify Grafana SLO dashboard and alert contract
         run: |
-          pnpm run test:grafana-observability
-          pnpm run verify:grafana-observability
+          node --test scripts/verify-grafana-observability.test.mjs
+          node scripts/verify-grafana-observability.mjs
           bash -n scripts/provision-grafana-observability.sh
 
       - name: Verify recruiter quickstart contract
