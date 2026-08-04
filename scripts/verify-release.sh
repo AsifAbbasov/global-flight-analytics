@@ -29,6 +29,8 @@ pnpm run test:api-load-baseline
 pnpm run verify:api-load-baseline
 pnpm run test:openapi-contract
 pnpm run verify:openapi-contract
+pnpm run test:playwright-e2e-contract
+pnpm run verify:playwright-e2e
 pnpm run test:backend-operations-contract
 pnpm run verify:backend-operations-contract
 pnpm install --frozen-lockfile
@@ -67,6 +69,7 @@ printf '%s\n' 'RELEASE_PRODUCTION_INGESTION=PASS'
 printf '%s\n' 'RELEASE_RECRUITER_QUICKSTART=PASS'
 printf '%s\n' 'RELEASE_PORTFOLIO_CONTRACT_TESTS=PASS'
 printf '%s\n' 'RELEASE_OPENAPI_CONTRACT=PASS'
+printf '%s\n' 'RELEASE_PLAYWRIGHT_E2E_CONTRACT=PASS'
 printf '%s\n' 'RELEASE_BACKEND_OPERATIONS=PASS'
 printf '%s\n' 'RELEASE_FRONTEND=PASS'
 printf '%s\n' 'RELEASE_BACKEND=PASS'

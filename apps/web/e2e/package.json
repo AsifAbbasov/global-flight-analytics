@@ -1,0 +1,6 @@
+{
+  "name": "global-flight-analytics-playwright-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Isolated Playwright runtime boundary. The exact test package is installed without modifying the repository pnpm lockfile."
+}

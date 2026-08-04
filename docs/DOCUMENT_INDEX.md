@@ -1615,3 +1615,14 @@ Defines the source-backed OpenAPI 3.1 contract for eight stable public GET opera
 typed success and error envelopes, route and DTO drift protection, dedicated Continuous
 Integration verification, release-gate wiring, and the contract boundary required by the
 next Playwright end-to-end increment.
+
+<!-- PLAYWRIGHT-E2E-FOUNDATION-V1:DOCUMENT-INDEX -->
+
+## Document 176 — Playwright End-to-End Testing Foundation
+
+`176_PLAYWRIGHT_E2E_FOUNDATION.md`
+
+Defines the isolated Playwright Chromium runtime, OpenAPI-aligned deterministic mock API,
+semantic browser assertions, server-rendered snapshot, shareable region state, responsive
+navigation, traffic failure recovery, evidence retention, dedicated Continuous Integration
+workflow, and prohibition on targeting public deployments.

@@ -18,3 +18,7 @@ build
 
 # Frontend contract test build output
 /apps/web/.test-dist/
+
+# Playwright E2E runtime evidence
+/apps/web/e2e/test-results/
+/apps/web/e2e/playwright-report/

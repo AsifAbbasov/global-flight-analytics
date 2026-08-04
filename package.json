@@ -35,7 +35,10 @@
     "test:production-ingestion-contract": "node --test scripts/verify-production-ingestion-contract.test.mjs scripts/verify-production-traffic-freshness.test.mjs",
     "verify:production-ingestion-contract": "node scripts/verify-production-ingestion-contract.mjs",
     "test:openapi-contract": "node --test scripts/verify-openapi-contract.test.mjs",
-    "verify:openapi-contract": "node scripts/verify-openapi-contract.mjs"
+    "verify:openapi-contract": "node scripts/verify-openapi-contract.mjs",
+    "test:playwright-e2e-contract": "node --test scripts/verify-playwright-e2e.test.mjs",
+    "verify:playwright-e2e": "node scripts/verify-playwright-e2e.mjs",
+    "run:playwright-e2e": "bash scripts/run-playwright-e2e.sh"
   },
   "packageManager": "pnpm@11.8.0"
 }
