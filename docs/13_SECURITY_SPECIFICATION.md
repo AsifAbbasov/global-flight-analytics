@@ -12,47 +12,47 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет требования безопасности платформы Global Flight Analytics.
+This document defines the security requirements of the Global Flight Analytics platform.
 
-Документ устанавливает правила защиты:
+The document establishes protection rules for:
 
-- инфраструктуры;
+- infrastructure;
 - Backend API;
-- базы данных;
-- внешних интеграций;
-- пользовательских запросов.
+- database;
+- external integrations;
+- user requests.
 
 ---
 
 # 2. Security Goals
 
-Основные цели:
+Primary goals:
 
-- защита инфраструктуры;
-- защита API;
-- защита базы данных;
-- защита пользовательских запросов;
-- защита секретов системы;
-- обеспечение стабильной работы платформы.
+- protect infrastructure;
+- protect the API;
+- protect the database;
+- protect user requests;
+- protect system secrets;
+- ensure stable platform operation.
 
 ---
 
 # 3. Security Scope
 
-Платформа не работает с:
+The platform does not process:
 
-- банковскими данными;
-- платежными картами;
-- государственными системами;
-- военными системами;
-- системами управления воздушным движением;
-- персональными данными пользователей.
+- banking data;
+- payment-card data;
+- government systems;
+- military systems;
+- air traffic control systems;
+- personal user data.
 
 ---
 
 # 4. Security Principles
 
-Основные принципы:
+Primary principles:
 
 - Least Privilege;
 - Defense In Depth;
@@ -64,37 +64,37 @@ Status: Approved
 
 # 5. HTTPS
 
-Все соединения должны использовать HTTPS.
+All connections must use HTTPS.
 
 ---
 
-HTTP запрещен.
+HTTP is prohibited.
 
 ---
 
-Используются только защищенные TLS-соединения.
+Only secure TLS connections are allowed.
 
 ---
 
 # 6. Secrets Management
 
-Запрещено хранить секреты:
+Secrets must not be stored:
 
-- в GitHub;
-- в исходном коде;
-- в клиентской части;
-- в логах.
-
----
-
-Допускается хранение только:
-
-- в переменных окружения;
-- в настройках платформы хостинга.
+- in GitHub;
+- in source code;
+- in client-side code;
+- in logs.
 
 ---
 
-Примеры:
+Secrets may be stored only:
+
+- in environment variables;
+- in hosting-platform settings.
+
+---
+
+Examples:
 
 ```text
 DATABASE_URL
@@ -108,15 +108,15 @@ OPENSKY_PASSWORD
 
 # 7. Database Security
 
-База данных доступна только Backend.
+The database is accessible only by the Backend.
 
 ---
 
-Frontend не имеет прямого доступа.
+The Frontend has no direct access.
 
 ---
 
-Доступ осуществляется только через:
+Access is provided only through:
 
 ```text
 /api/v1/*
@@ -126,37 +126,37 @@ Frontend не имеет прямого доступа.
 
 # 8. Input Validation
 
-Проверяются:
+The system validates:
 
-- ICAO-коды;
-- IATA-коды;
-- координаты;
-- идентификаторы маршрутов;
-- параметры фильтрации;
-- параметры поиска.
+- ICAO codes;
+- IATA codes;
+- coordinates;
+- route identifiers;
+- filter parameters;
+- search parameters.
 
 ---
 
-Некорректные данные отклоняются.
+Invalid data is rejected.
 
 ---
 
 # 9. Rate Limiting
 
-Ограничение запросов обязательно.
+Request-rate limiting is mandatory.
 
 ---
 
 MVP:
 
 ```text
-100 запросов в минуту
-на IP-адрес
+100 requests per minute
+per IP address
 ```
 
 ---
 
-При превышении возвращается:
+When the limit is exceeded, the system returns:
 
 ```text
 429 Too Many Requests
@@ -166,69 +166,69 @@ MVP:
 
 # 10. Logging
 
-Логируются:
+The system logs:
 
-- ошибки;
-- исключения;
-- недоступность источников;
-- критические события безопасности.
+- errors;
+- exceptions;
+- unavailable data sources;
+- critical security events.
 
 ---
 
-Не логируются:
+The system does not log:
 
-- пароли;
-- секреты;
-- токены;
-- строки подключения.
+- passwords;
+- secrets;
+- tokens;
+- connection strings.
 
 ---
 
 # 11. API Security
 
-Все параметры проходят:
+All parameters pass through:
 
-- валидацию;
-- нормализацию;
-- проверку типов.
+- validation;
+- normalization;
+- type checking.
 
 ---
 
-Запрещается:
+The following are prohibited:
 
-- выполнение произвольных команд;
-- небезопасная сериализация;
-- выполнение пользовательского кода.
+- arbitrary command execution;
+- unsafe serialization;
+- user-code execution.
 
 ---
 
 # 12. SQL Security
 
-Используются:
+The system uses:
 
-- подготовленные запросы;
-- параметризованные запросы.
-
----
-
-Запрещается:
-
-- конкатенация SQL-строк;
-- динамическая генерация SQL из пользовательского ввода.
+- prepared statements;
+- parameterized queries.
 
 ---
 
-SQL-инъекции должны быть невозможны.
+The following are prohibited:
+
+- SQL-string concatenation;
+- dynamic SQL generation from user input.
+
+---
+
+SQL injection must be impossible.
 
 ---
 
 # 13. Cross-Origin Policy
 
-Разрешены только доверенные домены.
+Only trusted domains are allowed.
 
 ---
 
-Пример:
+Example:
 
 ```text
 https://global-flight-analytics.vercel.app
@@ -236,13 +236,13 @@ https://global-flight-analytics.vercel.app
 
 ---
 
-Все остальные домены блокируются.
+All other domains are blocked.
 
 ---
 
 # 14. Security Headers
 
-Backend обязан использовать следующие HTTP-заголовки безопасности:
+The Backend must use the following HTTP security headers:
 
 - X-Content-Type-Options;
 - X-Frame-Options;
@@ -251,26 +251,26 @@ Backend обязан использовать следующие HTTP-загол
 
 ---
 
-Назначение:
+Purpose:
 
-- защита от Clickjacking;
-- защита от MIME Sniffing;
-- контроль источников контента;
-- ограничение утечек данных.
+- protect against Clickjacking;
+- protect against MIME Sniffing;
+- control content sources;
+- limit data leakage.
 
 ---
 
 # 15. Dependency Security
 
-Все зависимости:
+All dependencies:
 
-- обновляются регулярно;
-- проверяются на известные уязвимости;
-- проходят аудит перед релизом.
+- are updated regularly;
+- are checked for known vulnerabilities;
+- pass an audit before release.
 
 ---
 
-Используются:
+The platform uses:
 
 ```text
 npm audit
@@ -282,11 +282,11 @@ govulncheck
 
 # 16. Supply Chain Security
 
-Все зависимости должны фиксироваться через lock-файлы.
+All dependencies must be pinned through lock files.
 
 ---
 
-Используются:
+The project uses:
 
 ```text
 pnpm-lock.yaml
@@ -296,37 +296,37 @@ go.sum
 
 ---
 
-Запрещается удаление lock-файлов из репозитория.
+Removing lock files from the repository is prohibited.
 
 ---
 
 # 17. Security Events
 
-К событиям безопасности относятся:
+Security events include:
 
-- превышение лимитов;
-- массовые запросы;
-- подозрительная активность;
-- большое количество ошибок;
-- попытки доступа к несуществующим ресурсам.
+- rate-limit violations;
+- bulk requests;
+- suspicious activity;
+- large error volumes;
+- attempts to access nonexistent resources.
 
 ---
 
 # 18. External Source Security
 
-Все внешние источники считаются недоверенными.
+All external sources are treated as untrusted.
 
 ---
 
-Перед обработкой данные:
+Before processing, data is:
 
-- валидируются;
-- проверяются на корректность;
-- нормализуются.
+- validated;
+- checked for correctness;
+- normalized.
 
 ---
 
-Источники:
+Sources:
 
 - OpenSky;
 - OurAirports;
@@ -338,7 +338,7 @@ go.sum
 
 # 19. Infrastructure Security
 
-Обязательные требования:
+Mandatory requirements:
 
 - HTTPS Only;
 - Private Database Access;
@@ -350,41 +350,41 @@ go.sum
 
 # 20. Security Review
 
-Каждое изменение следующих компонентов должно проверяться на соответствие данному документу:
+Every change to the following components must be checked against this document:
 
 - API;
-- инфраструктура;
-- зависимости;
-- механизмы хранения данных;
-- внешние интеграции.
+- infrastructure;
+- dependencies;
+- data-storage mechanisms;
+- external integrations.
 
 ---
 
 # 21. Security Boundaries
 
-Платформа не гарантирует:
+The platform does not guarantee:
 
-- достоверность внешних источников;
-- доступность OpenSky;
-- непрерывность работы сторонних сервисов.
+- accuracy of external sources;
+- OpenSky availability;
+- uninterrupted operation of third-party services.
 
 ---
 
-Безопасность распространяется только на инфраструктуру и данные платформы.
+Security coverage applies only to platform infrastructure and platform data.
 
 ---
 
 # 22. Summary
 
-Безопасность платформы строится вокруг принципов:
+Platform security is built around:
 
-- минимальный доступ;
-- изоляция компонентов;
-- защита секретов;
-- валидация входных данных;
-- контроль нагрузки;
-- безопасная работа с внешними источниками;
-- воспроизводимые сборки;
-- регулярный аудит зависимостей.
+- least privilege;
+- component isolation;
+- secret protection;
+- input validation;
+- workload control;
+- secure operation with external sources;
+- reproducible builds;
+- regular dependency audits.
 
-Все компоненты платформы обязаны соответствовать требованиям данного документа.
+All platform components must comply with this document.

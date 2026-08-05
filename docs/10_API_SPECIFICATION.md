@@ -12,9 +12,9 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет публичные и внутренние интерфейсы платформы Global Flight Analytics.
+This document defines the public and internal interfaces of the Global Flight Analytics platform.
 
-Документ является контрактом между:
+The document is a contract between:
 
 - Frontend;
 - Backend;
@@ -25,7 +25,7 @@ Status: Approved
 
 # 2. API Principles
 
-Используется:
+The platform uses:
 
 - REST API;
 - JSON;
@@ -33,13 +33,13 @@ Status: Approved
 
 ---
 
-Все ответы возвращаются в формате UTF-8.
+All responses use UTF-8 encoding.
 
 ---
 
 # 3. API Versioning
 
-Текущая версия:
+Current version:
 
 ```text
 /api/v1
@@ -47,13 +47,13 @@ Status: Approved
 
 ---
 
-Все будущие изменения должны добавляться через новую версию API.
+All future changes must be introduced through a new API version.
 
 ---
 
 # 4. Response Envelope
 
-Все успешные ответы используют единый формат.
+All successful responses use one common format.
 
 ---
 
@@ -82,7 +82,7 @@ Status: Approved
 
 # 5. Error Contract
 
-Все ошибки используют единый формат.
+All errors use one common format.
 
 ---
 
@@ -102,7 +102,7 @@ Status: Approved
 
 # 6. HTTP Status Codes
 
-Используются:
+The API uses:
 
 ```text
 200 OK
@@ -122,11 +122,11 @@ Status: Approved
 
 # 7. Pagination Contract
 
-Все списочные эндпоинты поддерживают пагинацию.
+All list endpoints support pagination.
 
 ---
 
-Параметры:
+Parameters:
 
 ```text
 page
@@ -135,7 +135,7 @@ limit
 
 ---
 
-Пример:
+Example:
 
 ```text
 /api/v1/airports?page=1&limit=50
@@ -143,7 +143,7 @@ limit
 
 ---
 
-Ответ:
+Response:
 
 ```json
 {
@@ -353,11 +353,11 @@ query
 
 ---
 
-Поиск выполняется по:
+Search covers:
 
-- аэропортам;
-- самолетам;
-- авиакомпаниям.
+- airports;
+- aircraft;
+- airlines.
 
 ---
 
@@ -435,9 +435,9 @@ Response:
 
 # 17. Internal Ingestion API
 
-Используется только внутри Backend.
+Used only inside the Backend.
 
-Не доступен Frontend.
+Not available to the Frontend.
 
 ---
 
@@ -467,11 +467,11 @@ POST /internal/statistics/generate
 
 # 18. Rate Limiting
 
-MVP ограничения:
+MVP limit:
 
 ```text
-60 запросов в минуту
-на IP адрес
+60 requests per minute
+per IP address
 ```
 
 ---
@@ -504,14 +504,14 @@ Analytics:
 
 # 20. Summary
 
-API предоставляет единый интерфейс для:
+The API provides one unified interface for:
 
-- самолетов;
-- аэропортов;
-- маршрутов;
-- аналитики;
-- исторического воспроизведения;
-- поиска;
-- мониторинга состояния системы.
+- aircraft;
+- airports;
+- routes;
+- analytics;
+- historical replay;
+- search;
+- system-health monitoring.
 
-Данный документ является официальным контрактом между Frontend и Backend платформы Global Flight Analytics.
+This document is the official contract between the Global Flight Analytics Frontend and Backend.

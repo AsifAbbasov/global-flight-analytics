@@ -12,22 +12,22 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет структуру базы данных PostgreSQL для MVP Global Flight Analytics.
+This document defines the PostgreSQL database structure for the Global Flight Analytics MVP.
 
-Основные задачи базы данных:
+Primary database responsibilities:
 
-- хранение справочников;
-- хранение регионов;
-- хранение аэропортов;
-- хранение авиакомпаний;
-- хранение самолетов;
-- хранение наблюдаемых рейсов;
-- хранение состояний рейсов;
-- хранение вычисленных маршрутов;
-- хранение статистических снимков воздушного движения;
-- хранение истории запусков загрузки данных.
+- store reference data;
+- store regions;
+- store airports;
+- store airlines;
+- store aircraft;
+- store observed flights;
+- store flight states;
+- store computed routes;
+- store statistical air-traffic snapshots;
+- store data-ingestion run history.
 
-База данных не предназначена для хранения полного бесконечного потока координат каждого самолета в реальном времени.
+The database is not intended to store the complete unbounded real-time coordinate stream of every aircraft.
 
 ---
 
@@ -35,73 +35,73 @@ Status: Approved
 
 ## Single Source Of Truth
 
-Каждая доменная сущность имеет одно основное место хранения.
+Every domain entity has one primary storage location.
 
 ---
 
 ## Read Optimized
 
-База оптимизируется под чтение.
+The database is optimized for read operations.
 
-Основные пользовательские сценарии:
+Primary user workflows:
 
-- карта;
-- поиск;
-- карточка самолета;
-- карточка аэропорта;
-- региональная аналитика.
+- map;
+- search;
+- aircraft card;
+- airport card;
+- regional analytics.
 
 ---
 
 ## Controlled Denormalization
 
-Некоторая денормализация допускается только для read-optimized агрегатов.
+Some denormalization is allowed only for read-optimized aggregates.
 
-Примеры допустимых агрегатов:
+Examples of allowed aggregates:
 
 - traffic_snapshots;
 - airport_statistics;
 - route_statistics.
 
-Справочные сущности не должны дублироваться бесконтрольно.
+Reference entities must not be duplicated without control.
 
 ---
 
 ## Data Provenance
 
-Данные должны сохранять происхождение.
+Stored data must preserve its origin.
 
-Для вычисляемых и агрегированных данных обязательны:
+Computed and aggregated data must include:
 
 - data_source;
 - confidence_level;
-- calculated_at или last_updated_at.
+- calculated_at or last_updated_at.
 
 ---
 
 ## Open Data Only
 
-В базе хранятся только данные из открытых источников.
+The database stores only data from open sources.
 
 ---
 
 # 3. Data Categories
 
-Система разделяет данные на категории:
+The system divides data into categories:
 
 ## Real Data
 
-Данные, полученные напрямую из открытых источников наблюдения.
+Data obtained directly from open observation sources.
 
-Пример:
+Example:
 
-- flight_states из OpenSky.
+- flight_states from OpenSky.
 
 ## Enriched Data
 
-Данные, полученные из справочников и обогащения.
+Data obtained from reference datasets and enrichment.
 
-Пример:
+Examples:
 
 - airports;
 - aircraft;
@@ -110,17 +110,17 @@ Status: Approved
 
 ## Inferred Data
 
-Данные, вычисленные системой.
+Data computed by the system.
 
-Пример:
+Example:
 
 - route_predictions.
 
 ## Statistical Data
 
-Данные, рассчитанные на основе накопленных наблюдений.
+Data calculated from accumulated observations.
 
-Пример:
+Examples:
 
 - traffic_snapshots;
 - airport_statistics;
@@ -130,7 +130,7 @@ Status: Approved
 
 # 4. countries
 
-Справочник стран.
+Country reference data.
 
 ## Data Category
 
@@ -200,7 +200,7 @@ not null
 
 # 5. regions
 
-Географические регионы для фильтрации и аналитики.
+Geographic regions used for filtering and analytics.
 
 ## Data Category
 
@@ -302,7 +302,7 @@ not null
 
 # 6. airlines
 
-Справочник авиакомпаний.
+Airline reference data.
 
 ## Data Category
 
@@ -396,7 +396,7 @@ not null
 
 # 7. aircraft_models
 
-Справочник моделей самолетов.
+Aircraft-model reference data.
 
 ## Data Category
 
@@ -508,7 +508,7 @@ manufacturer + model must be unique.
 
 # 8. aircraft
 
-Конкретные воздушные суда.
+Specific physical aircraft.
 
 ## Data Category
 
@@ -614,7 +614,7 @@ not null
 
 # 9. airports
 
-Аэропорты.
+Airports.
 
 ## Data Category
 
@@ -746,7 +746,7 @@ At least one of icao_code or iata_code should exist when available from source d
 
 # 10. runways
 
-Взлетно-посадочные полосы.
+Airport runways.
 
 ## Data Category
 
@@ -830,7 +830,7 @@ not null
 
 # 11. airport_facilities
 
-Инфраструктура аэропорта.
+Airport infrastructure.
 
 ## Data Category
 
@@ -914,7 +914,7 @@ not null
 
 # 12. airport_profiles
 
-Цифровой паспорт аэропорта.
+Airport digital profiles.
 
 ## Data Category
 
@@ -1032,7 +1032,7 @@ not null
 
 # 13. flights
 
-Наблюдаемые рейсы.
+Observed flights.
 
 ## Data Category
 
@@ -1040,11 +1040,11 @@ Real Data
 
 ## Meaning
 
-Flight представляет наблюдаемый полет самолета.
+Flight represents an observed aircraft flight.
 
-Flight не хранит координаты, высоту, скорость и курс.
+Flight does not store coordinates, altitude, velocity, or heading.
 
-Эти данные хранятся в flight_states.
+These values are stored in flight_states.
 
 ## Columns
 
@@ -1116,7 +1116,7 @@ not null
 
 # 14. flight_states
 
-Состояния рейсов во времени.
+Flight states over time.
 
 ## Data Category
 
@@ -1124,9 +1124,9 @@ Real Data
 
 ## Meaning
 
-Flight State является снимком состояния полета в конкретный момент времени.
+Flight State is a snapshot of a flight at a specific time.
 
-Источник MVP:
+MVP source:
 
 OpenSky.
 
@@ -1284,18 +1284,18 @@ not null
 
 ## Retention Rule
 
-MVP хранит ограниченную историю flight_states.
+The MVP stores a limited flight_states history.
 
-Рекомендуемое ограничение MVP:
+Recommended MVP limit:
 
-- от 24 часов до 7 дней для live replay;
-- агрегаты сохраняются дольше в traffic_snapshots.
+- 24 hours to 7 days for live replay;
+- aggregates are retained longer in traffic_snapshots.
 
 ---
 
 # 15. route_predictions
 
-Вычисленные маршруты.
+Computed routes.
 
 ## Data Category
 
@@ -1303,9 +1303,9 @@ Inferred Data
 
 ## Meaning
 
-Route Prediction представляет вероятный маршрут рейса.
+Route Prediction represents the probable route of a flight.
 
-Это не официальный маршрут и не план полета.
+It is not an official route or flight plan.
 
 ## Columns
 
@@ -1417,7 +1417,7 @@ confidence_level must be one of:
 
 # 16. traffic_snapshots
 
-Снимки воздушного движения.
+Air-traffic snapshots.
 
 ## Data Category
 
@@ -1425,7 +1425,7 @@ Statistical Data
 
 ## Meaning
 
-Используются для региональной аналитики и исторического анализа.
+Used for regional analytics and historical analysis.
 
 ## Columns
 
@@ -1505,7 +1505,7 @@ not null
 
 # 17. route_statistics
 
-Статистика маршрутов.
+Route statistics.
 
 ## Data Category
 
@@ -1577,7 +1577,7 @@ not null
 
 # 18. airport_statistics
 
-Статистика аэропортов.
+Airport statistics.
 
 ## Data Category
 
@@ -1645,7 +1645,7 @@ not null
 
 # 19. ingestion_runs
 
-История запусков загрузки данных.
+Data-ingestion run history.
 
 ## Data Category
 
@@ -1653,7 +1653,7 @@ Operational Data
 
 ## Meaning
 
-Таблица нужна для отладки, мониторинга и контроля загрузки данных из внешних источников.
+The table supports debugging, monitoring, and control of data ingestion from external sources.
 
 ## Columns
 
@@ -1906,7 +1906,7 @@ route_statistics.origin_airport_id + route_statistics.destination_airport_id + r
 
 ## flight_states
 
-Хранятся ограниченно.
+Retained for a limited period.
 
 MVP retention:
 
@@ -1918,49 +1918,49 @@ MVP retention:
 
 ## traffic_snapshots
 
-Хранятся дольше, чем flight_states.
+Retained longer than flight_states.
 
-Используются для аналитики без хранения полного координатного потока.
+Used for analytics without storing the full coordinate stream.
 
 ---
 
 ## ingestion_runs
 
-Хранятся для диагностики и контроля качества данных.
+Retained for diagnostics and data-quality control.
 
 ---
 
 # 23. Future Extensions
 
-Допускается добавление:
+The following may be added:
 
-- пользователей;
-- избранных аэропортов;
-- избранных самолетов;
-- уведомлений;
-- исторических архивов;
+- users;
+- favorite airports;
+- favorite aircraft;
+- notifications;
+- historical archives;
 - materialized views;
 - PostGIS.
 
-Без изменения текущей архитектурной основы.
+Without changing the current architectural foundation.
 
 ---
 
 # 24. Database Boundaries
 
-База данных не хранит:
+The database does not store:
 
-- официальные планы полетов;
-- данные диспетчерских систем;
-- данные военной авиации;
-- закрытые коммерческие данные авиакомпаний;
-- полную бесконечную телеметрию всех самолетов.
+- official flight plans;
+- air traffic control system data;
+- military aviation data;
+- closed commercial airline data;
+- complete unbounded telemetry for all aircraft.
 
 ---
 
 # 25. Summary
 
-База данных состоит из основных доменных групп:
+The database consists of the following primary domain groups:
 
 - Countries
 - Regions
@@ -1979,4 +1979,4 @@ MVP retention:
 - Airport Statistics
 - Ingestion Runs
 
-Данная схема является фундаментом MVP Global Flight Analytics.
+This schema is the foundation of the Global Flight Analytics MVP.

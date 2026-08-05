@@ -12,29 +12,29 @@ Status: Approved
 
 # 1. Purpose
 
-Traffic Analytics Module отвечает за анализ воздушного движения и преобразование авиационных наблюдений в понятную аналитику.
+The Traffic Analytics Module analyzes air traffic and transforms aviation observations into understandable analytics.
 
-Модуль предоставляет статистику, визуализацию и сравнительный анализ воздушного пространства.
+The module provides statistics, visualization, and comparative airspace analysis.
 
 ---
 
 # 2. Goal
 
-Показать пользователю полную картину воздушного движения.
+Show the user a complete view of air traffic.
 
-Система должна отвечать на вопросы:
+The system must answer:
 
-- где сейчас сосредоточен трафик;
-- какие аэропорты наиболее активны;
-- какие маршруты используются чаще всего;
-- как меняется активность во времени;
-- какие регионы демонстрируют рост или снижение активности.
+- where traffic is currently concentrated;
+- which airports are the most active;
+- which routes are used most frequently;
+- how activity changes over time;
+- which regions show increasing or decreasing activity.
 
 ---
 
 # 3. Architectural Position
 
-Поток данных:
+Data flow:
 
 Traffic Snapshots
 
@@ -54,7 +54,7 @@ Frontend
 
 # 4. Analytics Data Sources
 
-Модуль использует данные из следующих таблиц:
+The module uses data from:
 
 - traffic_snapshots;
 - airport_statistics;
@@ -65,125 +65,125 @@ Frontend
 
 # 5. Data Classification
 
-Traffic Analytics использует:
+Traffic Analytics uses:
 
 ## Statistical Data
 
-Данные, рассчитанные на основе накопленных наблюдений.
+Data calculated from accumulated observations.
 
-Примеры:
+Examples:
 
-- количество рейсов;
-- количество аэропортов;
-- количество маршрутов;
-- активность аэропортов.
+- flight count;
+- airport count;
+- route count;
+- airport activity.
 
 ---
 
 ## Inferred Data
 
-Данные, полученные вычислительными алгоритмами.
+Data produced by computational algorithms.
 
-Примеры:
+Examples:
 
-- рейтинг активности;
-- тренды;
-- сравнительный анализ регионов.
+- activity ranking;
+- trends;
+- regional comparison.
 
 ---
 
 # 6. Main Metrics
 
-Система рассчитывает:
+The system calculates:
 
-- количество самолетов;
-- количество маршрутов;
-- количество аэропортов;
-- плотность трафика;
-- интенсивность движения;
-- изменение активности.
+- aircraft count;
+- route count;
+- airport count;
+- traffic density;
+- movement intensity;
+- activity change.
 
 ---
 
 # 7. Regional Analysis
 
-Поддерживаемые регионы MVP:
+Supported MVP regions:
 
-- Кавказ;
-- Европа;
-- Ближний Восток;
-- Центральная Азия.
+- Caucasus;
+- Europe;
+- Middle East;
+- Central Asia.
 
 ---
 
-Для каждого региона рассчитываются:
+For each region, the system calculates:
 
-- количество рейсов;
-- количество аэропортов;
-- количество маршрутов;
-- индекс активности.
+- flight count;
+- airport count;
+- route count;
+- activity index.
 
 ---
 
 # 8. Heat Maps
 
-Система строит тепловые карты воздушного движения.
+The system creates air-traffic heat maps.
 
 ---
 
-Отображаются:
+The map displays:
 
-- зоны высокой активности;
-- зоны средней активности;
-- зоны низкой активности.
+- high-activity areas;
+- medium-activity areas;
+- low-activity areas.
 
 ---
 
 # 9. Heat Map Calculation
 
-Базовой единицей является:
+The base unit is:
 
 ```text
 Heat Map Cell
 ```
 
-Для каждой ячейки рассчитываются:
+For every cell, the system calculates:
 
-- количество самолетов;
-- количество наблюдений;
-- количество маршрутов.
+- aircraft count;
+- observation count;
+- route count.
 
 ---
 
-Результатом является показатель плотности.
+The result is a density indicator.
 
 ---
 
 # 10. Airport Activity
 
-Для аэропорта рассчитывается:
+For each airport, the system calculates:
 
-- количество прибытий;
-- количество вылетов;
-- количество наблюдаемых самолетов;
-- количество активных маршрутов.
+- arrival count;
+- departure count;
+- observed-aircraft count;
+- active-route count.
 
 ---
 
 # 11. Route Activity
 
-Для маршрута рассчитывается:
+For each route, the system calculates:
 
-- частота использования;
-- активность по дням;
-- активность по неделям;
-- динамика изменений.
+- usage frequency;
+- daily activity;
+- weekly activity;
+- change dynamics.
 
 ---
 
 # 12. Traffic Activity Score
 
-Для сравнения объектов используется:
+The following is used to compare objects:
 
 ```text
 Traffic Activity Score
@@ -191,7 +191,7 @@ Traffic Activity Score
 
 ---
 
-Диапазон:
+Range:
 
 ```text
 0 – 100
@@ -199,110 +199,110 @@ Traffic Activity Score
 
 ---
 
-Применяется для:
+Applied to:
 
-- регионов;
-- аэропортов;
-- маршрутов.
+- regions;
+- airports;
+- routes.
 
 ---
 
 # 13. Time Analysis
 
-В MVP поддерживаются:
+The MVP supports:
 
-- сегодня;
-- последние сутки;
-- последние 7 дней.
+- today;
+- the last 24 hours;
+- the last 7 days.
 
 ---
 
-После MVP допускается:
+After the MVP, it may support:
 
-- последний месяц;
-- последний квартал;
-- последний год.
+- the last month;
+- the last quarter;
+- the last year.
 
 ---
 
 # 14. Historical Replay
 
-Пользователь может выбрать:
+The user can select:
 
-- дату;
-- время;
-- регион.
-
----
-
-После чего система показывает состояние воздушного пространства на выбранный момент.
+- date;
+- time;
+- region.
 
 ---
 
-Historical Replay строится на основании:
+The system then displays airspace state at the selected time.
+
+---
+
+Historical Replay is based on:
 
 - traffic_snapshots;
-- исторических снимков.
+- historical snapshots.
 
 ---
 
 # 15. Traffic Trends
 
-Система отображает:
+The system displays:
 
-- рост активности;
-- снижение активности;
-- стабильные периоды;
-- пиковые нагрузки.
+- activity growth;
+- activity decline;
+- stable periods;
+- peak loads.
 
 ---
 
 # 16. Visualization
 
-Используются:
+The module uses:
 
-- карты;
-- графики;
-- временные шкалы;
-- тепловые карты;
-- аналитические панели.
+- maps;
+- charts;
+- timelines;
+- heat maps;
+- analytical panels.
 
 ---
 
 # 17. Analytics Boundaries
 
-Модуль не является:
+The module is not:
 
-- системой управления воздушным движением;
-- диспетчерской системой;
-- системой обеспечения безопасности полетов.
+- an air traffic control system;
+- a dispatch system;
+- a flight-safety system.
 
 ---
 
-Модуль является системой исследования и визуализации открытых авиационных данных.
+The module is a research and visualization system for open aviation data.
 
 ---
 
 # 18. Future Extensions
 
-После MVP допускается добавление:
+After the MVP, the following may be added:
 
-- сезонной аналитики;
-- прогнозирования трафика;
-- сравнения регионов;
-- анализа авиакомпаний;
-- анализа воздушных коридоров.
+- seasonal analytics;
+- traffic forecasting;
+- regional comparison;
+- airline analysis;
+- air-corridor analysis.
 
 ---
 
 # 19. Summary
 
-Traffic Analytics Module является одним из ключевых аналитических модулей платформы.
+The Traffic Analytics Module is one of the platform's core analytical modules.
 
-Он позволяет анализировать воздушное движение на уровне:
+It supports air-traffic analysis at the level of:
 
-- региона;
-- аэропорта;
-- маршрута.
+- region;
+- airport;
+- route.
 
-Модуль преобразует авиационные наблюдения в понятную аналитику, статистику и визуализацию воздушного пространства.
+The module transforms aviation observations into understandable analytics, statistics, and airspace visualization.

@@ -12,88 +12,88 @@ Status: Approved
 
 # 1. Project Overview
 
-Global Flight Analytics — исследовательская платформа анализа и визуализации воздушного движения на основе открытых авиационных данных.
+Global Flight Analytics is a research platform for analyzing and visualizing air traffic using open aviation data.
 
-Платформа собирает данные из открытых источников, объединяет их с авиационными справочниками и предоставляет пользователю единое пространство для исследования самолетов, аэропортов, маршрутов и воздушного трафика.
+The platform collects data from open sources, combines it with aviation reference data, and provides users with a unified environment for exploring aircraft, airports, routes, and air traffic.
 
-Проект не является системой управления воздушным движением.
+The project is not an air traffic control system.
 
-Проект не является системой планирования полетов.
+The project is not a flight planning system.
 
-Проект не является сервисом покупки билетов.
+The project is not a ticket-purchasing service.
 
-Проект не является официальным источником аэронавигационной информации.
+The project is not an official source of aeronautical information.
 
-Главная задача проекта — помочь пользователю исследовать и понимать происходящее в воздушном пространстве через визуализацию, статистику и анализ открытых данных.
+The primary objective of the project is to help users explore and understand what is happening in airspace through visualization, statistics, and open-data analysis.
 
 ---
 
 # 2. Problem Statement
 
-Сегодня авиационная информация разрознена.
+Aviation information is currently fragmented.
 
-Для изучения одного рейса пользователю приходится использовать несколько различных сервисов:
+To study a single flight, a user often has to use several different services:
 
-- сервис отслеживания самолетов;
-- справочник аэропортов;
-- авиационные энциклопедии;
-- картографические сервисы;
-- сайты авиакомпаний.
+- an aircraft tracking service;
+- an airport directory;
+- aviation encyclopedias;
+- mapping services;
+- airline websites.
 
-Большинство существующих платформ концентрируются исключительно на отображении координат самолета.
+Most existing platforms focus exclusively on displaying aircraft coordinates.
 
-Они плохо объясняют:
+They provide limited explanations of:
 
-- почему самолет летит именно этим маршрутом;
-- как меняется воздушный трафик;
-- какие аэропорты являются ключевыми узлами;
-- как изменяются воздушные коридоры при крупных событиях.
+- why an aircraft follows a particular route;
+- how air traffic changes;
+- which airports are key hubs;
+- how air corridors change during major events.
 
 ---
 
 # 3. Product Vision
 
-Платформа должна отвечать не только на вопрос:
+The platform must answer not only:
 
-«Где сейчас находится самолет?»
+“Where is the aircraft now?”
 
-Но и на вопросы:
+It must also answer:
 
-- Что происходит с воздушным движением региона?
-- Какие маршруты сейчас наиболее активны?
-- Какие аэропорты обслуживают наибольший поток?
-- Как изменяются маршруты со временем?
-- Как меняется структура воздушного трафика после крупных событий?
+- What is happening with air traffic in the region?
+- Which routes are currently the most active?
+- Which airports handle the highest traffic volume?
+- How do routes change over time?
+- How does the structure of air traffic change after major events?
 
 ---
 
 # 4. Target Audience
 
-Основная аудитория:
+Primary audience:
 
-- авиационные энтузиасты;
-- путешественники;
-- студенты авиационных специальностей;
-- исследователи транспорта;
-- журналисты;
-- разработчики;
-- преподаватели;
-- аналитики транспортных систем.
+- aviation enthusiasts;
+- travelers;
+- aviation students;
+- transport researchers;
+- journalists;
+- developers;
+- educators;
+- transport-system analysts.
 
 ---
 
 # 5. Core Value
 
-Главная ценность платформы заключается в объединении авиационных данных в единую исследовательскую систему.
+The platform's primary value is the integration of aviation data into one research system.
 
-Пользователь получает:
+The user receives:
 
-- реальные самолеты на карте;
-- сведения о самолетах;
-- сведения об аэропортах;
-- предполагаемые маршруты;
-- визуализацию воздушных потоков;
-- статистику воздушного движения.
+- real aircraft on the map;
+- aircraft information;
+- airport information;
+- inferred routes;
+- air-flow visualization;
+- air-traffic statistics.
 
 ---
 
@@ -101,104 +101,104 @@ Global Flight Analytics — исследовательская платформ�
 
 ## Transparency
 
-Система обязана разделять реальные данные и вычисленные данные.
+The system must distinguish real data from computed data.
 
-Пользователь всегда должен понимать происхождение информации.
+The user must always understand the origin of the information.
 
 ## Data First
 
-В основе платформы лежат данные и аналитика, а не визуальные эффекты.
+The platform is built around data and analytics rather than visual effects.
 
 ## Explainability
 
-Каждая вычисленная метрика должна иметь объяснение своего происхождения.
+Every computed metric must include an explanation of how it was produced.
 
 ## Open Sources
 
-Платформа использует исключительно открытые источники данных.
+The platform uses only open data sources.
 
 ---
 
 # 7. Data Classification
 
-Все данные делятся на четыре категории.
+All data is divided into four categories.
 
 ## Real Data
 
-Получены напрямую из открытых источников.
+Obtained directly from open sources.
 
-Примеры:
+Examples:
 
-- координаты;
-- высота;
-- скорость;
-- курс;
-- позывной;
-- время получения данных.
+- coordinates;
+- altitude;
+- velocity;
+- heading;
+- callsign;
+- data-retrieval timestamp.
 
 ## Enriched Data
 
-Получены путем сопоставления справочников.
+Obtained by matching reference datasets.
 
-Примеры:
+Examples:
 
-- модель самолета;
-- производитель;
-- авиакомпания;
-- характеристики самолета;
-- характеристики аэропорта.
+- aircraft model;
+- manufacturer;
+- airline;
+- aircraft specifications;
+- airport specifications.
 
 ## Inferred Data
 
-Получены вычислительными алгоритмами платформы.
+Produced by platform algorithms.
 
-Примеры:
+Examples:
 
-- предполагаемый маршрут;
-- предполагаемый аэропорт назначения;
-- предполагаемый аэропорт вылета;
-- уровень уверенности маршрута.
+- inferred route;
+- inferred destination airport;
+- inferred departure airport;
+- route confidence level.
 
 ## Statistical Data
 
-Получены на основе накопленных наблюдений.
+Produced from accumulated observations.
 
-Примеры:
+Examples:
 
-- количество рейсов;
-- активность аэропорта;
-- распределение маршрутов;
-- динамика воздушного движения.
+- number of flights;
+- airport activity;
+- route distribution;
+- air-traffic trends.
 
 ---
 
 # 8. Core Entities
 
-Платформа строится вокруг следующих сущностей.
+The platform is built around the following entities.
 
 ## Aircraft
 
-Воздушное судно.
+A physical aircraft.
 
 ## Flight
 
-Наблюдаемый рейс.
+An observed flight.
 
 ## Airport
 
-Аэропорт.
+An airport.
 
 ## Airline
 
-Авиакомпания.
+An airline.
 
 ## Route
 
-Маршрут между аэропортами.
+A route between airports.
 
 ## Region
 
-Географический регион.
+A geographic region.
 
 ---
 
@@ -206,36 +206,36 @@ Global Flight Analytics — исследовательская платформ�
 
 ## Live Flight Map
 
-Отображение самолетов в реальном времени.
+Real-time aircraft display.
 
 ## Aircraft Profile
 
-Карточка самолета.
+Aircraft information card.
 
-Содержит:
+Contains:
 
-- модель;
-- производителя;
-- оператора;
-- характеристики;
-- текущее состояние.
+- model;
+- manufacturer;
+- operator;
+- specifications;
+- current state.
 
 ## Airport Profile
 
-Карточка аэропорта.
+Airport information card.
 
-Содержит:
+Contains:
 
-- описание;
-- характеристики;
-- инфраструктуру;
-- статистику.
+- description;
+- specifications;
+- infrastructure;
+- statistics.
 
 ## Route Intelligence Engine
 
-Определение вероятного маршрута.
+Determines the probable route.
 
-Уровни уверенности:
+Confidence levels:
 
 - High
 - Medium
@@ -243,55 +243,55 @@ Global Flight Analytics — исследовательская платформ�
 
 ## Search
 
-Поиск самолетов, аэропортов и авиакомпаний.
+Search for aircraft, airports, and airlines.
 
 ## Air Traffic Intelligence
 
-Анализ воздушного движения.
+Air-traffic analysis.
 
-Содержит:
+Contains:
 
-- активные маршруты;
-- активные аэропорты;
-- интенсивность трафика;
-- тепловые карты.
+- active routes;
+- active airports;
+- traffic intensity;
+- heat maps.
 
 ---
 
 # 10. Regional Analytics
 
-Пользователь может:
+The user can:
 
-- выбрать регион;
-- увидеть количество наблюдаемых рейсов;
-- увидеть основные воздушные коридоры;
-- увидеть наиболее активные аэропорты;
-- сравнить активность по дням;
-- изучить изменения воздушного трафика.
+- select a region;
+- view the number of observed flights;
+- view major air corridors;
+- view the most active airports;
+- compare activity by day;
+- explore changes in air traffic.
 
 ---
 
 # 11. Non Goals
 
-В MVP не входят:
+The MVP does not include:
 
-- покупка билетов;
-- бронирование гостиниц;
-- заказ такси;
-- система управления воздушным движением;
-- диспетчерские функции;
-- управление полетами;
-- инвестиционная аналитика;
-- прогнозирование фондового рынка;
-- мобильные приложения;
-- платежная система;
-- подписки пользователей.
+- ticket purchases;
+- hotel reservations;
+- taxi ordering;
+- air traffic control;
+- dispatch functions;
+- flight operations management;
+- investment analytics;
+- stock-market forecasting;
+- mobile applications;
+- a payment system;
+- user subscriptions.
 
 ---
 
 # 12. Data Sources
 
-Основные источники данных:
+Primary data sources:
 
 - OpenSky Network;
 - OurAirports;
@@ -322,20 +322,20 @@ Database:
 Infrastructure:
 
 - Vercel;
-- бесплатный облачный сервер для Go API;
-- бесплатная PostgreSQL база данных.
+- a free cloud server for the Go API;
+- a free PostgreSQL database.
 
 ---
 
 # 14. Success Criteria
 
-MVP считается успешным, если пользователь может:
+The MVP is successful when a user can:
 
-1. открыть карту;
-2. увидеть реальные самолеты;
-3. открыть карточку самолета;
-4. увидеть предполагаемый маршрут;
-5. открыть карточку аэропорта;
-6. получить информацию об аэропорте;
-7. исследовать воздушное движение региона;
-8. выполнить поиск по авиационным объектам.
+1. open the map;
+2. see real aircraft;
+3. open an aircraft card;
+4. view an inferred route;
+5. open an airport card;
+6. obtain airport information;
+7. explore regional air traffic;
+8. search for aviation objects.

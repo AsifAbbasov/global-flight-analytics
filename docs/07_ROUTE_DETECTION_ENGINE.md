@@ -12,42 +12,42 @@ Status: Approved
 
 # 1. Purpose
 
-Route Detection Engine является аналитическим модулем платформы Global Flight Analytics.
+The Route Detection Engine is an analytical module of the Global Flight Analytics platform.
 
-Модуль предназначен для определения вероятного маршрута самолета на основе открытых авиационных данных.
+The module determines a probable aircraft route from open aviation data.
 
-Система не использует:
+The system does not use:
 
-- официальные планы полетов;
-- данные диспетчерских служб;
-- внутренние данные авиакомпаний.
+- official flight plans;
+- air traffic control data;
+- internal airline data.
 
-Система использует:
+The system uses:
 
-- координаты;
-- скорость;
-- курс;
-- высоту;
-- вертикальную скорость;
-- положение аэропортов;
-- историю наблюдений.
+- coordinates;
+- velocity;
+- heading;
+- altitude;
+- vertical rate;
+- airport locations;
+- observation history.
 
 ---
 
 # 2. Goal
 
-Определить:
+Determine:
 
-- вероятный аэропорт вылета;
-- вероятный аэропорт назначения;
-- уровень уверенности определения;
-- числовую оценку уверенности.
+- probable departure airport;
+- probable destination airport;
+- confidence level;
+- numeric confidence score.
 
 ---
 
 # 3. Architectural Position
 
-Route Detection Engine располагается между:
+The Route Detection Engine is located between:
 
 ```text
 Flight States
@@ -67,7 +67,7 @@ Analytics
 
 ---
 
-Входные данные поступают из:
+Input data comes from:
 
 ```text
 flight_states
@@ -77,7 +77,7 @@ airport_profiles
 
 ---
 
-Результат сохраняется в:
+The result is stored in:
 
 ```text
 route_predictions
@@ -87,7 +87,7 @@ route_predictions
 
 # 4. Input Data
 
-Для определения маршрута используются:
+Route determination uses:
 
 ## Aircraft Information
 
@@ -114,21 +114,21 @@ route_predictions
 
 ## Airport Information
 
-- координаты аэропорта;
-- геозона аэропорта;
-- тип аэропорта.
+- airport coordinates;
+- airport geofence;
+- airport type.
 
 ---
 
 # 5. Output Data
 
-Результатом работы алгоритма является запись:
+The algorithm produces a:
 
 ```text
 Route Prediction
 ```
 
-Содержит:
+Contains:
 
 - Origin Airport;
 - Destination Airport;
@@ -143,46 +143,46 @@ Route Prediction
 
 ## HIGH
 
-Маршрут подтвержден несколькими независимыми признаками.
+The route is supported by several independent indicators.
 
-Примеры:
+Examples:
 
-- самолет зафиксирован в зоне вылета;
-- самолет зафиксирован в зоне прибытия;
-- маршрут завершен;
-- наблюдается полный жизненный цикл полета.
+- the aircraft was observed in the departure area;
+- the aircraft was observed in the arrival area;
+- the route completed;
+- the full flight lifecycle was observed.
 
 ---
 
 ## MEDIUM
 
-Маршрут вероятен.
+The route is probable.
 
-Примеры:
+Examples:
 
-- самолет снижается;
-- курс совпадает с направлением аэропорта;
-- расстояние до аэропорта стабильно уменьшается.
+- the aircraft is descending;
+- the heading points toward the airport;
+- distance to the airport decreases consistently.
 
 ---
 
 ## LOW
 
-Недостаточно данных.
+Insufficient data is available.
 
-Примеры:
+Examples:
 
-- самолет появился в воздухе;
-- отсутствует история наблюдений;
-- наблюдение началось после взлета.
+- the aircraft first appeared in the air;
+- observation history is unavailable;
+- observation began after takeoff.
 
 ---
 
 # 7. Confidence Score
 
-Дополнительно рассчитывается числовая оценка.
+A numeric score is also calculated.
 
-Диапазон:
+Range:
 
 ```text
 0.00 – 1.00
@@ -190,7 +190,7 @@ Route Prediction
 
 ---
 
-Рекомендуемые значения:
+Recommended values:
 
 ```text
 0.80 – 1.00 → HIGH
@@ -204,7 +204,7 @@ Route Prediction
 
 # 8. Airport Geofencing
 
-Для каждого аэропорта создается виртуальная геозона.
+A virtual geofence is created for every airport.
 
 ---
 
@@ -216,71 +216,71 @@ Radius: 30 km
 
 ---
 
-Дополнительно учитываются:
+The algorithm also considers:
 
-- высота самолета;
-- скорость самолета;
-- вертикальная скорость.
+- aircraft altitude;
+- aircraft velocity;
+- vertical rate.
 
 ---
 
-Цель:
+Goal:
 
-Определить моменты:
+Determine:
 
-- взлета;
-- прибытия;
-- нахождения возле аэропорта.
+- takeoff;
+- arrival;
+- presence near an airport.
 
 ---
 
 # 9. Origin Detection
 
-Система определяет вероятный аэропорт вылета.
+The system determines the probable departure airport.
 
 ---
 
-Признаки:
+Indicators:
 
-- самолет появился внутри геозоны;
-- скорость растет;
-- высота растет;
-- вертикальная скорость положительная.
+- the aircraft appeared inside the geofence;
+- velocity increases;
+- altitude increases;
+- vertical rate is positive.
 
 ---
 
-Дополнительные признаки:
+Additional indicators:
 
-- длительное нахождение возле аэропорта перед взлетом;
-- совпадение направления движения с осью полосы.
+- extended presence near the airport before takeoff;
+- movement direction matches the runway axis.
 
 ---
 
 # 10. Destination Detection
 
-Система определяет вероятный аэропорт назначения.
+The system determines the probable destination airport.
 
 ---
 
-Признаки:
+Indicators:
 
-- самолет снижается;
-- скорость уменьшается;
-- расстояние до аэропорта сокращается;
-- курс направлен на аэропорт.
+- the aircraft is descending;
+- velocity decreases;
+- distance to the airport decreases;
+- heading points toward the airport.
 
 ---
 
-Дополнительные признаки:
+Additional indicators:
 
-- пересечение геозоны аэропорта;
-- нахождение на земле после снижения.
+- crossing the airport geofence;
+- on-ground state after descent.
 
 ---
 
 # 11. Route Lifecycle
 
-Каждый маршрут проходит жизненный цикл.
+Every route passes through a lifecycle.
 
 ```text
 Unknown
@@ -306,53 +306,53 @@ Archived
 
 ## Unknown
 
-Маршрут отсутствует.
+No route is available.
 
 ---
 
 ## Detected
 
-Есть первые признаки маршрута.
+Initial route indicators exist.
 
 ---
 
 ## Predicted
 
-Маршрут вычислен алгоритмом.
+The route was calculated by the algorithm.
 
 ---
 
 ## Confirmed
 
-Наблюдается высокая уверенность.
+Confidence is high.
 
 ---
 
 ## Archived
 
-Полет завершен.
+The flight has ended.
 
 ---
 
 # 12. Failure Cases
 
-Система обязана корректно работать если:
+The system must operate correctly when:
 
-- самолет исчез;
-- данные прервались;
-- аэропорт не найден;
-- маршрут не определен;
-- маршрут изменился в процессе наблюдения.
+- the aircraft disappears;
+- data is interrupted;
+- no airport is found;
+- no route can be determined;
+- the route changes during observation.
 
 ---
 
-В таких случаях уровень уверенности должен быть снижен.
+In these cases, the confidence level must be reduced.
 
 ---
 
 # 13. Route Prediction Rules
 
-Route Prediction является:
+Route Prediction is:
 
 ```text
 Inferred Data
@@ -360,21 +360,21 @@ Inferred Data
 
 ---
 
-Route Prediction не является:
+Route Prediction is not:
 
-- официальным маршрутом;
-- планом полета;
-- подтвержденной информацией авиакомпании.
+- an official route;
+- a flight plan;
+- confirmed airline information.
 
 ---
 
-Система никогда не должна отображать прогнозируемый маршрут как факт.
+The system must never display a predicted route as fact.
 
 ---
 
 # 14. Storage Model
 
-Все результаты сохраняются в:
+All results are stored in:
 
 ```text
 route_predictions
@@ -382,7 +382,7 @@ route_predictions
 
 ---
 
-Основные поля:
+Primary fields:
 
 - flight_id;
 - aircraft_id;
@@ -397,25 +397,25 @@ route_predictions
 
 # 15. Future Improvements
 
-После MVP допускается добавление:
+After the MVP, the following may be added:
 
-- машинного обучения;
-- исторического анализа маршрутов;
-- анализа типичных маршрутов авиакомпаний;
-- сезонных паттернов;
-- вероятностных моделей.
+- machine learning;
+- historical route analysis;
+- analysis of typical airline routes;
+- seasonal patterns;
+- probabilistic models.
 
 ---
 
 # 16. Summary
 
-Route Detection Engine является аналитическим модулем платформы.
+The Route Detection Engine is an analytical platform module.
 
-Он использует открытые авиационные данные для определения вероятного маршрута самолета.
+It uses open aviation data to determine the probable route of an aircraft.
 
-Все результаты:
+All results:
 
-- имеют уровень уверенности;
-- имеют числовую оценку уверенности;
-- сохраняются как Inferred Data;
-- никогда не выдаются пользователю как подтвержденный факт.
+- include a confidence level;
+- include a numeric confidence score;
+- are stored as Inferred Data;
+- are never presented to the user as confirmed fact.

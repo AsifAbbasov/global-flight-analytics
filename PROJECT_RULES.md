@@ -1,25 +1,25 @@
-# Global Flight Analytics — Правила проекта
+# Global Flight Analytics — Project Rules
 
-Статус: Обязательные правила выполнения проекта
-Проект: Global Flight Analytics
+Status: Mandatory project execution rules
+Project: Global Flight Analytics
 
 ---
 
-## 1. Назначение
+## 1. Purpose
 
-Этот файл определяет обязательные правила для:
+This file defines mandatory rules for:
 
-- реализации кода;
-- исследований;
-- архитектурных решений;
-- аналитических алгоритмов;
-- математических моделей;
-- физических моделей;
-- изменений проекта.
+- code implementation;
+- research;
+- architectural decisions;
+- analytical algorithms;
+- mathematical models;
+- physical models;
+- project changes.
 
-Этот файл является кратким руководством по ежедневной работе.
+This file is a concise guide for daily project work.
 
-Подробные авторитетные правила находятся в:
+Detailed authoritative rules are located in:
 
 ```text
 docs/DOCUMENT_INDEX.md
@@ -27,4 +27,3 @@ docs/25_IMPLEMENTATION_SEQUENCE.md
 docs/26_RESEARCH_BACKLOG_AND_SCOPE_GUARDS.md
 docs/27_ENGINEERING_PRINCIPLES.md
 docs/28_RESEARCH_AND_ANALYTICAL_DECISION_METHOD.md
-```

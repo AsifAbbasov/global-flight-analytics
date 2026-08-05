@@ -12,31 +12,31 @@ Status: Approved
 
 # 1. Purpose
 
-Airport Intelligence Module создает цифровой паспорт аэропорта.
+The Airport Intelligence Module creates an airport digital profile.
 
-Модуль объединяет данные из нескольких открытых источников и предоставляет пользователю единую информационную карточку аэропорта.
+The module combines data from several open sources and provides the user with one unified airport information card.
 
 ---
 
 # 2. Goal
 
-Пользователь должен получить полное представление об аэропорте.
+The user must receive a complete view of the airport.
 
-Система должна отвечать на вопросы:
+The system must answer:
 
-- где расположен аэропорт;
-- какой инфраструктурой он обладает;
-- насколько он активен;
-- какие маршруты являются основными;
-- какую роль аэропорт играет в регионе.
+- where the airport is located;
+- which infrastructure it has;
+- how active it is;
+- which routes are primary;
+- which role the airport has in the region.
 
 ---
 
 # 3. Architectural Position
 
-Airport Intelligence Module является аналитическим слоем над аэропортовыми данными.
+The Airport Intelligence Module is an analytical layer over airport data.
 
-Поток данных:
+Data flow:
 
 ```text
 OurAirports
@@ -61,36 +61,36 @@ Frontend
 
 # 4. Airport Profile Structure
 
-Цифровой паспорт аэропорта состоит из нескольких разделов.
+The airport digital profile consists of several sections.
 
 ---
 
 # 5. Basic Information
 
-Содержит:
+Contains:
 
-- название;
-- ICAO код;
-- IATA код;
-- страну;
-- город;
-- координаты;
-- высоту над уровнем моря;
-- тип аэропорта;
-- часовой пояс.
+- name;
+- ICAO code;
+- IATA code;
+- country;
+- city;
+- coordinates;
+- elevation;
+- airport type;
+- time zone.
 
 ---
 
 # 6. Historical Information
 
-Содержит:
+Contains:
 
-- историю аэропорта;
-- дату открытия;
-- основные этапы развития;
-- справочную информацию.
+- airport history;
+- opening date;
+- major development stages;
+- reference information.
 
-Источники:
+Sources:
 
 - Wikipedia;
 - Wikidata.
@@ -99,16 +99,16 @@ Frontend
 
 # 7. Infrastructure
 
-Содержит:
+Contains:
 
-- количество терминалов;
-- количество полос;
-- длину полос;
-- ширину полос;
-- тип покрытия;
-- инфраструктурные объекты.
+- terminal count;
+- runway count;
+- runway length;
+- runway width;
+- surface type;
+- infrastructure objects.
 
-Источники:
+Sources:
 
 - OurAirports;
 - OpenStreetMap.
@@ -117,16 +117,16 @@ Frontend
 
 # 8. Transportation
 
-Содержит:
+Contains:
 
-- автомобильные дороги;
-- автобусное сообщение;
-- железнодорожное сообщение;
-- парковки;
-- такси;
-- транспортные узлы.
+- roads;
+- bus connections;
+- railway connections;
+- parking areas;
+- taxi services;
+- transport hubs.
 
-Источник:
+Source:
 
 - OpenStreetMap.
 
@@ -134,15 +134,15 @@ Frontend
 
 # 9. Airport Facilities
 
-Содержит:
+Contains:
 
-- гостиницы;
-- бизнес-зоны;
-- грузовые терминалы;
-- логистические объекты;
-- транспортные узлы.
+- hotels;
+- business areas;
+- cargo terminals;
+- logistics facilities;
+- transport hubs.
 
-Источник:
+Source:
 
 - OpenStreetMap.
 
@@ -150,15 +150,15 @@ Frontend
 
 # 10. Traffic Statistics
 
-Содержит:
+Contains:
 
-- количество рейсов;
-- количество прибытий;
-- количество вылетов;
-- динамику активности;
-- распределение по времени.
+- flight count;
+- arrival count;
+- departure count;
+- activity dynamics;
+- time distribution.
 
-Источник:
+Source:
 
 - airport_statistics.
 
@@ -166,14 +166,14 @@ Frontend
 
 # 11. Route Statistics
 
-Содержит:
+Contains:
 
-- популярные направления;
-- основные маршруты;
-- наиболее активные связи;
-- статистику маршрутов.
+- popular destinations;
+- primary routes;
+- most active connections;
+- route statistics.
 
-Источник:
+Source:
 
 - route_statistics.
 
@@ -181,13 +181,13 @@ Frontend
 
 # 12. Airport Ranking
 
-Для каждого аэропорта рассчитывается:
+The following is calculated for each airport:
 
 ```text
 Airport Activity Score
 ```
 
-Диапазон:
+Range:
 
 ```text
 0 – 100
@@ -195,16 +195,16 @@ Airport Activity Score
 
 ---
 
-Метрика рассчитывается на основании:
+The metric is calculated from:
 
-- количества рейсов;
-- количества маршрутов;
-- количества наблюдений;
-- интенсивности трафика.
+- flight count;
+- route count;
+- observation count;
+- traffic intensity.
 
 ---
 
-Airport Activity Score относится к категории:
+Airport Activity Score belongs to:
 
 ```text
 Statistical Data
@@ -214,112 +214,112 @@ Statistical Data
 
 # 13. Airport Map
 
-В MVP отображаются:
+The MVP displays:
 
-- полосы;
-- границы аэропорта;
-- основные инфраструктурные объекты;
-- транспортные объекты.
+- runways;
+- airport boundaries;
+- primary infrastructure objects;
+- transport objects.
 
 ---
 
-В будущих версиях допускается отображение:
+Future versions may display:
 
-- терминалов;
-- гейтов;
-- детальных схем аэропорта.
+- terminals;
+- gates;
+- detailed airport maps.
 
 ---
 
 # 14. Airport Data Classification
 
-Все данные аэропорта разделяются на четыре категории.
+All airport data is divided into four categories.
 
 ---
 
 ## Real Data
 
-Получены напрямую из источников.
+Obtained directly from sources.
 
-Примеры:
+Examples:
 
-- ICAO код;
-- IATA код;
-- координаты;
-- полосы.
+- ICAO code;
+- IATA code;
+- coordinates;
+- runways.
 
 ---
 
 ## Enriched Data
 
-Получены путем объединения источников.
+Obtained by combining sources.
 
-Примеры:
+Examples:
 
-- описание аэропорта;
-- история аэропорта;
-- инфраструктура.
+- airport description;
+- airport history;
+- infrastructure.
 
 ---
 
 ## Statistical Data
 
-Получены на основании накопленных наблюдений.
+Obtained from accumulated observations.
 
-Примеры:
+Examples:
 
-- количество рейсов;
-- количество прибытий;
-- количество вылетов;
-- рейтинг активности.
+- flight count;
+- arrival count;
+- departure count;
+- activity ranking.
 
 ---
 
 ## Inferred Data
 
-Получены вычислительными алгоритмами.
+Produced by computational algorithms.
 
-Примеры:
+Examples:
 
-- роль аэропорта в регионе;
-- аналитические показатели;
-- сравнительные рейтинги.
+- the airport's role in the region;
+- analytical indicators;
+- comparative rankings.
 
 ---
 
 # 15. Data Completeness Score
 
-Каждый аэропорт получает оценку полноты данных.
+Every airport receives a data-completeness score.
 
 ---
 
 ## High
 
-Профиль содержит практически все необходимые данные.
+The profile contains almost all required data.
 
 ---
 
 ## Medium
 
-Часть данных отсутствует.
+Some data is missing.
 
 ---
 
 ## Low
 
-Доступна только базовая информация.
+Only basic information is available.
 
 ---
 
-Назначение:
+Purpose:
 
-Показать пользователю уровень заполненности цифрового паспорта аэропорта.
+Show the user how complete the airport digital profile is.
 
 ---
 
 # 16. Airport Profile Storage
 
-Airport Intelligence Module использует следующие таблицы базы данных:
+The Airport Intelligence Module uses the following database tables:
 
 ```text
 airports
@@ -337,15 +337,15 @@ route_statistics
 
 ---
 
-Airport Profile не хранится как единый документ.
+Airport Profile is not stored as one document.
 
-Он формируется путем агрегации данных из нескольких таблиц.
+It is constructed by aggregating data from several tables.
 
 ---
 
 # 17. Data Sources
 
-Используются:
+The module uses:
 
 - OurAirports;
 - OpenStreetMap;
@@ -356,40 +356,40 @@ Airport Profile не хранится как единый документ.
 
 # 18. Limitations
 
-Система не гарантирует:
+The system does not guarantee:
 
-- актуальность коммерческой информации;
-- актуальность арендаторов помещений;
-- актуальность магазинов;
-- актуальность расписаний транспорта.
+- current commercial information;
+- current tenant information;
+- current shop information;
+- current transport schedules.
 
 ---
 
-Некоторые данные могут обновляться с задержкой.
+Some data may be updated with a delay.
 
 ---
 
 # 19. Future Extensions
 
-После MVP допускается добавление:
+After the MVP, the following may be added:
 
-- пассажиропотока;
-- грузопотока;
-- анализа сезонности;
-- сравнения аэропортов;
-- интерактивных схем терминалов.
+- passenger traffic;
+- cargo traffic;
+- seasonality analysis;
+- airport comparison;
+- interactive terminal maps.
 
 ---
 
 # 20. Summary
 
-Airport Intelligence Module превращает аэропорт из простой точки на карте в полноценный исследовательский объект.
+The Airport Intelligence Module turns an airport from a simple point on a map into a complete research object.
 
-Модуль объединяет:
+The module combines:
 
-- реальные данные;
-- обогащенные данные;
-- статистические данные;
-- вычисленные данные.
+- real data;
+- enriched data;
+- statistical data;
+- inferred data.
 
-В результате пользователь получает полноценный цифровой паспорт аэропорта с инфраструктурой, аналитикой и статистикой воздушного движения.
+As a result, the user receives a complete airport digital profile with infrastructure, analytics, and air-traffic statistics.

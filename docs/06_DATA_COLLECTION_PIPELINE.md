@@ -12,23 +12,23 @@ Status: Approved
 
 # 1. Purpose
 
-Документ описывает процесс получения, обработки, обогащения, хранения и предоставления авиационных данных в системе Global Flight Analytics.
+This document describes how Global Flight Analytics retrieves, processes, enriches, stores, and serves aviation data.
 
-Документ определяет:
+The document defines:
 
-- поток данных;
-- этапы обработки;
-- правила хранения;
-- механизм обогащения данных;
-- механизм генерации аналитики;
-- обработку ошибок;
-- требования масштабируемости.
+- data flow;
+- processing stages;
+- storage rules;
+- data-enrichment mechanisms;
+- analytics-generation mechanisms;
+- failure handling;
+- scalability requirements.
 
 ---
 
 # 2. Pipeline Overview
 
-Высокоуровневый поток данных:
+High-level data flow:
 
 ```text
 OpenSky Network
@@ -72,52 +72,52 @@ Next.js
 
 ## Principle 1
 
-Хранить только полезные данные.
+Store only useful data.
 
 ---
 
 ## Principle 2
 
-Не превращать PostgreSQL в бесконечное хранилище телеметрии.
+Do not turn PostgreSQL into an unbounded telemetry store.
 
 ---
 
 ## Principle 3
 
-Историческая аналитика должна строиться на агрегатах.
+Historical analytics must be based on aggregates.
 
 ---
 
 ## Principle 4
 
-Live-данные должны обслуживаться преимущественно из памяти.
+Live data must be served primarily from memory.
 
 ---
 
 ## Principle 5
 
-Каждая запись должна иметь источник происхождения данных.
+Every record must preserve data provenance.
 
 ---
 
 # 4. Live Collection Layer
 
-Источник:
+Source:
 
 OpenSky Network
 
 ---
 
-Backend выполняет запросы к OpenSky.
+The Backend sends requests to OpenSky.
 
-Интервал обновления:
+Refresh interval:
 
-- минимум 15 секунд;
-- максимум 30 секунд.
+- minimum: 15 seconds;
+- maximum: 30 seconds.
 
 ---
 
-Получаем:
+Retrieved fields:
 
 - ICAO24;
 - Callsign;
@@ -135,37 +135,37 @@ Backend выполняет запросы к OpenSky.
 
 # 5. Validation Layer
 
-После получения данные проходят обязательную валидацию.
+After retrieval, data passes through mandatory validation.
 
 ---
 
-Проверяется:
+Validation checks:
 
-- корректность координат;
-- корректность высоты;
-- корректность скорости;
-- корректность курса;
-- наличие ICAO24;
-- корректность временной метки.
+- valid coordinates;
+- valid altitude;
+- valid velocity;
+- valid heading;
+- ICAO24 presence;
+- valid timestamp.
 
 ---
 
-Некорректные записи:
+Invalid records:
 
-- отбрасываются;
-- фиксируются в логах.
+- are rejected;
+- are recorded in logs.
 
 ---
 
 # 6. Flight Matching Layer
 
-Цель:
+Goal:
 
-Связать наблюдение с доменной моделью системы.
+Connect an observation to the system domain model.
 
 ---
 
-Поток:
+Flow:
 
 ```text
 ICAO24
@@ -185,9 +185,9 @@ Flight State
 
 ---
 
-Результат:
+Result:
 
-Каждое наблюдение получает связь с:
+Every observation is connected to:
 
 - aircraft;
 - flight;
@@ -198,11 +198,11 @@ Flight State
 
 # 7. Data Enrichment Layer
 
-После сопоставления выполняется обогащение.
+After matching, the data is enriched.
 
 ---
 
-Используются:
+The layer uses:
 
 - aircraft;
 - aircraft_models;
@@ -211,13 +211,13 @@ Flight State
 
 ---
 
-Результат:
+Result:
 
-Формируется расширенное представление самолета.
+An enriched aircraft view is produced.
 
 ---
 
-Поток:
+Flow:
 
 ```text
 Flight State
@@ -243,7 +243,7 @@ Enriched Aircraft View
 
 # 8. In-Memory Store
 
-Для обслуживания live-карты используется оперативная память.
+Application memory is used to serve the live map.
 
 ---
 
@@ -255,26 +255,26 @@ sync.Map
 
 ---
 
-Причины выбора:
+Reasons:
 
-- высокая скорость чтения;
-- отсутствие внешних зависимостей;
-- отсутствие Redis в MVP;
-- соответствие принципу бесплатной инфраструктуры.
+- high read performance;
+- no external dependency;
+- no Redis in the MVP;
+- compliance with the free-infrastructure principle.
 
 ---
 
-Назначение:
+Purpose:
 
-- отображение live-карты;
-- быстрый поиск самолетов;
-- формирование API-ответов.
+- render the live map;
+- search aircraft quickly;
+- construct API responses.
 
 ---
 
 # 9. Flight State Storage
 
-Состояния полетов сохраняются в таблицу:
+Flight states are stored in:
 
 ```text
 flight_states
@@ -282,51 +282,51 @@ flight_states
 
 ---
 
-Хранятся:
+Stored values:
 
-- координаты;
-- скорость;
-- высота;
-- курс;
-- время наблюдения.
+- coordinates;
+- velocity;
+- altitude;
+- heading;
+- observation timestamp.
 
 ---
 
 Retention Policy:
 
-Минимум:
+Minimum:
 
 ```text
-24 часа
+24 hours
 ```
 
 ---
 
-Целевой срок MVP:
+MVP target:
 
 ```text
-7 дней
+7 days
 ```
 
 ---
 
-После истечения срока хранения данные удаляются.
+Expired data is deleted.
 
 ---
 
 # 10. Snapshot Generator
 
-Каждые несколько минут система создает агрегированный снимок региона.
+Every few minutes, the system creates an aggregated regional snapshot.
 
 ---
 
-Источник:
+Source:
 
 In-Memory Store
 
 ---
 
-Результат:
+Result:
 
 ```text
 traffic_snapshots
@@ -334,19 +334,19 @@ traffic_snapshots
 
 ---
 
-Содержимое:
+Contents:
 
-- количество самолетов;
-- количество маршрутов;
-- активные аэропорты;
-- интенсивность движения;
-- распределение по регионам.
+- aircraft count;
+- route count;
+- active airports;
+- traffic intensity;
+- regional distribution.
 
 ---
 
 # 11. Airport Statistics Pipeline
 
-Поток:
+Flow:
 
 ```text
 Flight
@@ -362,7 +362,7 @@ Airport Statistics Update
 
 ---
 
-Обновляется:
+Updates:
 
 ```text
 airport_statistics
@@ -370,7 +370,7 @@ airport_statistics
 
 ---
 
-Метрики:
+Metrics:
 
 - arrivals;
 - departures;
@@ -380,7 +380,7 @@ airport_statistics
 
 # 12. Route Statistics Pipeline
 
-Поток:
+Flow:
 
 ```text
 Flight
@@ -396,7 +396,7 @@ Route Statistics Update
 
 ---
 
-Обновляется:
+Updates:
 
 ```text
 route_statistics
@@ -404,7 +404,7 @@ route_statistics
 
 ---
 
-Метрики:
+Metrics:
 
 - flight_count;
 - route_activity.
@@ -413,30 +413,30 @@ route_statistics
 
 # 13. Historical Replay Pipeline
 
-Для режима воспроизведения используются:
+Replay mode uses:
 
 - flight_states;
 - traffic_snapshots.
 
 ---
 
-Цель:
+Goal:
 
-Визуализация недавней истории движения.
-
----
-
-MVP не хранит многомесячную телеметрию.
+Visualize recent movement history.
 
 ---
 
-История ограничена retention policy.
+The MVP does not store months of raw telemetry.
+
+---
+
+History is bounded by the retention policy.
 
 ---
 
 # 14. Ingestion Runs
 
-Каждый запуск загрузки данных создает запись:
+Every data-ingestion execution creates a record in:
 
 ```text
 ingestion_runs
@@ -444,7 +444,7 @@ ingestion_runs
 
 ---
 
-Фиксируются:
+Recorded values:
 
 - source_name;
 - started_at;
@@ -457,23 +457,23 @@ ingestion_runs
 
 ---
 
-Назначение:
+Purpose:
 
-- мониторинг;
-- диагностика;
-- аудит загрузки данных.
+- monitoring;
+- diagnostics;
+- data-ingestion audit.
 
 ---
 
 # 15. Failure Handling
 
-Если OpenSky недоступен:
+When OpenSky is unavailable:
 
-используются последние доступные данные из памяти.
+the latest available in-memory data is used.
 
 ---
 
-На фронтенде отображается статус:
+The Frontend displays:
 
 ```text
 Live Data Delayed
@@ -481,45 +481,45 @@ Live Data Delayed
 
 ---
 
-Система не должна аварийно завершать работу.
+The system must not terminate unexpectedly.
 
 ---
 
 # 16. Data Quality Rules
 
-Система обязана:
+The system must:
 
-- фильтровать некорректные координаты;
-- фильтровать некорректные высоты;
-- фильтровать некорректные скорости;
-- предотвращать дублирование наблюдений;
-- фиксировать ошибки загрузки.
+- filter invalid coordinates;
+- filter invalid altitudes;
+- filter invalid velocities;
+- prevent duplicate observations;
+- record ingestion errors.
 
 ---
 
 # 17. MVP Capacity Targets
 
-Целевые показатели MVP:
+MVP targets:
 
-- до 10 000 одновременно наблюдаемых самолетов;
-- до 100 API-запросов в секунду;
-- один региональный снимок каждые 5 минут.
+- up to 10,000 simultaneously observed aircraft;
+- up to 100 API requests per second;
+- one regional snapshot every 5 minutes.
 
 ---
 
-Без:
+Without:
 
 - Redis;
 - Kafka;
 - RabbitMQ;
 - Kubernetes;
-- микросервисов.
+- microservices.
 
 ---
 
 # 18. Scalability Strategy
 
-На этапе MVP используется:
+During the MVP:
 
 ```text
 Go API
@@ -535,40 +535,40 @@ PostgreSQL
 
 ---
 
-Усложнение архитектуры допускается только после появления подтвержденной нагрузки.
+Architecture is made more complex only after proven workload appears.
 
 ---
 
 # 19. Summary
 
-Конвейер построен вокруг принципа:
+The pipeline follows this principle:
 
 ```text
-Получить данные
+Retrieve data
 
 ↓
 
-Проверить данные
+Validate data
 
 ↓
 
-Связать с доменной моделью
+Connect data to the domain model
 
 ↓
 
-Обогатить данные
+Enrich data
 
 ↓
 
-Сохранить полезную информацию
+Store useful information
 
 ↓
 
-Сформировать агрегаты
+Generate aggregates
 
 ↓
 
-Отобразить пользователю
+Present data to the user
 ```
 
-Данный подход позволяет обслуживать MVP на бесплатной инфраструктуре без Redis, очередей сообщений и микросервисной архитектуры.
+This approach allows the MVP to operate on free infrastructure without Redis, message queues, or a microservice architecture.
