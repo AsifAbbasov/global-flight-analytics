@@ -12,34 +12,34 @@ Status: Approved
 
 # 1. Purpose
 
-Документ описывает основные риски проекта и способы их снижения.
+This document describes the project's primary risks and their mitigations.
 
 ---
 
 # 2. Project Philosophy
 
-Главный принцип:
+Primary principle:
 
-Не бороться с рисками после запуска.
+Do not start managing risks only after launch.
 
 ---
 
-Главный принцип:
+Primary principle:
 
-Закладывать защиту от рисков на этапе архитектуры.
+Build risk protection into the architecture.
 
 ---
 
 # 3. Risk Classification
 
-Риски разделяются на:
+Risks are divided into:
 
-- технические;
-- инфраструктурные;
-- продуктовые;
-- юридические;
-- эксплуатационные;
-- стратегические.
+- technical;
+- infrastructure;
+- product;
+- legal;
+- operational;
+- strategic.
 
 ---
 
@@ -47,84 +47,84 @@ Status: Approved
 
 ## Risk 1
 
-Недоступность OpenSky.
+OpenSky is unavailable.
 
 ---
 
-Последствия:
+Consequences:
 
-- отсутствие новых данных;
-- остановка обновления карты.
+- no new data;
+- map updates stop.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- кэширование последних данных;
-- уведомление пользователя;
-- автоматическое повторное подключение.
+- cache the latest data;
+- notify the user;
+- reconnect automatically.
 
 ---
 
 ## Risk 2
 
-Изменение структуры OpenSky API.
+The OpenSky API structure changes.
 
 ---
 
-Последствия:
+Consequences:
 
-- нарушение импорта данных.
+- data import fails.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- адаптерный слой;
-- изоляция интеграции;
-- контрактные тесты.
+- adapter layer;
+- integration isolation;
+- contract tests.
 
 ---
 
 ## Risk 3
 
-Ошибки определения маршрутов.
+Route-determination errors.
 
 ---
 
-Последствия:
+Consequences:
 
-- ложные маршруты;
-- снижение доверия к системе.
+- false routes;
+- reduced trust in the system.
 
 ---
 
-Снижение риска:
+Mitigation:
 
 - Confidence Level;
-- отображение предположений как предположений;
-- отсутствие категоричных утверждений.
+- present assumptions as assumptions;
+- avoid categorical claims.
 
 ---
 
 ## Risk 4
 
-Рост объема исторических данных.
+Historical data volume grows.
 
 ---
 
-Последствия:
+Consequences:
 
-- увеличение размера базы данных;
-- снижение производительности.
+- increased database size;
+- reduced performance.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- агрегация данных;
-- политика хранения;
-- ограничение детализации истории.
+- data aggregation;
+- retention policy;
+- limited historical detail.
 
 ---
 
@@ -132,62 +132,62 @@ Status: Approved
 
 ## Risk 5
 
-Засыпание бесплатного сервера.
+The free server enters sleep mode.
 
 ---
 
-Последствия:
+Consequences:
 
-- медленный первый ответ.
+- slow first response.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- информирование пользователя;
-- использование кэша;
-- готовность к переходу на платный тариф.
+- inform the user;
+- use caching;
+- remain ready to move to a paid plan.
 
 ---
 
 ## Risk 6
 
-Превышение лимита базы данных.
+The database limit is exceeded.
 
 ---
 
-Последствия:
+Consequences:
 
-- невозможность записи данных.
+- writes become impossible.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- агрегация;
-- архивирование;
-- контроль роста данных.
+- aggregation;
+- archiving;
+- data-growth control.
 
 ---
 
 ## Risk 7
 
-Недостаток оперативной памяти.
+Insufficient memory.
 
 ---
 
-Последствия:
+Consequences:
 
-- перезапуск процесса;
-- потеря состояния в памяти.
+- process restart;
+- loss of in-memory state.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- ограничение региона;
-- контроль количества объектов;
-- мониторинг потребления памяти.
+- regional limits;
+- object-count control;
+- memory-usage monitoring.
 
 ---
 
@@ -195,60 +195,60 @@ Status: Approved
 
 ## Risk 8
 
-Попытка конкурировать с Flightradar24.
+Attempting to compete directly with Flightradar24.
 
 ---
 
-Последствия:
+Consequences:
 
-- потеря уникальности;
-- проигрыш крупным игрокам.
+- loss of product uniqueness;
+- failure against larger competitors.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Фокус на аналитике, маршрутах, аэропортах и исследовании воздушного движения.
+Focus on analytics, routes, airports, and air-traffic research.
 
 ---
 
 ## Risk 9
 
-Разрастание функциональности.
+Scope expansion.
 
 ---
 
-Последствия:
+Consequences:
 
-- бесконечная разработка;
-- отсутствие релиза.
+- endless development;
+- no release.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Строгое соблюдение MVP Scope.
+Strictly follow the MVP Scope.
 
 ---
 
 ## Risk 10
 
-Отсутствие пользовательской ценности.
+No user value.
 
 ---
 
-Последствия:
+Consequences:
 
-- отсутствие аудитории;
-- отсутствие роста проекта.
+- no audience;
+- no product growth.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- быстрый запуск MVP;
-- получение обратной связи;
-- анализ поведения пользователей.
+- launch the MVP quickly;
+- collect feedback;
+- analyze user behavior.
 
 ---
 
@@ -256,40 +256,40 @@ Status: Approved
 
 ## Risk 11
 
-Использование данных вне лицензионных условий.
+Using data outside its license terms.
 
 ---
 
-Последствия:
+Consequences:
 
-- юридические претензии;
-- блокировка доступа к данным.
+- legal claims;
+- blocked data access.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Использование только открытых источников данных.
+Use only open data sources.
 
 ---
 
 ## Risk 12
 
-Неверная интерпретация аналитики пользователями.
+Users misinterpret analytics.
 
 ---
 
-Последствия:
+Consequences:
 
-Пользователь воспринимает прогноз или аналитическую оценку как подтвержденный факт.
+A user treats a forecast or analytical estimate as a confirmed fact.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- использование Confidence Level;
-- маркировка оценок;
-- отображение ограничений системы.
+- use Confidence Level;
+- label estimates;
+- display system limitations.
 
 ---
 
@@ -297,86 +297,86 @@ Status: Approved
 
 ## Risk 13
 
-Нарушение лицензий поставщиков данных.
+Violating data-provider licenses.
 
 ---
 
-Последствия:
+Consequences:
 
-- ограничение доступа к данным;
-- блокировка доступа к API;
-- юридические претензии;
-- необходимость удаления данных.
+- restricted data access;
+- blocked API access;
+- legal claims;
+- required data deletion.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- документирование лицензий всех источников;
-- регулярная проверка условий использования;
-- указание источников данных на сайте.
+- document every source license;
+- review terms of use regularly;
+- identify data sources on the website.
 
 ---
 
 ## Risk 14
 
-Нарушение условий использования OpenSky.
+Violating OpenSky terms of use.
 
 ---
 
-Последствия:
+Consequences:
 
-- ограничение доступа;
-- временная блокировка;
-- полная блокировка учетной записи.
+- access restrictions;
+- temporary blocking;
+- permanent account blocking.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- соблюдение лимитов запросов;
-- использование Backend API;
-- кэширование данных;
-- контроль нагрузки.
+- comply with request limits;
+- use the Backend API;
+- cache data;
+- control workload.
 
 ---
 
 ## Risk 15
 
-Использование данных способами, запрещенными поставщиками.
+Using data in ways prohibited by providers.
 
 ---
 
-Последствия:
+Consequences:
 
-- нарушение лицензионных требований;
-- потеря доступа к данным.
+- license violations;
+- loss of access.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Перед подключением нового источника выполняется проверка лицензионных условий использования.
+Review licensing terms before integrating a new source.
 
 ---
 
 ## Risk 16
 
-Отсутствие пользовательского соглашения.
+No user agreement.
 
 ---
 
-Последствия:
+Consequences:
 
-- юридическая неопределенность;
-- отсутствие ограничения ответственности платформы;
-- увеличение правовых рисков.
+- legal uncertainty;
+- no limitation of platform liability;
+- increased legal risk.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Перед публичным запуском должны быть подготовлены:
+Prepare the following before public launch:
 
 - Terms Of Service;
 - Privacy Policy;
@@ -386,59 +386,59 @@ Status: Approved
 
 ## Risk 17
 
-Использование аналитики как официальной авиационной информации.
+Using analytics as official aviation information.
 
 ---
 
-Последствия:
+Consequences:
 
-Пользователь принимает решения на основании предположительных данных.
+A user makes decisions based on estimated data.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-На всех страницах платформы размещается уведомление:
+Display the following notice on all platform pages:
 
-Платформа является исследовательским инструментом и не предоставляет официальную авиационную информацию.
+The platform is a research tool and does not provide official aviation information.
 
 ---
 
 ## Risk 18
 
-Появление персональных данных пользователей в будущих версиях.
+Personal user data appears in future versions.
 
 ---
 
-Последствия:
+Consequences:
 
-Возникновение требований законодательства о защите данных.
+Data-protection requirements become applicable.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-До появления учетных записей пользователей персональные данные не хранятся.
+Do not store personal data before user accounts are introduced.
 
-После появления учетных записей проводится отдельный аудит требований законодательства.
+Perform a separate legal requirements audit after user accounts are introduced.
 
 ---
 
 ## Risk 19
 
-Претензии пользователей из-за неточных данных.
+User claims caused by inaccurate data.
 
 ---
 
-Последствия:
+Consequences:
 
-Снижение доверия к платформе и юридические претензии.
+Reduced trust in the platform and legal claims.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Все вычисляемые данные маркируются как:
+Label all computed data as:
 
 - Predicted;
 - Estimated;
@@ -447,35 +447,35 @@ Status: Approved
 
 ---
 
-Запрещается представлять вычисленные данные как подтвержденный факт.
+Computed data must never be presented as confirmed fact.
 
 ---
 
 ## Risk 20
 
-Использование платформы не по назначению.
+Using the platform outside its intended purpose.
 
 ---
 
-Примеры:
+Examples:
 
-- авиационная навигация;
-- диспетчерская деятельность;
-- обеспечение безопасности полетов.
-
----
-
-Последствия:
-
-Пользователь принимает критически важные решения на основании аналитических данных платформы.
+- aviation navigation;
+- dispatch operations;
+- flight-safety operations.
 
 ---
 
-Снижение риска:
+Consequences:
 
-Во всех пользовательских документах должна присутствовать формулировка:
+A user makes safety-critical decisions based on platform analytics.
 
-Платформа предназначена исключительно для исследования, визуализации и анализа открытых авиационных данных.
+---
+
+Mitigation:
+
+All user-facing documents must include the following statement:
+
+The platform is intended exclusively for research, visualization, and analysis of open aviation data.
 
 ---
 
@@ -483,44 +483,44 @@ Status: Approved
 
 ## Risk 21
 
-Рост нагрузки быстрее роста инфраструктуры.
+Workload grows faster than infrastructure.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Масштабирование только после появления реальной нагрузки.
+Scale only after real workload appears.
 
 ---
 
 ## Risk 22
 
-Потеря данных после сбоя.
+Data loss after a failure.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-- резервное копирование;
-- хранение критичных данных в PostgreSQL.
+- backups;
+- persist critical data in PostgreSQL.
 
 ---
 
 ## Risk 23
 
-Отказ внешнего поставщика данных.
+An external data provider fails.
 
 ---
 
-Последствия:
+Consequences:
 
-Частичная потеря функциональности.
+Partial loss of functionality.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Подготовка альтернативных поставщиков данных в будущих версиях.
+Prepare alternative data providers in future versions.
 
 ---
 
@@ -528,64 +528,64 @@ Status: Approved
 
 ## Risk 24
 
-Потеря фокуса проекта.
+Loss of project focus.
 
 ---
 
-Последствия:
+Consequences:
 
-Превращение продукта в набор несвязанных функций.
+The product becomes a set of unrelated capabilities.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Поддержание единой продуктовой стратегии.
+Maintain one product strategy.
 
 ---
 
 ## Risk 25
 
-Преждевременное внедрение машинного обучения.
+Premature machine-learning adoption.
 
 ---
 
-Последствия:
+Consequences:
 
-Высокая сложность без реальной пользы.
+High complexity without real value.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Внедрение машинного обучения только после накопления исторических данных.
+Introduce machine learning only after sufficient historical data is accumulated.
 
 ---
 
 ## Risk 26
 
-Преждевременное усложнение архитектуры.
+Premature architectural complexity.
 
 ---
 
-Последствия:
+Consequences:
 
-Рост стоимости разработки и поддержки.
+Higher development and maintenance cost.
 
 ---
 
-Примеры:
+Examples:
 
 - Kubernetes;
-- микросервисы;
+- microservices;
 - Redis;
 - ClickHouse.
 
 ---
 
-Снижение риска:
+Mitigation:
 
-Следование принципу:
+Follow this principle:
 
 ```text
 Build For Today
@@ -597,32 +597,32 @@ Prepare For Tomorrow
 
 # 11. Main Strategic Risk
 
-Самый опасный риск проекта:
+The most dangerous project risk:
 
-Потерять продуктовый фокус.
-
----
-
-Платформа должна оставаться:
-
-- системой исследования воздушного движения;
-- системой авиационной аналитики;
-- системой прогнозирования воздушного пространства.
+Losing product focus.
 
 ---
 
-Платформа не должна превращаться в:
+The platform must remain:
 
-- туристический портал;
-- систему продажи билетов;
-- диспетчерскую систему;
-- авиационную ERP-платформу.
+- an air-traffic research system;
+- an aviation analytics system;
+- an airspace forecasting system.
+
+---
+
+The platform must not become:
+
+- a travel portal;
+- a ticket-sales system;
+- a dispatch system;
+- an aviation ERP platform.
 
 ---
 
 # 12. Risk Summary
 
-Текущий уровень риска MVP:
+Current MVP risk level:
 
 ```text
 Low To Medium
@@ -630,13 +630,13 @@ Low To Medium
 
 ---
 
-Причины:
+Reasons:
 
-- простая архитектура;
-- ограниченная область применения;
-- отсутствие сложной инфраструктуры;
-- поэтапное развитие продукта.
+- simple architecture;
+- limited scope;
+- no complex infrastructure;
+- incremental product development.
 
 ---
 
-Основным фактором успеха остается сохранение продуктового фокуса, соблюдение лицензионных требований, защита от юридических рисков и дисциплина развития платформы.
+The main success factors remain product focus, license compliance, legal-risk protection, and disciplined platform development.

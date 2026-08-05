@@ -12,21 +12,21 @@ Status: Approved
 
 # 1. Purpose
 
-Данный документ описывает архитектуру платформы Global Flight Analytics.
+This document describes the architecture of the Global Flight Analytics platform.
 
-Документ определяет:
+The document defines:
 
-- архитектурные границы системы;
-- основные компоненты;
-- потоки данных;
-- ответственность каждого модуля;
-- взаимодействие между компонентами.
+- system architecture boundaries;
+- core components;
+- data flows;
+- module responsibilities;
+- interactions between components.
 
 ---
 
 # 2. Architecture Overview
 
-Система состоит из четырех основных слоев:
+The system consists of four primary layers:
 
 ```text
 External Data Sources
@@ -48,13 +48,13 @@ Backend API
 Frontend Application
 ```
 
-Поток данных устроен следующим образом:
+The data flow works as follows:
 
-1. Внешние источники поставляют данные в Backend.
-2. Backend выполняет нормализацию и обработку.
-3. Backend сохраняет необходимые данные в PostgreSQL.
-4. Frontend никогда не обращается напрямую к базе данных.
-5. Frontend получает данные исключительно через Backend API.
+1. External sources provide data to the Backend.
+2. The Backend normalizes and processes the data.
+3. The Backend stores required data in PostgreSQL.
+4. The Frontend never accesses the database directly.
+5. The Frontend receives data exclusively through the Backend API.
 
 ---
 
@@ -101,111 +101,111 @@ Frontend Application
 
 ## Frontend Layer
 
-Технологии:
+Technologies:
 
 - Next.js
 - TypeScript
 - MapLibre
 - TanStack Query
 
-Ответственность:
+Responsibilities:
 
-- отображение карты;
-- отображение самолетов;
-- отображение аэропортов;
-- отображение статистики;
-- поиск;
-- пользовательские сценарии.
+- map rendering;
+- aircraft rendering;
+- airport rendering;
+- statistics rendering;
+- search;
+- user workflows.
 
-Frontend не работает напрямую с внешними API.
+The Frontend does not communicate directly with external APIs.
 
-Frontend работает только через Backend API.
+The Frontend communicates only through the Backend API.
 
 ---
 
 ## Backend Layer
 
-Технологии:
+Technologies:
 
 - Go
 - Fiber
 - pgx
 
-Ответственность:
+Responsibilities:
 
-- получение данных из OpenSky;
-- обработка запросов клиента;
-- вычисление маршрутов;
-- работа со справочниками;
-- формирование ответов API;
-- кэширование данных.
+- retrieve data from OpenSky;
+- process client requests;
+- calculate routes;
+- work with reference datasets;
+- construct API responses;
+- cache data.
 
-Backend является единственной точкой доступа к данным.
+The Backend is the only data-access point.
 
 ---
 
 ## Database Layer
 
-Технологии:
+Technology:
 
 - PostgreSQL
 
-Ответственность:
+Responsibilities:
 
-- хранение аэропортов;
-- хранение самолетов;
-- хранение авиакомпаний;
-- хранение результатов определения маршрутов;
-- хранение статистики;
-- хранение справочников.
+- store airports;
+- store aircraft;
+- store airlines;
+- store route-detection results;
+- store statistics;
+- store reference data.
 
-База данных не используется как хранилище миллионов координат.
+The database is not used to store millions of coordinates without limits.
 
-В базе хранятся только необходимые данные.
+Only required data is persisted.
 
 ---
 
 ## External Data Layer
 
-Источники:
+Sources:
 
 ### OpenSky Network
 
-Используется для получения:
+Used to retrieve:
 
-- координат;
-- скорости;
-- высоты;
-- курса;
-- позывного;
-- состояния полета.
+- coordinates;
+- velocity;
+- altitude;
+- heading;
+- callsign;
+- flight state.
 
 ### OurAirports
 
-Используется для получения:
+Used to retrieve:
 
-- аэропортов;
-- кодов ICAO;
-- кодов IATA;
-- координат;
-- информации о полосах.
+- airports;
+- ICAO codes;
+- IATA codes;
+- coordinates;
+- runway information.
 
 ### OpenStreetMap
 
-Используется для получения:
+Used to retrieve:
 
-- транспортной инфраструктуры;
-- дорог;
-- железнодорожных станций;
-- автобусных маршрутов.
+- transport infrastructure;
+- roads;
+- railway stations;
+- bus routes.
 
 ### Wikidata
 
-Используется для получения:
+Used to retrieve:
 
-- описаний;
-- исторической информации;
-- справочных данных.
+- descriptions;
+- historical information;
+- reference information.
 
 ---
 
@@ -237,36 +237,36 @@ API Response
 Next.js
 ```
 
-Этапы:
+Stages:
 
-1. Backend получает данные OpenSky.
-2. Выполняется нормализация.
-3. Выполняется сопоставление самолета.
-4. Выполняется определение маршрута.
-5. Формируется ответ клиенту.
+1. The Backend receives OpenSky data.
+2. The data is normalized.
+3. The aircraft is matched.
+4. The route is determined.
+5. The client response is constructed.
 
 ---
 
 # 6. Route Intelligence Flow
 
-Цель:
+Goal:
 
-Определить вероятный маршрут самолета.
+Determine the probable aircraft route.
 
-Входные данные:
+Input data:
 
-- координаты;
-- высота;
-- скорость;
-- курс;
-- позывной.
+- coordinates;
+- altitude;
+- velocity;
+- heading;
+- callsign.
 
-Источники:
+Sources:
 
 - OpenSky;
 - Airports Database.
 
-Результат:
+Result:
 
 ```text
 Origin Airport
@@ -276,7 +276,7 @@ Destination Airport
 Confidence Level
 ```
 
-Уровни уверенности:
+Confidence levels:
 
 - High
 - Medium
@@ -286,135 +286,135 @@ Confidence Level
 
 # 7. Data Provenance
 
-Система обязана разделять:
+The system must distinguish:
 
 - Real Data
 - Enriched Data
 - Inferred Data
 - Statistical Data
 
-Каждый вычисляемый объект должен содержать:
+Every computed object must contain:
 
 - data_source
 - confidence_level
 - last_updated_at
 
-Пользователь должен иметь возможность определить происхождение отображаемых данных.
+The user must be able to identify the origin of displayed data.
 
 ---
 
 # 8. Airport Intelligence Flow
 
-Цель:
+Goal:
 
-Построение цифрового паспорта аэропорта.
+Build an airport digital profile.
 
-Источники:
+Sources:
 
 - OurAirports
 - OpenStreetMap
 - Wikidata
 
-Результат:
+Result:
 
-- характеристики аэропорта;
-- инфраструктура;
-- статистика;
-- популярные маршруты.
+- airport characteristics;
+- infrastructure;
+- statistics;
+- popular routes.
 
 ---
 
 # 9. Air Traffic Intelligence Flow
 
-Цель:
+Goal:
 
-Анализ воздушного движения региона.
+Analyze regional air traffic.
 
-Вычисляемые показатели:
+Computed indicators:
 
-- количество самолетов;
-- количество маршрутов;
-- активные аэропорты;
-- плотность воздушного движения;
-- интенсивность трафика.
+- number of aircraft;
+- number of routes;
+- active airports;
+- air-traffic density;
+- traffic intensity.
 
-Отображение:
+Presentation:
 
-- тепловые карты;
-- диаграммы;
-- статистические панели.
+- heat maps;
+- charts;
+- statistical panels.
 
 ---
 
 # 10. Live Mode
 
-Режим реального времени.
+Real-time mode.
 
-Источник:
+Source:
 
 OpenSky.
 
-Особенности:
+Characteristics:
 
-- актуальные данные;
-- периодическое обновление;
-- отображение живого трафика.
+- current data;
+- periodic updates;
+- live traffic display.
 
 ---
 
 # 11. Historical Replay Mode
 
-Режим воспроизведения истории.
+Historical replay mode.
 
-Назначение:
+Purpose:
 
-Просмотр накопленных исторических данных.
+Review accumulated historical data.
 
-Пользователь может:
+The user can:
 
-- выбрать дату;
-- выбрать регион;
-- воспроизвести трафик;
-- анализировать изменения.
+- select a date;
+- select a region;
+- replay traffic;
+- analyze changes.
 
-MVP хранит ограниченную историю наблюдений, достаточную для построения базовой аналитики и воспроизведения недавних событий.
+The MVP stores a limited observation history sufficient for basic analytics and replay of recent events.
 
 ---
 
 # 12. Caching Strategy
 
-Backend использует оперативную память для хранения часто используемых данных.
+The Backend uses application memory for frequently accessed data.
 
-Кэшируются:
+Cached data:
 
-- аэропорты;
-- авиакомпании;
-- модели самолетов;
-- последние данные OpenSky.
+- airports;
+- airlines;
+- aircraft models;
+- latest OpenSky data.
 
-Цель:
+Goal:
 
-Минимизировать обращения к PostgreSQL.
+Minimize PostgreSQL access.
 
 ---
 
 # 13. Security Principles
 
-Frontend никогда не обращается напрямую к OpenSky.
+The Frontend never accesses OpenSky directly.
 
-Все запросы проходят через Backend.
+All requests pass through the Backend.
 
-Backend выполняет:
+The Backend performs:
 
-- валидацию данных;
-- фильтрацию данных;
-- контроль частоты запросов.
+- data validation;
+- data filtering;
+- request-rate control.
 
 ---
 
 # 14. Scalability Strategy
 
-На этапе MVP:
+During the MVP:
 
 ```text
 Next.js
@@ -428,25 +428,25 @@ Go API
 PostgreSQL
 ```
 
-Без:
+Without:
 
-- микросервисов;
-- очередей сообщений;
+- microservices;
+- message queues;
 - Kubernetes;
 - Redis.
 
-Усложнение архитектуры допускается только после появления реальной нагрузки.
+Architecture is made more complex only after real workload appears.
 
 ---
 
 # 15. Architectural Boundaries
 
-Система НЕ является:
+The system is NOT:
 
-- системой управления воздушным движением;
-- диспетчерской системой;
-- системой планирования маршрутов;
-- системой обеспечения безопасности полетов;
-- официальным авиационным сервисом.
+- an air traffic control system;
+- a dispatch system;
+- a route-planning system;
+- a flight-safety system;
+- an official aviation service.
 
-Система является исследовательской платформой анализа и визуализации воздушного движения на основе открытых авиационных данных.
+The system is a research platform for analyzing and visualizing air traffic using open aviation data.

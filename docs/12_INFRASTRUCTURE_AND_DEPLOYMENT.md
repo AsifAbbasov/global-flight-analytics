@@ -12,13 +12,13 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет инфраструктуру, окружения, развертывание и эксплуатацию платформы Global Flight Analytics.
+This document defines the infrastructure, environments, deployment, and operation of the Global Flight Analytics platform.
 
-Цель:
+Goals:
 
-- обеспечить запуск MVP одним разработчиком;
-- минимизировать расходы;
-- сохранить возможность масштабирования без полной переработки архитектуры.
+- allow one developer to launch the MVP;
+- minimize cost;
+- preserve the ability to scale without a complete architecture rewrite.
 
 ---
 
@@ -26,31 +26,31 @@ Status: Approved
 
 ## Free First
 
-На этапе MVP используются бесплатные или условно-бесплатные сервисы.
+The MVP uses free or limited-free services.
 
 ---
 
 ## Simplicity First
 
-Не используются:
+The MVP does not use:
 
 - Kubernetes;
 - Redis;
 - Kafka;
 - RabbitMQ;
-- микросервисы.
+- microservices.
 
 ---
 
 ## Monolith First
 
-Система развертывается как модульный монолит.
+The system is deployed as a modular monolith.
 
 ---
 
 ## Open Data First
 
-Используются только открытые источники данных.
+Only open data sources are used.
 
 ---
 
@@ -66,9 +66,9 @@ Vercel
 
 Purpose:
 
-- развертывание Next.js;
-- глобальная доставка статических ресурсов;
-- автоматический деплой через GitHub.
+- deploy Next.js;
+- deliver static assets globally;
+- deploy automatically through GitHub.
 
 ---
 
@@ -84,18 +84,18 @@ Render
 
 Purpose:
 
-- размещение Go API;
-- выполнение фоновых задач;
-- работа Data Collection Pipeline.
+- host the Go API;
+- execute background tasks;
+- run the Data Collection Pipeline.
 
 ---
 
-Причины выбора:
+Reasons:
 
-- стабильный бесплатный тариф;
-- простая интеграция с GitHub;
-- поддержка Go;
-- быстрый запуск MVP.
+- stable free plan;
+- simple GitHub integration;
+- Go support;
+- fast MVP launch.
 
 ---
 
@@ -111,12 +111,12 @@ Neon PostgreSQL
 
 Purpose:
 
-- справочники;
-- аэропорты;
-- самолеты;
-- маршруты;
-- статистика;
-- аналитика.
+- reference data;
+- airports;
+- aircraft;
+- routes;
+- statistics;
+- analytics.
 
 ---
 
@@ -138,17 +138,17 @@ sync.Map
 
 ---
 
-Назначение:
+Purpose:
 
-- хранение текущих состояний самолетов;
-- работа live-карты;
-- быстрое формирование ответов API.
+- store current aircraft states;
+- operate the live map;
+- construct API responses quickly.
 
 ---
 
 # 7. Source Layer
 
-Основные источники:
+Primary sources:
 
 - OpenSky Network;
 - OurAirports;
@@ -160,7 +160,7 @@ sync.Map
 
 # 8. Deployment Architecture
 
-Высокоуровневая схема:
+High-level structure:
 
 ```text
 GitHub Repository
@@ -185,7 +185,7 @@ GitHub Repository
 
 # 9. Deployment Flow
 
-Поток публикации:
+Publication flow:
 
 ```text
 Developer
@@ -239,13 +239,13 @@ NEXT_PUBLIC_API_URL
 
 ---
 
-Секреты никогда не должны попадать в репозиторий.
+Secrets must never be committed to the repository.
 
 ---
 
 # 11. Monitoring
 
-Минимальный набор мониторинга MVP:
+Minimum MVP monitoring:
 
 - Application Logs;
 - Health Endpoint;
@@ -254,7 +254,7 @@ NEXT_PUBLIC_API_URL
 
 ---
 
-Дополнительно:
+Additional monitoring:
 
 - Uptime Monitoring;
 - Health Check Monitoring;
@@ -264,7 +264,7 @@ NEXT_PUBLIC_API_URL
 
 # 12. Backup Strategy
 
-Источник:
+Source:
 
 ```text
 Neon PostgreSQL
@@ -272,7 +272,7 @@ Neon PostgreSQL
 
 ---
 
-Стратегия:
+Strategy:
 
 ```text
 Daily Backup
@@ -288,17 +288,17 @@ Retention:
 
 ---
 
-Назначение:
+Purpose:
 
-- защита от потери данных;
-- восстановление после ошибок;
-- тестирование миграций.
+- protect against data loss;
+- recover from failures;
+- test migrations.
 
 ---
 
 # 13. Security Rules
 
-Обязательные правила:
+Mandatory rules:
 
 - HTTPS Only;
 - No Direct Database Access;
@@ -308,7 +308,7 @@ Retention:
 
 ---
 
-Дополнительно:
+Additional rules:
 
 - CORS Restrictions;
 - Rate Limiting;
@@ -320,15 +320,15 @@ Retention:
 
 ## OpenSky Unavailable
 
-Действие:
+Action:
 
 ```text
-Использовать последние доступные данные из памяти
+Use the latest available in-memory data
 ```
 
 ---
 
-Frontend отображает:
+The Frontend displays:
 
 ```text
 Live Data Delayed
@@ -338,7 +338,7 @@ Live Data Delayed
 
 ## Database Unavailable
 
-Действие:
+Action:
 
 ```text
 Read Only Mode
@@ -348,11 +348,11 @@ Read Only Mode
 
 ## Backend Restart
 
-Действие:
+Action:
 
 ```text
-Повторная загрузка данных
-из OpenSky
+Reload data
+from OpenSky
 ```
 
 ---
@@ -361,27 +361,27 @@ Read Only Mode
 
 ## Phase 1
 
-Регион:
+Region:
 
 ```text
-Кавказ
+Caucasus
 ```
 
 ---
 
 ## Phase 2
 
-Регион:
+Region:
 
 ```text
-Европа
+Europe
 ```
 
 ---
 
 ## Phase 3
 
-Регион:
+Region:
 
 ```text
 Global
@@ -389,44 +389,44 @@ Global
 
 ---
 
-Масштабирование выполняется без изменения архитектурных принципов.
+Scaling does not change the architectural principles.
 
 ---
 
 # 16. Cost Target
 
-Целевой бюджет MVP:
+Target MVP budget:
 
 ```text
-0 – 5 USD в месяц
+0–5 USD per month
 ```
 
 ---
 
-Архитектура должна сохранять работоспособность даже при изменении бесплатных тарифов провайдеров.
+The architecture must remain operational even when providers change their free plans.
 
 ---
 
 # 17. Infrastructure Boundaries
 
-В MVP не используются:
+The MVP does not use:
 
 - Kubernetes;
 - Redis;
 - Kafka;
 - RabbitMQ;
 - Elasticsearch;
-- отдельные аналитические кластеры.
+- dedicated analytical clusters.
 
 ---
 
-Усложнение инфраструктуры допускается только после появления подтвержденной нагрузки.
+Infrastructure is made more complex only after proven workload appears.
 
 ---
 
 # 18. Summary
 
-Инфраструктура платформы построена вокруг следующих компонентов:
+The platform infrastructure is built around:
 
 - Vercel;
 - Render;
@@ -436,4 +436,4 @@ Global
 - OurAirports;
 - Wikidata.
 
-Архитектура обеспечивает запуск и поддержку MVP одним разработчиком с минимальными затратами и возможностью дальнейшего масштабирования.
+The architecture allows one developer to launch and maintain the MVP at minimal cost while preserving future scalability.

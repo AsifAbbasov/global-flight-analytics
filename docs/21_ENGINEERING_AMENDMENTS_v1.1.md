@@ -12,24 +12,24 @@
 
 # 1. Purpose
 
-Настоящий документ фиксирует инженерские улучшения архитектуры проекта, принятые после анализа существующих открытых авиационных платформ, решений по визуализации трехмерных карт, движков отображения воздушного движения и современных практик разработки WebGL-приложений.
+This document records engineering improvements to the project architecture adopted after analyzing existing open aviation platforms, three-dimensional map visualization solutions, air-traffic rendering engines, and modern WebGL application-development practices.
 
-Документ не заменяет ранее утвержденную архитектуру.
+This document does not replace the previously approved architecture.
 
-Документ расширяет существующую архитектуру инженерными решениями, направленными на:
+It extends the existing architecture with engineering decisions intended to:
 
-- повышение производительности;
-- улучшение масштабируемости;
-- улучшение пользовательского взаимодействия;
-- повышение качества визуализации;
-- уменьшение потребления памяти;
-- подготовку платформы к дальнейшему развитию.
+- improve performance;
+- improve scalability;
+- improve user interaction;
+- improve visualization quality;
+- reduce memory consumption;
+- prepare the platform for future development.
 
 ---
 
 # 2. Scope
 
-Изменения распространяются исключительно на следующие подсистемы.
+The changes apply exclusively to the following subsystems:
 
 - Frontend Rendering Engine
 - Three.js Engine
@@ -39,7 +39,7 @@
 - Scene Management
 - Performance Optimization
 
-Настоящий документ не изменяет:
+This document does not change:
 
 - Product Vision;
 - System Architecture;
@@ -50,7 +50,7 @@
 - Data Pipeline;
 - Security Architecture.
 
-Все существующие документы остаются действительными.
+All existing documents remain valid.
 
 ---
 
@@ -58,43 +58,43 @@
 
 ## 3.1 Independent Implementation
 
-После анализа сторонних решений были приняты инженерные идеи.
+Engineering ideas were adopted after analyzing third-party solutions.
 
-Исходный код сторонних проектов не используется.
+No third-party source code is used.
 
-Все реализации выполняются исключительно собственным кодом.
+All implementations are created exclusively as original project code.
 
 ---
 
 ## 3.2 Backend First
 
-Backend остается единственным источником истины.
+The Backend remains the only source of truth.
 
-Frontend никогда не обращается напрямую к внешним авиационным сервисам.
+The Frontend never accesses external aviation services directly.
 
-Все внешние источники данных проходят через Backend.
+All external data sources pass through the Backend.
 
 ---
 
 ## 3.3 Scalable Rendering
 
-Каждый компонент визуализации должен быть способен работать с десятками тысяч одновременно отображаемых объектов.
+Every visualization component must be able to work with tens of thousands of simultaneously displayed objects.
 
-Все алгоритмы обязаны учитывать масштабирование.
+All algorithms must account for scaling.
 
 ---
 
 ## 3.4 Explicit Resource Management
 
-Каждый создаваемый ресурс WebGL обязан иметь контролируемый жизненный цикл.
+Every created WebGL resource must have a controlled lifecycle.
 
-Не допускается накопление Geometry, Material, Texture или Buffer в памяти после удаления объекта.
+Geometry, Material, Texture, and Buffer objects must not remain in memory after their owning object is removed.
 
 ---
 
 ## 3.5 Progressive Enhancement
 
-Каждая дополнительная возможность должна улучшать пользовательский опыт без нарушения базового сценария работы системы.
+Every additional capability must improve the user experience without breaking the basic system workflow.
 
 ---
 
@@ -102,17 +102,17 @@ Frontend никогда не обращается напрямую к внешн
 
 ## 4.1 Invisible Hitboxes
 
-Каждый самолет получает отдельный невидимый объект выбора.
+Every aircraft receives a separate invisible selection object.
 
-Hitbox используется исключительно для взаимодействия пользователя.
+The Hitbox is used exclusively for user interaction.
 
-Размер области выбора может отличаться от размера модели самолета.
+The selection area may differ from the visible aircraft-model size.
 
 ### Benefits
 
-- стабильный выбор объектов;
-- повышение удобства взаимодействия;
-- снижение количества ошибочных кликов.
+- reliable object selection;
+- improved interaction usability;
+- fewer incorrect clicks.
 
 Status
 
@@ -122,15 +122,15 @@ Approved
 
 ## 4.2 Raycaster Selection
 
-Выбор объектов осуществляется исключительно посредством Three.js Raycaster.
+Object selection is performed exclusively through Three.js Raycaster.
 
-После выбора объекта система должна:
+After an object is selected, the system must:
 
-- определить самолет;
-- определить аэропорт;
-- открыть информационную карточку;
-- активировать визуальное выделение;
-- подготовить Follow Mode.
+- identify the aircraft;
+- identify the airport;
+- open the information card;
+- activate visual highlighting;
+- prepare Follow Mode.
 
 Status
 
@@ -140,15 +140,15 @@ Approved
 
 ## 4.3 Selection Highlight
 
-Выбранный самолет обязан визуально отличаться.
+The selected aircraft must be visually distinguishable.
 
-Допускаются:
+Allowed techniques:
 
-- изменение цвета;
-- внешний контур;
-- дополнительное свечение;
-- изменение прозрачности;
-- масштабирование.
+- color changes;
+- an outer outline;
+- additional glow;
+- opacity changes;
+- scaling.
 
 Status
 
@@ -158,14 +158,14 @@ Approved
 
 ## 4.4 Sprite Glow
 
-Вместо дополнительных Mesh используется Sprite Glow.
+Sprite Glow is used instead of additional Mesh objects.
 
-Причины:
+Reasons:
 
-- меньше draw calls;
-- меньше Geometry;
-- меньше использование памяти;
-- выше производительность.
+- fewer draw calls;
+- less Geometry;
+- lower memory usage;
+- higher performance.
 
 Status
 
@@ -175,9 +175,9 @@ Approved
 
 ## 4.5 Resource Disposal Manager
 
-Создается централизованный менеджер очистки ресурсов.
+A centralized resource-disposal manager is created.
 
-Он отвечает за освобождение:
+It is responsible for releasing:
 
 - Geometry;
 - Material;
@@ -187,7 +187,7 @@ Approved
 - RenderTarget;
 - Labels.
 
-Ни один объект не должен удаляться без освобождения ресурсов.
+No object may be removed without releasing its resources.
 
 Status
 
@@ -197,9 +197,9 @@ Approved
 
 ## 4.6 Batched Updates
 
-LOD и обновление сцены выполняются пакетами.
+LOD processing and scene updates are performed in batches.
 
-Не допускается перерасчет каждого объекта каждый кадр.
+The system must not recalculate every object on every frame.
 
 Status
 
@@ -211,11 +211,11 @@ Approved
 
 ## 5.1 Trail Buffer
 
-История движения каждого самолета хранится в кольцевом буфере.
+Each aircraft's movement history is stored in a ring buffer.
 
-Буфер повторно использует выделенную память.
+The buffer reuses allocated memory.
 
-Создание новых массивов при каждом обновлении запрещается.
+Creating new arrays on every update is prohibited.
 
 Status
 
@@ -225,11 +225,11 @@ Approved
 
 ## 5.2 Trail Level of Detail
 
-Количество точек маршрута зависит от расстояния до камеры.
+The number of route points depends on distance from the camera.
 
-Ближние самолеты отображают полный маршрут.
+Nearby aircraft display the full route.
 
-Удаленные самолеты используют сокращенную траекторию.
+Distant aircraft use a reduced trajectory.
 
 Status
 
@@ -239,13 +239,13 @@ Approved
 
 ## 5.3 Aircraft Orientation
 
-При наличии данных модель должна отображать:
+When data is available, the model must display:
 
 - Heading;
 - Pitch;
 - Bank.
 
-При отсутствии части параметров используются только доступные значения.
+When some parameters are unavailable, only available values are used.
 
 Status
 
@@ -255,9 +255,9 @@ Approved
 
 ## 5.4 Follow Aircraft
 
-После выбора самолета пользователь может включить автоматическое сопровождение.
+After selecting an aircraft, the user may enable automatic tracking.
 
-Камера остается привязанной к выбранному объекту.
+The camera remains attached to the selected object.
 
 Status
 
@@ -267,15 +267,15 @@ Approved
 
 ## 5.5 Stale Aircraft Cleanup
 
-Самолеты, не получавшие обновления заданное время, автоматически удаляются.
+Aircraft that have not received an update within the configured period are removed automatically.
 
-Удаление включает:
+Removal includes:
 
-- модель;
-- след;
-- подпись;
-- свечение;
-- внутренние структуры данных.
+- model;
+- trail;
+- label;
+- glow;
+- internal data structures.
 
 Status
 
@@ -287,9 +287,9 @@ Approved
 
 ## 6.1 URL State
 
-Состояние приложения должно восстанавливаться по URL.
+Application state must be restorable from the URL.
 
-Поддерживаются:
+Supported state:
 
 - aircraft;
 - airport;
@@ -303,15 +303,15 @@ Approved
 
 ## 6.2 Deep Linking
 
-Каждый объект системы имеет постоянную ссылку.
+Every system object has a permanent link.
 
-Примеры:
+Examples:
 
-- самолет;
-- аэропорт;
-- регион.
+- aircraft;
+- airport;
+- region.
 
-Открытие ссылки должно полностью восстановить состояние интерфейса.
+Opening the link must fully restore interface state.
 
 Status
 
@@ -323,14 +323,14 @@ Approved
 
 ## 7.1 Airport Search Ranking
 
-Поиск аэропортов использует систему ранжирования.
+Airport search uses a ranking system.
 
-Приоритет определяется:
+Priority is determined by:
 
-- точным совпадением ICAO;
-- точным совпадением IATA;
-- названием аэропорта;
-- популярностью аэропорта.
+- exact ICAO match;
+- exact IATA match;
+- airport name;
+- airport popularity.
 
 Status
 
@@ -340,11 +340,11 @@ Approved
 
 ## 7.2 Aircraft Photo Service
 
-Карточка самолета может отображать фотографию воздушного судна.
+The aircraft card may display an aircraft photograph.
 
-Источник фотографий является отдельным интеграционным сервисом.
+The photo source is a separate integration service.
 
-При отсутствии фотографии система должна работать без изменений.
+The system must continue to operate unchanged when no photo is available.
 
 Status
 
@@ -356,9 +356,9 @@ Approved
 
 ## 8.1 Focused Radius Loading
 
-Данные загружаются только вокруг текущего региона наблюдения.
+Data is loaded only around the current observation region.
 
-Полная загрузка мирового воздушного пространства запрещена.
+Loading the entire global airspace is prohibited.
 
 Status
 
@@ -368,11 +368,11 @@ Approved
 
 ## 8.2 Adaptive Update Strategy
 
-Частота обновления зависит от:
+Update frequency depends on:
 
-- производительности устройства;
-- количества объектов;
-- расстояния до камеры.
+- device performance;
+- object count;
+- distance from the camera.
 
 Status
 
@@ -382,9 +382,9 @@ Approved
 
 ## 8.3 Terrain Streaming
 
-Тайлы рельефа загружаются только при необходимости.
+Terrain tiles are loaded only when required.
 
-Удаленные участки автоматически освобождаются из памяти.
+Distant areas are released from memory automatically.
 
 Status
 
@@ -394,7 +394,7 @@ Future
 
 ## 8.4 Terrain Level of Detail
 
-Детализация рельефа зависит от расстояния до камеры.
+Terrain detail depends on distance from the camera.
 
 Status
 
@@ -406,19 +406,19 @@ Future
 
 ## 9.1 Aircraft Information Card
 
-После выбора самолета отображается единая информационная карточка.
+After selecting an aircraft, the system displays one unified information card.
 
-Карточка агрегирует информацию из нескольких доменных сущностей.
+The card aggregates information from several domain entities.
 
-В перспективе она может включать:
+In the future, it may include:
 
 - Aircraft;
 - Flight;
 - Route;
 - Aircraft Profile;
-- фотографии;
-- характеристики модели;
-- историю полетов.
+- photographs;
+- model specifications;
+- flight history.
 
 Status
 
@@ -428,7 +428,7 @@ Approved
 
 ## 9.2 Smooth Interaction
 
-Все пользовательские действия должны выполняться без полной перерисовки сцены.
+All user actions must operate without a complete scene redraw.
 
 Status
 
@@ -438,11 +438,11 @@ Approved
 
 # 10. Version 2 Features
 
-Следующие функции не входят в минимально жизнеспособный продукт.
+The following capabilities are outside the minimum viable product.
 
 ## Recording
 
-Запись состояния сцены.
+Record scene state.
 
 Status
 
@@ -452,7 +452,7 @@ Future
 
 ## Replay
 
-Воспроизведение ранее записанного состояния.
+Replay previously recorded state.
 
 Status
 
@@ -462,7 +462,7 @@ Future
 
 ## Surf Mode
 
-Свободное перемещение по воздушному пространству.
+Move freely through airspace.
 
 Status
 
@@ -472,7 +472,7 @@ Future
 
 ## Timeline Playback
 
-Перемещение по временной шкале.
+Move through a timeline.
 
 Status
 
@@ -482,33 +482,33 @@ Future
 
 # 11. Explicitly Rejected Decisions
 
-Следующие решения сознательно не используются.
+The following decisions are intentionally rejected:
 
-- прямое обращение Frontend к сторонним авиационным сервисам;
-- хранение всей истории только в браузере;
-- отсутствие собственного Backend;
-- отсутствие собственного доменного слоя;
-- отсутствие собственной модели данных;
-- отсутствие централизованного управления ресурсами WebGL.
+- direct Frontend access to third-party aviation services;
+- storing all history only in the browser;
+- operating without a project-owned Backend;
+- operating without a project-owned domain layer;
+- operating without a project-owned data model;
+- operating without centralized WebGL resource management.
 
 ---
 
 # 12. Compatibility
 
-Настоящий документ полностью совместим со следующими документами проекта.
+This document is fully compatible with the following project documents:
 
 - DOCUMENT 01 — Product Vision
 - DOCUMENT 02 — System Architecture
 - DOCUMENT 03 — Domain Model
-- всеми последующими архитектурными документами
+- all subsequent architecture documents
 
-Настоящий документ расширяет архитектуру и не изменяет ранее утвержденные решения.
+This document extends the architecture and does not change previously approved decisions.
 
 ---
 
 # 13. Engineering Decisions Adopted
 
-После инженерского анализа существующих открытых авиационных платформ в архитектуру Global Flight Analytics были приняты следующие решения:
+After engineering analysis of existing open aviation platforms, the following decisions were adopted for the Global Flight Analytics architecture:
 
 - Invisible Hitboxes;
 - Raycaster Selection;
@@ -529,27 +529,27 @@ Future
 - Batched Scene Updates;
 - Terrain Streaming;
 - Terrain Level of Detail;
-- Recording and Replay как функциональность версии 2.
+- Recording and Replay as Version 2 functionality.
 
-Все перечисленные решения реализуются исключительно собственной командой разработки, интегрируются в существующую архитектуру проекта и не предполагают копирования реализации сторонних проектов.
+All listed decisions are implemented exclusively by the project development team, integrated into the existing architecture, and do not involve copying third-party implementations.
 
 ---
 
 # 14. Amendment Summary
 
-Настоящий документ завершает архитектурную фазу проекта Global Flight Analytics.
+This document closes the architecture phase of Global Flight Analytics.
 
-После его утверждения архитектура системы считается достаточной для перехода к этапу реализации.
+After approval, the system architecture is considered sufficient for transition to implementation.
 
-Дальнейшие изменения архитектуры допускаются только через новые amendment-документы или Architecture Decision Records.
+Further architecture changes are allowed only through new amendment documents or Architecture Decision Records.
 
-Все последующие работы должны выполняться в соответствии с ранее утвержденной документацией проекта и настоящим документом.
+All subsequent work must follow the previously approved project documentation and this document.
 
 ---
 
 # 15. Engineering Decision Matrix
 
-Настоящий раздел определяет окончательный статус каждой инженерной инициативы, принятой после анализа существующих открытых авиационных платформ.
+This section defines the final status of every engineering initiative adopted after analysis of existing open aviation platforms.
 
 | Engineering Decision       | Status   | Priority | Planned Release |
 | -------------------------- | -------- | -------- | --------------- |
@@ -582,163 +582,163 @@ Future
 
 ## 16.1 Rendering Performance
 
-После внедрения утвержденных изменений ожидаются следующие улучшения.
+The approved changes are expected to provide:
 
-- уменьшение количества Draw Calls;
-- уменьшение использования памяти графического процессора;
-- уменьшение количества выделений памяти JavaScript;
-- уменьшение количества пересозданий Geometry;
-- уменьшение количества пересозданий Material;
-- уменьшение нагрузки на Garbage Collector;
-- повышение стабильности времени кадра;
-- возможность отображения значительно большего количества одновременно активных самолетов.
+- fewer Draw Calls;
+- lower graphics-memory usage;
+- fewer JavaScript memory allocations;
+- fewer Geometry recreations;
+- fewer Material recreations;
+- lower Garbage Collector load;
+- more stable frame times;
+- support for significantly more simultaneously active aircraft.
 
 ---
 
 ## 16.2 Scalability
 
-Архитектура должна обеспечить возможность дальнейшего развития без изменения фундаментальной структуры проекта.
+The architecture must support future development without changing the project's fundamental structure.
 
-Предполагаемые направления масштабирования.
+Expected scaling directions:
 
-- увеличение количества одновременно отображаемых воздушных судов;
-- увеличение количества аэропортов;
-- расширение количества поддерживаемых регионов;
-- добавление новых источников данных;
-- внедрение новых аналитических модулей;
-- внедрение исторического анализа;
-- внедрение прогнозирования воздушного движения.
+- increase the number of simultaneously displayed aircraft;
+- increase the number of airports;
+- expand supported regions;
+- add new data sources;
+- introduce new analytical modules;
+- introduce historical analysis;
+- introduce air-traffic forecasting.
 
 ---
 
 ## 16.3 User Experience
 
-После реализации изменений пользователь должен получить следующие преимущества.
+After implementation, users should receive:
 
-- более точный выбор самолетов;
-- стабильное взаимодействие со сценой;
-- более информативные карточки объектов;
-- удобную навигацию через постоянные ссылки;
-- улучшенное сопровождение выбранного самолета;
-- более плавную работу интерфейса.
+- more accurate aircraft selection;
+- reliable scene interaction;
+- more informative object cards;
+- convenient navigation through permanent links;
+- improved tracking of a selected aircraft;
+- smoother interface operation.
 
 ---
 
 ## 16.4 Maintainability
 
-Новые инженерные решения направлены на повышение сопровождаемости проекта.
+The new engineering decisions are intended to improve project maintainability.
 
-Архитектура должна обеспечивать:
+The architecture must provide:
 
-- низкую связанность компонентов;
-- повторное использование модулей;
-- независимое тестирование;
-- возможность постепенного расширения функциональности.
+- low component coupling;
+- module reuse;
+- independent testing;
+- gradual capability expansion.
 
 ---
 
 # 17. Engineering Guidelines
 
-Настоящий раздел определяет обязательные требования к реализации.
+This section defines mandatory implementation requirements.
 
 ## 17.1 Resource Lifecycle
 
-Каждый создаваемый объект визуализации обязан иметь полностью контролируемый жизненный цикл.
+Every created visualization object must have a fully controlled lifecycle.
 
-Создание объекта без последующего освобождения ресурсов запрещается.
+Creating an object without subsequently releasing its resources is prohibited.
 
 ---
 
 ## 17.2 Rendering Rules
 
-Любая новая визуальная возможность должна оцениваться с точки зрения:
+Every new visual capability must be evaluated for:
 
-- производительности;
-- потребления памяти;
-- масштабируемости;
-- количества Draw Calls;
-- количества создаваемых объектов.
+- performance;
+- memory consumption;
+- scalability;
+- Draw Call count;
+- object count.
 
 ---
 
 ## 17.3 Data Flow Rules
 
-Все пользовательские действия работают только с внутренней моделью данных системы.
+All user actions operate only on the system's internal data model.
 
-Frontend не взаимодействует напрямую с внешними сервисами.
+The Frontend does not communicate directly with external services.
 
-Все данные проходят через Backend.
+All data passes through the Backend.
 
 ---
 
 ## 17.4 Backward Compatibility
 
-Новые инженерные решения не должны нарушать совместимость существующей архитектуры.
+New engineering decisions must not break compatibility with the existing architecture.
 
-Изменения должны интегрироваться без необходимости переработки ранее утвержденных документов.
+Changes must integrate without requiring previously approved documents to be rewritten.
 
 ---
 
 # 18. Final Engineering Statement
 
-Настоящий документ завершает архитектурную фазу проекта Global Flight Analytics.
+This document closes the architecture phase of Global Flight Analytics.
 
-После утверждения данного документа архитектура считается полностью сформированной и готовой к переходу к этапу реализации.
+After approval, the architecture is considered complete and ready for transition to implementation.
 
-Все дальнейшие изменения архитектуры допускаются исключительно посредством:
+All further architecture changes are allowed exclusively through:
 
 - Engineering Amendments;
 - Architecture Decision Records;
 - Version Documents.
 
-Непосредственная разработка программного обеспечения должна осуществляться исключительно в соответствии с утвержденной архитектурной документацией проекта.
+Software development must follow the approved project architecture documentation.
 
-Настоящий документ является дополнением к существующей архитектуре и не заменяет ранее утвержденные документы.
+This document supplements the existing architecture and does not replace previously approved documents.
 
 # 19. Architectural Constraints
 
-Во время реализации должны соблюдаться следующие ограничения.
+The following constraints must be observed during implementation.
 
 ## Backend
 
-- Backend является единственным источником истины.
-- Frontend не обращается напрямую к сторонним сервисам.
-- Все внешние API проходят через Backend.
+- The Backend is the only source of truth.
+- The Frontend does not access third-party services directly.
+- All external APIs pass through the Backend.
 
 ## Frontend
 
-- Бизнес-логика не должна находиться внутри компонентов пользовательского интерфейса.
-- Three.js Engine должен быть изолирован от компонентов React.
-- Компоненты пользовательского интерфейса не должны управлять жизненным циклом сцены.
+- Business logic must not be placed inside user-interface components.
+- The Three.js Engine must be isolated from React components.
+- User-interface components must not manage the scene lifecycle.
 
 ## Rendering
 
-- Не допускается создание новых Geometry каждый кадр.
-- Не допускается создание новых Material каждый кадр.
-- Не допускается бесконтрольное создание Texture.
-- Любой создаваемый ресурс обязан освобождаться.
+- New Geometry objects must not be created on every frame.
+- New Material objects must not be created on every frame.
+- Texture objects must not be created without control.
+- Every created resource must be released.
 
 ## Performance
 
-- Любая новая возможность должна оцениваться с точки зрения производительности.
-- Масштабируемость имеет приоритет над визуальными эффектами.
+- Every new capability must be evaluated for performance.
+- Scalability takes priority over visual effects.
 
 # 20. Out of Scope
 
-Следующие возможности не входят в минимально жизнеспособный продукт.
+The following capabilities are outside the minimum viable product:
 
-- система пользователей;
-- авторизация;
-- избранные самолеты;
-- избранные аэропорты;
-- пользовательские настройки в облаке;
-- совместная работа;
-- обмен маршрутами;
-- уведомления;
-- прогнозирование воздушного движения;
-- машинное обучение;
-- собственная система приема ADS-B;
-- коммерческие авиационные данные.
+- user system;
+- authorization;
+- favorite aircraft;
+- favorite airports;
+- cloud-based user settings;
+- collaboration;
+- route sharing;
+- notifications;
+- air-traffic forecasting;
+- machine learning;
+- a project-owned ADS-B receiver network;
+- commercial aviation data.
 
 # 21. Amendment History
 

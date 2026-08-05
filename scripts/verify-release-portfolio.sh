@@ -37,7 +37,8 @@ for required_file in \
   docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md \
   docs/164_RECRUITER_DEMO_SCRIPT.md \
   docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md \
-  docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md
+  docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md \
+  docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md
 do
   require_file "$required_file"
 done
@@ -60,6 +61,9 @@ require_literal README.md 'PRODUCTION_RELEASE_SMOKE=PASS' \
   'README verified full production smoke marker is missing'
 require_literal README.md 'Visual and interaction redesign remains a separate product phase' \
   'README remaining frontend redesign boundary is missing'
+
+require_literal README.md '<!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1 -->' \
+  'README production observability marker is missing'
 
 readme_portfolio_section="$(
   awk '
@@ -174,6 +178,9 @@ require_literal docs/DOCUMENT_INDEX.md '## Document 165 — System Architecture 
 require_literal docs/DOCUMENT_INDEX.md '## Document 169 — Release Truth and Deployment Revision Closure' \
   'Document 169 index entry is missing'
 
+require_literal docs/DOCUMENT_INDEX.md '## Document 170 — Production Observability and Alerting Closure' \
+  'Document 170 index entry is missing'
+
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_API_DEPLOYMENT=CLOSED' \
   'release closure does not record verified public API deployment'
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_NEXTJS_DEPLOYMENT=CLOSED' \
@@ -187,12 +194,24 @@ require_literal docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md 'RELEA
 require_literal docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md 'EXPLICIT_DEPLOYMENT_REVISION_INPUT=REQUIRED' \
   'release truth closure does not require an explicit deployment revision'
 
+require_literal docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md 'PRODUCTION_METRICS_REMOTE_WRITE=CLOSED' \
+  'production observability closure does not record remote-write completion'
+require_literal docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md 'GRAFANA_SLO_DASHBOARD=CLOSED' \
+  'production observability closure does not record the SLO dashboard'
+require_literal docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md 'GRAFANA_ALERT_RULES=CLOSED' \
+  'production observability closure does not record managed alert rules'
+require_literal docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md 'ALERT_NOTIFICATION_DELIVERY=CLOSED' \
+  'production observability closure does not record notification delivery'
+require_literal docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md 'PRODUCTION_OBSERVABILITY_CLOSURE=PASS' \
+  'production observability closure marker is missing'
+
 for release_document in \
   docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md \
   docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md \
   docs/164_RECRUITER_DEMO_SCRIPT.md \
   docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md \
-  docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md
+  docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md \
+  docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md
 do
   grep -F 'REPLACE_WITH_' "$REPOSITORY_ROOT/$release_document" >/dev/null && \
     fail "unresolved release placeholder remains in $release_document"
@@ -209,5 +228,7 @@ if grep -E 'postgres(ql)?://[^[:space:]]+:[^[:space:]]+@[^[:space:]]+\.neon\.tec
   "$REPOSITORY_ROOT/docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md" >/dev/null; then
   fail 'release documentation contains what appears to be a real Neon credential'
 fi
+
+node "$REPOSITORY_ROOT/scripts/verify-documentation-english.mjs"
 
 printf '%s\n' 'RELEASE_PORTFOLIO_CONTRACT=PASS'

@@ -12,64 +12,64 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет все источники данных платформы Global Flight Analytics.
+This document defines all data sources used by the Global Flight Analytics platform.
 
-Документ отвечает на вопросы:
+The document answers:
 
-- откуда берутся данные;
-- какие данные считаются основными;
-- какие данные считаются дополнительными;
-- как часто обновляются данные;
-- каким данным можно доверять;
-- какие ограничения существуют.
+- where the data comes from;
+- which data is considered primary;
+- which data is considered supplementary;
+- how often data is refreshed;
+- which data can be trusted;
+- which limitations exist.
 
 ---
 
 # 2. Data Source Strategy
 
-Проект использует только:
+The project uses only:
 
-- открытые данные;
-- легальные данные;
-- бесплатные данные;
-- общедоступные данные.
+- open data;
+- legally available data;
+- free data;
+- publicly available data.
 
-Проект не использует:
+The project does not use:
 
-- взломанные базы;
-- закрытые авиационные системы;
-- платные корпоративные авиационные данные;
-- данные диспетчерских служб.
+- compromised databases;
+- closed aviation systems;
+- paid corporate aviation data;
+- air traffic control data.
 
 ---
 
 # 3. Source Categories
 
-Источники разделяются на четыре группы.
+Sources are divided into four groups.
 
 ## Category 1
 
 Live Aviation Data
 
-Данные реального времени.
+Real-time data.
 
 ## Category 2
 
 Airport Data
 
-Данные аэропортов.
+Airport data.
 
 ## Category 3
 
 Aircraft Data
 
-Данные самолетов.
+Aircraft data.
 
 ## Category 4
 
 Infrastructure Data
 
-Инфраструктурные данные.
+Infrastructure data.
 
 ---
 
@@ -77,39 +77,39 @@ Infrastructure Data
 
 OpenSky Network
 
-Основной источник данных MVP.
+Primary MVP data source.
 
-Получаем:
+Provides:
 
-- координаты самолета;
-- высоту;
-- скорость;
-- курс;
-- вертикальную скорость;
-- идентификатор ICAO24;
-- позывной;
-- время получения сигнала;
-- статус нахождения на земле.
+- aircraft coordinates;
+- altitude;
+- velocity;
+- heading;
+- vertical rate;
+- ICAO24 identifier;
+- callsign;
+- signal timestamp;
+- on-ground status.
 
-Не получаем:
+Does not provide:
 
-- пассажиров;
-- стоимость билетов;
-- загрузку самолета;
-- коммерческие данные авиакомпании;
-- официальный план полета.
+- passenger data;
+- ticket prices;
+- aircraft load;
+- commercial airline data;
+- official flight plans.
 
 ---
 
 # 5. OpenSky Limitations
 
-Необходимо учитывать:
+The following limitations must be considered:
 
-- покрытие неравномерно;
-- над Европой данные лучше;
-- над океанами возможны разрывы;
-- над отдельными регионами самолеты могут временно исчезать;
-- некоторые самолеты содержат неполный набор атрибутов.
+- coverage is uneven;
+- data quality is stronger over Europe;
+- gaps may occur over oceans;
+- aircraft may temporarily disappear over some regions;
+- some aircraft have incomplete attributes.
 
 ---
 
@@ -117,25 +117,25 @@ OpenSky Network
 
 OurAirports
 
-Основной источник данных аэропортов.
+Primary airport data source.
 
-Получаем:
+Provides:
 
-- ICAO код;
-- IATA код;
-- название;
-- координаты;
-- высоту над уровнем моря;
-- тип аэропорта;
-- данные о взлетно-посадочных полосах.
+- ICAO code;
+- IATA code;
+- name;
+- coordinates;
+- elevation;
+- airport type;
+- runway data.
 
-Использование:
+Usage:
 
-Первичная загрузка справочников аэропортов.
+Initial airport reference-data import.
 
-Частота обновления:
+Refresh frequency:
 
-Раз в месяц.
+Monthly.
 
 ---
 
@@ -143,42 +143,42 @@ OurAirports
 
 OpenSky Aircraft Database
 
-Основной источник данных самолетов.
+Primary aircraft data source.
 
-Получаем:
+Provides:
 
 - ICAO24;
-- регистрационный номер;
-- авиакомпанию;
-- страну регистрации;
-- тип самолета.
+- registration number;
+- airline;
+- registration country;
+- aircraft type.
 
-Использование:
+Usage:
 
-Обогащение данных наблюдений OpenSky.
+Enrichment of OpenSky observation data.
 
 ---
 
 # 8. Aircraft Specification Sources
 
-Источники:
+Sources:
 
 - Wikidata;
 - Wikipedia;
-- официальные сайты производителей.
+- official manufacturer websites.
 
-Получаем:
+Provide:
 
-- производителя;
-- модель;
-- вместимость;
-- дальность полета;
-- максимальную скорость;
-- грузоподъемность.
+- manufacturer;
+- model;
+- capacity;
+- range;
+- maximum speed;
+- cargo capacity.
 
-Использование:
+Usage:
 
-Заполнение справочника aircraft_models.
+Populate the aircraft_models reference table.
 
 ---
 
@@ -186,24 +186,24 @@ OpenSky Aircraft Database
 
 OpenStreetMap
 
-Получаем:
+Provides:
 
-- дороги;
-- железнодорожные станции;
-- автобусные остановки;
-- парковки;
-- гостиницы;
-- инфраструктурные объекты.
+- roads;
+- railway stations;
+- bus stops;
+- parking areas;
+- hotels;
+- infrastructure objects.
 
-Использование:
+Usage:
 
-Построение цифрового паспорта аэропорта.
+Build the airport digital profile.
 
-Важно:
+Important:
 
-Во время работы приложения прямые запросы к OpenStreetMap не выполняются.
+The application does not issue direct OpenStreetMap requests during normal operation.
 
-Данные загружаются заранее и сохраняются в PostgreSQL.
+Data is imported in advance and stored in PostgreSQL.
 
 ---
 
@@ -211,12 +211,12 @@ OpenStreetMap
 
 OpenStreetMap
 
-Используется для:
+Used for:
 
-- координат;
-- геометрии объектов;
-- границ регионов;
-- пространственной аналитики.
+- coordinates;
+- object geometry;
+- regional boundaries;
+- spatial analytics.
 
 ---
 
@@ -226,76 +226,76 @@ Wikipedia
 
 Wikidata
 
-Используются для:
+Used for:
 
-- истории аэропортов;
-- описаний объектов;
-- справочной информации;
-- интересных фактов.
+- airport history;
+- object descriptions;
+- reference information;
+- notable facts.
 
 ---
 
 # 12. Data Trust Levels
 
-Каждый источник получает уровень доверия.
+Every source receives a trust level.
 
 ## HIGH
 
-Очень высокая достоверность.
+Very high reliability.
 
-Примеры:
+Examples:
 
-- координаты OpenSky;
-- ICAO код;
-- IATA код;
-- координаты аэропортов.
+- OpenSky coordinates;
+- ICAO code;
+- IATA code;
+- airport coordinates.
 
 ## MEDIUM
 
-Достаточная достоверность.
+Sufficient reliability.
 
-Примеры:
+Examples:
 
-- авиакомпания;
-- модель самолета;
-- регистрационный номер.
+- airline;
+- aircraft model;
+- registration number.
 
 ## LOW
 
-Предположительные данные.
+Estimated data.
 
-Примеры:
+Examples:
 
-- вероятный маршрут;
-- предполагаемый аэропорт назначения;
-- аналитические прогнозы.
+- probable route;
+- inferred destination airport;
+- analytical forecasts.
 
 ---
 
 # 13. Derived Data
 
-Часть данных рассчитывается системой.
+Some data is calculated by the system.
 
-Пример:
+Example:
 
 Route Prediction.
 
-Система определяет:
+The system determines:
 
 - High
 - Medium
 - Low
 
-На основании:
+Based on:
 
-- курса;
-- скорости;
-- высоты;
-- положения самолета;
-- расстояния до аэропортов;
-- истории наблюдений.
+- heading;
+- velocity;
+- altitude;
+- aircraft position;
+- distance to airports;
+- observation history.
 
-Все вычисленные данные должны содержать:
+All computed data must contain:
 
 - confidence_level;
 - data_source;
@@ -307,67 +307,67 @@ Route Prediction.
 
 OpenSky
 
-Каждые 15–30 секунд.
+Every 15–30 seconds.
 
 ---
 
 OurAirports
 
-Раз в месяц.
+Monthly.
 
 ---
 
 OpenSky Aircraft Database
 
-Раз в месяц.
+Monthly.
 
 ---
 
 OpenStreetMap
 
-Раз в неделю.
+Weekly.
 
 ---
 
 Wikipedia
 
-По необходимости.
+On demand.
 
 ---
 
 Wikidata
 
-По необходимости.
+On demand.
 
 ---
 
 # 15. Unsupported Data
 
-Платформа не показывает как факт:
+The platform does not present the following as fact:
 
-- количество пассажиров;
-- количество багажа;
-- стоимость билета;
-- стоимость бизнес-класса;
-- внутренние данные авиакомпании;
-- данные диспетчерских систем;
-- планы полетов.
+- passenger count;
+- baggage count;
+- ticket price;
+- business-class price;
+- internal airline data;
+- air traffic control data;
+- flight plans.
 
-Если подобные данные появятся в будущем, они должны быть явно помечены как оценочные.
+If such data appears in the future, it must be labeled explicitly as estimated.
 
 ---
 
 # 16. Data Ownership
 
-Платформа не владеет исходными данными.
+The platform does not own the source data.
 
-Платформа владеет:
+The platform owns:
 
-- структурой данных;
-- агрегированной статистикой;
-- историческими снимками;
-- аналитическими представлениями;
-- алгоритмами вычисления маршрутов.
+- the data structure;
+- aggregated statistics;
+- historical snapshots;
+- analytical representations;
+- route-calculation algorithms.
 
 ---
 
@@ -386,7 +386,7 @@ Wikidata
 
 # 18. Summary
 
-Основные источники платформы:
+Primary platform sources:
 
 - OpenSky Network
 - OurAirports
@@ -395,4 +395,4 @@ Wikidata
 - Wikidata
 - Wikipedia
 
-Данного набора источников достаточно для создания полноценной платформы анализа и визуализации воздушного движения без использования платных авиационных сервисов.
+This source set is sufficient to build a complete air-traffic analysis and visualization platform without paid aviation services.

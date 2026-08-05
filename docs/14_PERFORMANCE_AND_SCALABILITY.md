@@ -12,40 +12,40 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет требования к производительности, масштабируемости и устойчивости платформы Global Flight Analytics.
+This document defines the performance, scalability, and resilience requirements for the Global Flight Analytics platform.
 
-Документ устанавливает:
+The document establishes:
 
-- целевые показатели производительности;
-- ограничения MVP;
-- стратегию масштабирования;
-- допустимые нагрузки;
-- правила оптимизации.
+- performance targets;
+- MVP constraints;
+- the scaling strategy;
+- acceptable workloads;
+- optimization rules.
 
 ---
 
 # 2. MVP Scope
 
-Целевой регион MVP:
+Target MVP region:
 
 ```text
-Кавказ
+Caucasus
 ```
 
 ---
 
-Основные аэропорты:
+Primary airports:
 
-- Баку;
-- Тбилиси;
-- Ереван;
-- Стамбул.
+- Baku;
+- Tbilisi;
+- Yerevan;
+- Istanbul.
 
 ---
 
-Основная цель MVP:
+Primary MVP objective:
 
-Проверка архитектуры и пользовательского интереса без дорогостоящей инфраструктуры.
+Validate the architecture and user interest without expensive infrastructure.
 
 ---
 
@@ -53,67 +53,67 @@ Status: Approved
 
 ## Home Page
 
-Время полной загрузки:
+Complete load time:
 
 ```text
-до 2 секунд
+up to 2 seconds
 ```
 
 ---
 
 ## Live Map
 
-Первичное отображение карты:
+Initial map rendering:
 
 ```text
-до 3 секунд
+up to 3 seconds
 ```
 
 ---
 
 ## Airport Profile
 
-Полная загрузка страницы:
+Complete page load:
 
 ```text
-до 1 секунды
+up to 1 second
 ```
 
 ---
 
 ## Aircraft Profile
 
-Полная загрузка страницы:
+Complete page load:
 
 ```text
-до 1 секунды
+up to 1 second
 ```
 
 ---
 
 # 4. Backend Performance Targets
 
-Среднее время ответа:
+Average response time:
 
 ```text
-до 300 миллисекунд
+up to 300 milliseconds
 ```
 
 ---
 
-Максимальное время ответа:
+Maximum response time:
 
 ```text
-до 1000 миллисекунд
+up to 1000 milliseconds
 ```
 
 ---
 
-Целевой показатель:
+Target:
 
 ```text
-95% запросов
-менее 500 миллисекунд
+95% of requests
+below 500 milliseconds
 ```
 
 ---
@@ -123,7 +123,7 @@ Status: Approved
 ## Airport Lookup
 
 ```text
-до 100 миллисекунд
+up to 100 milliseconds
 ```
 
 ---
@@ -131,7 +131,7 @@ Status: Approved
 ## Aircraft Lookup
 
 ```text
-до 100 миллисекунд
+up to 100 milliseconds
 ```
 
 ---
@@ -139,44 +139,44 @@ Status: Approved
 ## Statistics Queries
 
 ```text
-до 500 миллисекунд
+up to 500 milliseconds
 ```
 
 ---
 
-Все критические поля должны индексироваться.
+All critical fields must be indexed.
 
 ---
 
 # 6. Frontend Performance Targets
 
-Требования:
+Requirements:
 
-- минимальное количество повторных рендеров;
-- минимальное количество запросов;
-- использование кэширования;
-- использование ленивой загрузки страниц.
+- minimize repeated renders;
+- minimize the number of requests;
+- use caching;
+- use lazy page loading.
 
 ---
 
 # 7. API Optimization Strategy
 
-Используются:
+The platform uses:
 
-- агрегированные DTO;
-- серверная агрегация данных;
-- пагинация;
-- ограничение объема ответа.
+- aggregated DTOs;
+- server-side data aggregation;
+- pagination;
+- response-size limits.
 
 ---
 
-Frontend не должен самостоятельно объединять несколько источников данных.
+The Frontend must not combine multiple data sources by itself.
 
 ---
 
 # 8. Map Rendering
 
-Используется:
+The platform uses:
 
 ```text
 MapLibre
@@ -184,17 +184,17 @@ MapLibre
 
 ---
 
-Причины:
+Reasons:
 
 - WebGL;
-- высокая производительность;
-- поддержка большого количества объектов.
+- high performance;
+- support for large numbers of objects.
 
 ---
 
 # 9. Memory Strategy
 
-Текущие состояния самолетов хранятся в памяти Backend.
+Current aircraft states are stored in Backend memory.
 
 ---
 
@@ -206,30 +206,30 @@ sync.Map
 
 ---
 
-Назначение:
+Purpose:
 
-- быстрое получение состояния самолета;
-- снижение нагрузки на PostgreSQL;
-- работа Live Map.
+- fast aircraft-state lookup;
+- reduced PostgreSQL load;
+- Live Map operation.
 
 ---
 
 # 10. Data Retention Strategy
 
-В PostgreSQL не сохраняются все координаты каждого самолета.
+PostgreSQL does not persist every coordinate for every aircraft.
 
 ---
 
-Сохраняются:
+The platform persists:
 
-- агрегаты;
-- статистика;
-- снимки состояния;
-- аналитические данные.
+- aggregates;
+- statistics;
+- state snapshots;
+- analytical data.
 
 ---
 
-Это ограничивает рост базы данных.
+This limits database growth.
 
 ---
 
@@ -237,77 +237,77 @@ sync.Map
 
 ## Stage 1
 
-Кавказ.
+Caucasus.
 
 ---
 
 ## Stage 2
 
-Кавказ и Турция.
+Caucasus and Turkey.
 
 ---
 
 ## Stage 3
 
-Европа.
+Europe.
 
 ---
 
 ## Stage 4
 
-Глобальное покрытие.
+Global coverage.
 
 ---
 
 # 12. Future Scaling Options
 
-При подтвержденной нагрузке допускается внедрение:
+After workload evidence is available, the following components may be introduced:
 
 - Redis;
 - Object Storage;
 - Dedicated Server;
-- CDN для аналитических данных.
+- CDN for analytical data.
 
 ---
 
-Данные компоненты не используются в MVP.
+These components are not used in the MVP.
 
 ---
 
 # 13. Bottlenecks
 
-Потенциальные узкие места:
+Potential bottlenecks:
 
-- ограничения OpenSky;
-- память Backend;
-- визуализация большого количества объектов;
-- тяжелые аналитические запросы.
+- OpenSky limitations;
+- Backend memory;
+- rendering large numbers of objects;
+- expensive analytical queries.
 
 ---
 
 # 14. Optimization Strategy
 
-Основные методы оптимизации:
+Primary optimization methods:
 
-- кэширование;
-- агрегирование;
-- предварительные расчеты;
-- индексация базы данных;
-- ограничение региона наблюдения.
+- caching;
+- aggregation;
+- precomputation;
+- database indexing;
+- limiting the observation region.
 
 ---
 
 # 15. Success Metrics
 
-Платформа должна корректно работать на:
+The platform must operate correctly on:
 
-- ноутбуках;
-- планшетах;
-- мобильных устройствах.
+- laptops;
+- tablets;
+- mobile devices.
 
 ---
 
-Поддерживаемые браузеры:
+Supported browsers:
 
 - Chrome;
 - Safari;
@@ -318,39 +318,39 @@ sync.Map
 
 # 16. Cost-Aware Scaling
 
-Масштабирование не должно приводить к резкому росту расходов.
+Scaling must not cause a sudden increase in costs.
 
 ---
 
-Каждый новый компонент инфраструктуры должен иметь подтвержденное обоснование нагрузки.
+Every new infrastructure component must have a workload-based justification.
 
 ---
 
 # 17. Scalability Boundaries
 
-В MVP не используются:
+The MVP does not use:
 
 - Kubernetes;
 - Kafka;
 - RabbitMQ;
-- распределенные кластеры;
-- отдельные аналитические серверы.
+- distributed clusters;
+- dedicated analytical servers.
 
 ---
 
-Усложнение архитектуры допускается только после появления реальной потребности.
+Architectural complexity is allowed only after a real need appears.
 
 ---
 
 # 18. Summary
 
-Производительность платформы достигается за счет:
+Platform performance is achieved through:
 
 - Go;
 - PostgreSQL;
 - MapLibre;
 - TanStack Query;
-- кэширования в памяти;
-- серверной агрегации данных.
+- in-memory caching;
+- server-side data aggregation.
 
-Архитектура позволяет обслуживать MVP на бесплатной инфраструктуре и постепенно масштабироваться до регионального и международного покрытия.
+The architecture allows the MVP to operate on free infrastructure and scale gradually toward regional and international coverage.

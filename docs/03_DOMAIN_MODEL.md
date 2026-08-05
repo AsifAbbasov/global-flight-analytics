@@ -12,39 +12,39 @@ Status: Approved
 
 # 1. Purpose
 
-Документ описывает предметную область системы.
+This document describes the system domain.
 
-Цель документа:
+The document aims to:
 
-- определить основные сущности;
-- определить связи между сущностями;
-- определить бизнес-смысл каждой сущности;
-- создать основу для проектирования базы данных и API.
+- define core entities;
+- define relationships between entities;
+- define the business meaning of each entity;
+- establish a foundation for database and API design.
 
 ---
 
 # 2. Domain Overview
 
-Платформа строится вокруг наблюдения за воздушным движением.
+The platform is built around air-traffic observation.
 
-Основные объекты системы:
+Primary system objects:
 
-- самолеты;
-- авиакомпании;
-- аэропорты;
-- рейсы;
-- состояния рейсов;
-- маршруты;
-- регионы;
-- инфраструктура аэропортов.
+- aircraft;
+- airlines;
+- airports;
+- flights;
+- flight states;
+- routes;
+- regions;
+- airport infrastructure.
 
 ---
 
 # 3. Aircraft
 
-Воздушное судно.
+A physical aircraft.
 
-Представляет конкретный физический самолет.
+Represents one specific aircraft.
 
 ## Data Category
 
@@ -52,9 +52,9 @@ Enriched Data
 
 ## Business Meaning
 
-Самолет является главным объектом наблюдения.
+Aircraft is the primary observation object.
 
-Через самолет пользователь получает доступ ко всей связанной информации.
+Through an aircraft, the user accesses all related information.
 
 ## Examples
 
@@ -86,7 +86,7 @@ Aircraft
 
 # 4. Aircraft Model
 
-Тип самолета.
+An aircraft type.
 
 ## Data Category
 
@@ -94,7 +94,7 @@ Enriched Data
 
 ## Business Meaning
 
-Описывает технические характеристики модели.
+Describes technical characteristics of an aircraft model.
 
 ## Examples
 
@@ -121,7 +121,7 @@ AircraftModel
 
 # 5. Airline
 
-Авиакомпания.
+An airline.
 
 ## Data Category
 
@@ -129,7 +129,7 @@ Enriched Data
 
 ## Business Meaning
 
-Эксплуатирует самолеты.
+Operates aircraft.
 
 ## Examples
 
@@ -157,7 +157,7 @@ Airline
 
 # 6. Airport
 
-Аэропорт.
+An airport.
 
 ## Data Category
 
@@ -165,7 +165,7 @@ Enriched Data
 
 ## Business Meaning
 
-Узел воздушного движения.
+An air-traffic hub.
 
 ## Examples
 
@@ -197,7 +197,7 @@ Airport
 
 # 7. Runway
 
-Взлетно-посадочная полоса.
+An airport runway.
 
 ## Data Category
 
@@ -205,7 +205,7 @@ Enriched Data
 
 ## Business Meaning
 
-Инфраструктурный объект аэропорта.
+An airport infrastructure object.
 
 ## Core Attributes
 
@@ -224,7 +224,7 @@ Runway
 
 # 8. Airport Facility
 
-Объект инфраструктуры аэропорта.
+An airport infrastructure object.
 
 ## Data Category
 
@@ -232,7 +232,7 @@ Enriched Data
 
 ## Business Meaning
 
-Помогает формировать цифровой паспорт аэропорта.
+Contributes to the airport digital profile.
 
 ## Examples
 
@@ -258,7 +258,7 @@ AirportFacility
 
 # 9. Flight
 
-Наблюдаемый полет самолета.
+An observed aircraft flight.
 
 ## Data Category
 
@@ -266,13 +266,13 @@ Real Data
 
 ## Business Meaning
 
-Представляет факт выполнения полета конкретным самолетом.
+Represents an observed flight performed by a specific aircraft.
 
 ## Important
 
-Flight не равен Aircraft.
+Flight is not the same as Aircraft.
 
-Один самолет выполняет множество рейсов.
+One aircraft performs many flights.
 
 ## Core Attributes
 
@@ -295,7 +295,7 @@ Flight
 
 # 10. Flight State
 
-Снимок состояния полета в конкретный момент времени.
+A snapshot of a flight state at a specific time.
 
 ## Data Category
 
@@ -303,9 +303,9 @@ Real Data
 
 ## Business Meaning
 
-Является наблюдением, полученным из OpenSky.
+An observation received from OpenSky.
 
-Используется для построения истории полета и аналитики.
+Used to construct flight history and analytics.
 
 ## Core Attributes
 
@@ -326,7 +326,7 @@ FlightState
 
 # 11. Route
 
-Маршрут между двумя аэропортами.
+A route between two airports.
 
 ## Data Category
 
@@ -334,7 +334,7 @@ Inferred Data
 
 ## Business Meaning
 
-Является вычисляемой сущностью.
+A computed entity.
 
 ## Core Attributes
 
@@ -354,7 +354,7 @@ Route
 
 # 12. Region
 
-Географический регион.
+A geographic region.
 
 ## Data Category
 
@@ -362,7 +362,7 @@ Enriched Data
 
 ## Business Meaning
 
-Используется для аналитики воздушного движения.
+Used for air-traffic analytics.
 
 ## Examples
 
@@ -388,7 +388,7 @@ Region
 
 # 13. Traffic Snapshot
 
-Снимок воздушного движения.
+An air-traffic snapshot.
 
 ## Data Category
 
@@ -396,7 +396,7 @@ Statistical Data
 
 ## Business Meaning
 
-Используется для статистики и исторического анализа.
+Used for statistics and historical analysis.
 
 ## Core Attributes
 
@@ -416,7 +416,7 @@ TrafficSnapshot
 
 # 14. Airport Profile
 
-Цифровой паспорт аэропорта.
+An airport digital profile.
 
 ## Data Category
 
@@ -424,34 +424,34 @@ Aggregated View
 
 ## Business Meaning
 
-Агрегирует всю информацию об аэропорте.
+Aggregates all airport information.
 
 ## Contains
 
 ### Static Information
 
-- название;
-- местоположение;
-- история;
-- описание.
+- name;
+- location;
+- history;
+- description.
 
 ### Infrastructure
 
-- полосы;
-- терминалы;
-- транспорт.
+- runways;
+- terminals;
+- transport.
 
 ### Statistics
 
-- пассажиропоток;
-- грузопоток;
-- маршруты.
+- passenger traffic;
+- cargo traffic;
+- routes.
 
 ---
 
 # 15. Aircraft Profile
 
-Расширенное описание самолета.
+An extended aircraft description.
 
 ## Data Category
 
@@ -459,32 +459,32 @@ Aggregated View
 
 ## Business Meaning
 
-Объединяет данные из нескольких доменных сущностей.
+Combines data from several domain entities.
 
 ## Contains
 
 ### Aircraft Information
 
-- регистрация;
-- модель;
-- производитель.
+- registration;
+- model;
+- manufacturer.
 
 ### Flight Information
 
-- скорость;
-- высота;
-- направление.
+- velocity;
+- altitude;
+- direction.
 
 ### Route Information
 
-- предполагаемый маршрут;
-- уровень уверенности.
+- inferred route;
+- confidence level.
 
 ---
 
 # 16. Air Traffic Intelligence
 
-Модуль аналитики воздушного движения.
+The air-traffic analytics module.
 
 ## Data Category
 
@@ -492,33 +492,33 @@ Statistical Data
 
 ## Purpose
 
-Понимание поведения воздушного пространства.
+Understand airspace behavior.
 
 ## Metrics
 
-- количество рейсов;
-- активные аэропорты;
-- активные маршруты;
-- плотность трафика;
-- динамика изменений.
+- number of flights;
+- active airports;
+- active routes;
+- traffic density;
+- change dynamics.
 
 ---
 
 # 17. Confidence Level
 
-Уровень уверенности вычислений.
+The confidence level of a calculation.
 
 ## High
 
-Маршрут подтвержден несколькими признаками.
+The route is supported by several indicators.
 
 ## Medium
 
-Маршрут вероятен.
+The route is probable.
 
 ## Low
 
-Недостаточно данных.
+Insufficient data is available.
 
 ---
 
@@ -526,31 +526,31 @@ Statistical Data
 
 ## Rule 1
 
-Один Aircraft может выполнять множество Flight.
+One Aircraft can perform many Flights.
 
 ## Rule 2
 
-Каждый Flight принадлежит только одному Aircraft.
+Each Flight belongs to only one Aircraft.
 
 ## Rule 3
 
-Один Flight содержит множество Flight State.
+One Flight contains many Flight States.
 
 ## Rule 4
 
-Route является вычисляемой сущностью.
+Route is a computed entity.
 
 ## Rule 5
 
-Airport является независимой справочной сущностью.
+Airport is an independent reference entity.
 
 ## Rule 6
 
-Region используется только для аналитики.
+Region is used only for analytics.
 
 ## Rule 7
 
-Система обязана разделять:
+The system must distinguish:
 
 - Real Data
 - Enriched Data
@@ -561,35 +561,35 @@ Region используется только для аналитики.
 
 # 19. Data Provenance Rules
 
-Каждая сущность системы должна принадлежать одной категории данных.
+Every system entity must belong to one data category.
 
-Допускаются категории:
+Allowed categories:
 
 - Real Data
 - Enriched Data
 - Inferred Data
 - Statistical Data
 
-Смешивание категорий внутри одной доменной сущности запрещено.
+Mixing categories inside one domain entity is prohibited.
 
 ---
 
 # 20. Domain Boundaries
 
-Система работает только с открытыми авиационными данными.
+The system works only with open aviation data.
 
-Система не хранит:
+The system does not store:
 
-- планы полетов диспетчеров;
-- внутренние данные авиакомпаний;
-- данные управления воздушным движением;
-- закрытые авиационные данные.
+- air traffic controller flight plans;
+- internal airline data;
+- air traffic control data;
+- closed aviation data.
 
 ---
 
 # 21. Domain Summary
 
-Главные сущности системы:
+Primary system entities:
 
 Aircraft
 
@@ -613,4 +613,4 @@ Region
 
 TrafficSnapshot
 
-Все остальные модули строятся вокруг этих объектов.
+All other modules are built around these objects.

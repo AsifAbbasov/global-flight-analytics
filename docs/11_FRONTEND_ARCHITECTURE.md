@@ -12,16 +12,16 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет архитектуру Frontend-приложения платформы Global Flight Analytics.
+This document defines the architecture of the Global Flight Analytics Frontend application.
 
-Документ описывает:
+The document describes:
 
-- структуру приложения;
-- маршрутизацию;
-- загрузку данных;
-- управление состоянием;
-- архитектуру карты;
-- взаимодействие с Backend API.
+- application structure;
+- routing;
+- data loading;
+- state management;
+- map architecture;
+- Backend API integration.
 
 ---
 
@@ -61,11 +61,11 @@ Styling:
 
 ## API First
 
-Frontend получает данные только через Backend API.
+The Frontend receives data only through the Backend API.
 
 ---
 
-Frontend не обращается напрямую к:
+The Frontend does not access the following sources directly:
 
 - OpenSky;
 - OurAirports;
@@ -76,19 +76,19 @@ Frontend не обращается напрямую к:
 
 ## Mobile First
 
-Все экраны проектируются для мобильных устройств в первую очередь.
+All screens are designed for mobile devices first.
 
 ---
 
 ## Data First
 
-Основная ценность интерфейса заключается в визуализации данных и аналитики.
+The primary value of the interface is data and analytics visualization.
 
 ---
 
 # 4. Routing Structure
 
-Основные маршруты:
+Primary routes:
 
 ```text
 /
@@ -112,91 +112,91 @@ Frontend не обращается напрямую к:
 
 ## Home
 
-Содержит:
+Contains:
 
-- описание проекта;
-- карту активности;
-- быстрый поиск;
-- основные показатели системы.
+- project description;
+- activity map;
+- quick search;
+- primary system metrics.
 
 ---
 
 ## Live Map
 
-Основной экран платформы.
+The primary platform screen.
 
 ---
 
-Отображает:
+Displays:
 
-- самолеты;
-- аэропорты;
-- маршруты;
-- воздушный трафик.
+- aircraft;
+- airports;
+- routes;
+- air traffic.
 
 ---
 
 ## Aircraft Page
 
-Показывает:
+Displays:
 
-- самолет;
-- авиакомпанию;
-- модель;
-- маршрут;
-- параметры полета.
+- aircraft;
+- airline;
+- model;
+- route;
+- flight parameters.
 
 ---
 
 ## Airport Page
 
-Показывает:
+Displays:
 
-- цифровой паспорт аэропорта;
-- статистику;
-- инфраструктуру;
-- маршруты.
+- airport digital profile;
+- statistics;
+- infrastructure;
+- routes.
 
 ---
 
 ## Analytics Page
 
-Показывает:
+Displays:
 
-- графики;
-- тепловые карты;
-- статистику;
-- сравнительный анализ.
+- charts;
+- heat maps;
+- statistics;
+- comparative analysis.
 
 ---
 
 ## Replay Page
 
-Показывает:
+Displays:
 
-- историческое состояние воздушного пространства.
+- historical airspace state.
 
 ---
 
 ## About Page
 
-Содержит:
+Contains:
 
-- описание проекта;
-- используемые источники данных;
-- ограничения платформы.
+- project description;
+- data sources;
+- platform limitations.
 
 ---
 
 # 6. State Management Strategy
 
-Frontend использует два уровня состояния.
+The Frontend uses two state levels.
 
 ---
 
 ## Server State
 
-Используется:
+Uses:
 
 ```text
 TanStack Query
@@ -204,18 +204,18 @@ TanStack Query
 
 ---
 
-Назначение:
+Purpose:
 
-- получение данных;
-- кэширование данных;
-- обновление данных;
-- синхронизация с Backend.
+- retrieve data;
+- cache data;
+- refresh data;
+- synchronize with the Backend.
 
 ---
 
 ## Client State
 
-Используется:
+Uses:
 
 ```text
 React State
@@ -223,80 +223,80 @@ React State
 
 ---
 
-Назначение:
+Purpose:
 
-- состояние интерфейса;
-- фильтры;
-- модальные окна;
-- локальные настройки.
+- interface state;
+- filters;
+- modal windows;
+- local settings.
 
 ---
 
-Redux в MVP не используется.
+Redux is not used in the MVP.
 
 ---
 
 # 7. Feature Modules
 
-Frontend разделяется на модули.
+The Frontend is divided into modules.
 
 ---
 
 ## Map Module
 
-Отвечает за:
+Responsible for:
 
-- карту;
-- отображение самолетов;
-- отображение аэропортов.
+- map;
+- aircraft rendering;
+- airport rendering.
 
 ---
 
 ## Aircraft Module
 
-Отвечает за:
+Responsible for:
 
-- карточку самолета;
-- параметры полета;
-- маршрут.
+- aircraft card;
+- flight parameters;
+- route.
 
 ---
 
 ## Airport Module
 
-Отвечает за:
+Responsible for:
 
-- цифровой паспорт аэропорта;
-- инфраструктуру;
-- статистику.
+- airport digital profile;
+- infrastructure;
+- statistics.
 
 ---
 
 ## Analytics Module
 
-Отвечает за:
+Responsible for:
 
-- графики;
-- тепловые карты;
-- аналитические панели.
+- charts;
+- heat maps;
+- analytical panels.
 
 ---
 
 ## Replay Module
 
-Отвечает за:
+Responsible for:
 
-- историческое воспроизведение.
+- historical replay.
 
 ---
 
 ## Search Module
 
-Отвечает за:
+Responsible for:
 
-- поиск;
-- автодополнение;
-- навигацию по объектам.
+- search;
+- autocomplete;
+- object navigation.
 
 ---
 
@@ -318,7 +318,7 @@ shared/
 
 ---
 
-Детализация:
+Detailed structure:
 
 ```text
 src
@@ -352,43 +352,43 @@ shared
 
 ## Map Widget
 
-Основной виджет карты.
+Primary map widget.
 
 ---
 
 ## Aircraft Card
 
-Карточка самолета.
+Aircraft card.
 
 ---
 
 ## Airport Card
 
-Карточка аэропорта.
+Airport card.
 
 ---
 
 ## Analytics Charts
 
-Набор графиков.
+Chart collection.
 
 ---
 
 ## Replay Controls
 
-Управление воспроизведением.
+Replay controls.
 
 ---
 
 ## Search Widget
 
-Глобальный поиск.
+Global search.
 
 ---
 
 # 10. Map Architecture
 
-Для MVP используется только:
+The MVP uses only:
 
 ```text
 MapLibre
@@ -396,7 +396,7 @@ MapLibre
 
 ---
 
-Не используются:
+The MVP does not use:
 
 - Leaflet;
 - Google Maps;
@@ -404,13 +404,13 @@ MapLibre
 
 ---
 
-MapLibre является единственным картографическим движком MVP.
+MapLibre is the only mapping engine used by the MVP.
 
 ---
 
 # 11. Data Loading
 
-Используется:
+Uses:
 
 ```text
 TanStack Query
@@ -418,21 +418,21 @@ TanStack Query
 
 ---
 
-Каждый экран отвечает за собственную загрузку данных.
+Every screen manages its own data loading.
 
 ---
 
-Предпочитаются агрегированные Backend DTO.
+Aggregated Backend DTOs are preferred.
 
 ---
 
-Frontend не должен собирать данные из нескольких внешних источников.
+The Frontend must not combine data from several external sources.
 
 ---
 
 # 12. API Integration Rules
 
-Frontend работает исключительно через:
+The Frontend communicates exclusively through:
 
 ```text
 /api/v1/*
@@ -440,7 +440,7 @@ Frontend работает исключительно через:
 
 ---
 
-Контракт определяется документом:
+The contract is defined by:
 
 ```text
 10_API_SPECIFICATION.md
@@ -448,32 +448,32 @@ Frontend работает исключительно через:
 
 ---
 
-Любое изменение API требует обновления контрактов.
+Every API change requires contract updates.
 
 ---
 
 # 13. Performance Rules
 
-Требования:
+Requirements:
 
-- минимизировать количество запросов;
-- использовать кэширование TanStack Query;
-- использовать ленивую загрузку страниц;
-- избегать лишних повторных запросов.
+- minimize the number of requests;
+- use TanStack Query caching;
+- use lazy page loading;
+- avoid unnecessary repeated requests.
 
 ---
 
-Предпочтение отдается агрегированным Backend DTO.
+Aggregated Backend DTOs are preferred.
 
 ---
 
 # 14. Mobile Support
 
-Поддержка мобильных устройств обязательна.
+Mobile-device support is mandatory.
 
 ---
 
-Минимальная ширина:
+Minimum width:
 
 ```text
 320px
@@ -481,24 +481,24 @@ Frontend работает исключительно через:
 
 ---
 
-Основные сценарии должны работать на мобильных устройствах без ограничений.
+Primary workflows must operate on mobile devices without restrictions.
 
 ---
 
 # 15. Future Extensions
 
-После MVP допускается добавление:
+After the MVP, the following may be added:
 
-- темной темы;
-- пользовательских настроек;
-- сохраненных фильтров;
-- избранных аэропортов;
-- избранных самолетов.
+- dark theme;
+- user settings;
+- saved filters;
+- favorite airports;
+- favorite aircraft.
 
 ---
 
 # 16. Summary
 
-Frontend является слоем визуализации авиационных данных и аналитики.
+The Frontend is the aviation-data and analytics visualization layer.
 
-Он получает данные исключительно через Backend API и предоставляет пользователю инструменты исследования воздушного пространства, аэропортов, маршрутов и воздушного движения.
+It receives data exclusively through the Backend API and provides users with tools for exploring airspace, airports, routes, and air traffic.

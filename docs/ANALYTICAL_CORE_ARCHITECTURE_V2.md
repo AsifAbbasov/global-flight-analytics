@@ -1,30 +1,30 @@
 # Analytical Core Architecture V2
 
-## Цель
+## Goal
 
-Построить аналитическое ядро, которое позволяет добавлять новые метрики без изменения существующей архитектуры.
-
----
-
-## Принципы
-
-- Один пакет — одна ответственность.
-- Минимальная связанность.
-- Максимальная расширяемость.
-- Домен не зависит от HTTP.
-- Домен не зависит от PostgreSQL.
-- Домен не зависит от внешних поставщиков данных.
-- Все вычисления детерминированы.
+Build an analytical core that allows new metrics to be added without changing the existing architecture.
 
 ---
 
-## Основные сущности
+## Principles
+
+- One package has one responsibility.
+- Minimal coupling.
+- Maximum extensibility.
+- The domain does not depend on HTTP.
+- The domain does not depend on PostgreSQL.
+- The domain does not depend on external data providers.
+- All calculations are deterministic.
+
+---
+
+## Core Entities
 
 ### Metric
 
-Единица аналитики.
+One unit of analytics.
 
-Примеры:
+Examples:
 
 - Active Aircraft
 - Traffic Density
@@ -38,15 +38,15 @@
 
 ### Snapshot
 
-Полное вычисленное состояние аналитики в определённый момент времени.
+The complete calculated analytical state at a specific point in time.
 
 ---
 
 ### Time Window
 
-Интервал вычисления.
+The calculation interval.
 
-Примеры:
+Examples:
 
 - Now
 - 5 minutes
@@ -58,29 +58,29 @@
 
 ### Calculator
 
-Компонент, вычисляющий одну конкретную метрику.
+A component that calculates one specific metric.
 
 ---
 
 ### Aggregation
 
-Объединяет результаты Calculator в Snapshot.
+Combines Calculator results into a Snapshot.
 
 ---
 
 ### Projection
 
-Модель данных для Frontend.
+A data model for the Frontend.
 
 ---
 
 ### Query
 
-Описание требуемых данных без вычислений.
+A description of required data without calculations.
 
 ---
 
-## Зависимости
+## Dependencies
 
 Frontend
 
@@ -104,50 +104,50 @@ Repository
 
 Database
 
-Обратные зависимости запрещены.
+Reverse dependencies are prohibited.
 
 ---
 
-## Правила
+## Rules
 
 Calculator:
 
-- не знает HTTP;
-- не знает PostgreSQL;
-- не знает JSON;
-- получает данные;
-- возвращает результат.
+- does not know HTTP;
+- does not know PostgreSQL;
+- does not know JSON;
+- receives data;
+- returns a result.
 
 Repository:
 
-- только получает данные;
-- ничего не вычисляет.
+- only retrieves data;
+- performs no calculations.
 
 Projection:
 
-- не содержит бизнес-логики.
+- contains no business logic.
 
 ---
 
-## Добавление новой метрики
+## Adding a New Metric
 
-Допускается изменение только:
+Only the following additions are allowed:
 
-- нового Calculator;
-- регистрации Calculator;
-- тестов.
+- a new Calculator;
+- Calculator registration;
+- tests.
 
-Существующие Calculator изменяться не должны.
+Existing Calculator implementations must not be changed.
 
 ---
 
-## План разработки
+## Development Plan
 
-### Этап 1
+### Stage 1
 
 Analytical Core Foundation
 
-### Этап 2
+### Stage 2
 
 Traffic Metrics
 
@@ -157,18 +157,18 @@ Traffic Metrics
 - Data Freshness
 - Coverage Score
 
-### Этап 3
+### Stage 3
 
 Airport Intelligence
 
-### Этап 4
+### Stage 4
 
 Route Intelligence
 
-### Этап 5
+### Stage 5
 
 Airspace Intelligence
 
-### Этап 6
+### Stage 6
 
 Frontend Integration

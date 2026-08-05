@@ -12,14 +12,14 @@ Status: Approved
 
 # 1. Purpose
 
-Документ фиксирует ключевые технические решения проекта.
+This document records the project's key technical decisions.
 
-Документ отвечает на вопросы:
+The document answers:
 
-- какое решение принято;
-- почему оно принято;
-- какие альтернативы рассматривались;
-- какие последствия имеет решение.
+- which decision was made;
+- why it was made;
+- which alternatives were considered;
+- which consequences the decision creates.
 
 ---
 
@@ -27,7 +27,7 @@ Status: Approved
 
 ## Decision
 
-Использовать Next.js.
+Use Next.js.
 
 ---
 
@@ -47,18 +47,18 @@ Accepted
 
 ## Why
 
-- зрелость экосистемы;
-- отличная поддержка TypeScript;
-- удобный деплой;
-- хорошая производительность;
-- возможность дальнейшего использования Server Components.
+- mature ecosystem;
+- excellent TypeScript support;
+- convenient deployment;
+- strong performance;
+- future use of Server Components.
 
 ---
 
 ## Consequences
 
-- привязка к экосистеме Next.js;
-- упрощение развертывания на Vercel.
+- dependency on the Next.js ecosystem;
+- simplified Vercel deployment.
 
 ---
 
@@ -66,7 +66,7 @@ Accepted
 
 ## Decision
 
-Использовать TypeScript.
+Use TypeScript.
 
 ---
 
@@ -84,17 +84,17 @@ Accepted
 
 ## Why
 
-- типизация;
-- безопасность изменений;
-- масштабируемость;
-- удобство рефакторинга.
+- static typing;
+- safer changes;
+- scalability;
+- convenient refactoring.
 
 ---
 
 ## Consequences
 
-- небольшое увеличение сложности разработки;
-- значительное снижение количества ошибок.
+- a small increase in development complexity;
+- a significant reduction in errors.
 
 ---
 
@@ -102,7 +102,7 @@ Accepted
 
 ## Decision
 
-Использовать Go.
+Use Go.
 
 ---
 
@@ -122,17 +122,17 @@ Accepted
 
 ## Why
 
-- высокая производительность;
-- низкое потребление памяти;
-- простое развертывание;
-- хорошая работа с сетевыми сервисами.
+- high performance;
+- low memory consumption;
+- simple deployment;
+- strong support for network services.
 
 ---
 
 ## Consequences
 
-- более ограниченная экосистема по сравнению с JavaScript;
-- высокий выигрыш по производительности.
+- a more limited ecosystem than JavaScript;
+- substantial performance benefits.
 
 ---
 
@@ -140,7 +140,7 @@ Accepted
 
 ## Decision
 
-Использовать Fiber.
+Use Fiber.
 
 ---
 
@@ -160,16 +160,16 @@ Accepted
 
 ## Why
 
-- высокая производительность;
-- простота;
-- низкие накладные расходы.
+- high performance;
+- simplicity;
+- low overhead.
 
 ---
 
 ## Consequences
 
-- меньшая экосистема по сравнению с Gin;
-- высокая скорость разработки.
+- a smaller ecosystem than Gin;
+- high development speed.
 
 ---
 
@@ -177,7 +177,7 @@ Accepted
 
 ## Decision
 
-Использовать PostgreSQL.
+Use PostgreSQL.
 
 ---
 
@@ -197,17 +197,17 @@ Accepted
 
 ## Why
 
-- зрелость;
-- надежность;
-- поддержка аналитических запросов;
-- совместимость с Neon.
+- maturity;
+- reliability;
+- support for analytical queries;
+- compatibility with Neon.
 
 ---
 
 ## Consequences
 
-- необходимость проектирования схемы данных;
-- высокая надежность хранения.
+- the data schema must be designed explicitly;
+- high storage reliability.
 
 ---
 
@@ -215,7 +215,7 @@ Accepted
 
 ## Decision
 
-Использовать pgx.
+Use pgx.
 
 ---
 
@@ -234,9 +234,9 @@ Accepted
 
 ## Why
 
-- высокая производительность;
-- полный контроль над SQL;
-- минимальные накладные расходы.
+- high performance;
+- full SQL control;
+- minimal overhead.
 
 ---
 
@@ -244,7 +244,7 @@ Accepted
 
 ## Decision
 
-Использовать MapLibre.
+Use MapLibre.
 
 ---
 
@@ -264,16 +264,16 @@ Accepted
 
 ## Why
 
-- открытый исходный код;
-- отсутствие лицензионных ограничений;
-- высокая производительность через WebGL.
+- open source;
+- no commercial license restrictions;
+- high WebGL performance.
 
 ---
 
 ## Consequences
 
-- больше контроля над картографией;
-- отсутствие зависимости от коммерческого поставщика.
+- greater control over cartography;
+- no dependency on a commercial provider.
 
 ---
 
@@ -281,7 +281,7 @@ Accepted
 
 ## Decision
 
-Использовать OpenSky Network.
+Use OpenSky Network.
 
 ---
 
@@ -301,16 +301,16 @@ Accepted
 
 ## Why
 
-- бесплатный доступ;
-- открытые данные;
-- большое сообщество.
+- free access;
+- open data;
+- a large community.
 
 ---
 
 ## Consequences
 
-- ограничения покрытия;
-- зависимость от доступности OpenSky.
+- coverage limitations;
+- dependency on OpenSky availability.
 
 ---
 
@@ -318,7 +318,7 @@ Accepted
 
 ## Decision
 
-Использовать память процесса Go.
+Use Go process memory.
 
 ---
 
@@ -336,16 +336,16 @@ Accepted
 
 ## Why
 
-- минимальная инфраструктура;
-- отсутствие дополнительных расходов;
-- достаточная производительность для MVP.
+- minimal infrastructure;
+- no additional cost;
+- sufficient MVP performance.
 
 ---
 
 ## Consequences
 
-- данные исчезают после перезапуска;
-- для MVP это допустимо.
+- data disappears after a process restart;
+- this is acceptable for the MVP.
 
 ---
 
@@ -353,7 +353,7 @@ Accepted
 
 ## Decision
 
-Использовать модульный монолит.
+Use a modular monolith.
 
 ---
 
@@ -365,22 +365,22 @@ Accepted
 
 ## Alternatives
 
-- микросервисы
+- microservices
 
 ---
 
 ## Why
 
-- проект разрабатывается одним разработчиком;
-- простота сопровождения;
-- минимальные расходы.
+- the project is developed by one developer;
+- simple maintenance;
+- minimal cost.
 
 ---
 
 ## Consequences
 
-- более простой деплой;
-- возможность выделения сервисов в будущем.
+- simpler deployment;
+- services may be extracted later.
 
 ---
 
@@ -388,7 +388,7 @@ Accepted
 
 ## Decision
 
-Не использовать ClickHouse в MVP.
+Do not use ClickHouse in the MVP.
 
 ---
 
@@ -406,15 +406,15 @@ Accepted
 
 ## Why
 
-- преждевременное усложнение;
-- дополнительные расходы;
-- недостаточный объем данных.
+- premature complexity;
+- additional cost;
+- insufficient data volume.
 
 ---
 
 ## Consequences
 
-- PostgreSQL остается единственной базой данных.
+- PostgreSQL remains the only database.
 
 ---
 
@@ -422,7 +422,7 @@ Accepted
 
 ## Decision
 
-Не использовать Kubernetes.
+Do not use Kubernetes.
 
 ---
 
@@ -440,15 +440,15 @@ Accepted
 
 ## Why
 
-- избыточность для MVP;
-- высокая сложность сопровождения.
+- excessive complexity for the MVP;
+- high maintenance cost.
 
 ---
 
 ## Consequences
 
-- упрощение инфраструктуры;
-- снижение стоимости поддержки.
+- simpler infrastructure;
+- reduced support cost.
 
 ---
 
@@ -456,7 +456,7 @@ Accepted
 
 ## Decision
 
-Не использовать Python в MVP.
+Do not use Python in the MVP.
 
 ---
 
@@ -468,22 +468,22 @@ Accepted
 
 ## Alternatives
 
-- отдельный Python-сервис
+- a separate Python service
 
 ---
 
 ## Why
 
-- уменьшение сложности;
-- уменьшение потребления памяти;
-- единый Backend.
+- reduced complexity;
+- reduced memory consumption;
+- a single Backend.
 
 ---
 
 ## Consequences
 
-- все вычисления реализуются на Go;
-- Python может быть добавлен после появления задач машинного обучения.
+- all calculations are implemented in Go;
+- Python may be added when machine-learning tasks appear.
 
 ---
 
@@ -491,7 +491,7 @@ Accepted
 
 ## Decision
 
-Запуск с регионального покрытия.
+Launch with regional coverage.
 
 ---
 
@@ -503,22 +503,22 @@ Accepted
 
 ## Why
 
-- меньше нагрузка;
-- быстрее запуск;
-- проще проверка гипотез.
+- lower workload;
+- faster launch;
+- easier hypothesis validation.
 
 ---
 
 ## Consequences
 
-- ограниченная география на старте;
-- возможность постепенного масштабирования.
+- limited initial geography;
+- gradual scaling remains possible.
 
 ---
 
 # 16. Future Technical Decisions
 
-После завершения MVP допускается пересмотр следующих решений:
+The following decisions may be reconsidered after MVP completion:
 
 - Redis;
 - ClickHouse;
@@ -531,12 +531,12 @@ Accepted
 
 # 17. Final Technical Position
 
-Проект строится на принципах:
+The project follows these principles:
 
-- простота;
-- надежность;
-- минимальные расходы;
-- масштабируемость;
-- инженерная обоснованность решений.
+- simplicity;
+- reliability;
+- minimal cost;
+- scalability;
+- engineering justification for decisions.
 
-Каждое новое техническое решение должно иметь документированное обоснование и измеримую пользу для продукта.
+Every new technical decision must have documented justification and measurable product value.
