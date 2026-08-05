@@ -6,6 +6,12 @@ on:
       - 'apps/api/internal/http/**'
       - 'apps/api/internal/server/**'
       - 'openapi/**'
+      - 'packages/api-client/**'
+      - 'scripts/generate-openapi-client.mjs'
+      - 'scripts/verify-openapi-developer-experience.mjs'
+      - 'scripts/verify-openapi-developer-experience.test.mjs'
+      - 'docs/181_OPENAPI_DEVELOPER_EXPERIENCE.md'
+      - 'pnpm-lock.yaml'
       - 'scripts/verify-openapi-contract.mjs'
       - 'scripts/verify-openapi-contract.test.mjs'
       - 'scripts/verify-openapi-route-inventory.mjs'
@@ -28,6 +34,12 @@ on:
       - 'apps/api/internal/http/**'
       - 'apps/api/internal/server/**'
       - 'openapi/**'
+      - 'packages/api-client/**'
+      - 'scripts/generate-openapi-client.mjs'
+      - 'scripts/verify-openapi-developer-experience.mjs'
+      - 'scripts/verify-openapi-developer-experience.test.mjs'
+      - 'docs/181_OPENAPI_DEVELOPER_EXPERIENCE.md'
+      - 'pnpm-lock.yaml'
       - 'scripts/verify-openapi-contract.mjs'
       - 'scripts/verify-openapi-contract.test.mjs'
       - 'scripts/verify-openapi-route-inventory.mjs'
@@ -56,7 +68,7 @@ jobs:
   openapi-contract:
     name: OpenAPI Contract
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
 
     steps:
       - name: Checkout repository
@@ -73,7 +85,14 @@ jobs:
           node scripts/verify-openapi-route-inventory.mjs
           node --test scripts/verify-openapi-contract.test.mjs
           node scripts/verify-openapi-contract.mjs
+          node --test scripts/verify-openapi-developer-experience.test.mjs
+          node scripts/verify-openapi-developer-experience.mjs
+          node scripts/generate-openapi-client.mjs --check
           node -e "JSON.parse(require('node:fs').readFileSync('openapi/openapi.json', 'utf8'))"
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm --dir packages/api-client typecheck
+          pnpm --dir packages/api-client test
 
       - name: Upload OpenAPI contract
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -87,6 +106,13 @@ jobs:
             docs/178_OPENAPI_CORE_READ_SURFACE.md
             docs/179_OPENAPI_ADVANCED_INTELLIGENCE_READ_SURFACE.md
             docs/180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md
+            docs/181_OPENAPI_DEVELOPER_EXPERIENCE.md
+            packages/api-client/package.json
+            packages/api-client/tsconfig.json
+            packages/api-client/src/generated.ts
+            packages/api-client/src/client.ts
+            packages/api-client/src/index.ts
+            packages/api-client/tests/client.test.mjs
           if-no-files-found: error
           retention-days: 30
 

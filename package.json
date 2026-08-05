@@ -40,7 +40,12 @@
     "verify:openapi-route-inventory": "node scripts/verify-openapi-route-inventory.mjs",
     "test:playwright-e2e-contract": "node --test scripts/verify-playwright-e2e.test.mjs",
     "verify:playwright-e2e": "node scripts/verify-playwright-e2e.mjs",
-    "run:playwright-e2e": "bash scripts/run-playwright-e2e.sh"
+    "run:playwright-e2e": "bash scripts/run-playwright-e2e.sh",
+    "generate:openapi-client": "node scripts/generate-openapi-client.mjs --write",
+    "test:openapi-developer-experience": "node --test scripts/verify-openapi-developer-experience.test.mjs",
+    "verify:openapi-developer-experience": "node scripts/verify-openapi-developer-experience.mjs",
+    "typecheck:api-client": "pnpm --dir packages/api-client typecheck",
+    "test:api-client": "pnpm --dir packages/api-client test"
   },
   "packageManager": "pnpm@11.8.0"
 }

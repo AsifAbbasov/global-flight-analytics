@@ -29,11 +29,16 @@ pnpm run test:api-load-baseline
 pnpm run verify:api-load-baseline
 pnpm run test:openapi-contract
 pnpm run verify:openapi-contract
+pnpm run test:openapi-developer-experience
+pnpm run verify:openapi-developer-experience
+node scripts/generate-openapi-client.mjs --check
 pnpm run test:playwright-e2e-contract
 pnpm run verify:playwright-e2e
 pnpm run test:backend-operations-contract
 pnpm run verify:backend-operations-contract
 pnpm install --frozen-lockfile
+pnpm run typecheck:api-client
+pnpm run test:api-client
 pnpm run test:web-dependency-policy
 pnpm run verify:web-dependencies
 pnpm --dir apps/web test

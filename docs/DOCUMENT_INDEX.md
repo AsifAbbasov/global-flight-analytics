@@ -1676,3 +1676,9 @@ idempotent SLO dashboard and nine-rule provisioning, exact notification-policy
 receiver, controlled email-delivery evidence, security boundaries, operational
 limitations, and the formal production observability closure statement.
 ```
+
+<!-- OPENAPI-DEVELOPER-EXPERIENCE:DOCUMENT-INDEX -->
+
+## Document 181 — OpenAPI Developer Experience
+
+`181_OPENAPI_DEVELOPER_EXPERIENCE.md` records the embedded same-binary API documentation surface, exact canonical specification endpoint, dependency-free browser explorer, protected-mutation browser boundary, deterministic TypeScript client generation, byte-level embedded specification drift enforcement, generated-client drift enforcement, TypeScript validation, OpenAPI workflow integration, release-gate integration, and the exact baseline for the developer-experience increment.

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Global Flight Analytics API</title>
+  <link rel="stylesheet" href="/api/docs/assets/app.css">
+  <script src="/api/docs/assets/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#operation-panel">Skip to operation explorer</a>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Source-backed OpenAPI 3.1</p>
+      <h1>Global Flight Analytics API</h1>
+      <p>Explore all 38 public operations against a selected deployment. Public reads can be executed directly. The protected Route Intelligence mutation is intentionally non-executable in this browser surface.</p>
+    </div>
+    <a class="spec-link" href="/api/docs/openapi.json">Open raw specification</a>
+  </header>
+
+  <main class="layout">
+    <section class="controls" aria-labelledby="connection-heading">
+      <h2 id="connection-heading">Connection</h2>
+      <label for="base-url">API base URL</label>
+      <input id="base-url" name="base-url" type="url" autocomplete="off" spellcheck="false">
+      <label for="operation-filter">Filter operations</label>
+      <input id="operation-filter" name="operation-filter" type="search" placeholder="health, aircraft, route…" autocomplete="off">
+      <p id="contract-status" class="status" role="status">Loading OpenAPI contract…</p>
+      <nav id="operation-list" class="operation-list" aria-label="OpenAPI operations"></nav>
+    </section>
+
+    <section id="operation-panel" class="operation-panel" tabindex="-1" aria-labelledby="operation-title">
+      <p class="empty-state">Select an operation to inspect its contract.</p>
+    </section>
+  </main>
+</body>
+</html>

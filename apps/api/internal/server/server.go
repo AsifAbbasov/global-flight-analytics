@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/apidocs"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/handlers"
 	internalmiddleware "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
@@ -42,6 +43,10 @@ func New(
 	); err != nil {
 		return nil, err
 	}
+
+	apidocs.Register(
+		app,
+	)
 
 	metricsAuthorization, err := observability.NewAuthorization(
 		observability.AuthorizationConfig{

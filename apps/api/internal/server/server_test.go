@@ -204,6 +204,46 @@ func TestNewWithDatabaseAcceptsPositiveOpenMeteoTimeout(
 	}
 }
 
+func TestNewRegistersOpenAPIDeveloperExperienceRoutes(
+	t *testing.T,
+) {
+	app, err := New(
+		Config{
+			Logger: newDiscardLogger(),
+		},
+	)
+	if err != nil {
+		t.Fatalf(
+			"expected server initialization to succeed, got %v",
+			err,
+		)
+	}
+
+	expected := map[string]bool{
+		"/api/docs":                false,
+		"/api/docs/":               false,
+		"/api/docs/openapi.json":   false,
+		"/api/docs/assets/app.js":  false,
+		"/api/docs/assets/app.css": false,
+	}
+	for _, route := range app.GetRoutes() {
+		if route.Method != fiber.MethodGet {
+			continue
+		}
+		if _, ok := expected[route.Path]; ok {
+			expected[route.Path] = true
+		}
+	}
+	for routePath, found := range expected {
+		if !found {
+			t.Fatalf(
+				"expected API developer route %s to be registered",
+				routePath,
+			)
+		}
+	}
+}
+
 func newDiscardLogger() *slog.Logger {
 	return slog.New(
 		slog.NewTextHandler(
