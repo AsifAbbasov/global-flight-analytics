@@ -22,6 +22,23 @@ export const requiredOperations = new Map([
   ['/api/v1/flights/{id}', 'getFlightByID'],
   ['/api/v1/aircraft', 'listAircraft'],
   ['/api/v1/aircraft/{icao24}', 'getAircraftByICAO24'],
+  ['/api/v1/aircraft/{icao24}/transponder-evidence/latest', 'getLatestTransponderEvidence'],
+  ['/api/v1/weather/current', 'getCurrentWeather'],
+  ['/api/v1/analytics/metrics/active-aircraft', 'getAnalyticalActiveAircraft'],
+  ['/api/v1/analytics/metrics/traffic-density', 'getAnalyticalTrafficDensity'],
+  ['/api/v1/analytics/metrics/airport-activity', 'getAnalyticalAirportActivity'],
+  ['/api/v1/analytics/metrics/coverage-score', 'getAnalyticalCoverageScore'],
+  ['/api/v1/analytics/metrics/data-freshness', 'getAnalyticalDataFreshness'],
+  ['/api/v1/airports/intelligence/ranking', 'getAirportIntelligenceRanking'],
+  ['/api/v1/airports/{icao}/intelligence/overview', 'getAirportIntelligenceOverview'],
+  ['/api/v1/airports/{icao}/intelligence/history', 'getAirportIntelligenceHistory'],
+  ['/api/v1/airports/{icao}/intelligence/trends', 'getAirportIntelligenceTrends'],
+  ['/api/v1/historical-intelligence/aggregates/latest', 'getLatestHistoricalIntelligenceAggregate'],
+  ['/api/v1/historical-intelligence/aggregates/history', 'listHistoricalIntelligenceAggregateHistory'],
+  ['/api/v1/trajectories/{id}/projection-intelligence', 'getProjectionIntelligenceByTrajectoryID'],
+  ['/api/v1/trajectories/{id}/stability-intelligence', 'getStabilityIntelligenceByTrajectoryID'],
+  ['/api/v1/trajectories/{id}/weather-context', 'getWeatherContextByTrajectoryID'],
+  ['/api/v1/airspace/regions/{code}/analytics', 'getAirspaceRegionAnalytics'],
 ])
 
 const allowedOperationKeys = new Set(['get', 'parameters', 'summary', 'description'])
@@ -165,6 +182,33 @@ export function validateOpenAPIContract(spec) {
     'FlightStateResponse',
     'TrajectoryResponse',
     'AircraftRouteContextResponse',
+    'TransponderEvidence',
+    'CurrentWeather',
+    'AnalyticalMetric',
+    'AirportIntelligenceRanking',
+    'AirportIntelligenceOverview',
+    'AirportIntelligenceHistory',
+    'AirportIntelligenceTrends',
+    'HistoricalAggregateRecord',
+    'HistoricalAggregateHistory',
+    'ProjectionIntelligence',
+    'StabilityIntelligence',
+    'WeatherContext',
+    'AirspaceRegionAnalytics',
+    'OpenObject',
+    'TransponderEvidenceResponse',
+    'CurrentWeatherResponse',
+    'AnalyticalMetricResponse',
+    'AirportIntelligenceRankingResponse',
+    'AirportIntelligenceOverviewResponse',
+    'AirportIntelligenceHistoryResponse',
+    'AirportIntelligenceTrendsResponse',
+    'HistoricalAggregateRecordResponse',
+    'HistoricalAggregateHistoryResponse',
+    'ProjectionIntelligenceResponse',
+    'StabilityIntelligenceResponse',
+    'WeatherContextResponse',
+    'AirspaceRegionAnalyticsResponse',
   ]
   for (const schema of requiredSchemas) {
     if (!spec.components?.schemas?.[schema]) {
@@ -194,6 +238,19 @@ export function validateOpenAPIContract(spec) {
     'FlightStateResponse',
     'TrajectoryResponse',
     'AircraftRouteContextResponse',
+    'TransponderEvidenceResponse',
+    'CurrentWeatherResponse',
+    'AnalyticalMetricResponse',
+    'AirportIntelligenceRankingResponse',
+    'AirportIntelligenceOverviewResponse',
+    'AirportIntelligenceHistoryResponse',
+    'AirportIntelligenceTrendsResponse',
+    'HistoricalAggregateRecordResponse',
+    'HistoricalAggregateHistoryResponse',
+    'ProjectionIntelligenceResponse',
+    'StabilityIntelligenceResponse',
+    'WeatherContextResponse',
+    'AirspaceRegionAnalyticsResponse',
   ]) {
     const schema = spec.components?.schemas?.[responseName]
     if (schema?.properties?.success?.const !== true || !schema?.properties?.data) {
@@ -312,6 +369,36 @@ export function validateRepository(root) {
   const routeContextHandler = read(root, 'apps/api/internal/http/handlers/route_context.go')
   requireIncludes(errors, routeContextHandler, ['"INVALID_ICAO24"', '"ROUTE_CONTEXT_NOT_FOUND"', '"ROUTE_CONTEXT_SERVICE_UNAVAILABLE"'], 'route-context handler')
 
+  const transponderDTO = read(root, 'apps/api/internal/http/dto/transponder_evidence.go')
+  requireIncludes(errors, transponderDTO, ['json:"evidence_only"', 'json:"confirmed_emergency"', 'json:"maximum_claim_strength"'], 'transponder-evidence DTO')
+
+  const weatherDTO = read(root, 'apps/api/internal/http/dto/weather.go')
+  requireIncludes(errors, weatherDTO, ['json:"temperature_celsius"', 'json:"rain_mm"', 'json:"wind_gusts_mps"'], 'current-weather DTO')
+
+  const analyticalDTO = read(root, 'apps/api/internal/http/dto/analytical_metric.go')
+  requireIncludes(errors, analyticalDTO, ['json:"has_value"', 'json:"data_quality,omitempty"', 'json:"confidence_report,omitempty"'], 'analytical-metric DTO')
+
+  const airportIntelligenceHandler = read(root, 'apps/api/internal/http/handlers/airport_intelligence.go')
+  requireIncludes(errors, airportIntelligenceHandler, ['ctx.Query(airportIntelligenceDaysQuery)', 'ctx.Query(airportIntelligenceAsOfTimeQuery)', 'maximumAirportIntelligenceRankingLimit = 200'], 'Airport Intelligence handler')
+
+  const historicalHandler = read(root, 'apps/api/internal/http/handlers/historical_intelligence.go')
+  requireIncludes(errors, historicalHandler, ['historicalMetricQuery', 'historicalScopeQuery', 'historicalGranularityQuery', 'historicalCursorQuery'], 'Historical Intelligence handler')
+
+  const projectionHandler = read(root, 'apps/api/internal/http/handlers/projection_intelligence.go')
+  requireIncludes(errors, projectionHandler, ['projectionIntelligenceAsOfTimeQuery', 'projectionIntelligenceDurationSecondsQuery', '"INVALID_PROJECTION_TRAJECTORY_ID"'], 'Projection Intelligence handler')
+
+  const stabilityHandler = read(root, 'apps/api/internal/http/handlers/stability_intelligence.go')
+  requireIncludes(errors, stabilityHandler, ['stabilityIntelligenceAsOfTimesQuery', 'MinimumAsOfTimeCount', '"INVALID_STABILITY_DURATION"'], 'Stability Intelligence handler')
+
+  const weatherContextHandler = read(root, 'apps/api/internal/http/handlers/weather_context.go')
+  requireIncludes(errors, weatherContextHandler, ['weatherContextAsOfTimeQuery', 'weatherContextDurationSecondsQuery', '"WEATHER_CONTEXT_CONTRACT_INVALID"'], 'Weather Context handler')
+
+  const airspaceHandler = read(root, 'apps/api/internal/http/handlers/airspace_region_analytics.go')
+  requireIncludes(errors, airspaceHandler, ['minimumAirspaceAnalyticsWindowSeconds = 60', 'maximumAirspaceAnalyticsWindowSeconds = 3600', 'windowSeconds%60 != 0'], 'Airspace Intelligence handler')
+
+  const analyticalHandler = read(root, 'apps/api/internal/http/handlers/analytical_metrics.go')
+  requireIncludes(errors, analyticalHandler, ['ctx.Query("window_minutes")', 'ctx.Query("airport_icao")', '"AREA_PARAMETER_NOT_SUPPORTED"'], 'advanced analytical handler')
+
   const readiness = read(root, 'apps/api/internal/http/handlers/readiness.go')
   requireIncludes(errors, readiness, ['Status: "ready"', '"SERVICE_NOT_READY"'], 'readiness handler')
 
@@ -352,7 +439,7 @@ export function validateRepository(root) {
   requireIncludes(
     errors,
     document,
-    ['Status: IMPLEMENTED', 'eighteen stable GET operations', 'Playwright', 'OPENAPI_CONTRACT=PASS'],
+    ['Status: IMPLEMENTED', 'thirty-five stable GET operations', 'Playwright', 'OPENAPI_CONTRACT=PASS'],
     'Document 175',
   )
 
@@ -375,8 +462,9 @@ function main() {
     }
     process.exit(1)
   }
-  console.log('OPENAPI_CONTRACT_PATHS=18')
+  console.log('OPENAPI_CONTRACT_PATHS=35')
   console.log('OPENAPI_CORE_READ_OPERATIONS=10')
+  console.log('OPENAPI_ADVANCED_INTELLIGENCE_READ_OPERATIONS=17')
   console.log('OPENAPI_CONTRACT_SCHEMAS=PASS')
   console.log('OPENAPI_CONTRACT_ROUTE_DRIFT=PASS')
   console.log('OPENAPI_CONTRACT=PASS')

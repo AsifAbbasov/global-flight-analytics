@@ -1643,6 +1643,14 @@ Records the source-backed inventory of 38 public operations and one internal met
 
 Closes the ten-operation core read slice for aircraft, flights, flight states, trajectories, route context, and the active-aircraft metric; expands the public OpenAPI contract from 8 to 18 operations; preserves nullable telemetry and typed error semantics; and keeps the Playwright mock surface exactly aligned.
 
+<!-- OPENAPI-ADVANCED-INTELLIGENCE-READ-SURFACE-V1:DOCUMENT-INDEX -->
+
+## Document 179 — OpenAPI Advanced Intelligence Read Surface
+
+`179_OPENAPI_ADVANCED_INTELLIGENCE_READ_SURFACE.md`
+
+Closes seventeen source-backed analytical GET operations for transponder evidence, current weather, analytical metrics, Airport Intelligence, Historical Intelligence, Projection Intelligence, Stability Intelligence, Weather Context, and Airspace Intelligence; expands OpenAPI coverage from 18 to 35 operations; and leaves only the three-operation Route Intelligence slice for final security-aware closure.
+
 <!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1:DOCUMENT-INDEX -->
 ## Document 170 — Production Observability and Alerting Closure
 

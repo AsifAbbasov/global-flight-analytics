@@ -1,18 +1,15 @@
 # OpenAPI Contract Closure Route Inventory
 
-Status: IMPLEMENTED — permanent inventory gate active
-Initial inventory baseline: `b44cc67bc6fd6076c2a0ff29174283e28fd79724`
-Core read expansion baseline: `8a873c6c60add160b7f355f2a90bde6771990156`
+Status: IMPLEMENTED — permanent inventory gate
+Current expansion baseline: `1c569e0cced1f4700829b02d3573b1c9502fe4ca`
 
 ## Purpose
 
-This document records the source-backed HTTP operation inventory used to expand the public
+This document records the source-backed HTTP operation inventory used to close the public
 OpenAPI contract without inventing routes, omitting production handlers, or crossing the
-public and internal security boundary.
+public/internal security boundary.
 
 ## Production HTTP surface
-
-The production Fiber composition contains:
 
 ```text
 PUBLIC_OPERATIONS=38
@@ -22,16 +19,13 @@ INTERNAL_OPERATIONS=1
 TOTAL_HTTP_OPERATIONS=39
 ```
 
-The public surface is mounted under `/api/v1` through the nested `/api` and `/v1` Fiber groups.
-
-The internal surface contains only:
+The public surface is mounted under `/api/v1`. The only internal operation is:
 
 ```text
 GET /internal/metrics
 ```
 
-The internal metrics operation is protected by `metricsAuthorization` and is intentionally
-excluded from the public OpenAPI specification.
+It remains protected by `metricsAuthorization` and excluded from the public OpenAPI document.
 
 ## Public mutation boundary
 
@@ -41,29 +35,31 @@ The only public state-changing operation is:
 POST /api/v1/trajectories/{id}/route-intelligence
 ```
 
-Its production registration must preserve `mutationAuthorization` before the request handler.
-The inventory gate validates this source contract but does not invent an OpenAPI security
-scheme. The exact credential header and failure behavior must be derived from the middleware
-before the mutation enters `openapi/openapi.json`.
+Production registration must preserve `mutationAuthorization` before the handler. The final
+OpenAPI slice must derive the exact credential and error semantics from that middleware.
 
 ## Current OpenAPI gap
 
-After the core read expansion, `openapi/openapi.json` contains eighteen stable public GET
-operations. Source comparison produces:
+After the core and advanced read expansions:
 
 ```text
 SOURCE_PUBLIC_OPERATIONS=38
-OPENAPI_DOCUMENTED_OPERATIONS=18
-OPENAPI_MISSING_OPERATIONS=20
+OPENAPI_DOCUMENTED_OPERATIONS=35
+OPENAPI_MISSING_OPERATIONS=3
 OPENAPI_EXTRA_OPERATIONS=0
 ```
 
-The zero-extra result remains essential: every documented route exists in production source.
-The remaining problem is incomplete coverage, not fabricated contract surface.
+The exact remaining gap is:
+
+```text
+POST /api/v1/trajectories/{id}/route-intelligence
+GET  /api/v1/trajectories/{id}/route-intelligence/latest
+GET  /api/v1/trajectories/{id}/route-intelligence/history
+```
+
+The verifier rejects any other three-operation gap, so the number alone cannot conceal drift.
 
 ## Permanent verifier
-
-The repository contains:
 
 ```text
 scripts/verify-openapi-route-inventory.mjs
@@ -72,69 +68,25 @@ scripts/verify-openapi-route-inventory.test.mjs
 
 The verifier:
 
-- discovers production `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` registrations from non-test Go files in `apps/api/internal/server`;
-- resolves nested Fiber groups;
-- resolves constant-backed route paths;
-- converts Fiber `:parameter` syntax into OpenAPI `{parameter}` syntax;
-- classifies the complete 38-operation public inventory and the one-operation internal inventory;
-- compares source operations with `openapi/openapi.json`;
-- rejects duplicate, missing, and unclassified source registrations;
-- verifies the route-intelligence mutation authorization boundary;
-- verifies the internal metrics authorization boundary;
-- rejects exposure of `/internal` routes in the public OpenAPI specification.
-
-## Current reviewed closure slice
-
-Document 178 adds ten source-backed GET operations:
-
-```text
-GET /api/v1/metrics/active-aircraft
-GET /api/v1/aircraft
-GET /api/v1/aircraft/{icao24}
-GET /api/v1/flights
-GET /api/v1/flights/{id}
-GET /api/v1/flights/{flightID}/states
-GET /api/v1/aircraft/{icao24}/latest-state
-GET /api/v1/aircraft/{icao24}/trajectory
-GET /api/v1/trajectories/{id}
-GET /api/v1/aircraft/{icao24}/route-context
-```
-
-## Test contract
-
-The permanent inventory suite covers:
-
-1. repository-level verifier execution;
-2. the exact `37 GET + 1 POST` public method distribution;
-3. the single internal metrics operation;
-4. the current exact `20 missing + 0 extra` gap;
-5. nested Fiber group resolution;
-6. constant-backed route resolution;
-7. rejection of unprotected mutation and metrics registrations.
-
-## Continuous Integration boundary
-
-The `OpenAPI Contract` workflow runs the route inventory and the OpenAPI verifier. Its artifact
-contains the public specification and Documents 175, 177, and 178.
+- discovers production GET, POST, PUT, PATCH, and DELETE registrations;
+- resolves nested Fiber groups and constant-backed paths;
+- converts Fiber parameters into OpenAPI parameters;
+- classifies all 38 public operations and the internal metrics operation;
+- compares production source and OpenAPI operations;
+- rejects duplicate, missing, extra, or unclassified registrations;
+- verifies mutation and internal metrics authorization boundaries;
+- requires the remaining gap to be exactly the Route Intelligence slice.
 
 ## Completion boundary
 
-This increment is complete when the following markers pass:
+This inventory remains open until all 38 public operations are documented and the final
+mutation security contract passes. The current advanced-read increment is complete when:
 
 ```text
-SOURCE_PUBLIC_OPERATIONS=38
-SOURCE_PUBLIC_GET_OPERATIONS=37
-SOURCE_PUBLIC_POST_OPERATIONS=1
-SOURCE_INTERNAL_OPERATIONS=1
-OPENAPI_DOCUMENTED_OPERATIONS=18
-OPENAPI_MISSING_OPERATIONS=20
+OPENAPI_DOCUMENTED_OPERATIONS=35
+OPENAPI_MISSING_OPERATIONS=3
 OPENAPI_EXTRA_OPERATIONS=0
 OPENAPI_MUTATION_AUTHORIZATION=PASS
 OPENAPI_INTERNAL_METRICS_BOUNDARY=PASS
 OPENAPI_ROUTE_INVENTORY=PASS
-OPENAPI_CONTRACT=PASS
 ```
-
-Twenty public operations remain for later reviewed slices: transponder evidence, route
-intelligence, weather, analytical metrics, airport intelligence, historical intelligence,
-projection, stability, weather context, and airspace analytics.

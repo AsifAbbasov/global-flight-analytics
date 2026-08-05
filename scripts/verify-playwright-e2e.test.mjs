@@ -66,6 +66,55 @@ test('core read fixtures preserve typed trajectory and metric envelopes', () => 
   assert.equal(metric.body.data.window_minutes, 15)
 })
 
+test('advanced intelligence fixtures preserve evidence pagination and uncertainty semantics', () => {
+  const transponder = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/aircraft/4b1801/transponder-evidence/latest',
+    scenario: 'healthy',
+  })
+  assert.equal(transponder.status, 200)
+  assert.equal(transponder.body.data.evidence_only, true)
+  assert.equal(transponder.body.data.confirmed_emergency, false)
+
+  const weather = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/weather/current?lat=40.4&lon=49.8',
+    scenario: 'healthy',
+  })
+  assert.equal(weather.status, 200)
+  assert.equal(weather.body.data.rain_mm, null)
+  assert.equal(weather.body.data.wind_gusts_mps, null)
+
+  const history = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/historical-intelligence/aggregates/history?metric=active_aircraft&scope=global&granularity=hour',
+    scenario: 'healthy',
+  })
+  assert.equal(history.body.data.has_more, true)
+  assert.equal(history.body.data.next_cursor, 'fixture-cursor-v1')
+
+  const projection = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/projection-intelligence?as_of_time=2026-08-04T18:00:00Z',
+    scenario: 'healthy',
+  })
+  assert.match(projection.body.data.input_fingerprint, /^sha256:[0-9a-f]{64}$/)
+  assert.equal(projection.body.data.projection.points.length, 1)
+
+  const airspace = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/airspace/regions/az/analytics?as_of_time=2026-08-04T18:00:00Z',
+    scenario: 'healthy',
+  })
+  assert.equal(airspace.body.data.status, 'available')
+  assert.equal(airspace.body.data.metrics.temporal_coverage, 1)
+})
+
 test('traffic-error fixture preserves the typed error envelope', () => {
   const result = resolveMockResponse({
     method: 'GET',

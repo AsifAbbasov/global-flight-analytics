@@ -147,6 +147,10 @@ export function validatePlaywrightFoundation(root) {
       "'/api/v1/traffic/current'",
       "'/api/v1/aircraft/{icao24}/trajectory'",
       "'/api/v1/metrics/active-aircraft'",
+      "'/api/v1/analytics/metrics/coverage-score'",
+      "'/api/v1/historical-intelligence/aggregates/history'",
+      "'/api/v1/trajectories/{id}/projection-intelligence'",
+      "'/api/v1/airspace/regions/{code}/analytics'",
     ],
     'mock API',
   )
@@ -270,7 +274,7 @@ function main() {
   }
 
   console.log(`PLAYWRIGHT_E2E_VERSION=1.62.0`)
-  console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=18')
+  console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=35')
   console.log('PLAYWRIGHT_E2E_SCENARIOS=4')
   console.log('PLAYWRIGHT_E2E_MOCK_API=PASS')
   console.log('PLAYWRIGHT_E2E_CONTRACT=PASS')

@@ -6,41 +6,29 @@ Scope: source-backed contract for the stable public read API
 
 ## 1. Purpose
 
-This document records the OpenAPI 3.1 foundation and its first reviewed expansion. The
-contract is consumed by the current frontend, operational smoke tests, the containerized
-Grafana k6 baseline, and the deterministic Playwright mock API.
+This document records the evolving OpenAPI 3.1 contract for the stable public API used by
+frontend clients, deterministic browser fixtures, operational smoke tests, and reviewer tools.
 
-The public specification now describes eighteen stable GET operations:
+The public specification now describes thirty-five stable GET operations. It combines:
+
+- the original eight-operation system, region, airport, and current-traffic foundation;
+- the ten-operation core read slice for aircraft, flights, flight states, trajectories,
+  route context, and the active-aircraft metric;
+- seventeen advanced intelligence reads for transponder evidence, current weather,
+  analytical metrics, Airport Intelligence, Historical Intelligence, Projection
+  Intelligence, Stability Intelligence, Weather Context, and Airspace Intelligence.
+
+The only production public operations still outside this document are the final Route
+Intelligence slice:
 
 ```text
-GET /api/v1/health
-GET /api/v1/ready
-GET /api/v1/version
-GET /api/v1/regions
-GET /api/v1/regions/{code}
-GET /api/v1/airports
-GET /api/v1/airports/{icao}
-GET /api/v1/traffic/current
-GET /api/v1/metrics/active-aircraft
-GET /api/v1/aircraft
-GET /api/v1/aircraft/{icao24}
-GET /api/v1/flights
-GET /api/v1/flights/{id}
-GET /api/v1/flights/{flightID}/states
-GET /api/v1/aircraft/{icao24}/latest-state
-GET /api/v1/aircraft/{icao24}/trajectory
-GET /api/v1/trajectories/{id}
-GET /api/v1/aircraft/{icao24}/route-context
+POST /api/v1/trajectories/{id}/route-intelligence
+GET  /api/v1/trajectories/{id}/route-intelligence/latest
+GET  /api/v1/trajectories/{id}/route-intelligence/history
 ```
 
-The original eight-operation foundation remains intact. Document 178 adds the ten-operation
-core read slice for aircraft, flights, flight states, trajectories, route context, and the
-active-aircraft metric.
-
-Advanced analytical, historical, projection, weather, airspace, transponder-evidence, and
-route-intelligence endpoints remain outside this reviewed slice. The protected mutation is
-also still deferred until its exact OpenAPI security scheme and authorization failures are
-source-derived.
+Those three operations remain separate because the POST route requires an explicit security
+scheme and mutation-authorization contract.
 
 ## 2. Contract Location
 
@@ -48,106 +36,109 @@ source-derived.
 openapi/openapi.json
 ```
 
-JSON is used because OpenAPI 3.1 accepts JSON directly, Node.js can parse it without adding a
-runtime dependency, and the repository can validate the document in release and Continuous
-Integration workflows.
-
-The server URL is relative (`/`). The contract therefore does not hard-code Render, localhost,
-Vercel, or another deployment origin.
+JSON is used because OpenAPI 3.1 accepts JSON directly and the repository can validate the
+document without adding another runtime dependency. The server URL remains relative (`/`), so
+the contract does not hard-code Render, Vercel, localhost, or another deployment origin.
 
 ## 3. Source Alignment
 
-The verifier checks the contract against the production Fiber composition, typed response
-envelope, DTOs, and handlers. Core evidence includes:
+The contract is derived from production Fiber registrations, handler request parsing, HTTP
+DTOs, frontend transport parsers where those parsers intentionally preserve a backend-owned
+shape, and executable repository verification.
+
+The advanced read slice adds source evidence for:
 
 ```text
-apps/api/internal/server/server.go
-apps/api/internal/server/core_database_routes.go
-apps/api/internal/http/response/response.go
-apps/api/internal/http/dto/system.go
-apps/api/internal/http/dto/region.go
-apps/api/internal/http/dto/airport.go
-apps/api/internal/http/dto/traffic.go
-apps/api/internal/http/dto/metrics.go
-apps/api/internal/http/dto/aircraft.go
-apps/api/internal/http/dto/flight.go
-apps/api/internal/http/dto/flightstate.go
-apps/api/internal/http/dto/trajectory.go
-apps/api/internal/http/dto/route_context.go
-apps/api/internal/http/handlers/traffic.go
-apps/api/internal/http/handlers/metrics.go
-apps/api/internal/http/handlers/trajectories.go
-apps/api/internal/http/handlers/route_context.go
-apps/api/internal/http/handlers/readiness.go
+apps/api/internal/http/handlers/transponder_evidence.go
+apps/api/internal/http/handlers/weather.go
+apps/api/internal/http/handlers/analytical_metrics.go
+apps/api/internal/http/handlers/analytical_production_snapshot.go
+apps/api/internal/http/handlers/airport_intelligence.go
+apps/api/internal/http/handlers/historical_intelligence.go
+apps/api/internal/http/handlers/projection_intelligence.go
+apps/api/internal/http/handlers/stability_intelligence.go
+apps/api/internal/http/handlers/weather_context.go
+apps/api/internal/http/handlers/airspace_region_analytics.go
 ```
 
-This protects route registration, path parameters, active-aircraft query bounds, typed
-success and error envelopes, nullable altitude semantics, trajectory composition, and
-canonical JSON field names.
+The contract does not publish parameters rejected by the backend. In particular:
+
+- `area_square_kilometers` remains server-derived for traffic density;
+- client-supplied coverage counters and freshness timestamps remain prohibited;
+- quality-metric `limit` remains server-owned;
+- historical scope identifiers remain conditional on the selected scope;
+- stability history requires two to eight strictly increasing RFC 3339 timestamps;
+- Airspace Intelligence windows remain whole-minute values from 60 to 3600 seconds.
 
 ## 4. Schemas and Boundaries
 
-The contract includes:
+The specification preserves:
 
-- health, readiness, and version data;
-- canonical regions and geographic bounds;
-- airport list and airport profile records;
-- current traffic telemetry with nullable altitude and explicit altitude semantics;
-- active-aircraft metric scope, confidence, sources, limitations, and bounded window;
-- aircraft list and profile records;
-- flight list and profile records;
-- flight-state history and latest-state records;
-- trajectories, segments, coverage gaps, identity, quality, and timestamps;
-- inferred route context with optional origin and destination evidence;
-- bad-request, not-found, rate-limit, service-unavailable, and internal-error envelopes;
-- `X-Request-ID` and rate-limit response headers.
+- typed success and error envelopes;
+- `X-Request-ID` and rate-limit headers;
+- nullable weather and altitude measurements rather than invented zero values;
+- explicit confidence, limitations, provenance, scope guards, and evidence boundaries;
+- opaque Historical Intelligence pagination cursors;
+- UUID and RFC 3339 request contracts;
+- research-only transponder evidence that cannot be represented as a confirmed emergency;
+- source-backed analytical metrics with optional server-owned data-quality reports;
+- explicit timeout, service-unavailable, not-found, and bounded-policy responses.
 
-The current contract remains public and read-only. POST, PUT, PATCH, DELETE, TRACE, and
-CONNECT operations are prohibited from this slice.
+Typed DTO schemas use `additionalProperties: false`. `OpenObject` is the only intentionally
+open schema introduced by the advanced slice and is limited to backend fields that are
+explicitly strategy-specific or retained as unknown by the frontend contract.
+
+The internal metrics endpoint remains excluded:
+
+```text
+GET /internal/metrics
+```
 
 ## 5. Verification
 
 ```bash
-pnpm run test:openapi-contract
-pnpm run verify:openapi-contract
 pnpm run test:openapi-route-inventory
 pnpm run verify:openapi-route-inventory
+pnpm run test:openapi-contract
+pnpm run verify:openapi-contract
+pnpm run test:playwright-e2e-contract
+pnpm run verify:playwright-e2e
 ```
 
-Required success markers:
+Required success markers now include:
 
 ```text
-OPENAPI_CONTRACT_PATHS=18
+SOURCE_PUBLIC_OPERATIONS=38
+OPENAPI_DOCUMENTED_OPERATIONS=35
+OPENAPI_MISSING_OPERATIONS=3
+OPENAPI_EXTRA_OPERATIONS=0
+OPENAPI_CONTRACT_PATHS=35
 OPENAPI_CORE_READ_OPERATIONS=10
+OPENAPI_ADVANCED_INTELLIGENCE_READ_OPERATIONS=17
 OPENAPI_CONTRACT_SCHEMAS=PASS
 OPENAPI_CONTRACT_ROUTE_DRIFT=PASS
 OPENAPI_CONTRACT=PASS
-OPENAPI_DOCUMENTED_OPERATIONS=18
-OPENAPI_MISSING_OPERATIONS=20
-OPENAPI_EXTRA_OPERATIONS=0
-OPENAPI_ROUTE_INVENTORY=PASS
 ```
 
-The same checks run in the dedicated `OpenAPI Contract` GitHub Actions workflow and in the
+The same static contracts run in the dedicated `OpenAPI Contract` workflow and in the full
 repository release gate.
 
 ## 6. Playwright Dependency
 
-The deterministic Playwright mock API mirrors all eighteen documented paths. Browser tests
-still exercise the product shell and traffic recovery scenarios; the additional core fixtures
-exist to prevent OpenAPI-to-mock drift and to support later selected-aircraft workflows without
-inventing transport shapes.
+The deterministic Playwright mock API mirrors all thirty-five documented paths. The four
+existing browser scenarios remain unchanged; new fixtures provide a contract-aligned base for
+later browser assertions without calling public deployments or real providers.
 
 ## 7. Evolution Rule
 
-A route may enter this contract only when all of the following are true:
+A route may enter the public contract only when all of the following are true:
 
 1. the Fiber route is production-reachable;
-2. request parameters and response DTOs are stable;
-3. success and error behavior are source-backed;
-4. nullable and evidence-limited semantics are preserved;
-5. the OpenAPI schema is source-aligned;
-6. the route inventory, contract verifier, Playwright mock contract, and release gate pass.
+2. parameters and response DTOs are source-backed;
+3. success and error behavior are represented without inventing evidence;
+4. local references resolve and operation identifiers are unique;
+5. the route inventory, OpenAPI verifier, mock API, and release gate pass.
 
-This document does not claim that every backend endpoint is already described. Twenty public
-operations remain outside the current specification.
+The final Route Intelligence closure must additionally define the mutation credential header,
+security scheme, authorization failures, and separation between computation-triggering POST
+behavior and materialized GET reads.

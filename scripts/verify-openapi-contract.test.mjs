@@ -21,9 +21,9 @@ test('repository OpenAPI contract passes', () => {
   assert.match(output, /OPENAPI_CONTRACT=PASS/)
 })
 
-test('contract exposes exactly eighteen stable GET operations', () => {
+test('contract exposes exactly thirty-five stable GET operations', () => {
   const spec = loadSpec()
-  assert.equal(Object.keys(spec.paths).length, 18)
+  assert.equal(Object.keys(spec.paths).length, 35)
   assert.deepEqual(
     Object.keys(spec.paths).sort(),
     [...requiredOperations.keys()].sort(),
@@ -59,6 +59,64 @@ test('flight-state altitude values remain explicitly nullable', () => {
     'number',
     'null',
   ])
+})
+
+test('advanced intelligence query contracts remain source aligned', () => {
+  const spec = loadSpec()
+
+  const weather = spec.paths['/api/v1/weather/current'].get.parameters
+  assert.equal(weather.find(parameter => parameter.name === 'lat').required, true)
+  assert.equal(weather.find(parameter => parameter.name === 'lon').required, true)
+
+  const historical =
+    spec.paths['/api/v1/historical-intelligence/aggregates/latest'].get
+      .parameters
+  assert.deepEqual(
+    historical.find(parameter => parameter.name === 'scope').schema.enum,
+    ['global', 'region', 'airport', 'route'],
+  )
+
+  const airspace =
+    spec.paths['/api/v1/airspace/regions/{code}/analytics'].get.parameters
+  assert.deepEqual(
+    airspace.find(parameter => parameter.name === 'window_seconds').schema,
+    {
+      type: 'integer',
+      minimum: 60,
+      maximum: 3600,
+      multipleOf: 60,
+      default: 300,
+    },
+  )
+})
+
+test('server-owned analytical quality inputs are not published as client parameters', () => {
+  const spec = loadSpec()
+  for (const route of [
+    '/api/v1/analytics/metrics/coverage-score',
+    '/api/v1/analytics/metrics/data-freshness',
+  ]) {
+    const names = spec.paths[route].get.parameters.map(parameter => parameter.name)
+    assert.deepEqual(names.sort(), ['region', 'window_minutes'])
+    assert.equal(names.includes('limit'), false)
+    assert.equal(names.includes('observed_samples'), false)
+    assert.equal(names.includes('expected_samples'), false)
+    assert.equal(names.includes('observed_at'), false)
+    assert.equal(names.includes('max_age_seconds'), false)
+  }
+})
+
+test('only intentionally open strategy evidence allows unknown properties', () => {
+  const spec = loadSpec()
+  assert.equal(spec.components.schemas.OpenObject.additionalProperties, true)
+  assert.equal(
+    spec.components.schemas.ProjectionIntelligence.additionalProperties,
+    false,
+  )
+  assert.equal(
+    spec.components.schemas.AirspaceRegionAnalytics.additionalProperties,
+    false,
+  )
 })
 
 test('absolute deployment origins are rejected', () => {
