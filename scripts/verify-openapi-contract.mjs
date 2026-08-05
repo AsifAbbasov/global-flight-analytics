@@ -39,10 +39,17 @@ export const requiredOperations = new Map([
   ['/api/v1/trajectories/{id}/stability-intelligence', 'getStabilityIntelligenceByTrajectoryID'],
   ['/api/v1/trajectories/{id}/weather-context', 'getWeatherContextByTrajectoryID'],
   ['/api/v1/airspace/regions/{code}/analytics', 'getAirspaceRegionAnalytics'],
+  ['/api/v1/trajectories/{id}/route-intelligence/latest', 'getLatestRouteIntelligenceByTrajectoryID'],
+  ['/api/v1/trajectories/{id}/route-intelligence/history', 'listRouteIntelligenceHistoryByTrajectoryID'],
 ])
 
-const allowedOperationKeys = new Set(['get', 'parameters', 'summary', 'description'])
-const forbiddenMethods = new Set(['post', 'put', 'patch', 'delete', 'trace', 'connect'])
+export const requiredMutationOperations = new Map([
+  ['/api/v1/trajectories/{id}/route-intelligence', 'processRouteIntelligenceByTrajectoryID'],
+])
+
+const allowedReadPathItemKeys = new Set(['get', 'parameters', 'summary', 'description'])
+const allowedMutationPathItemKeys = new Set(['post', 'parameters', 'summary', 'description'])
+const forbiddenReadMethods = new Set(['post', 'put', 'patch', 'delete', 'trace', 'connect'])
 
 function hasOwn(value, key) {
   return Object.prototype.hasOwnProperty.call(value, key)
@@ -86,8 +93,8 @@ export function validateOpenAPIContract(spec) {
   if (spec.jsonSchemaDialect !== 'https://json-schema.org/draft/2020-12/schema') {
     errors.push('JSON Schema dialect must be draft 2020-12')
   }
-  if (spec.info?.title !== 'Global Flight Analytics Public Read API') {
-    errors.push('info.title is not the canonical public read API title')
+  if (spec.info?.title !== 'Global Flight Analytics Public API') {
+    errors.push('info.title is not the canonical public API title')
   }
 
   if (!Array.isArray(spec.servers) || spec.servers.length !== 1 || spec.servers[0]?.url !== '/') {
@@ -101,7 +108,10 @@ export function validateOpenAPIContract(spec) {
 
   const paths = spec.paths ?? {}
   const actualPaths = Object.keys(paths).sort()
-  const expectedPaths = [...requiredOperations.keys()].sort()
+  const expectedPaths = [
+    ...requiredOperations.keys(),
+    ...requiredMutationOperations.keys(),
+  ].sort()
   if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
     errors.push(`path surface mismatch: expected ${expectedPaths.join(', ')}`)
   }
@@ -112,9 +122,9 @@ export function validateOpenAPIContract(spec) {
     if (!pathItem) continue
 
     for (const key of Object.keys(pathItem)) {
-      if (forbiddenMethods.has(key)) {
+      if (forbiddenReadMethods.has(key)) {
         errors.push(`public read route ${route} must remain read-only; found ${key}`)
-      } else if (!allowedOperationKeys.has(key)) {
+      } else if (!allowedReadPathItemKeys.has(key)) {
         errors.push(`unsupported path item key ${key} on ${route}`)
       }
     }
@@ -144,6 +154,64 @@ export function validateOpenAPIContract(spec) {
         errors.push(`required path parameter ${name} is missing for ${route}`)
       }
     }
+  }
+
+  for (const [route, expectedOperationID] of requiredMutationOperations) {
+    const pathItem = paths[route]
+    if (!pathItem) continue
+
+    for (const key of Object.keys(pathItem)) {
+      if (!allowedMutationPathItemKeys.has(key)) {
+        errors.push(`unsupported mutation path item key ${key} on ${route}`)
+      }
+    }
+
+    const operation = pathItem.post
+    if (!operation) {
+      errors.push(`POST operation is missing for ${route}`)
+      continue
+    }
+    if (operation.operationId !== expectedOperationID) {
+      errors.push(`operationId mismatch for ${route}`)
+    }
+    if (operationIds.has(operation.operationId)) {
+      errors.push(`duplicate operationId ${operation.operationId}`)
+    }
+    operationIds.add(operation.operationId)
+
+    if (!operation.responses?.['200']) {
+      errors.push(`200 response is missing for ${route}`)
+    }
+    if (!operation.responses?.['401']) {
+      errors.push(`401 response is missing for protected mutation ${route}`)
+    }
+    if (!operation.responses?.['503']) {
+      errors.push(`503 response is missing for protected mutation ${route}`)
+    }
+    if (JSON.stringify(operation.security) !== JSON.stringify([{ InternalAPIKey: [] }])) {
+      errors.push(`InternalAPIKey security requirement is missing for ${route}`)
+    }
+    if (operation.requestBody !== undefined) {
+      errors.push(`Route Intelligence mutation must not publish a request body`)
+    }
+
+    const params = parameterMap(operation)
+    for (const match of route.matchAll(/\{([^}]+)\}/g)) {
+      const name = match[1]
+      const parameter = params.get(`path:${name}`)
+      if (!parameter?.required) {
+        errors.push(`required path parameter ${name} is missing for ${route}`)
+      }
+    }
+  }
+
+  const internalAPIKey = spec.components?.securitySchemes?.InternalAPIKey
+  if (
+    internalAPIKey?.type !== 'apiKey' ||
+    internalAPIKey?.in !== 'header' ||
+    internalAPIKey?.name !== 'X-Internal-API-Key'
+  ) {
+    errors.push('InternalAPIKey must be an X-Internal-API-Key header apiKey scheme')
   }
 
   for (const ref of collectReferences(spec)) {
@@ -209,6 +277,21 @@ export function validateOpenAPIContract(spec) {
     'StabilityIntelligenceResponse',
     'WeatherContextResponse',
     'AirspaceRegionAnalyticsResponse',
+    'RouteIntelligenceEvidenceAttribute',
+    'RouteIntelligenceEvidence',
+    'RouteIntelligenceConfidenceReason',
+    'RouteIntelligenceConfidence',
+    'RouteIntelligenceLimitation',
+    'RouteIntelligenceAirport',
+    'RouteIntelligenceEndpoint',
+    'RouteIntelligenceWindow',
+    'RouteIntelligenceSummary',
+    'RouteIntelligenceProvenance',
+    'RouteIntelligenceResult',
+    'RouteIntelligenceRecord',
+    'RouteIntelligenceHistory',
+    'RouteIntelligenceRecordResponse',
+    'RouteIntelligenceHistoryResponse',
   ]
   for (const schema of requiredSchemas) {
     if (!spec.components?.schemas?.[schema]) {
@@ -251,6 +334,8 @@ export function validateOpenAPIContract(spec) {
     'StabilityIntelligenceResponse',
     'WeatherContextResponse',
     'AirspaceRegionAnalyticsResponse',
+    'RouteIntelligenceRecordResponse',
+    'RouteIntelligenceHistoryResponse',
   ]) {
     const schema = spec.components?.schemas?.[responseName]
     if (schema?.properties?.success?.const !== true || !schema?.properties?.data) {
@@ -399,6 +484,30 @@ export function validateRepository(root) {
   const analyticalHandler = read(root, 'apps/api/internal/http/handlers/analytical_metrics.go')
   requireIncludes(errors, analyticalHandler, ['ctx.Query("window_minutes")', 'ctx.Query("airport_icao")', '"AREA_PARAMETER_NOT_SUPPORTED"'], 'advanced analytical handler')
 
+  const routeIntelligenceRoutes = read(root, 'apps/api/internal/server/route_intelligence_database_routes.go')
+  requireIncludes(errors, routeIntelligenceRoutes, ['"/trajectories/:id/route-intelligence"', 'mutationAuthorization', '"/trajectories/:id/route-intelligence/latest"', '"/trajectories/:id/route-intelligence/history"'], 'Route Intelligence routes')
+
+  const routeIntelligenceDTO = read(root, 'apps/api/internal/http/dto/route_intelligence.go')
+  requireIncludes(errors, routeIntelligenceDTO, ['json:"schema_version"', 'json:"origin,omitempty"', 'json:"destination,omitempty"', 'json:"next_before_as_of_time,omitempty"'], 'Route Intelligence DTO')
+
+  const routeIntelligenceHandler = read(root, 'apps/api/internal/http/handlers/route_intelligence.go')
+  requireIncludes(errors, routeIntelligenceHandler, ['routeIntelligenceHistoryLimitQuery', 'routeIntelligenceHistoryBeforeQuery', 'routestore.DefaultListLimit', 'routestore.MaximumListLimit', '"INVALID_ROUTE_INTELLIGENCE_CURSOR"'], 'Route Intelligence handler')
+
+  const mutationAuthorization = read(root, 'apps/api/internal/middleware/mutation_authorization.go')
+  requireIncludes(errors, mutationAuthorization, ['"MUTATION_AUTHENTICATION_REQUIRED"', '"MUTATION_AUTHENTICATION_UNAVAILABLE"', 'fiber.StatusUnauthorized', 'fiber.StatusServiceUnavailable'], 'mutation authorization middleware')
+
+  const internalAPIKey = read(root, 'apps/api/internal/security/internalapikey/key.go')
+  requireIncludes(errors, internalAPIKey, ['HeaderName = "X-Internal-API-Key"', 'MinimumCandidateLength = 32', 'MaximumCandidateLength = 256', 'subtle.ConstantTimeCompare'], 'internal API key contract')
+
+  const routeIdentityValidation = read(root, 'apps/api/internal/routeintelligence/routecontract/route_validation_identifiers.go')
+  requireIncludes(errors, routeIdentityValidation, ['^[A-F0-9]{6}$', '^flight-identity-[0-9a-f]{64}$', '^sha256:[0-9a-f]{64}$'], 'Route Intelligence identifier validation')
+
+  const routeAssessmentValidation = read(root, 'apps/api/internal/routeintelligence/routecontract/route_validation_assessment.go')
+  requireIncludes(errors, routeAssessmentValidation, ['confidence.EvidenceCount', 'expectedEvidenceCount', 'confidence_evidence_count_mismatch'], 'Route Intelligence confidence validation')
+
+  const airportElevation = read(root, 'apps/api/internal/domain/airport/elevation.go')
+  requireIncludes(errors, airportElevation, ['ElevationStatusObserved', 'ElevationStatusUnknown', 'ElevationStatusInvalid'], 'Route Intelligence airport elevation vocabulary')
+
   const readiness = read(root, 'apps/api/internal/http/handlers/readiness.go')
   requireIncludes(errors, readiness, ['Status: "ready"', '"SERVICE_NOT_READY"'], 'readiness handler')
 
@@ -439,15 +548,23 @@ export function validateRepository(root) {
   requireIncludes(
     errors,
     document,
-    ['Status: IMPLEMENTED', 'thirty-five stable GET operations', 'Playwright', 'OPENAPI_CONTRACT=PASS'],
+    ['Status: IMPLEMENTED', 'thirty-eight production public operations', 'InternalAPIKey', 'OPENAPI_CONTRACT=PASS'],
     'Document 175',
+  )
+
+  const closureDocument = read(root, 'docs/180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md')
+  requireIncludes(
+    errors,
+    closureDocument,
+    ['Status: IMPLEMENTED', 'InternalAPIKey', 'OPENAPI_MISSING_OPERATIONS=0', 'b67005b7ff6a944cffc2f4d846aec1009ea69e53'],
+    'Document 180',
   )
 
   const documentIndex = read(root, 'docs/DOCUMENT_INDEX.md')
   requireIncludes(
     errors,
     documentIndex,
-    ['OPENAPI-CONTRACT-FOUNDATION-V1:DOCUMENT-INDEX', '175_OPENAPI_CONTRACT_FOUNDATION.md'],
+    ['OPENAPI-CONTRACT-FOUNDATION-V1:DOCUMENT-INDEX', '175_OPENAPI_CONTRACT_FOUNDATION.md', 'OPENAPI-ROUTE-INTELLIGENCE-CONTRACT-CLOSURE-V1:DOCUMENT-INDEX', '180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md'],
     'documentation index',
   )
 
@@ -462,10 +579,12 @@ function main() {
     }
     process.exit(1)
   }
-  console.log('OPENAPI_CONTRACT_PATHS=35')
-  console.log('OPENAPI_CORE_READ_OPERATIONS=10')
-  console.log('OPENAPI_ADVANCED_INTELLIGENCE_READ_OPERATIONS=17')
+  console.log('OPENAPI_CONTRACT_PATHS=38')
+  console.log('OPENAPI_PUBLIC_READ_OPERATIONS=37')
+  console.log('OPENAPI_PROTECTED_MUTATION_OPERATIONS=1')
+  console.log('OPENAPI_ROUTE_INTELLIGENCE_OPERATIONS=3')
   console.log('OPENAPI_CONTRACT_SCHEMAS=PASS')
+  console.log('OPENAPI_CONTRACT_SECURITY=PASS')
   console.log('OPENAPI_CONTRACT_ROUTE_DRIFT=PASS')
   console.log('OPENAPI_CONTRACT=PASS')
 }

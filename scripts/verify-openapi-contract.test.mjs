@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 import {
+  requiredMutationOperations,
   requiredOperations,
   validateOpenAPIContract,
 } from './verify-openapi-contract.mjs'
@@ -21,18 +22,23 @@ test('repository OpenAPI contract passes', () => {
   assert.match(output, /OPENAPI_CONTRACT=PASS/)
 })
 
-test('contract exposes exactly thirty-five stable GET operations', () => {
+test('contract exposes 37 reads and one protected mutation across 38 paths', () => {
   const spec = loadSpec()
-  assert.equal(Object.keys(spec.paths).length, 35)
+  assert.equal(Object.keys(spec.paths).length, 38)
   assert.deepEqual(
     Object.keys(spec.paths).sort(),
-    [...requiredOperations.keys()].sort(),
+    [
+      ...requiredOperations.keys(),
+      ...requiredMutationOperations.keys(),
+    ].sort(),
   )
-  for (const pathItem of Object.values(spec.paths)) {
-    assert.ok(pathItem.get)
-    assert.equal(pathItem.post, undefined)
-    assert.equal(pathItem.patch, undefined)
-    assert.equal(pathItem.delete, undefined)
+  for (const route of requiredOperations.keys()) {
+    assert.ok(spec.paths[route].get)
+    assert.equal(spec.paths[route].post, undefined)
+  }
+  for (const route of requiredMutationOperations.keys()) {
+    assert.ok(spec.paths[route].post)
+    assert.equal(spec.paths[route].get, undefined)
   }
 })
 
@@ -116,6 +122,70 @@ test('only intentionally open strategy evidence allows unknown properties', () =
   assert.equal(
     spec.components.schemas.AirspaceRegionAnalytics.additionalProperties,
     false,
+  )
+})
+
+test('Route Intelligence security and history bounds remain source aligned', () => {
+  const spec = loadSpec()
+  assert.deepEqual(spec.components.securitySchemes.InternalAPIKey, {
+    type: 'apiKey',
+    in: 'header',
+    name: 'X-Internal-API-Key',
+    description:
+      'Internal mutation credential. The server stores only a SHA-256 digest; clients send the raw 32–256 character key.',
+  })
+
+  const mutation =
+    spec.paths['/api/v1/trajectories/{id}/route-intelligence'].post
+  assert.deepEqual(mutation.security, [{ InternalAPIKey: [] }])
+  assert.equal(mutation.requestBody, undefined)
+  assert.deepEqual(spec.components.headers.CacheControlNoStore, {
+    description: 'Mutation responses are not cacheable.',
+    schema: { type: 'string', const: 'no-store' },
+  })
+  assert.ok(mutation.responses['401'])
+  assert.ok(mutation.responses['503'])
+
+  const latest =
+    spec.paths['/api/v1/trajectories/{id}/route-intelligence/latest'].get
+  assert.equal(latest.security, undefined)
+
+  const history =
+    spec.paths['/api/v1/trajectories/{id}/route-intelligence/history'].get
+  assert.deepEqual(
+    history.parameters.find(parameter => parameter.name === 'limit').schema,
+    { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+  )
+  assert.deepEqual(
+    history.parameters.find(
+      parameter => parameter.name === 'before_as_of_time',
+    ).schema,
+    { type: 'string', format: 'date-time' },
+  )
+
+  const result = spec.components.schemas.RouteIntelligenceResult
+  assert.equal(result.properties.icao24.pattern, '^[A-F0-9]{6}$')
+  assert.equal(
+    result.properties.identity_key.pattern,
+    '^(?:|flight-identity-[0-9a-f]{64})$',
+  )
+  assert.deepEqual(
+    spec.components.schemas.RouteIntelligenceAirport.properties.elevation_status.enum,
+    ['observed', 'unknown', 'invalid'],
+  )
+  assert.deepEqual(
+    spec.components.schemas.RouteIntelligenceHistory.properties.next_before_as_of_time,
+    { type: 'string', format: 'date-time' },
+  )
+})
+
+test('protected mutation security cannot be removed', () => {
+  const spec = loadSpec()
+  spec.paths['/api/v1/trajectories/{id}/route-intelligence'].post.security = []
+  assert.ok(
+    validateOpenAPIContract(spec).some(error =>
+      error.includes('InternalAPIKey security requirement is missing'),
+    ),
   )
 })
 

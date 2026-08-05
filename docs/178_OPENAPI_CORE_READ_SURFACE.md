@@ -38,12 +38,12 @@ OPENAPI_DOCUMENTED_OPERATIONS=18
 OPENAPI_MISSING_OPERATIONS=20
 ```
 
-Those ten operations remain unchanged and are now part of the thirty-five-operation public
-read contract. Their Playwright fixtures continue to provide deterministic trajectory,
+Those ten operations remain unchanged and are now part of the complete thirty-eight-operation
+public contract. Their Playwright fixtures continue to provide deterministic trajectory,
 nullable-altitude, route-context, and metric envelopes.
 
 ## Current relationship to closure
 
 Document 179 adds seventeen advanced intelligence reads without modifying this slice's route,
-parameter, or DTO semantics. After Document 179, only the three Route Intelligence operations
-remain outside OpenAPI.
+parameter, or DTO semantics. Document 180 subsequently closes the three Route Intelligence
+operations without changing this core slice.

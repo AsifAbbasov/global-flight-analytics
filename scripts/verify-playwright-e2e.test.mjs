@@ -115,6 +115,58 @@ test('advanced intelligence fixtures preserve evidence pagination and uncertaint
   assert.equal(airspace.body.data.metrics.temporal_coverage, 1)
 })
 
+test('Route Intelligence fixtures preserve mutation security and history pagination', () => {
+  const requestURL =
+    'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/route-intelligence'
+
+  const unauthorized = resolveMockResponse({
+    method: 'POST',
+    requestURL,
+    scenario: 'healthy',
+  })
+  assert.equal(unauthorized.status, 401)
+  assert.equal(
+    unauthorized.body.error.code,
+    'MUTATION_AUTHENTICATION_REQUIRED',
+  )
+
+  const processed = resolveMockResponse({
+    method: 'POST',
+    requestURL,
+    scenario: 'healthy',
+    headers: {
+      'x-internal-api-key': 'playwright-route-intelligence-key-v1',
+    },
+  })
+  assert.equal(processed.status, 200)
+  assert.equal(processed.body.data.result.status, 'complete')
+  assert.equal(processed.body.data.result.origin.airport.icao_code, 'UBBB')
+  assert.equal(
+    processed.body.data.result.limitations[0].code,
+    'inferred_not_filed',
+  )
+
+  const latest = resolveMockResponse({
+    method: 'GET',
+    requestURL: `${requestURL}/latest`,
+    scenario: 'healthy',
+  })
+  assert.equal(latest.status, 200)
+  assert.equal(latest.body.data.id, processed.body.data.id)
+
+  const history = resolveMockResponse({
+    method: 'GET',
+    requestURL: `${requestURL}/history?limit=20`,
+    scenario: 'healthy',
+  })
+  assert.equal(history.status, 200)
+  assert.equal(history.body.data.has_more, true)
+  assert.equal(
+    history.body.data.next_before_as_of_time,
+    '2026-08-05T18:00:00Z',
+  )
+})
+
 test('traffic-error fixture preserves the typed error envelope', () => {
   const result = resolveMockResponse({
     method: 'GET',

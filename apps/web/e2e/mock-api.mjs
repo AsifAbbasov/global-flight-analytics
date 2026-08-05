@@ -38,6 +38,9 @@ export const openAPIPaths = new Set([
   '/api/v1/trajectories/{id}/stability-intelligence',
   '/api/v1/trajectories/{id}/weather-context',
   '/api/v1/airspace/regions/{code}/analytics',
+  '/api/v1/trajectories/{id}/route-intelligence',
+  '/api/v1/trajectories/{id}/route-intelligence/latest',
+  '/api/v1/trajectories/{id}/route-intelligence/history',
 ])
 
 export const supportedScenarios = new Set([
@@ -1078,6 +1081,158 @@ const airspaceAnalytics = {
   generated_at: '2026-08-04T18:00:06Z',
 }
 
+const routeIntelligenceTrajectoryID =
+  '11111111-1111-4111-8111-111111111111'
+const routeIntelligenceRecordID =
+  '22222222-2222-4222-8222-222222222222'
+const routeIntelligenceMutationKey =
+  'playwright-route-intelligence-key-v1'
+
+const routeIntelligenceRecord = {
+  id: routeIntelligenceRecordID,
+  input_fingerprint: `sha256:${'d'.repeat(64)}`,
+  stored_at: '2026-08-05T18:00:02Z',
+  result: {
+    schema_version: 'route-intelligence-v1',
+    status: 'complete',
+    trajectory_id: routeIntelligenceTrajectoryID,
+    identity_key: `flight-identity-${'e'.repeat(64)}`,
+    flight_id: '33333333-3333-4333-8333-333333333333',
+    aircraft_id: '44444444-4444-4444-8444-444444444444',
+    icao24: '4B1801',
+    callsign: 'AZAL101',
+    window: {
+      start_time: '2026-08-05T16:00:00Z',
+      end_time: '2026-08-05T18:00:00Z',
+      as_of_time: '2026-08-05T18:00:00Z',
+    },
+    origin: {
+      role: 'origin',
+      airport: {
+        icao_code: 'UBBB',
+        iata_code: 'GYD',
+        name: 'Heydar Aliyev International Airport',
+        city: 'Baku',
+        country: 'Azerbaijan',
+        latitude: 40.4675,
+        longitude: 50.0467,
+        elevation_m: 3,
+        elevation_status: 'observed',
+        timezone: 'Asia/Baku',
+      },
+      distance_km: 7.4,
+      confidence: {
+        score: 0.92,
+        level: 'high',
+        evidence_count: 1,
+        reasons: [
+          {
+            code: 'trajectory_endpoint_proximity',
+            message: 'The first trajectory segment is close to UBBB.',
+            contribution: 0.62,
+          },
+        ],
+      },
+      evidence: [
+        {
+          type: 'trajectory_endpoint_proximity',
+          source_name: 'playwright-fixture',
+          source_version: 'route-intelligence-v1',
+          score: 0.92,
+          weight: 0.8,
+          observed_at: '2026-08-05T16:00:00Z',
+          summary: 'Observed origin endpoint proximity.',
+          attributes: [
+            { key: 'airport_icao', value: 'UBBB' },
+            { key: 'distance_km', value: '7.4' },
+          ],
+        },
+      ],
+      limitations: [],
+    },
+    destination: {
+      role: 'destination',
+      airport: {
+        icao_code: 'LTFM',
+        iata_code: 'IST',
+        name: 'Istanbul Airport',
+        city: 'Istanbul',
+        country: 'Turkey',
+        latitude: 41.2753,
+        longitude: 28.7519,
+        elevation_m: 99,
+        elevation_status: 'observed',
+        timezone: 'Europe/Istanbul',
+      },
+      distance_km: 11.2,
+      confidence: {
+        score: 0.88,
+        level: 'high',
+        evidence_count: 1,
+        reasons: [
+          {
+            code: 'trajectory_endpoint_proximity',
+            message: 'The final trajectory segment is close to LTFM.',
+            contribution: 0.58,
+          },
+        ],
+      },
+      evidence: [
+        {
+          type: 'trajectory_endpoint_proximity',
+          source_name: 'playwright-fixture',
+          source_version: 'route-intelligence-v1',
+          score: 0.88,
+          weight: 0.8,
+          observed_at: '2026-08-05T18:00:00Z',
+          summary: 'Observed destination endpoint proximity.',
+          attributes: [
+            { key: 'airport_icao', value: 'LTFM' },
+            { key: 'distance_km', value: '11.2' },
+          ],
+        },
+      ],
+      limitations: [],
+    },
+    summary: {
+      great_circle_distance_km: 1789.4,
+      same_airport: false,
+    },
+    confidence: {
+      score: 0.9,
+      level: 'high',
+      evidence_count: 2,
+      reasons: [
+        {
+          code: 'endpoint_pair_supported',
+          message: 'Both inferred endpoints have independent evidence.',
+          contribution: 0.9,
+        },
+      ],
+    },
+    limitations: [
+      {
+        code: 'inferred_not_filed',
+        message: 'This route is inferred from observations and is not a filed flight plan.',
+        scope: 'route',
+      },
+    ],
+    provenance: {
+      resolver_version: 'route-resolver-v1',
+      input_fingerprint: `sha256:${'d'.repeat(64)}`,
+      trajectory_updated_at: '2026-08-05T18:00:00Z',
+      source_names: ['playwright-fixture'],
+    },
+    generated_at: '2026-08-05T18:00:01Z',
+  },
+}
+
+const routeIntelligenceHistory = {
+  items: [routeIntelligenceRecord],
+  has_more: true,
+  next_before_as_of_time: '2026-08-05T18:00:00Z',
+}
+
 function publicTrafficItem(item) {
   return {
     icao24: item.icao24,
@@ -1172,6 +1327,15 @@ function normalizePath(pathname) {
   if (/^\/api\/v1\/airspace\/regions\/[^/]+\/analytics$/.test(pathname)) {
     return '/api/v1/airspace/regions/{code}/analytics'
   }
+  if (/^\/api\/v1\/trajectories\/[^/]+\/route-intelligence$/.test(pathname)) {
+    return '/api/v1/trajectories/{id}/route-intelligence'
+  }
+  if (/^\/api\/v1\/trajectories\/[^/]+\/route-intelligence\/latest$/.test(pathname)) {
+    return '/api/v1/trajectories/{id}/route-intelligence/latest'
+  }
+  if (/^\/api\/v1\/trajectories\/[^/]+\/route-intelligence\/history$/.test(pathname)) {
+    return '/api/v1/trajectories/{id}/route-intelligence/history'
+  }
   return pathname
 }
 
@@ -1179,6 +1343,7 @@ export function resolveMockResponse({
   method,
   requestURL,
   scenario = 'healthy',
+  headers = {},
 }) {
   const url = new URL(requestURL, 'http://127.0.0.1')
   const pathname = url.pathname
@@ -1454,13 +1619,49 @@ export function resolveMockResponse({
     return success(airspaceAnalytics)
   }
 
+  if (
+    method === 'POST' &&
+    normalizePath(pathname) ===
+      '/api/v1/trajectories/{id}/route-intelligence'
+  ) {
+    const candidate = String(
+      headers['x-internal-api-key'] ??
+        headers['X-Internal-API-Key'] ??
+        '',
+    )
+    if (candidate !== routeIntelligenceMutationKey) {
+      return failure(
+        401,
+        'MUTATION_AUTHENTICATION_REQUIRED',
+        'Valid internal mutation credentials are required',
+      )
+    }
+    return success(routeIntelligenceRecord)
+  }
+
+  if (
+    method === 'GET' &&
+    normalizePath(pathname) ===
+      '/api/v1/trajectories/{id}/route-intelligence/latest'
+  ) {
+    return success(routeIntelligenceRecord)
+  }
+
+  if (
+    method === 'GET' &&
+    normalizePath(pathname) ===
+      '/api/v1/trajectories/{id}/route-intelligence/history'
+  ) {
+    return success(routeIntelligenceHistory)
+  }
+
   return failure(404, 'E2E_ROUTE_NOT_FOUND', 'Mock API route not found')
 }
 
 function writeJSON(response, resolved) {
   const body = JSON.stringify(resolved.body)
   response.writeHead(resolved.status, {
-    'Access-Control-Allow-Headers': 'Accept,Content-Type',
+    'Access-Control-Allow-Headers': 'Accept,Content-Type,X-Internal-API-Key',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
     'Access-Control-Allow-Origin': 'http://127.0.0.1:3000',
     'Cache-Control': 'no-store',
@@ -1500,7 +1701,7 @@ export function createMockAPIServer({
 
       if (request.method === 'OPTIONS') {
         response.writeHead(204, {
-          'Access-Control-Allow-Headers': 'Accept,Content-Type',
+          'Access-Control-Allow-Headers': 'Accept,Content-Type,X-Internal-API-Key',
           'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
           'Access-Control-Allow-Origin': 'http://127.0.0.1:3000',
           'Cache-Control': 'no-store',
@@ -1536,6 +1737,7 @@ export function createMockAPIServer({
           method: request.method ?? 'GET',
           requestURL: requestURL.toString(),
           scenario,
+          headers: request.headers,
         }),
       )
     } catch (error) {

@@ -4,6 +4,7 @@ Status: IMPLEMENTED
 Project: Global Flight Analytics
 Scope: seventeen source-backed advanced public GET operations
 Baseline: `1c569e0cced1f4700829b02d3573b1c9502fe4ca`
+Closure successor: Document 180
 
 ## 1. Purpose
 
@@ -98,9 +99,9 @@ PLAYWRIGHT_E2E_OPENAPI_PATHS=35
 OPENAPI_ADVANCED_INTELLIGENCE_READ_SURFACE_INSTALL=PASS
 ```
 
-## 8. Remaining work
+## 8. Closure successor
 
-Only the Route Intelligence closure remains:
+Document 180 closes the previously remaining Route Intelligence slice:
 
 ```text
 POST /api/v1/trajectories/{id}/route-intelligence
@@ -108,6 +109,6 @@ GET  /api/v1/trajectories/{id}/route-intelligence/latest
 GET  /api/v1/trajectories/{id}/route-intelligence/history
 ```
 
-That final increment must define the mutation security scheme, internal API key header,
-authorization failures, request/response DTOs, and materialized read-history pagination without
-weakening public read access or exposing `/internal/metrics`.
+Document 180 defines the mutation security scheme, internal API key header, authorization
+failures, request/response DTOs, and materialized read-history pagination without weakening
+public read access or exposing `/internal/metrics`.

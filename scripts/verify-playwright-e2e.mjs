@@ -151,6 +151,10 @@ export function validatePlaywrightFoundation(root) {
       "'/api/v1/historical-intelligence/aggregates/history'",
       "'/api/v1/trajectories/{id}/projection-intelligence'",
       "'/api/v1/airspace/regions/{code}/analytics'",
+      "'/api/v1/trajectories/{id}/route-intelligence'",
+      "'/api/v1/trajectories/{id}/route-intelligence/latest'",
+      "'/api/v1/trajectories/{id}/route-intelligence/history'",
+      "'X-Internal-API-Key'",
     ],
     'mock API',
   )
@@ -221,6 +225,8 @@ export function validatePlaywrightFoundation(root) {
       'OpenAPI',
       'PLAYWRIGHT_E2E=PASS',
       'public Render deployment is never targeted',
+      'thirty-eight paths',
+      'Route Intelligence',
     ],
     'Document 176',
   )
@@ -274,7 +280,7 @@ function main() {
   }
 
   console.log(`PLAYWRIGHT_E2E_VERSION=1.62.0`)
-  console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=35')
+  console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=38')
   console.log('PLAYWRIGHT_E2E_SCENARIOS=4')
   console.log('PLAYWRIGHT_E2E_MOCK_API=PASS')
   console.log('PLAYWRIGHT_E2E_CONTRACT=PASS')

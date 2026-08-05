@@ -255,14 +255,8 @@ export function validateRepository(root) {
   if (publicOperations.filter(([method]) => method === 'GET').length !== 37) errors.push('public GET operation count must be 37')
   if (publicOperations.filter(([method]) => method === 'POST').length !== 1) errors.push('public POST operation count must be 1')
   if (internalOperations.length !== 1) errors.push(`internal operation count must be 1; found ${internalOperations.length}`)
-  if (openAPIOperations.length !== 35) errors.push(`current OpenAPI operation count must be 35; found ${openAPIOperations.length}`)
-  if (gap.missing.length !== 3) errors.push(`OpenAPI missing operation count must be 3; found ${gap.missing.length}`)
-  const expectedRemaining = [
-    'GET /api/v1/trajectories/{id}/route-intelligence/history',
-    'GET /api/v1/trajectories/{id}/route-intelligence/latest',
-    'POST /api/v1/trajectories/{id}/route-intelligence',
-  ]
-  if (JSON.stringify(gap.missing) !== JSON.stringify(expectedRemaining)) errors.push(`remaining OpenAPI gap is not the exact Route Intelligence slice: ${gap.missing.join(', ')}`)
+  if (openAPIOperations.length !== 38) errors.push(`complete OpenAPI operation count must be 38; found ${openAPIOperations.length}`)
+  if (gap.missing.length !== 0) errors.push(`OpenAPI missing operation count must be 0; found ${gap.missing.length}`)
   if (gap.extra.length !== 0) errors.push(`OpenAPI contains operations absent from the source: ${gap.extra.join(', ')}`)
   if (openAPIOperations.some(([, routePath]) => routePath.startsWith('/internal/'))) {
     errors.push('public OpenAPI must not expose /internal operations')

@@ -2,24 +2,19 @@
 
 Status: IMPLEMENTED
 Project: Global Flight Analytics
-Scope: source-backed contract for the stable public read API
+Scope: source-backed contract for the complete stable public API
 
 ## 1. Purpose
 
-This document records the evolving OpenAPI 3.1 contract for the stable public API used by
+This document records the complete OpenAPI 3.1 contract for the stable public API used by
 frontend clients, deterministic browser fixtures, operational smoke tests, and reviewer tools.
 
-The public specification now describes thirty-five stable GET operations. It combines:
+The specification now documents all thirty-eight production public operations:
 
-- the original eight-operation system, region, airport, and current-traffic foundation;
-- the ten-operation core read slice for aircraft, flights, flight states, trajectories,
-  route context, and the active-aircraft metric;
-- seventeen advanced intelligence reads for transponder evidence, current weather,
-  analytical metrics, Airport Intelligence, Historical Intelligence, Projection
-  Intelligence, Stability Intelligence, Weather Context, and Airspace Intelligence.
+- thirty-seven source-backed GET operations;
+- one protected Route Intelligence POST operation.
 
-The only production public operations still outside this document are the final Route
-Intelligence slice:
+The final Route Intelligence slice adds:
 
 ```text
 POST /api/v1/trajectories/{id}/route-intelligence
@@ -27,8 +22,11 @@ GET  /api/v1/trajectories/{id}/route-intelligence/latest
 GET  /api/v1/trajectories/{id}/route-intelligence/history
 ```
 
-Those three operations remain separate because the POST route requires an explicit security
-scheme and mutation-authorization contract.
+The internal metrics endpoint remains outside the public contract:
+
+```text
+GET /internal/metrics
+```
 
 ## 2. Contract Location
 
@@ -43,58 +41,57 @@ the contract does not hard-code Render, Vercel, localhost, or another deployment
 ## 3. Source Alignment
 
 The contract is derived from production Fiber registrations, handler request parsing, HTTP
-DTOs, frontend transport parsers where those parsers intentionally preserve a backend-owned
-shape, and executable repository verification.
+DTOs, authorization middleware, internal API-key rules, frontend transport parsers where those
+parsers intentionally preserve a backend-owned shape, and executable repository verification.
 
-The advanced read slice adds source evidence for:
+Route Intelligence evidence is anchored in:
 
 ```text
-apps/api/internal/http/handlers/transponder_evidence.go
-apps/api/internal/http/handlers/weather.go
-apps/api/internal/http/handlers/analytical_metrics.go
-apps/api/internal/http/handlers/analytical_production_snapshot.go
-apps/api/internal/http/handlers/airport_intelligence.go
-apps/api/internal/http/handlers/historical_intelligence.go
-apps/api/internal/http/handlers/projection_intelligence.go
-apps/api/internal/http/handlers/stability_intelligence.go
-apps/api/internal/http/handlers/weather_context.go
-apps/api/internal/http/handlers/airspace_region_analytics.go
+apps/api/internal/server/route_intelligence_database_routes.go
+apps/api/internal/http/handlers/route_intelligence.go
+apps/api/internal/http/dto/route_intelligence.go
+apps/api/internal/middleware/mutation_authorization.go
+apps/api/internal/security/internalapikey/key.go
+apps/api/internal/routeintelligence/routestore/contracts.go
+apps/api/internal/routeintelligence/routecontract/model.go
 ```
 
-The contract does not publish parameters rejected by the backend. In particular:
+## 4. Security and Mutation Boundary
 
-- `area_square_kilometers` remains server-derived for traffic density;
-- client-supplied coverage counters and freshness timestamps remain prohibited;
-- quality-metric `limit` remains server-owned;
-- historical scope identifiers remain conditional on the selected scope;
-- stability history requires two to eight strictly increasing RFC 3339 timestamps;
-- Airspace Intelligence windows remain whole-minute values from 60 to 3600 seconds.
+The mutation operation declares the `InternalAPIKey` OpenAPI security scheme:
 
-## 4. Schemas and Boundaries
+```text
+header: X-Internal-API-Key
+type: apiKey
+```
+
+The server stores only a SHA-256 digest. Clients send the raw key, which must be between 32 and
+256 characters. Missing or invalid credentials return `401 MUTATION_AUTHENTICATION_REQUIRED`. Missing
+server-side mutation-authentication configuration returns
+`503 MUTATION_AUTHENTICATION_UNAVAILABLE` before the handler runs.
+
+The two materialized GET operations remain publicly readable and do not inherit the mutation
+credential requirement.
+
+## 5. Schemas and Boundaries
 
 The specification preserves:
 
 - typed success and error envelopes;
 - `X-Request-ID` and rate-limit headers;
-- nullable weather and altitude measurements rather than invented zero values;
-- explicit confidence, limitations, provenance, scope guards, and evidence boundaries;
-- opaque Historical Intelligence pagination cursors;
 - UUID and RFC 3339 request contracts;
-- research-only transponder evidence that cannot be represented as a confirmed emergency;
-- source-backed analytical metrics with optional server-owned data-quality reports;
-- explicit timeout, service-unavailable, not-found, and bounded-policy responses.
+- nullable airport elevation rather than invented zero values;
+- explicit confidence, evidence, limitations, provenance, and route status;
+- origin and destination as optional inferred endpoints;
+- history limits from 1 to 100, defaulting to 20;
+- an exclusive `before_as_of_time` RFC 3339 pagination cursor;
+- conflict, timeout, not-found, service-unavailable, and authorization outcomes.
 
-Typed DTO schemas use `additionalProperties: false`. `OpenObject` is the only intentionally
-open schema introduced by the advanced slice and is limited to backend fields that are
-explicitly strategy-specific or retained as unknown by the frontend contract.
+Typed DTO schemas use `additionalProperties: false`. The Route Intelligence POST has no request
+body because the production handler derives the computation request solely from the trajectory
+UUID.
 
-The internal metrics endpoint remains excluded:
-
-```text
-GET /internal/metrics
-```
-
-## 5. Verification
+## 6. Verification
 
 ```bash
 pnpm run test:openapi-route-inventory
@@ -105,40 +102,32 @@ pnpm run test:playwright-e2e-contract
 pnpm run verify:playwright-e2e
 ```
 
-Required success markers now include:
+Required success markers include:
 
 ```text
 SOURCE_PUBLIC_OPERATIONS=38
-OPENAPI_DOCUMENTED_OPERATIONS=35
-OPENAPI_MISSING_OPERATIONS=3
+OPENAPI_DOCUMENTED_OPERATIONS=38
+OPENAPI_MISSING_OPERATIONS=0
 OPENAPI_EXTRA_OPERATIONS=0
-OPENAPI_CONTRACT_PATHS=35
-OPENAPI_CORE_READ_OPERATIONS=10
-OPENAPI_ADVANCED_INTELLIGENCE_READ_OPERATIONS=17
+OPENAPI_CONTRACT_PATHS=38
+OPENAPI_PUBLIC_READ_OPERATIONS=37
+OPENAPI_PROTECTED_MUTATION_OPERATIONS=1
+OPENAPI_ROUTE_INTELLIGENCE_OPERATIONS=3
 OPENAPI_CONTRACT_SCHEMAS=PASS
+OPENAPI_CONTRACT_SECURITY=PASS
 OPENAPI_CONTRACT_ROUTE_DRIFT=PASS
 OPENAPI_CONTRACT=PASS
 ```
 
-The same static contracts run in the dedicated `OpenAPI Contract` workflow and in the full
-repository release gate.
+## 7. Playwright Dependency
 
-## 6. Playwright Dependency
+The deterministic Playwright mock API mirrors all thirty-eight documented paths. The local
+Route Intelligence mutation fixture requires a deterministic test-only key and never uses a
+production credential. Existing browser scenarios remain unchanged.
 
-The deterministic Playwright mock API mirrors all thirty-five documented paths. The four
-existing browser scenarios remain unchanged; new fixtures provide a contract-aligned base for
-later browser assertions without calling public deployments or real providers.
+## 8. Evolution Rule
 
-## 7. Evolution Rule
-
-A route may enter the public contract only when all of the following are true:
-
-1. the Fiber route is production-reachable;
-2. parameters and response DTOs are source-backed;
-3. success and error behavior are represented without inventing evidence;
-4. local references resolve and operation identifiers are unique;
-5. the route inventory, OpenAPI verifier, mock API, and release gate pass.
-
-The final Route Intelligence closure must additionally define the mutation credential header,
-security scheme, authorization failures, and separation between computation-triggering POST
-behavior and materialized GET reads.
+Any future public route change must update production source, OpenAPI, route inventory,
+deterministic fixtures, contract tests, documentation, and the release gate in one reviewed
+increment. Mutation routes must also define an explicit security scheme and source-backed
+authorization failures.

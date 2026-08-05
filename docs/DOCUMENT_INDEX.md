@@ -1651,6 +1651,14 @@ Closes the ten-operation core read slice for aircraft, flights, flight states, t
 
 Closes seventeen source-backed analytical GET operations for transponder evidence, current weather, analytical metrics, Airport Intelligence, Historical Intelligence, Projection Intelligence, Stability Intelligence, Weather Context, and Airspace Intelligence; expands OpenAPI coverage from 18 to 35 operations; and leaves only the three-operation Route Intelligence slice for final security-aware closure.
 
+<!-- OPENAPI-ROUTE-INTELLIGENCE-CONTRACT-CLOSURE-V1:DOCUMENT-INDEX -->
+
+## Document 180 — OpenAPI Route Intelligence Contract Closure
+
+`180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md`
+
+Closes the final protected Route Intelligence POST and two materialized GET reads; defines the X-Internal-API-Key security scheme and authorization failures; expands OpenAPI coverage from 35 to all 38 production public operations; and permanently reduces missing and extra route inventory counts to zero.
+
 <!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1:DOCUMENT-INDEX -->
 ## Document 170 — Production Observability and Alerting Closure
 

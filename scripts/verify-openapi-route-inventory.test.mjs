@@ -26,8 +26,8 @@ test('repository route inventory passes', () => {
     { encoding: 'utf8' },
   )
   assert.match(output, /SOURCE_PUBLIC_OPERATIONS=38/)
-  assert.match(output, /OPENAPI_DOCUMENTED_OPERATIONS=35/)
-  assert.match(output, /OPENAPI_MISSING_OPERATIONS=3/)
+  assert.match(output, /OPENAPI_DOCUMENTED_OPERATIONS=38/)
+  assert.match(output, /OPENAPI_MISSING_OPERATIONS=0/)
   assert.match(output, /OPENAPI_ROUTE_INVENTORY=PASS/)
 })
 
@@ -47,16 +47,12 @@ test('internal metrics remains the only internal HTTP operation', () => {
   assert.deepEqual(internalOperations, expectedInternalOperations)
 })
 
-test('advanced-read OpenAPI leaves only the three-operation Route Intelligence slice', () => {
+test('complete OpenAPI documents all 38 source operations', () => {
   const { publicOperations } = discoverSourceOperations(process.cwd())
   const openAPIOperations = extractOpenAPIOperations(loadSpec())
   const gap = compareOperationSets(publicOperations, openAPIOperations)
-  assert.equal(openAPIOperations.length, 35)
-  assert.deepEqual(gap.missing, [
-    'GET /api/v1/trajectories/{id}/route-intelligence/history',
-    'GET /api/v1/trajectories/{id}/route-intelligence/latest',
-    'POST /api/v1/trajectories/{id}/route-intelligence',
-  ])
+  assert.equal(openAPIOperations.length, 38)
+  assert.deepEqual(gap.missing, [])
   assert.deepEqual(gap.extra, [])
 })
 

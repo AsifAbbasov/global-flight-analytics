@@ -2,9 +2,9 @@
   "openapi": "3.1.0",
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
-    "title": "Global Flight Analytics Public Read API",
-    "version": "1.2.0",
-    "description": "Source-backed OpenAPI contract for 35 stable public GET operations covering system, catalog, traffic, aircraft, flights, flight states, trajectories, transponder evidence, current weather, analytical metrics, Airport Intelligence, Historical Intelligence, Projection Intelligence, Stability Intelligence, Weather Context, and Airspace Intelligence. The protected Route Intelligence mutation and its two materialized reads remain a final separately reviewed slice."
+    "title": "Global Flight Analytics Public API",
+    "version": "1.3.0",
+    "description": "Complete source-backed OpenAPI contract for all 38 production public operations: 37 stable reads and one protected Route Intelligence mutation. The internal metrics endpoint remains excluded."
   },
   "servers": [
     {
@@ -88,6 +88,10 @@
     {
       "name": "Airspace Intelligence",
       "description": "Bounded regional airspace analytics reads."
+    },
+    {
+      "name": "Route Intelligence",
+      "description": "Protected computation and materialized reads for evidence-bounded route inference."
     }
   ],
   "paths": {
@@ -2287,6 +2291,220 @@
           }
         ]
       }
+    },
+    "/api/v1/trajectories/{id}/route-intelligence": {
+      "post": {
+        "operationId": "processRouteIntelligenceByTrajectoryID",
+        "summary": "Process and persist Route Intelligence for a trajectory",
+        "description": "Triggers bounded Route Intelligence computation from persisted trajectory evidence. The request has no body and requires the internal mutation API key header.",
+        "tags": [
+          "Route Intelligence"
+        ],
+        "security": [
+          {
+            "InternalAPIKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Trajectory UUID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/CacheControlNoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteIntelligenceRecordResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/MutationAuthenticationRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "409": {
+            "$ref": "#/components/responses/RouteIntelligenceConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/RouteIntelligenceMutationUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/GatewayTimeout"
+          }
+        }
+      }
+    },
+    "/api/v1/trajectories/{id}/route-intelligence/latest": {
+      "get": {
+        "operationId": "getLatestRouteIntelligenceByTrajectoryID",
+        "summary": "Get the latest materialized Route Intelligence result",
+        "tags": [
+          "Route Intelligence"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Trajectory UUID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteIntelligenceRecordResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/GatewayTimeout"
+          }
+        }
+      }
+    },
+    "/api/v1/trajectories/{id}/route-intelligence/history": {
+      "get": {
+        "operationId": "listRouteIntelligenceHistoryByTrajectoryID",
+        "summary": "List materialized Route Intelligence history",
+        "tags": [
+          "Route Intelligence"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Trajectory UUID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of records.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "before_as_of_time",
+            "in": "query",
+            "required": false,
+            "description": "Exclusive RFC 3339 as-of-time cursor.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteIntelligenceHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "408": {
+            "$ref": "#/components/responses/RequestTimeout"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          },
+          "504": {
+            "$ref": "#/components/responses/GatewayTimeout"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2317,6 +2535,13 @@
         "schema": {
           "type": "integer",
           "minimum": 0
+        }
+      },
+      "CacheControlNoStore": {
+        "description": "Mutation responses are not cacheable.",
+        "schema": {
+          "type": "string",
+          "const": "no-store"
         }
       }
     },
@@ -2446,6 +2671,94 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "MutationAuthenticationRequired": {
+        "description": "Valid X-Internal-API-Key mutation credentials are required.",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          },
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControlNoStore"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "MUTATION_AUTHENTICATION_REQUIRED",
+                "message": "Valid internal mutation credentials are required"
+              }
+            }
+          }
+        }
+      },
+      "RouteIntelligenceConflict": {
+        "description": "The computed Route Intelligence result conflicts with previously stored evidence.",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          },
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControlNoStore"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "success": false,
+              "error": {
+                "code": "ROUTE_INTELLIGENCE_CONFLICT",
+                "message": "Route Intelligence result conflicts with previously stored evidence"
+              }
+            }
+          }
+        }
+      },
+      "RouteIntelligenceMutationUnavailable": {
+        "description": "Mutation authentication is not configured or the Route Intelligence service is unavailable.",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          },
+          "Cache-Control": {
+            "$ref": "#/components/headers/CacheControlNoStore"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "mutationAuthenticationUnavailable": {
+                "value": {
+                  "success": false,
+                  "error": {
+                    "code": "MUTATION_AUTHENTICATION_UNAVAILABLE",
+                    "message": "Mutation authentication is not configured"
+                  }
+                }
+              },
+              "routeIntelligenceServiceUnavailable": {
+                "value": {
+                  "success": false,
+                  "error": {
+                    "code": "ROUTE_INTELLIGENCE_SERVICE_UNAVAILABLE",
+                    "message": "Route Intelligence service is unavailable"
+                  }
+                }
+              }
             }
           }
         }
@@ -8892,6 +9205,516 @@
           "success",
           "data"
         ]
+      },
+      "RouteIntelligenceEvidenceAttribute": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      },
+      "RouteIntelligenceEvidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "trajectory_endpoint_proximity",
+              "ground_cycle",
+              "callsign_route_token",
+              "source_flight_identity",
+              "airport_activity",
+              "external_reference"
+            ]
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_version": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteIntelligenceEvidenceAttribute"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "source_name",
+          "source_version",
+          "score",
+          "weight",
+          "observed_at",
+          "summary",
+          "attributes"
+        ]
+      },
+      "RouteIntelligenceConfidenceReason": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contribution": {
+            "type": "number",
+            "minimum": -1,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "contribution"
+        ]
+      },
+      "RouteIntelligenceConfidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "evidence_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteIntelligenceConfidenceReason"
+            }
+          }
+        },
+        "required": [
+          "score",
+          "level",
+          "evidence_count",
+          "reasons"
+        ]
+      },
+      "RouteIntelligenceLimitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "scope"
+        ]
+      },
+      "RouteIntelligenceAirport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "icao_code": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{4}$"
+          },
+          "iata_code": {
+            "type": "string",
+            "pattern": "^(?:|[A-Z0-9]{3})$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "elevation_m": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "elevation_status": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "unknown",
+              "invalid"
+            ]
+          },
+          "timezone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "icao_code",
+          "iata_code",
+          "name",
+          "city",
+          "country",
+          "latitude",
+          "longitude",
+          "elevation_m",
+          "elevation_status",
+          "timezone"
+        ]
+      },
+      "RouteIntelligenceEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "origin",
+              "destination"
+            ]
+          },
+          "airport": {
+            "$ref": "#/components/schemas/RouteIntelligenceAirport"
+          },
+          "distance_km": {
+            "type": "number",
+            "minimum": 0
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/RouteIntelligenceConfidence"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteIntelligenceEvidence"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteIntelligenceLimitation"
+            }
+          }
+        },
+        "required": [
+          "role",
+          "airport",
+          "distance_km",
+          "confidence",
+          "evidence",
+          "limitations"
+        ]
+      },
+      "RouteIntelligenceWindow": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "start_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "as_of_time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "start_time",
+          "end_time",
+          "as_of_time"
+        ]
+      },
+      "RouteIntelligenceSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "great_circle_distance_km": {
+            "type": "number",
+            "minimum": 0
+          },
+          "same_airport": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "great_circle_distance_km",
+          "same_airport"
+        ]
+      },
+      "RouteIntelligenceProvenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resolver_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "input_fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "trajectory_updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source_names": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "resolver_version",
+          "input_fingerprint",
+          "trajectory_updated_at",
+          "source_names"
+        ]
+      },
+      "RouteIntelligenceResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "route-intelligence-v1"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unavailable",
+              "partial",
+              "complete"
+            ]
+          },
+          "trajectory_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "identity_key": {
+            "type": "string",
+            "pattern": "^(?:|flight-identity-[0-9a-f]{64})$"
+          },
+          "flight_id": {
+            "type": "string"
+          },
+          "aircraft_id": {
+            "type": "string"
+          },
+          "icao24": {
+            "type": "string",
+            "pattern": "^[A-F0-9]{6}$"
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "window": {
+            "$ref": "#/components/schemas/RouteIntelligenceWindow"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/RouteIntelligenceEndpoint"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/RouteIntelligenceEndpoint"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/RouteIntelligenceSummary"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/RouteIntelligenceConfidence"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteIntelligenceLimitation"
+            }
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/RouteIntelligenceProvenance"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "schema_version",
+          "status",
+          "trajectory_id",
+          "identity_key",
+          "flight_id",
+          "aircraft_id",
+          "icao24",
+          "callsign",
+          "window",
+          "summary",
+          "confidence",
+          "limitations",
+          "provenance",
+          "generated_at"
+        ]
+      },
+      "RouteIntelligenceRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "input_fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "stored_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "result": {
+            "$ref": "#/components/schemas/RouteIntelligenceResult"
+          }
+        },
+        "required": [
+          "id",
+          "input_fingerprint",
+          "stored_at",
+          "result"
+        ]
+      },
+      "RouteIntelligenceHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteIntelligenceRecord"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_before_as_of_time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "items",
+          "has_more"
+        ]
+      },
+      "RouteIntelligenceRecordResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/RouteIntelligenceRecord"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "RouteIntelligenceHistoryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/RouteIntelligenceHistory"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "InternalAPIKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Internal-API-Key",
+        "description": "Internal mutation credential. The server stores only a SHA-256 digest; clients send the raw 32–256 character key."
       }
     }
   }
