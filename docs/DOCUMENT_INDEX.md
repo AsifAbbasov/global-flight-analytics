@@ -1627,6 +1627,14 @@ semantic browser assertions, server-rendered snapshot, shareable region state, r
 navigation, traffic failure recovery, evidence retention, dedicated Continuous Integration
 workflow, and prohibition on targeting public deployments.
 
+<!-- OPENAPI-CONTRACT-CLOSURE-INVENTORY-V1:DOCUMENT-INDEX -->
+
+## Document 177 — OpenAPI Contract Closure Route Inventory
+
+`177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md`
+
+Records the source-backed inventory of 38 public operations and one internal metrics operation, the exact 30-operation OpenAPI gap, nested Fiber group and constant-backed path resolution, mutation and metrics authorization boundaries, seven permanent tests, and the dedicated Continuous Integration gate required before complete OpenAPI expansion.
+
 <!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1:DOCUMENT-INDEX -->
 ## Document 170 — Production Observability and Alerting Closure
 
