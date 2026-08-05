@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 10
     env:
       GRAFANA_INSTANCE_URL: ${{ vars.GRAFANA_INSTANCE_URL }}
+      GRAFANA_STACK_ID: ${{ vars.GRAFANA_STACK_ID }}
       GRAFANA_PROMETHEUS_DATASOURCE_UID: ${{ vars.GRAFANA_PROMETHEUS_DATASOURCE_UID }}
       GRAFANA_EXPECTED_RECEIVER: ${{ vars.GRAFANA_EXPECTED_RECEIVER }}
       GRAFANA_SERVICE_ACCOUNT_TOKEN: ${{ secrets.GRAFANA_SERVICE_ACCOUNT_TOKEN }}
@@ -30,11 +31,15 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$GRAFANA_INSTANCE_URL"
+          test -n "$GRAFANA_STACK_ID"
           test -n "$GRAFANA_PROMETHEUS_DATASOURCE_UID"
           test -n "$GRAFANA_SERVICE_ACCOUNT_TOKEN"
           case "$GRAFANA_INSTANCE_URL" in
             https://*) ;;
             *) printf '%s\n' 'GRAFANA_PROVISION_INPUT=FAIL instance URL must use HTTPS' >&2; exit 1 ;;
+          esac
+          case "$GRAFANA_STACK_ID" in
+            ''|*[!0-9]*) printf '%s\n' 'GRAFANA_PROVISION_INPUT=FAIL stack ID must be numeric' >&2; exit 1 ;;
           esac
           printf '%s\n' 'GRAFANA_PROVISION_INPUT=PASS'
 

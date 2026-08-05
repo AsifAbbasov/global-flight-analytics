@@ -11,6 +11,7 @@ command -v jq >/dev/null 2>&1 || fail 'jq is required'
 command -v node >/dev/null 2>&1 || fail 'node is required'
 
 : "${GRAFANA_INSTANCE_URL:?Set GRAFANA_INSTANCE_URL to the Grafana Cloud stack URL}"
+: "${GRAFANA_STACK_ID:?Set GRAFANA_STACK_ID to the numeric Grafana Cloud stack ID}"
 : "${GRAFANA_SERVICE_ACCOUNT_TOKEN:?Set GRAFANA_SERVICE_ACCOUNT_TOKEN}"
 : "${GRAFANA_PROMETHEUS_DATASOURCE_UID:?Set GRAFANA_PROMETHEUS_DATASOURCE_UID}"
 
@@ -19,6 +20,10 @@ case "$GRAFANA_INSTANCE_URL" in
   https://*) ;;
   *) fail 'GRAFANA_INSTANCE_URL must use HTTPS' ;;
 esac
+case "$GRAFANA_STACK_ID" in
+  ''|*[!0-9]*) fail 'GRAFANA_STACK_ID must be numeric' ;;
+esac
+GRAFANA_NAMESPACE="stacks-$GRAFANA_STACK_ID"
 
 TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/gfa-grafana-observability.XXXXXX")"
 cleanup() { rm -rf "$TEMP_ROOT"; }
@@ -53,12 +58,15 @@ upsert_resource() {
   fi
 }
 
-upsert_resource folder '/apis/folder.grafana.app/v1/namespaces/default/folders' 'gfa-observability' "$TEMP_ROOT/folder.json"
-upsert_resource dashboard '/apis/dashboard.grafana.app/v1/namespaces/default/dashboards' 'gfa-production-slo' "$TEMP_ROOT/dashboard.json"
+folder_collection="/apis/folder.grafana.app/v1/namespaces/$GRAFANA_NAMESPACE/folders"
+dashboard_collection="/apis/dashboard.grafana.app/v1/namespaces/$GRAFANA_NAMESPACE/dashboards"
+
+upsert_resource folder "$folder_collection" 'gfa-observability' "$TEMP_ROOT/folder.json"
+upsert_resource dashboard "$dashboard_collection" 'gfa-production-slo' "$TEMP_ROOT/dashboard.json"
 
 api PUT '/api/v1/provisioning/folder/gfa-observability/rule-groups/global-flight-analytics-production-slo' "$TEMP_ROOT/alert-rules.json" "$TEMP_ROOT/alerts-response.json"
 
-api GET '/apis/dashboard.grafana.app/v1/namespaces/default/dashboards/gfa-production-slo' '' "$TEMP_ROOT/dashboard-evidence.json"
+api GET "$dashboard_collection/gfa-production-slo" '' "$TEMP_ROOT/dashboard-evidence.json"
 jq -e '.metadata.name == "gfa-production-slo" and .spec.title == "Global Flight Analytics — Production SLO" and (.spec.panels | length >= 12)' "$TEMP_ROOT/dashboard-evidence.json" >/dev/null
 
 api GET '/api/v1/provisioning/folder/gfa-observability/rule-groups/global-flight-analytics-production-slo' '' "$TEMP_ROOT/alerts-evidence.json"
@@ -70,6 +78,7 @@ if [ -n "${GRAFANA_EXPECTED_RECEIVER:-}" ] && [ "$receiver" != "$GRAFANA_EXPECTE
   fail "notification policy receiver '$receiver' does not match GRAFANA_EXPECTED_RECEIVER"
 fi
 
+printf '%s\n' "GRAFANA_NAMESPACE=$GRAFANA_NAMESPACE"
 printf '%s\n' 'GRAFANA_FOLDER=PASS'
 printf '%s\n' 'GRAFANA_SLO_DASHBOARD=PASS'
 printf '%s\n' 'GRAFANA_ALERT_RULES=PASS'

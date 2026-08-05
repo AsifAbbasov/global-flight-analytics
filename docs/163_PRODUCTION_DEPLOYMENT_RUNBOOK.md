@@ -309,6 +309,7 @@ Configure these GitHub Actions repository variables:
 
 ```text
 GRAFANA_INSTANCE_URL=<Grafana Cloud stack URL, for example https://example.grafana.net>
+GRAFANA_STACK_ID=<numeric Grafana Cloud stack ID used for the stacks-<ID> API namespace>
 GRAFANA_PROMETHEUS_DATASOURCE_UID=<UID of the Grafana Cloud Prometheus datasource>
 GRAFANA_EXPECTED_RECEIVER=<optional exact receiver name from the default notification policy>
 ```
