@@ -24,11 +24,16 @@ Deterministic mock API on 127.0.0.1:8091
 OpenAPI 3.1 path and response boundary
 ```
 
-The mock API implements exactly the eight paths currently documented in:
+The mock API mirrors exactly the eighteen paths currently documented in:
 
 ```text
 openapi/openapi.json
 ```
+
+Eight paths came from the original foundation. Ten additional deterministic fixtures cover
+the core read surface for aircraft, flights, flight states, trajectories, route context, and
+the active-aircraft metric. Those fixtures enforce contract alignment even though the current
+browser scenarios do not yet exercise every new workspace.
 
 A private test control endpoint selects deterministic success and failure scenarios. It is
 not part of the production API contract.
@@ -106,10 +111,18 @@ Failure evidence retains:
 
 GitHub Actions uploads the report and test-results directories for fourteen days.
 
-Required success markers:
+Required static success markers include:
 
 ```text
 PLAYWRIGHT_E2E_VERSION=1.62.0
+PLAYWRIGHT_E2E_OPENAPI_PATHS=18
+PLAYWRIGHT_E2E_MOCK_API=PASS
+PLAYWRIGHT_E2E_CONTRACT=PASS
+```
+
+The full browser runner additionally emits:
+
+```text
 PLAYWRIGHT_E2E_BROWSER=chromium
 PLAYWRIGHT_E2E_PUBLIC_NETWORK=DISABLED
 PLAYWRIGHT_E2E=PASS
@@ -120,6 +133,6 @@ PLAYWRIGHT_E2E=PASS
 The public Render deployment is never targeted by this suite. No production mutation route,
 credential, real provider account, or external aviation service is required.
 
-This foundation covers the application shell and live traffic recovery boundary. Airport,
-historical, projection, weather, airspace, and selected-aircraft workflows should be added
-in separate reviewed increments after their fixtures and product assertions are stable.
+This foundation covers the application shell and live traffic recovery boundary. The expanded
+mock contract supports later selected-aircraft, flight, trajectory, and route-context browser
+scenarios, but those product assertions remain separate reviewed increments.

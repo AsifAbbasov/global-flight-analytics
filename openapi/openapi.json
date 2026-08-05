@@ -3,8 +3,8 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Global Flight Analytics Public Read API",
-    "version": "1.0.0",
-    "description": "Source-backed OpenAPI foundation for the stable public read surface. Advanced analytics and mutation endpoints are intentionally deferred."
+    "version": "1.1.0",
+    "description": "Source-backed OpenAPI contract for the stable public system, catalog, traffic, aircraft, flight, flight-state, trajectory, route-context, and active-aircraft metric read surface. Advanced intelligence reads and the protected mutation remain intentionally deferred."
   },
   "servers": [
     {
@@ -28,6 +28,30 @@
     {
       "name": "Traffic",
       "description": "Current observed traffic reads."
+    },
+    {
+      "name": "Metrics",
+      "description": "Source-backed operational metric reads."
+    },
+    {
+      "name": "Aircraft",
+      "description": "Aircraft catalog and aircraft-linked reads."
+    },
+    {
+      "name": "Flights",
+      "description": "Flight catalog and flight profile reads."
+    },
+    {
+      "name": "Flight States",
+      "description": "Observed flight-state history and latest-state reads."
+    },
+    {
+      "name": "Trajectories",
+      "description": "Persisted trajectory reads."
+    },
+    {
+      "name": "Route Context",
+      "description": "Evidence-bounded inferred route context reads."
     }
   ],
   "paths": {
@@ -316,6 +340,476 @@
           }
         ]
       }
+    },
+    "/api/v1/metrics/active-aircraft": {
+      "get": {
+        "operationId": "getActiveAircraftMetric",
+        "summary": "Calculate active aircraft count",
+        "tags": [
+          "Metrics"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveAircraftMetricResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "Optional canonical region code. Omit for the global scope.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "window_minutes",
+            "in": "query",
+            "required": false,
+            "description": "Observation window in minutes. Defaults to 15.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 180,
+              "default": 15
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/aircraft/{icao24}/trajectory": {
+      "get": {
+        "operationId": "getLatestTrajectoryByICAO24",
+        "summary": "Get latest trajectory for one aircraft",
+        "tags": [
+          "Trajectories"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrajectoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "icao24",
+            "in": "path",
+            "required": true,
+            "description": "Aircraft ICAO24 transponder identifier.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/aircraft/{icao24}/route-context": {
+      "get": {
+        "operationId": "getAircraftRouteContextByICAO24",
+        "summary": "Get inferred route context for one aircraft",
+        "tags": [
+          "Route Context"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AircraftRouteContextResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "icao24",
+            "in": "path",
+            "required": true,
+            "description": "Aircraft ICAO24 transponder identifier.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/trajectories/{id}": {
+      "get": {
+        "operationId": "getTrajectoryByID",
+        "summary": "Get one trajectory by identifier",
+        "tags": [
+          "Trajectories"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrajectoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Trajectory identifier.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/flights/{flightID}/states": {
+      "get": {
+        "operationId": "listFlightStatesByFlightID",
+        "summary": "List observed states for one flight",
+        "tags": [
+          "Flight States"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightStateListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "flightID",
+            "in": "path",
+            "required": true,
+            "description": "Flight identifier.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/aircraft/{icao24}/latest-state": {
+      "get": {
+        "operationId": "getLatestFlightStateByICAO24",
+        "summary": "Get latest observed state for one aircraft",
+        "tags": [
+          "Flight States"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightStateResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "icao24",
+            "in": "path",
+            "required": true,
+            "description": "Aircraft ICAO24 transponder identifier.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/flights": {
+      "get": {
+        "operationId": "listFlights",
+        "summary": "List flights",
+        "tags": [
+          "Flights"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v1/flights/{id}": {
+      "get": {
+        "operationId": "getFlightByID",
+        "summary": "Get one flight by identifier",
+        "tags": [
+          "Flights"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlightResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Flight identifier.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/aircraft": {
+      "get": {
+        "operationId": "listAircraft",
+        "summary": "List aircraft",
+        "tags": [
+          "Aircraft"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AircraftListResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/v1/aircraft/{icao24}": {
+      "get": {
+        "operationId": "getAircraftByICAO24",
+        "summary": "Get one aircraft by ICAO24",
+        "tags": [
+          "Aircraft"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/XRequestID"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AircraftResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "parameters": [
+          {
+            "name": "icao24",
+            "in": "path",
+            "required": true,
+            "description": "Aircraft ICAO24 transponder identifier.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -390,7 +884,7 @@
         }
       },
       "ServiceUnavailable": {
-        "description": "Required PostgreSQL dependency is not ready.",
+        "description": "A required backend dependency or service is unavailable.",
         "headers": {
           "X-Request-ID": {
             "$ref": "#/components/headers/XRequestID"
@@ -406,6 +900,21 @@
       },
       "InternalServerError": {
         "description": "The API could not complete the request.",
+        "headers": {
+          "X-Request-ID": {
+            "$ref": "#/components/headers/XRequestID"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "The request parameters are invalid.",
         "headers": {
           "X-Request-ID": {
             "$ref": "#/components/headers/XRequestID"
@@ -895,6 +1404,1037 @@
             "items": {
               "$ref": "#/components/schemas/CurrentTrafficItem"
             }
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "MetricScope": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "global",
+              "region"
+            ]
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code"
+        ]
+      },
+      "MetricConfidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "none"
+            ]
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "level",
+          "score",
+          "reasons"
+        ]
+      },
+      "MetricSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ]
+      },
+      "ActiveAircraftMetric": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "metric": {
+            "type": "string",
+            "const": "active_aircraft"
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "window_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "scope": {
+            "$ref": "#/components/schemas/MetricScope"
+          },
+          "observed_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "observed_to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "calculated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/MetricConfidence"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricSource"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "metric",
+          "value",
+          "window_minutes",
+          "scope",
+          "observed_from",
+          "observed_to",
+          "calculated_at",
+          "confidence",
+          "sources",
+          "limitations"
+        ]
+      },
+      "AircraftListItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "registration": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "airline": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "icao24",
+          "registration",
+          "model",
+          "manufacturer",
+          "airline",
+          "country"
+        ]
+      },
+      "AircraftProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "registration": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "aircraft_type": {
+            "type": "string"
+          },
+          "airline": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "icao24",
+          "registration",
+          "model",
+          "manufacturer",
+          "aircraft_type",
+          "airline",
+          "country"
+        ]
+      },
+      "FlightListItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aircraft_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "first_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "aircraft_model": {
+            "type": "string"
+          },
+          "airline": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "aircraft_id",
+          "icao24",
+          "callsign",
+          "status",
+          "first_seen_at",
+          "last_seen_at",
+          "aircraft_model",
+          "airline",
+          "country"
+        ]
+      },
+      "FlightProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aircraft_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "first_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "aircraft_model": {
+            "type": "string"
+          },
+          "airline": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "aircraft_id",
+          "icao24",
+          "callsign",
+          "status",
+          "first_seen_at",
+          "last_seen_at",
+          "aircraft_model",
+          "airline",
+          "country"
+        ]
+      },
+      "FlightStateItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "flight_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aircraft_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "barometric_altitude_m": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "barometric_altitude_status": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "ground",
+              "unknown",
+              "unavailable",
+              "invalid"
+            ]
+          },
+          "geometric_altitude_m": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "geometric_altitude_status": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "ground",
+              "unknown",
+              "unavailable",
+              "invalid"
+            ]
+          },
+          "velocity_mps": {
+            "type": "number",
+            "minimum": 0
+          },
+          "heading_degrees": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360
+          },
+          "vertical_rate_mps": {
+            "type": "number"
+          },
+          "on_ground": {
+            "type": "boolean"
+          },
+          "origin_country": {
+            "type": "string"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "flight_id",
+          "aircraft_id",
+          "icao24",
+          "callsign",
+          "latitude",
+          "longitude",
+          "barometric_altitude_m",
+          "barometric_altitude_status",
+          "geometric_altitude_m",
+          "geometric_altitude_status",
+          "velocity_mps",
+          "heading_degrees",
+          "vertical_rate_mps",
+          "on_ground",
+          "origin_country",
+          "observed_at",
+          "source_name"
+        ]
+      },
+      "TrajectorySegment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trajectory_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "flight_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aircraft_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string"
+          },
+          "quality_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "start_latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "start_longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "end_latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "end_longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "point_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "trajectory_id",
+          "flight_id",
+          "aircraft_id",
+          "icao24",
+          "callsign",
+          "sequence_number",
+          "status",
+          "quality_score",
+          "start_time",
+          "end_time",
+          "duration_seconds",
+          "start_latitude",
+          "start_longitude",
+          "end_latitude",
+          "end_longitude",
+          "point_count",
+          "source_name",
+          "created_at"
+        ]
+      },
+      "CoverageGap": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trajectory_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "previous_segment_id": {
+            "type": "string"
+          },
+          "next_segment_id": {
+            "type": "string"
+          },
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "distance_km": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string"
+          },
+          "filled_by": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "trajectory_id",
+          "previous_segment_id",
+          "next_segment_id",
+          "icao24",
+          "start_time",
+          "end_time",
+          "duration_seconds",
+          "distance_km",
+          "reason",
+          "filled_by",
+          "created_at"
+        ]
+      },
+      "Trajectory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "identity_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "identity_basis": {
+            "type": "string"
+          },
+          "split_reason": {
+            "type": "string"
+          },
+          "flight_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aircraft_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "callsign": {
+            "type": "string"
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "segment_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "point_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "coverage_gap_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quality_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrajectorySegment"
+            }
+          },
+          "coverage_gaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoverageGap"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "identity_key",
+          "identity_basis",
+          "split_reason",
+          "flight_id",
+          "aircraft_id",
+          "icao24",
+          "callsign",
+          "start_time",
+          "end_time",
+          "duration_seconds",
+          "segment_count",
+          "point_count",
+          "coverage_gap_count",
+          "quality_score",
+          "source_name",
+          "segments",
+          "coverage_gaps",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "RouteContextNotice": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "RouteContextConfidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "level": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteContextNotice"
+            }
+          }
+        },
+        "required": [
+          "score",
+          "level",
+          "reasons"
+        ]
+      },
+      "RouteContextAirport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "icao_code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "iata_code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "elevation_m": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "elevation_status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "icao_code",
+          "iata_code",
+          "name",
+          "city",
+          "country",
+          "latitude",
+          "longitude",
+          "elevation_m",
+          "elevation_status",
+          "timezone",
+          "description"
+        ]
+      },
+      "RouteContextAirportCandidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "airport": {
+            "$ref": "#/components/schemas/RouteContextAirport"
+          },
+          "distance_km": {
+            "type": "number",
+            "minimum": 0
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/RouteContextConfidence"
+          }
+        },
+        "required": [
+          "airport",
+          "distance_km",
+          "confidence"
+        ]
+      },
+      "AircraftRouteContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "icao24": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trajectory_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "origin": {
+            "$ref": "#/components/schemas/RouteContextAirportCandidate"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/RouteContextAirportCandidate"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/RouteContextConfidence"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteContextNotice"
+            }
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "icao24",
+          "trajectory_id",
+          "confidence",
+          "limitations",
+          "generated_at"
+        ]
+      },
+      "ActiveAircraftMetricResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/ActiveAircraftMetric"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "AircraftListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AircraftListItem"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "AircraftResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/AircraftProfile"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "FlightListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightListItem"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "FlightResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/FlightProfile"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "FlightStateListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightStateItem"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "FlightStateResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/FlightStateItem"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "TrajectoryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/Trajectory"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "AircraftRouteContextResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/AircraftRouteContext"
           }
         },
         "required": [

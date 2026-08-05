@@ -1633,7 +1633,15 @@ workflow, and prohibition on targeting public deployments.
 
 `177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md`
 
-Records the source-backed inventory of 38 public operations and one internal metrics operation, the exact 30-operation OpenAPI gap, nested Fiber group and constant-backed path resolution, mutation and metrics authorization boundaries, seven permanent tests, and the dedicated Continuous Integration gate required before complete OpenAPI expansion.
+Records the source-backed inventory of 38 public operations and one internal metrics operation, the current 20-operation OpenAPI gap after the core read expansion, nested Fiber group and constant-backed path resolution, mutation and metrics authorization boundaries, permanent tests, and the dedicated Continuous Integration gate required before complete OpenAPI expansion.
+
+<!-- OPENAPI-CORE-READ-SURFACE-V1:DOCUMENT-INDEX -->
+
+## Document 178 — OpenAPI Core Read Surface
+
+`178_OPENAPI_CORE_READ_SURFACE.md`
+
+Closes the ten-operation core read slice for aircraft, flights, flight states, trajectories, route context, and the active-aircraft metric; expands the public OpenAPI contract from 8 to 18 operations; preserves nullable telemetry and typed error semantics; and keeps the Playwright mock surface exactly aligned.
 
 <!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1:DOCUMENT-INDEX -->
 ## Document 170 — Production Observability and Alerting Closure

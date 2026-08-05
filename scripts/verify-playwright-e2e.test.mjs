@@ -43,6 +43,29 @@ test('healthy traffic fixture is deterministic', () => {
   assert.equal('region_code' in result.body.data[0], false)
 })
 
+test('core read fixtures preserve typed trajectory and metric envelopes', () => {
+  const trajectory = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/aircraft/4b1801/trajectory',
+    scenario: 'healthy',
+  })
+  assert.equal(trajectory.status, 200)
+  assert.equal(trajectory.body.success, true)
+  assert.equal(trajectory.body.data.id, 'trajectory-azal-101')
+  assert.equal(trajectory.body.data.segments.length, 1)
+
+  const metric = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/metrics/active-aircraft?region=az',
+    scenario: 'healthy',
+  })
+  assert.equal(metric.status, 200)
+  assert.deepEqual(metric.body.data.scope, { type: 'region', code: 'az' })
+  assert.equal(metric.body.data.window_minutes, 15)
+})
+
 test('traffic-error fixture preserves the typed error envelope', () => {
   const result = resolveMockResponse({
     method: 'GET',

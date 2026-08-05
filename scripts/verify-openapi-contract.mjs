@@ -12,6 +12,16 @@ export const requiredOperations = new Map([
   ['/api/v1/airports', 'listAirports'],
   ['/api/v1/airports/{icao}', 'getAirportByICAO'],
   ['/api/v1/traffic/current', 'getCurrentTraffic'],
+  ['/api/v1/metrics/active-aircraft', 'getActiveAircraftMetric'],
+  ['/api/v1/aircraft/{icao24}/trajectory', 'getLatestTrajectoryByICAO24'],
+  ['/api/v1/aircraft/{icao24}/route-context', 'getAircraftRouteContextByICAO24'],
+  ['/api/v1/trajectories/{id}', 'getTrajectoryByID'],
+  ['/api/v1/flights/{flightID}/states', 'listFlightStatesByFlightID'],
+  ['/api/v1/aircraft/{icao24}/latest-state', 'getLatestFlightStateByICAO24'],
+  ['/api/v1/flights', 'listFlights'],
+  ['/api/v1/flights/{id}', 'getFlightByID'],
+  ['/api/v1/aircraft', 'listAircraft'],
+  ['/api/v1/aircraft/{icao24}', 'getAircraftByICAO24'],
 ])
 
 const allowedOperationKeys = new Set(['get', 'parameters', 'summary', 'description'])
@@ -86,7 +96,7 @@ export function validateOpenAPIContract(spec) {
 
     for (const key of Object.keys(pathItem)) {
       if (forbiddenMethods.has(key)) {
-        errors.push(`foundation route ${route} must remain read-only; found ${key}`)
+        errors.push(`public read route ${route} must remain read-only; found ${key}`)
       } else if (!allowedOperationKeys.has(key)) {
         errors.push(`unsupported path item key ${key} on ${route}`)
       }
@@ -138,6 +148,23 @@ export function validateOpenAPIContract(spec) {
     'AirportListItem',
     'AirportProfile',
     'CurrentTrafficItem',
+    'ActiveAircraftMetric',
+    'AircraftListItem',
+    'AircraftProfile',
+    'FlightListItem',
+    'FlightProfile',
+    'FlightStateItem',
+    'Trajectory',
+    'AircraftRouteContext',
+    'ActiveAircraftMetricResponse',
+    'AircraftListResponse',
+    'AircraftResponse',
+    'FlightListResponse',
+    'FlightResponse',
+    'FlightStateListResponse',
+    'FlightStateResponse',
+    'TrajectoryResponse',
+    'AircraftRouteContextResponse',
   ]
   for (const schema of requiredSchemas) {
     if (!spec.components?.schemas?.[schema]) {
@@ -158,6 +185,15 @@ export function validateOpenAPIContract(spec) {
     'AirportResponse',
     'AirportsResponse',
     'CurrentTrafficResponse',
+    'ActiveAircraftMetricResponse',
+    'AircraftListResponse',
+    'AircraftResponse',
+    'FlightListResponse',
+    'FlightResponse',
+    'FlightStateListResponse',
+    'FlightStateResponse',
+    'TrajectoryResponse',
+    'AircraftRouteContextResponse',
   ]) {
     const schema = spec.components?.schemas?.[responseName]
     if (schema?.properties?.success?.const !== true || !schema?.properties?.data) {
@@ -191,7 +227,23 @@ export function validateRepository(root) {
   requireIncludes(
     errors,
     coreRoutes,
-    ['"/regions"', '"/regions/:code"', '"/airports"', '"/airports/:icao"', '"/traffic/current"'],
+    [
+      '"/regions"',
+      '"/regions/:code"',
+      '"/metrics/active-aircraft"',
+      '"/traffic/current"',
+      '"/aircraft/:icao24/trajectory"',
+      '"/aircraft/:icao24/route-context"',
+      '"/trajectories/:id"',
+      '"/flights/:flightID/states"',
+      '"/aircraft/:icao24/latest-state"',
+      '"/flights"',
+      '"/flights/:id"',
+      '"/aircraft"',
+      '"/aircraft/:icao24"',
+      '"/airports"',
+      '"/airports/:icao"',
+    ],
     'core database routes',
   )
 
@@ -233,6 +285,33 @@ export function validateRepository(root) {
   const trafficHandler = read(root, 'apps/api/internal/http/handlers/traffic.go')
   requireIncludes(errors, trafficHandler, ['c.Query("region")', '"REGION_NOT_FOUND"'], 'traffic handler')
 
+  const metricsDTO = read(root, 'apps/api/internal/http/dto/metrics.go')
+  requireIncludes(errors, metricsDTO, ['json:"metric"', 'json:"window_minutes"', 'json:"confidence"', 'json:"sources"', 'json:"limitations"'], 'metrics DTO')
+
+  const aircraftDTO = read(root, 'apps/api/internal/http/dto/aircraft.go')
+  requireIncludes(errors, aircraftDTO, ['json:"icao24"', 'json:"registration"', 'json:"aircraft_type"'], 'aircraft DTO')
+
+  const flightDTO = read(root, 'apps/api/internal/http/dto/flight.go')
+  requireIncludes(errors, flightDTO, ['json:"aircraft_id"', 'json:"first_seen_at"', 'json:"last_seen_at"'], 'flight DTO')
+
+  const flightStateDTO = read(root, 'apps/api/internal/http/dto/flightstate.go')
+  requireIncludes(errors, flightStateDTO, ['json:"barometric_altitude_m"', 'json:"barometric_altitude_status"', 'json:"geometric_altitude_m"', 'json:"geometric_altitude_status"'], 'flight-state DTO')
+
+  const trajectoryDTO = read(root, 'apps/api/internal/http/dto/trajectory.go')
+  requireIncludes(errors, trajectoryDTO, ['json:"identity_key"', 'json:"segments"', 'json:"coverage_gaps"', 'json:"quality_score"'], 'trajectory DTO')
+
+  const routeContextDTO = read(root, 'apps/api/internal/http/dto/route_context.go')
+  requireIncludes(errors, routeContextDTO, ['json:"trajectory_id"', 'json:"origin,omitempty"', 'json:"destination,omitempty"', 'json:"limitations"'], 'route-context DTO')
+
+  const metricsHandler = read(root, 'apps/api/internal/http/handlers/metrics.go')
+  requireIncludes(errors, metricsHandler, ['c.Query("window_minutes")', 'c.Query("region")', '"INVALID_WINDOW_MINUTES"'], 'metrics handler')
+
+  const trajectoryHandler = read(root, 'apps/api/internal/http/handlers/trajectories.go')
+  requireIncludes(errors, trajectoryHandler, ['"INVALID_ICAO24"', '"INVALID_TRAJECTORY_ID"', '"TRAJECTORY_SERVICE_UNAVAILABLE"'], 'trajectory handler')
+
+  const routeContextHandler = read(root, 'apps/api/internal/http/handlers/route_context.go')
+  requireIncludes(errors, routeContextHandler, ['"INVALID_ICAO24"', '"ROUTE_CONTEXT_NOT_FOUND"', '"ROUTE_CONTEXT_SERVICE_UNAVAILABLE"'], 'route-context handler')
+
   const readiness = read(root, 'apps/api/internal/http/handlers/readiness.go')
   requireIncludes(errors, readiness, ['Status: "ready"', '"SERVICE_NOT_READY"'], 'readiness handler')
 
@@ -273,7 +352,7 @@ export function validateRepository(root) {
   requireIncludes(
     errors,
     document,
-    ['Status: IMPLEMENTED', 'eight stable GET operations', 'Playwright', 'OPENAPI_CONTRACT=PASS'],
+    ['Status: IMPLEMENTED', 'eighteen stable GET operations', 'Playwright', 'OPENAPI_CONTRACT=PASS'],
     'Document 175',
   )
 
@@ -296,7 +375,8 @@ function main() {
     }
     process.exit(1)
   }
-  console.log('OPENAPI_CONTRACT_PATHS=8')
+  console.log('OPENAPI_CONTRACT_PATHS=18')
+  console.log('OPENAPI_CORE_READ_OPERATIONS=10')
   console.log('OPENAPI_CONTRACT_SCHEMAS=PASS')
   console.log('OPENAPI_CONTRACT_ROUTE_DRIFT=PASS')
   console.log('OPENAPI_CONTRACT=PASS')

@@ -12,6 +12,7 @@ on:
       - 'scripts/verify-openapi-route-inventory.test.mjs'
       - 'docs/175_OPENAPI_CONTRACT_FOUNDATION.md'
       - 'docs/177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md'
+      - 'docs/178_OPENAPI_CORE_READ_SURFACE.md'
       - 'docs/DOCUMENT_INDEX.md'
       - 'package.json'
       - 'scripts/verify-release.sh'
@@ -30,6 +31,7 @@ on:
       - 'scripts/verify-openapi-route-inventory.test.mjs'
       - 'docs/175_OPENAPI_CONTRACT_FOUNDATION.md'
       - 'docs/177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md'
+      - 'docs/178_OPENAPI_CORE_READ_SURFACE.md'
       - 'docs/DOCUMENT_INDEX.md'
       - 'package.json'
       - 'scripts/verify-release.sh'
@@ -75,6 +77,7 @@ jobs:
             openapi/openapi.json
             docs/175_OPENAPI_CONTRACT_FOUNDATION.md
             docs/177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md
+            docs/178_OPENAPI_CORE_READ_SURFACE.md
           if-no-files-found: error
           retention-days: 30
 

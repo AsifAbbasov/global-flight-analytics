@@ -255,8 +255,8 @@ export function validateRepository(root) {
   if (publicOperations.filter(([method]) => method === 'GET').length !== 37) errors.push('public GET operation count must be 37')
   if (publicOperations.filter(([method]) => method === 'POST').length !== 1) errors.push('public POST operation count must be 1')
   if (internalOperations.length !== 1) errors.push(`internal operation count must be 1; found ${internalOperations.length}`)
-  if (openAPIOperations.length !== 8) errors.push(`foundation OpenAPI operation count must be 8; found ${openAPIOperations.length}`)
-  if (gap.missing.length !== 30) errors.push(`OpenAPI missing operation count must be 30; found ${gap.missing.length}`)
+  if (openAPIOperations.length !== 18) errors.push(`current OpenAPI operation count must be 18; found ${openAPIOperations.length}`)
+  if (gap.missing.length !== 20) errors.push(`OpenAPI missing operation count must be 20; found ${gap.missing.length}`)
   if (gap.extra.length !== 0) errors.push(`OpenAPI contains operations absent from the source: ${gap.extra.join(', ')}`)
   if (openAPIOperations.some(([, routePath]) => routePath.startsWith('/internal/'))) {
     errors.push('public OpenAPI must not expose /internal operations')

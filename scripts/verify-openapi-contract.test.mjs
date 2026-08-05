@@ -21,9 +21,9 @@ test('repository OpenAPI contract passes', () => {
   assert.match(output, /OPENAPI_CONTRACT=PASS/)
 })
 
-test('foundation exposes exactly eight stable GET operations', () => {
+test('contract exposes exactly eighteen stable GET operations', () => {
   const spec = loadSpec()
-  assert.equal(Object.keys(spec.paths).length, 8)
+  assert.equal(Object.keys(spec.paths).length, 18)
   assert.deepEqual(
     Object.keys(spec.paths).sort(),
     [...requiredOperations.keys()].sort(),
@@ -34,6 +34,31 @@ test('foundation exposes exactly eight stable GET operations', () => {
     assert.equal(pathItem.patch, undefined)
     assert.equal(pathItem.delete, undefined)
   }
+})
+
+test('active-aircraft query bounds remain source aligned', () => {
+  const spec = loadSpec()
+  const parameters = spec.paths['/api/v1/metrics/active-aircraft'].get.parameters
+  const window = parameters.find(parameter => parameter.name === 'window_minutes')
+  assert.deepEqual(window.schema, {
+    type: 'integer',
+    minimum: 1,
+    maximum: 180,
+    default: 15,
+  })
+})
+
+test('flight-state altitude values remain explicitly nullable', () => {
+  const spec = loadSpec()
+  const schema = spec.components.schemas.FlightStateItem
+  assert.deepEqual(schema.properties.barometric_altitude_m.type, [
+    'number',
+    'null',
+  ])
+  assert.deepEqual(schema.properties.geometric_altitude_m.type, [
+    'number',
+    'null',
+  ])
 })
 
 test('absolute deployment origins are rejected', () => {
@@ -58,7 +83,7 @@ test('unresolved local references are rejected', () => {
   )
 })
 
-test('mutation methods are rejected from the public read foundation', () => {
+test('mutation methods are rejected from the public read contract', () => {
   const spec = loadSpec()
   spec.paths['/api/v1/regions'].post = {
     operationId: 'createRegion',
