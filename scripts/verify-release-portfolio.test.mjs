@@ -123,3 +123,20 @@ test('release truth separates historical evidence from mutable deployment aliase
   assert.match(truth, /EXPLICIT_DEPLOYMENT_REVISION_INPUT=REQUIRED/)
   assert.match(truth, /RELEASE_TRUTH_CONTRACT=PASS/)
 })
+
+test('production observability closure records managed resources and notification delivery', async () => {
+  const readme = await text('README.md')
+  const index = await text('docs/DOCUMENT_INDEX.md')
+  const closure = await text('docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md')
+
+  assert.match(readme, /PRODUCTION-OBSERVABILITY-CLOSURE-V1/)
+  assert.match(readme, /## Production Observability/)
+  assert.match(readme, /nine managed alert rules/)
+  assert.match(readme, /170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE/)
+  assert.match(index, /## Document 170 — Production Observability and Alerting Closure/)
+  assert.match(closure, /GRAFANA_NAMESPACE=stacks-1749941/)
+  assert.match(closure, /GRAFANA_NOTIFICATION_POLICY_RECEIVER=global-flight-analytics-production-email/)
+  assert.match(closure, /ALERT_NOTIFICATION_DELIVERY=CLOSED/)
+  assert.match(closure, /PRODUCTION_OBSERVABILITY_CLOSURE=PASS/)
+  assert.doesNotMatch(closure, /@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)
+})

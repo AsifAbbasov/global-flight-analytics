@@ -12,40 +12,40 @@ Status: FINAL
 
 # 1. Mission
 
-Создать платформу исследования, анализа и визуализации воздушного движения на основе открытых авиационных данных.
+Create a platform for air-traffic research, analysis, and visualization based on open aviation data.
 
 ---
 
 # 2. Product Vision
 
-Платформа объединяет авиационные данные, данные аэропортов и аналитические вычисления в единую систему исследования воздушного пространства.
+The platform combines aviation data, airport data, and analytical calculations into one airspace research system.
 
 ---
 
 # 3. What The Product Is
 
-Платформа показывает:
+The platform displays:
 
-- реальные самолеты;
-- реальные аэропорты;
-- реальные маршруты;
-- реальную статистику;
-- изменения воздушного трафика;
-- аналитические представления воздушного пространства.
+- real aircraft;
+- real airports;
+- real routes;
+- real statistics;
+- air-traffic changes;
+- analytical views of airspace.
 
 ---
 
 # 4. What The Product Is Not
 
-Платформа не является:
+The platform is not:
 
-- системой управления воздушным движением;
-- диспетчерской системой;
-- военной системой;
-- системой продажи билетов;
-- навигационной системой;
-- системой авиационной безопасности;
-- внутренней системой аэропортов.
+- an air-traffic control system;
+- a dispatch system;
+- a military system;
+- a ticket-sales system;
+- a navigation system;
+- an aviation-safety system;
+- an internal airport system.
 
 ---
 
@@ -134,51 +134,51 @@ Next.js Frontend
 
 ## Aircraft Module
 
-Отвечает за:
+Responsible for:
 
-- самолеты;
-- модели самолетов;
-- авиакомпании.
+- aircraft;
+- aircraft models;
+- airlines.
 
 ---
 
 ## Airport Intelligence Module
 
-Отвечает за:
+Responsible for:
 
-- цифровой паспорт аэропорта;
-- инфраструктуру;
-- статистику;
-- транспортные связи.
+- airport digital passport;
+- infrastructure;
+- statistics;
+- transport connections.
 
 ---
 
 ## Route Detection Engine
 
-Отвечает за:
+Responsible for:
 
-- определение маршрутов;
-- расчет Confidence Level;
-- анализ перемещения самолетов.
+- route determination;
+- Confidence Level calculation;
+- aircraft-movement analysis.
 
 ---
 
 ## Traffic Analytics Module
 
-Отвечает за:
+Responsible for:
 
-- статистику;
-- тепловые карты;
-- аналитические панели.
+- statistics;
+- heat maps;
+- analytical panels.
 
 ---
 
 ## Historical Replay Module
 
-Отвечает за:
+Responsible for:
 
-- исторические снимки;
-- воспроизведение воздушного трафика.
+- historical snapshots;
+- air-traffic replay.
 
 ---
 
@@ -186,25 +186,25 @@ Next.js Frontend
 
 ## OpenSky
 
-Основной источник данных о воздушном движении.
+Primary air-traffic data source.
 
 ---
 
 ## OurAirports
 
-Основной источник аэропортов.
+Primary airport data source.
 
 ---
 
 ## OpenStreetMap
 
-Источник инфраструктурных данных.
+Infrastructure data source.
 
 ---
 
 ## Wikidata
 
-Источник справочной информации.
+Reference information source.
 
 ---
 
@@ -250,97 +250,97 @@ One Source Of Truth.
 
 # 10. Architectural Boundaries
 
-В MVP запрещено использование:
+The MVP prohibits:
 
-- микросервисов;
+- microservices;
 - Kubernetes;
 - Redis;
 - ClickHouse;
-- отдельного Python Backend;
-- платной инфраструктуры.
+- a separate Python Backend;
+- paid infrastructure.
 
 ---
 
-Усложнение архитектуры допускается только после появления реальной нагрузки.
+Architectural complexity is allowed only after real workload appears.
 
 ---
 
 # 11. Security Boundaries
 
-Frontend никогда не обращается напрямую к источникам данных.
+The Frontend never accesses data sources directly.
 
 ---
 
-Все обращения выполняются через Backend API.
+All requests pass through the Backend API.
 
 ---
 
-Все внешние данные считаются недоверенными до прохождения валидации.
+All external data is treated as untrusted until validation succeeds.
 
 ---
 
 # 12. Legal Boundaries
 
-Платформа использует только открытые данные.
+The platform uses only open data.
 
 ---
 
-Платформа обязана соблюдать:
+The platform must comply with:
 
-- условия использования источников данных;
-- лицензионные ограничения;
-- требования пользовательского соглашения.
+- data-source terms of use;
+- license restrictions;
+- user-agreement requirements.
 
 ---
 
-Платформа не предоставляет официальную авиационную информацию.
+The platform does not provide official aviation information.
 
 ---
 
 # 13. First Public Version
 
-Версия 1.0 должна поддерживать:
+Version 1.0 must support:
 
-- отображение самолетов;
-- отображение аэропортов;
-- поиск;
-- карточки объектов;
-- определение маршрутов;
-- аналитику;
-- исторические снимки.
+- aircraft display;
+- airport display;
+- search;
+- object cards;
+- route determination;
+- analytics;
+- historical snapshots.
 
 ---
 
 # 14. Product Value
 
-Главная ценность проекта:
+The main product value is:
 
-Не карта.
+Not the map.
 
 ---
 
-Главная ценность проекта:
+The main product value is:
 
-Интеллектуальное объединение разрозненных авиационных данных в единую аналитическую систему.
+Intelligent integration of fragmented aviation data into one analytical system.
 
 ---
 
 # 15. Engineering Value
 
-Проект демонстрирует:
+The project demonstrates:
 
-- работу с геоданными;
-- работу с картографическими системами;
-- работу с потоковыми данными;
-- проектирование архитектуры;
-- построение аналитических систем;
-- обработку открытых авиационных данных.
+- geospatial data processing;
+- mapping-system integration;
+- streaming-data processing;
+- architecture design;
+- analytical-system construction;
+- open aviation data processing.
 
 ---
 
 # 16. Future Evolution
 
-Эволюция платформы:
+Platform evolution:
 
 ```text
 Live Tracking
@@ -374,4 +374,4 @@ Predictive Aviation Intelligence
 
 # 17. Final Product Statement
 
-Global Flight Analytics — исследовательская платформа визуализации, анализа и прогнозирования воздушного движения, объединяющая открытые авиационные данные, данные аэропортов и пространственную аналитику в единую систему наблюдения за воздушным пространством.
+Global Flight Analytics is a research platform for air-traffic visualization, analysis, and forecasting that combines open aviation data, airport data, and spatial analytics into one airspace observation system.

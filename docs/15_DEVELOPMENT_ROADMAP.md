@@ -12,21 +12,21 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет порядок разработки платформы Global Flight Analytics.
+This document defines the implementation order for the Global Flight Analytics platform.
 
-Документ устанавливает:
+The document establishes:
 
-- последовательность реализации;
-- приоритеты разработки;
-- критерии готовности этапов;
-- состав MVP;
-- направления развития после MVP.
+- the implementation sequence;
+- development priorities;
+- phase completion criteria;
+- the MVP composition;
+- post-MVP development directions.
 
 ---
 
 # 2. Development Principles
 
-Разработка выполняется по принципу:
+Development follows this order:
 
 ```text
 Architecture First
@@ -40,7 +40,7 @@ Frontend Second
 
 ---
 
-Каждый этап должен завершаться работоспособным результатом.
+Every phase must end with an operational result.
 
 ---
 
@@ -50,19 +50,19 @@ Repository Foundation
 
 ---
 
-Задачи:
+Tasks:
 
-- создать репозиторий;
-- настроить монорепозиторий;
-- создать структуру каталогов;
-- подготовить документацию;
-- настроить GitHub.
+- create the repository;
+- configure the monorepo;
+- create the directory structure;
+- prepare documentation;
+- configure GitHub.
 
 ---
 
-Результат:
+Result:
 
-Готовая структура проекта.
+A complete project structure.
 
 ---
 
@@ -72,20 +72,20 @@ Database Foundation
 
 ---
 
-Задачи:
+Tasks:
 
-- создать миграции PostgreSQL;
-- создать справочники;
-- создать таблицы аэропортов;
-- создать таблицы самолетов;
-- создать таблицы маршрутов;
-- создать таблицы статистики.
+- create PostgreSQL migrations;
+- create reference data structures;
+- create airport tables;
+- create aircraft tables;
+- create route tables;
+- create statistics tables.
 
 ---
 
-Результат:
+Result:
 
-Готовая схема базы данных.
+A complete database schema.
 
 ---
 
@@ -95,19 +95,19 @@ Backend Foundation
 
 ---
 
-Задачи:
+Tasks:
 
-- создать Go API;
-- настроить Fiber;
-- настроить pgx;
-- настроить конфигурацию приложения;
-- настроить Health API.
+- create the Go API;
+- configure Fiber;
+- configure pgx;
+- configure the application;
+- configure the Health API.
 
 ---
 
-Результат:
+Result:
 
-Работающий Backend.
+An operational Backend.
 
 ---
 
@@ -117,18 +117,18 @@ Reference Data Import
 
 ---
 
-Задачи:
+Tasks:
 
-- импорт аэропортов;
-- импорт авиакомпаний;
-- импорт самолетов;
-- заполнение справочников.
+- import airports;
+- import airlines;
+- import aircraft;
+- populate reference data.
 
 ---
 
-Результат:
+Result:
 
-Заполненная база данных.
+A populated database.
 
 ---
 
@@ -138,18 +138,18 @@ Live Data Integration
 
 ---
 
-Задачи:
+Tasks:
 
-- подключить OpenSky;
-- реализовать Data Collection Pipeline;
-- реализовать In-Memory Storage;
-- реализовать обновление состояний самолетов.
+- integrate OpenSky;
+- implement the Data Collection Pipeline;
+- implement In-Memory Storage;
+- implement aircraft-state updates.
 
 ---
 
-Результат:
+Result:
 
-Получение данных в реальном времени.
+Real-time data ingestion.
 
 ---
 
@@ -159,19 +159,19 @@ Frontend Foundation
 
 ---
 
-Задачи:
+Tasks:
 
-- создать Next.js приложение;
-- настроить Tailwind CSS;
-- настроить TanStack Query;
-- настроить MapLibre;
-- реализовать маршрутизацию.
+- create the Next.js application;
+- configure Tailwind CSS;
+- configure TanStack Query;
+- configure MapLibre;
+- implement routing.
 
 ---
 
-Результат:
+Result:
 
-Работающий Frontend-каркас.
+An operational Frontend foundation.
 
 ---
 
@@ -181,18 +181,18 @@ Live Map
 
 ---
 
-Задачи:
+Tasks:
 
-- отображение самолетов;
-- отображение аэропортов;
-- отображение маршрутов;
-- фильтрация данных.
+- display aircraft;
+- display airports;
+- display routes;
+- filter data.
 
 ---
 
-Результат:
+Result:
 
-Первая рабочая версия платформы.
+The first operational platform version.
 
 ---
 
@@ -202,12 +202,12 @@ Aircraft Profiles
 
 ---
 
-Задачи:
+Tasks:
 
-- карточка самолета;
-- авиакомпания;
-- модель самолета;
-- параметры полета.
+- aircraft card;
+- airline information;
+- aircraft model;
+- flight parameters.
 
 ---
 
@@ -217,12 +217,12 @@ Airport Intelligence Module
 
 ---
 
-Задачи:
+Tasks:
 
-- цифровой паспорт аэропорта;
-- инфраструктура;
-- статистика;
-- маршруты.
+- airport digital passport;
+- infrastructure;
+- statistics;
+- routes.
 
 ---
 
@@ -232,11 +232,11 @@ Route Detection Engine
 
 ---
 
-Задачи:
+Tasks:
 
-- определение аэропорта вылета;
-- определение аэропорта назначения;
-- расчет уровня уверенности.
+- determine the departure airport;
+- determine the destination airport;
+- calculate the confidence level.
 
 ---
 
@@ -246,12 +246,12 @@ Traffic Analytics Module
 
 ---
 
-Задачи:
+Tasks:
 
-- графики;
-- тепловые карты;
-- аналитические панели;
-- региональная статистика.
+- charts;
+- heat maps;
+- analytical panels;
+- regional statistics.
 
 ---
 
@@ -261,49 +261,49 @@ Historical Replay
 
 ---
 
-Задачи:
+Tasks:
 
-- исторические снимки;
-- воспроизведение воздушного трафика.
+- historical snapshots;
+- air-traffic replay.
 
 ---
 
 # 15. MVP Definition
 
-MVP включает:
+The MVP includes:
 
-- карту воздушного движения;
-- самолеты;
-- аэропорты;
-- карточки объектов;
-- маршруты;
-- аналитику;
-- исторические снимки.
+- an air-traffic map;
+- aircraft;
+- airports;
+- object cards;
+- routes;
+- analytics;
+- historical snapshots.
 
 ---
 
 # 16. Out Of Scope
 
-В MVP не входят:
+The MVP does not include:
 
-- мобильные приложения;
-- подписки;
-- платежи;
-- прогнозирование воздушного трафика;
-- машинное обучение;
-- обнаружение аномалий воздушного движения.
+- mobile applications;
+- subscriptions;
+- payments;
+- air-traffic forecasting;
+- machine learning;
+- air-traffic anomaly detection.
 
 ---
 
-Причина:
+Reason:
 
-Данные функции требуют накопления собственной исторической базы данных и не являются обязательными для подтверждения жизнеспособности продукта.
+These capabilities require the accumulation of a proprietary historical database and are not required to validate product viability.
 
 ---
 
 # 17. Post-MVP Roadmap
 
-После успешного запуска MVP допускается развитие следующих направлений.
+The following directions may be developed after a successful MVP launch.
 
 ---
 
@@ -313,26 +313,26 @@ Traffic Forecasting V1
 
 ---
 
-Цель:
+Goal:
 
-Прогнозирование воздушного трафика на основе статистических моделей.
-
----
-
-Функции:
-
-- прогноз активности региона;
-- прогноз активности аэропорта;
-- прогноз нагрузки маршрутов;
-- прогноз на 1 час;
-- прогноз на 6 часов;
-- прогноз на 24 часа.
+Forecast air traffic using statistical models.
 
 ---
 
-Источник:
+Capabilities:
 
-Исторические данные платформы.
+- regional activity forecast;
+- airport activity forecast;
+- route-load forecast;
+- 1-hour forecast;
+- 6-hour forecast;
+- 24-hour forecast.
+
+---
+
+Source:
+
+Historical platform data.
 
 ---
 
@@ -342,27 +342,27 @@ Traffic Forecasting V2
 
 ---
 
-Цель:
+Goal:
 
-Интеллектуальное прогнозирование воздушного движения.
-
----
-
-Функции:
-
-- прогноз трафика на несколько дней вперед;
-- прогноз загруженности аэропортов;
-- прогноз активности маршрутов;
-- прогноз изменения воздушного пространства.
+Intelligent air-traffic forecasting.
 
 ---
 
-Основа:
+Capabilities:
 
-- накопленная история;
-- сезонность;
-- статистические модели;
-- модели машинного обучения.
+- traffic forecast several days ahead;
+- airport-load forecast;
+- route-activity forecast;
+- airspace-change forecast.
+
+---
+
+Foundation:
+
+- accumulated history;
+- seasonality;
+- statistical models;
+- machine-learning models.
 
 ---
 
@@ -372,19 +372,19 @@ Machine Learning Platform
 
 ---
 
-Условие запуска:
+Launch condition:
 
-Минимум 3–6 месяцев накопления данных.
+At least 3–6 months of accumulated data.
 
 ---
 
-Возможности:
+Capabilities:
 
-- предсказание аэропорта назначения;
-- предсказание маршрута;
-- оценка вероятности посадки;
-- оценка вероятности изменения маршрута;
-- интеллектуальная аналитика.
+- destination-airport prediction;
+- route prediction;
+- landing-probability estimation;
+- route-change probability estimation;
+- intelligent analytics.
 
 ---
 
@@ -394,18 +394,18 @@ Traffic Anomaly Detection
 
 ---
 
-Цель:
+Goal:
 
-Автоматическое обнаружение необычной активности.
+Automatically detect unusual activity.
 
 ---
 
-Примеры:
+Examples:
 
-- нетипично высокий трафик;
-- необычные маршруты;
-- резкое изменение активности региона;
-- аномальная нагрузка аэропорта.
+- unusually high traffic;
+- unusual routes;
+- sudden regional activity changes;
+- abnormal airport load.
 
 ---
 
@@ -413,63 +413,63 @@ Traffic Anomaly Detection
 
 Repository Foundation:
 
-1 день
+1 day
 
 ---
 
 Database Foundation:
 
-2–3 дня
+2–3 days
 
 ---
 
 Backend Foundation:
 
-3–4 дня
+3–4 days
 
 ---
 
 Reference Data:
 
-2 дня
+2 days
 
 ---
 
 Live Data:
 
-3–5 дней
+3–5 days
 
 ---
 
 Frontend Foundation:
 
-2–3 дня
+2–3 days
 
 ---
 
 Core Features:
 
-2–3 недели
+2–3 weeks
 
 ---
 
-Общий срок MVP:
+Total MVP duration:
 
-4–6 недель
+4–6 weeks
 
-при работе одного разработчика.
+for one developer.
 
 ---
 
 # 19. Long-Term Vision
 
-Долгосрочная цель платформы:
+Long-term platform objective:
 
-Переход от системы визуализации авиационных данных к интеллектуальной платформе анализа и прогнозирования воздушного движения.
+Evolve from an aviation-data visualization system into an intelligent platform for air-traffic analysis and forecasting.
 
 ---
 
-Эволюция продукта:
+Product evolution:
 
 ```text
 Live Tracking
@@ -503,17 +503,17 @@ Predictive Aviation Intelligence Platform
 
 # 20. Definition Of Done
 
-Этап считается завершенным только если:
+A phase is complete only when:
 
-- код находится в GitHub;
-- документация обновлена;
-- изменения проходят сборку;
-- отсутствуют критические ошибки.
+- the code is stored in GitHub;
+- the documentation is updated;
+- the changes build successfully;
+- no critical errors remain.
 
 ---
 
 # 21. Summary
 
-Цель первой версии:
+First-version objective:
 
-Создать полноценную платформу исследования воздушного движения на основе открытых авиационных данных с возможностью дальнейшего масштабирования до интеллектуальной системы прогнозирования и анализа авиационной активности.
+Create a complete open-data air-traffic research platform that can later scale into an intelligent system for forecasting and analyzing aviation activity.

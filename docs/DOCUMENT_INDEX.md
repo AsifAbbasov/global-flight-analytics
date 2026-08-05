@@ -1626,3 +1626,21 @@ Defines the isolated Playwright Chromium runtime, OpenAPI-aligned deterministic 
 semantic browser assertions, server-rendered snapshot, shareable region state, responsive
 navigation, traffic failure recovery, evidence retention, dedicated Continuous Integration
 workflow, and prohibition on targeting public deployments.
+
+<!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1:DOCUMENT-INDEX -->
+## Document 170 — Production Observability and Alerting Closure
+
+Path:
+
+```text
+docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md
+```
+
+Purpose:
+
+```text
+Records the protected production metrics path, Grafana Cloud stack namespace,
+idempotent SLO dashboard and nine-rule provisioning, exact notification-policy
+receiver, controlled email-delivery evidence, security boundaries, operational
+limitations, and the formal production observability closure statement.
+```

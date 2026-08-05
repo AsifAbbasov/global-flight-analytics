@@ -14,6 +14,7 @@ window, confidence, provenance and limitations visible.
 <!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
 <!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
 <!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
+<!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1 -->
 ## Portfolio Release Status
 
 Source implementation and exact-commit Continuous Integration are closed for the original
@@ -51,6 +52,21 @@ Visual and interaction redesign remains a separate product phase. The current fr
 publicly deployed and technically integrated, but it is not presented as the final visual
 design. Live URLs and green checks are recorded only because they were verified against the
 exact revisions documented in the release closure.
+
+## Production Observability
+
+Production observability is provisioned and verified through repository-owned
+automation:
+
+- protected Prometheus metrics are scraped from the Render production API and remote-written to Grafana Cloud;
+- Grafana resources use the stack-scoped API namespace rather than a shared default namespace;
+- one production SLO dashboard and nine managed alert rules are provisioned idempotently;
+- the notification policy targets `global-flight-analytics-production-email`;
+- a controlled test alert was delivered successfully to the owner-controlled mailbox.
+
+The immutable run evidence, security boundaries, exact resource identities, and
+remaining operational limitations are recorded in
+[`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md).
 
 ## What Is Implemented
 
@@ -121,6 +137,7 @@ recomputing server-owned metrics.
 | Database | PostgreSQL |
 | Local runtime | Docker Compose |
 | Production path | Vercel frontend, Render Docker API, Neon PostgreSQL |
+| Observability | Prometheus metrics, Grafana Alloy, Grafana Cloud dashboards and alerting |
 | Quality gates | Go tests and vet, architecture audits, Node contract tests, ESLint, TypeScript, production builds, dependency policy |
 
 <!-- RECRUITER-QUICKSTART-V1 -->
@@ -232,6 +249,7 @@ repeat the same revision-specific verification.
 - [`docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md`](docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md) — architecture, boundaries and trade-offs;
 - [`docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md`](docs/166_BACKEND_OPERATIONS_AND_CI_EVIDENCE_CLOSURE.md) — verified backend operations and cloud evidence;
 - [`docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md`](docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md) — historical-versus-current deployment revision contract;
+- [`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md) — protected metrics, Grafana SLO dashboard, nine alert rules, and verified notification delivery;
 - [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — complete engineering record.
 
 ## Evidence Boundaries

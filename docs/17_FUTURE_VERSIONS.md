@@ -12,13 +12,13 @@ Status: Approved
 
 # 1. Purpose
 
-Документ описывает развитие платформы Global Flight Analytics после завершения MVP.
+This document describes the development of Global Flight Analytics after MVP completion.
 
-Документ определяет:
+The document defines:
 
-- будущие версии продукта;
-- направления развития;
-- стратегические цели платформы.
+- future product versions;
+- development directions;
+- strategic platform objectives.
 
 ---
 
@@ -28,19 +28,19 @@ Platform Stabilization
 
 ---
 
-Основная цель:
+Primary objective:
 
-Повышение стабильности и качества данных.
+Improve stability and data quality.
 
 ---
 
-Добавляется:
+Adds:
 
-- больше аэропортов;
-- больше самолетов;
-- больше маршрутов;
-- улучшение качества данных;
-- оптимизация производительности.
+- more airports;
+- more aircraft;
+- more routes;
+- improved data quality;
+- performance optimization.
 
 ---
 
@@ -50,19 +50,19 @@ Analytics Expansion
 
 ---
 
-Основная цель:
+Primary objective:
 
-Развитие аналитических возможностей.
+Expand analytical capabilities.
 
 ---
 
-Добавляется:
+Adds:
 
-- расширенные графики;
-- сравнение регионов;
-- сравнение аэропортов;
-- сравнение маршрутов;
-- дополнительные статистические панели.
+- advanced charts;
+- regional comparison;
+- airport comparison;
+- route comparison;
+- additional statistical panels.
 
 ---
 
@@ -72,19 +72,19 @@ Historical Replay Expansion
 
 ---
 
-Основная цель:
+Primary objective:
 
-Развитие исторического анализа.
+Expand historical analysis.
 
 ---
 
-Добавляется:
+Adds:
 
-- выбор периода;
-- воспроизведение по часам;
-- воспроизведение по дням;
-- сравнение дат;
-- сравнение временных интервалов.
+- period selection;
+- hourly replay;
+- daily replay;
+- date comparison;
+- time-interval comparison.
 
 ---
 
@@ -94,17 +94,17 @@ Global Coverage
 
 ---
 
-Основная цель:
+Primary objective:
 
-Расширение географического покрытия.
+Expand geographic coverage.
 
 ---
 
-Добавляется:
+Adds:
 
-- Европа;
-- Ближний Восток;
-- Центральная Азия.
+- Europe;
+- the Middle East;
+- Central Asia.
 
 ---
 
@@ -114,13 +114,13 @@ Airport Intelligence Expansion
 
 ---
 
-Добавляется:
+Adds:
 
-- подробная инфраструктура;
-- транспортные связи;
-- дополнительные показатели;
-- рейтинг аэропортов;
-- сравнительный анализ аэропортов.
+- detailed infrastructure;
+- transport connections;
+- additional indicators;
+- airport ranking;
+- comparative airport analysis.
 
 ---
 
@@ -130,12 +130,12 @@ Advanced Route Analysis
 
 ---
 
-Добавляется:
+Adds:
 
-- улучшенное определение маршрутов;
-- расширенные уровни уверенности;
-- анализ популярных направлений;
-- анализ поведения маршрутов.
+- improved route determination;
+- extended confidence levels;
+- popular-destination analysis;
+- route-behavior analysis.
 
 ---
 
@@ -145,23 +145,23 @@ Traffic Forecasting
 
 ---
 
-Основная цель:
+Primary objective:
 
-Переход от отображения данных к прогнозированию.
-
----
-
-Добавляется:
-
-- прогноз трафика на 1 час;
-- прогноз трафика на 6 часов;
-- прогноз трафика на 24 часа;
-- прогноз активности аэропортов;
-- прогноз активности маршрутов.
+Move from data display to forecasting.
 
 ---
 
-Источником являются накопленные исторические данные платформы.
+Adds:
+
+- 1-hour traffic forecast;
+- 6-hour traffic forecast;
+- 24-hour traffic forecast;
+- airport-activity forecast;
+- route-activity forecast.
+
+---
+
+The source is accumulated historical platform data.
 
 ---
 
@@ -171,19 +171,19 @@ Machine Learning Platform
 
 ---
 
-Условие запуска:
+Launch condition:
 
-Минимум 3–6 месяцев накопления исторических данных.
+At least 3–6 months of accumulated historical data.
 
 ---
 
-Добавляется:
+Adds:
 
-- предсказание аэропорта назначения;
-- предсказание маршрута;
-- оценка вероятности посадки;
-- интеллектуальная аналитика;
-- поведенческий анализ воздушного движения.
+- destination-airport prediction;
+- route prediction;
+- landing-probability estimation;
+- intelligent analytics;
+- behavioral air-traffic analysis.
 
 ---
 
@@ -193,18 +193,18 @@ Traffic Anomaly Detection
 
 ---
 
-Основная цель:
+Primary objective:
 
-Автоматическое обнаружение необычной активности.
+Automatically detect unusual activity.
 
 ---
 
-Добавляется:
+Adds:
 
-- выявление редких маршрутов;
-- выявление резких изменений активности;
-- выявление аномальной нагрузки аэропортов;
-- выявление необычного воздушного движения.
+- rare-route detection;
+- sudden activity-change detection;
+- abnormal airport-load detection;
+- unusual air-traffic detection.
 
 ---
 
@@ -214,19 +214,19 @@ Research Platform
 
 ---
 
-Основная цель:
+Primary objective:
 
-Создание исследовательской авиационной платформы.
+Create an aviation research platform.
 
 ---
 
-Добавляется:
+Adds:
 
-- экспорт данных;
-- исследовательские инструменты;
-- сравнительный анализ;
-- пользовательские исследования;
-- расширенная статистика.
+- data export;
+- research tools;
+- comparative analysis;
+- user research;
+- advanced statistics.
 
 ---
 
@@ -236,30 +236,30 @@ Mobile Applications
 
 ---
 
-Добавляется:
+Adds:
 
-- приложение для iOS;
-- приложение для Android;
-- мобильные уведомления;
-- мобильная аналитика.
+- an iOS application;
+- an Android application;
+- mobile notifications;
+- mobile analytics.
 
 ---
 
 # 13. Version Boundaries
 
-Платформа не планирует:
+The platform does not plan to provide:
 
-- управление воздушным движением;
-- диспетчерские функции;
-- военные системы;
-- закрытые авиационные данные;
-- функции авиационной безопасности.
+- air-traffic control;
+- dispatch functions;
+- military systems;
+- closed aviation data;
+- aviation-safety functions.
 
 ---
 
 # 14. Strategic Vision
 
-Платформа развивается по следующей модели:
+The platform evolves through the following model:
 
 ```text
 Flight Tracking
@@ -293,6 +293,6 @@ Predictive Aviation Intelligence
 
 # 15. Future Vision
 
-Долгосрочная цель платформы:
+Long-term platform objective:
 
-Создать крупнейшую открытую платформу анализа, исследования и прогнозирования воздушного движения на основе общедоступных авиационных данных.
+Create the largest open platform for air-traffic analysis, research, and forecasting based on publicly available aviation data.

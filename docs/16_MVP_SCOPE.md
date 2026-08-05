@@ -12,38 +12,38 @@ Status: Approved
 
 # 1. Purpose
 
-Документ определяет границы первой версии платформы Global Flight Analytics.
+This document defines the boundaries of the first Global Flight Analytics release.
 
-Документ устанавливает:
+The document establishes:
 
-- обязательный функционал MVP;
-- ограничения MVP;
-- критерии успешности MVP;
-- функции, исключенные из первой версии.
+- mandatory MVP functionality;
+- MVP constraints;
+- MVP success criteria;
+- capabilities excluded from the first release.
 
 ---
 
 # 2. Main Goal
 
-Создать рабочую платформу визуализации воздушного движения на основе открытых авиационных данных.
+Create an operational air-traffic visualization platform based on open aviation data.
 
 ---
 
 # 3. MVP Success Criteria
 
-Пользователь должен иметь возможность:
+A user must be able to:
 
-- открыть карту;
-- увидеть реальные самолеты;
-- открыть карточку самолета;
-- открыть карточку аэропорта;
-- выполнить поиск;
-- увидеть базовую аналитику;
-- увидеть предполагаемый маршрут самолета.
+- open the map;
+- see real aircraft;
+- open an aircraft card;
+- open an airport card;
+- perform a search;
+- view basic analytics;
+- view an estimated aircraft route.
 
 ---
 
-Если все перечисленные сценарии работают стабильно, MVP считается успешным.
+The MVP is successful when all listed scenarios operate reliably.
 
 ---
 
@@ -51,45 +51,45 @@ Status: Approved
 
 ## Scenario 1
 
-Изучение воздушного пространства.
+Explore airspace.
 
 ---
 
-Пользователь:
+The user:
 
-- открывает карту;
-- просматривает самолеты;
-- изучает активность региона.
+- opens the map;
+- views aircraft;
+- explores regional activity.
 
 ---
 
 ## Scenario 2
 
-Изучение самолета.
+Explore an aircraft.
 
 ---
 
-Пользователь:
+The user:
 
-- выбирает самолет;
-- получает информацию о модели;
-- получает информацию об авиакомпании;
-- получает информацию о маршруте.
+- selects an aircraft;
+- receives aircraft-model information;
+- receives airline information;
+- receives route information.
 
 ---
 
 ## Scenario 3
 
-Изучение аэропорта.
+Explore an airport.
 
 ---
 
-Пользователь:
+The user:
 
-- открывает аэропорт;
-- изучает инфраструктуру;
-- изучает статистику;
-- изучает маршруты.
+- opens an airport;
+- explores infrastructure;
+- explores statistics;
+- explores routes.
 
 ---
 
@@ -97,109 +97,109 @@ Status: Approved
 
 ## Live Aircraft Map
 
-Отображение самолетов в реальном времени.
+Real-time aircraft display.
 
 ---
 
 ## Aircraft Profile
 
-Карточка самолета.
+Aircraft card.
 
-Содержит:
+Contains:
 
-- модель;
-- авиакомпанию;
-- регистрацию;
-- параметры полета.
+- model;
+- airline;
+- registration;
+- flight parameters.
 
 ---
 
 ## Airport Profile
 
-Карточка аэропорта.
+Airport card.
 
-Содержит:
+Contains:
 
-- описание;
-- полосы;
-- инфраструктуру;
-- статистику.
+- description;
+- runways;
+- infrastructure;
+- statistics.
 
 ---
 
 ## Route Detection
 
-Базовое определение маршрута.
+Basic route determination.
 
 ---
 
 ## Traffic Analytics
 
-Базовая аналитика региона.
+Basic regional analytics.
 
 ---
 
 ## Search
 
-Поиск:
+Search for:
 
-- аэропортов;
-- самолетов;
-- авиакомпаний.
+- airports;
+- aircraft;
+- airlines.
 
 ---
 
 # 6. Nice To Have Features
 
-Могут быть реализованы в MVP при наличии времени:
+The following may be implemented in the MVP when time permits:
 
-- тепловые карты;
-- рейтинг аэропортов;
-- дополнительные графики;
-- расширенные фильтры.
+- heat maps;
+- airport ranking;
+- additional charts;
+- advanced filters.
 
 ---
 
-Отсутствие данных функций не влияет на готовность MVP.
+The absence of these capabilities does not affect MVP readiness.
 
 ---
 
 # 7. Excluded Features
 
-Не входят в MVP:
+The MVP does not include:
 
-- мобильное приложение;
-- уведомления;
-- учетные записи;
-- авторизация;
-- избранное;
-- пользовательские настройки;
-- подписки;
-- платежи;
-- прогнозирование трафика;
-- искусственный интеллект;
-- машинное обучение;
-- обнаружение аномалий.
+- a mobile application;
+- notifications;
+- user accounts;
+- authorization;
+- favorites;
+- user settings;
+- subscriptions;
+- payments;
+- traffic forecasting;
+- artificial intelligence;
+- machine learning;
+- anomaly detection.
 
 ---
 
 # 8. Geographic Scope
 
-Первая версия покрывает:
+The first release covers:
 
-- Азербайджан;
-- Кавказ;
-- Турцию.
+- Azerbaijan;
+- the Caucasus;
+- Turkey.
 
 ---
 
-При успешном запуске допускается расширение на Европу.
+After a successful launch, coverage may expand to Europe.
 
 ---
 
 # 9. Data Scope
 
-Используются:
+The platform uses:
 
 - OpenSky Network;
 - OurAirports;
@@ -208,13 +208,13 @@ Status: Approved
 
 ---
 
-Другие источники данных не являются обязательными для MVP.
+Other data sources are not mandatory for the MVP.
 
 ---
 
 # 10. Infrastructure Scope
 
-Используется только инфраструктура MVP:
+The MVP uses only:
 
 - Vercel;
 - Render;
@@ -222,7 +222,7 @@ Status: Approved
 
 ---
 
-Без:
+Without:
 
 - Kubernetes;
 - Redis;
@@ -233,34 +233,34 @@ Status: Approved
 
 # 11. MVP Constraints
 
-Первая версия должна оставаться:
+The first release must remain:
 
-- простой;
-- дешевой;
-- поддерживаемой одним разработчиком.
+- simple;
+- inexpensive;
+- maintainable by one developer.
 
 ---
 
-Любая функция, усложняющая архитектуру без доказанной пользы, переносится за пределы MVP.
+Any capability that complicates the architecture without proven value is moved outside the MVP.
 
 ---
 
 # 12. MVP Success Metrics
 
-Успешным считается MVP, если:
+The MVP is successful when:
 
-- данные отображаются корректно;
-- карта работает стабильно;
-- поиск работает корректно;
-- маршруты определяются корректно;
-- аналитика строится без ошибок.
+- data is displayed correctly;
+- the map operates reliably;
+- search operates correctly;
+- routes are determined correctly;
+- analytics are generated without errors.
 
 ---
 
 # 13. MVP Summary
 
-Первая версия должна доказать:
+The first release must prove that:
 
-Платформа способна собирать, связывать, анализировать и визуализировать авиационные данные на основе открытых источников.
+The platform can collect, connect, analyze, and visualize aviation data from open sources.
 
-После подтверждения жизнеспособности продукта допускается развитие прогнозирования, машинного обучения и интеллектуальной аналитики.
+After product viability is confirmed, forecasting, machine learning, and intelligent analytics may be developed.
