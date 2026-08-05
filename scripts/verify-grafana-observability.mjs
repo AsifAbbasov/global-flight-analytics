@@ -64,6 +64,7 @@ if (JSON.stringify(alerts).includes('classic_conditions')) fail('alert group sti
 
 for (const literal of [
   'workflow_dispatch:',
+  'GRAFANA_STACK_ID: ${{ vars.GRAFANA_STACK_ID }}',
   'GRAFANA_SERVICE_ACCOUNT_TOKEN: ${{ secrets.GRAFANA_SERVICE_ACCOUNT_TOKEN }}',
   'bash scripts/provision-grafana-observability.sh',
   'GRAFANA_OBSERVABILITY_WORKFLOW=PASS',
@@ -71,12 +72,14 @@ for (const literal of [
 if (workflow.includes('schedule:')) fail('provisioning workflow must not mutate Grafana on a schedule')
 
 for (const literal of [
-  '/apis/folder.grafana.app/v1/namespaces/default/folders',
-  '/apis/dashboard.grafana.app/v1/namespaces/default/dashboards',
+  'GRAFANA_NAMESPACE="stacks-$GRAFANA_STACK_ID"',
+  'folder_collection="/apis/folder.grafana.app/v1/namespaces/$GRAFANA_NAMESPACE/folders"',
+  'dashboard_collection="/apis/dashboard.grafana.app/v1/namespaces/$GRAFANA_NAMESPACE/dashboards"',
   '/api/v1/provisioning/folder/gfa-observability/rule-groups/global-flight-analytics-production-slo',
   '/api/v1/provisioning/policies',
   'GRAFANA_NOTIFICATION_POLICY=PASS',
 ]) if (!provision.includes(literal)) fail(`provisioning script is missing ${literal}`)
+if (provision.includes('/namespaces/default/')) fail('Grafana Cloud provisioning must not use the default namespace')
 if (/--request\s+PUT[^\n]+\/api\/v1\/provisioning\/policies/.test(provision)) fail('provisioning must not overwrite the notification policy tree')
 
 const entries = {
@@ -97,7 +100,7 @@ const backendStepStart = backendCI.indexOf('      - name: Verify Grafana SLO das
 const backendStepEnd = backendCI.indexOf('      - name: Verify recruiter quickstart contract', backendStepStart)
 if (backendStepStart < 0 || backendStepEnd <= backendStepStart) fail('Backend CI Grafana contract step boundary is invalid')
 if (backendCI.slice(backendStepStart, backendStepEnd).includes('pnpm ')) fail('Backend CI Grafana contract step must not require pnpm')
-for (const literal of ['GRAFANA_INSTANCE_URL', 'GRAFANA_PROMETHEUS_DATASOURCE_UID', 'GRAFANA_SERVICE_ACCOUNT_TOKEN', 'GRAFANA_ALERT_RULES=PASS', 'notification delivery']) {
+for (const literal of ['GRAFANA_INSTANCE_URL', 'GRAFANA_STACK_ID', 'GRAFANA_PROMETHEUS_DATASOURCE_UID', 'GRAFANA_SERVICE_ACCOUNT_TOKEN', 'GRAFANA_ALERT_RULES=PASS', 'notification delivery']) {
   if (!runbook.includes(literal)) fail(`runbook is missing ${literal}`)
 }
 
