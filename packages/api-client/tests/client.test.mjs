@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   APIError,
   GlobalFlightAnalyticsClient,
+  operationDefinitions,
 } from '../dist/index.js'
 
 function jsonResponse(body, init = {}) {
@@ -101,6 +102,31 @@ test('typed API errors preserve status code request ID and details', async () =>
       return true
     },
   )
+})
+
+test('unresolved path validation rejects adversarial templates before fetch', async () => {
+  const definition = operationDefinitions.getHealth
+  const originalPath = definition.path
+  let called = false
+
+  try {
+    definition.path = '{'.repeat(100_000)
+    const client = new GlobalFlightAnalyticsClient({
+      baseURL: 'https://api.example.test/',
+      fetch: async () => {
+        called = true
+        return jsonResponse({ success: true })
+      },
+    })
+
+    await assert.rejects(
+      client.request('getHealth', {}),
+      /unresolved path parameter/,
+    )
+    assert.equal(called, false)
+  } finally {
+    definition.path = originalPath
+  }
 })
 
 test('base URL rejects credentials paths queries and fragments', () => {

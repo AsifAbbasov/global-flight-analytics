@@ -138,7 +138,7 @@ export class GlobalFlightAnalyticsClient {
       routePath = routePath.replace(`{${parameter.name}}`, encodeURIComponent(String(value)))
     }
 
-    if (/\{[^}]+\}/.test(routePath)) {
+    if (routePath.includes('{') || routePath.includes('}')) {
       throw new TypeError(`unresolved path parameter in ${routePath}`)
     }
 
