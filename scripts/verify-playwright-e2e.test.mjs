@@ -43,6 +43,130 @@ test('healthy traffic fixture is deterministic', () => {
   assert.equal('region_code' in result.body.data[0], false)
 })
 
+test('core read fixtures preserve typed trajectory and metric envelopes', () => {
+  const trajectory = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/aircraft/4b1801/trajectory',
+    scenario: 'healthy',
+  })
+  assert.equal(trajectory.status, 200)
+  assert.equal(trajectory.body.success, true)
+  assert.equal(trajectory.body.data.id, 'trajectory-azal-101')
+  assert.equal(trajectory.body.data.segments.length, 1)
+
+  const metric = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/metrics/active-aircraft?region=az',
+    scenario: 'healthy',
+  })
+  assert.equal(metric.status, 200)
+  assert.deepEqual(metric.body.data.scope, { type: 'region', code: 'az' })
+  assert.equal(metric.body.data.window_minutes, 15)
+})
+
+test('advanced intelligence fixtures preserve evidence pagination and uncertainty semantics', () => {
+  const transponder = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/aircraft/4b1801/transponder-evidence/latest',
+    scenario: 'healthy',
+  })
+  assert.equal(transponder.status, 200)
+  assert.equal(transponder.body.data.evidence_only, true)
+  assert.equal(transponder.body.data.confirmed_emergency, false)
+
+  const weather = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/weather/current?lat=40.4&lon=49.8',
+    scenario: 'healthy',
+  })
+  assert.equal(weather.status, 200)
+  assert.equal(weather.body.data.rain_mm, null)
+  assert.equal(weather.body.data.wind_gusts_mps, null)
+
+  const history = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/historical-intelligence/aggregates/history?metric=active_aircraft&scope=global&granularity=hour',
+    scenario: 'healthy',
+  })
+  assert.equal(history.body.data.has_more, true)
+  assert.equal(history.body.data.next_cursor, 'fixture-cursor-v1')
+
+  const projection = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/projection-intelligence?as_of_time=2026-08-04T18:00:00Z',
+    scenario: 'healthy',
+  })
+  assert.match(projection.body.data.input_fingerprint, /^sha256:[0-9a-f]{64}$/)
+  assert.equal(projection.body.data.projection.points.length, 1)
+
+  const airspace = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/airspace/regions/az/analytics?as_of_time=2026-08-04T18:00:00Z',
+    scenario: 'healthy',
+  })
+  assert.equal(airspace.body.data.status, 'available')
+  assert.equal(airspace.body.data.metrics.temporal_coverage, 1)
+})
+
+test('Route Intelligence fixtures preserve mutation security and history pagination', () => {
+  const requestURL =
+    'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/route-intelligence'
+
+  const unauthorized = resolveMockResponse({
+    method: 'POST',
+    requestURL,
+    scenario: 'healthy',
+  })
+  assert.equal(unauthorized.status, 401)
+  assert.equal(
+    unauthorized.body.error.code,
+    'MUTATION_AUTHENTICATION_REQUIRED',
+  )
+
+  const processed = resolveMockResponse({
+    method: 'POST',
+    requestURL,
+    scenario: 'healthy',
+    headers: {
+      'x-internal-api-key': 'playwright-route-intelligence-key-v1',
+    },
+  })
+  assert.equal(processed.status, 200)
+  assert.equal(processed.body.data.result.status, 'complete')
+  assert.equal(processed.body.data.result.origin.airport.icao_code, 'UBBB')
+  assert.equal(
+    processed.body.data.result.limitations[0].code,
+    'inferred_not_filed',
+  )
+
+  const latest = resolveMockResponse({
+    method: 'GET',
+    requestURL: `${requestURL}/latest`,
+    scenario: 'healthy',
+  })
+  assert.equal(latest.status, 200)
+  assert.equal(latest.body.data.id, processed.body.data.id)
+
+  const history = resolveMockResponse({
+    method: 'GET',
+    requestURL: `${requestURL}/history?limit=20`,
+    scenario: 'healthy',
+  })
+  assert.equal(history.status, 200)
+  assert.equal(history.body.data.has_more, true)
+  assert.equal(
+    history.body.data.next_before_as_of_time,
+    '2026-08-05T18:00:00Z',
+  )
+})
+
 test('traffic-error fixture preserves the typed error envelope', () => {
   const result = resolveMockResponse({
     method: 'GET',

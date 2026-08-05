@@ -145,6 +145,16 @@ export function validatePlaywrightFoundation(root) {
       "'Access-Control-Allow-Origin': 'http://127.0.0.1:3000'",
       "'Cache-Control': 'no-store'",
       "'/api/v1/traffic/current'",
+      "'/api/v1/aircraft/{icao24}/trajectory'",
+      "'/api/v1/metrics/active-aircraft'",
+      "'/api/v1/analytics/metrics/coverage-score'",
+      "'/api/v1/historical-intelligence/aggregates/history'",
+      "'/api/v1/trajectories/{id}/projection-intelligence'",
+      "'/api/v1/airspace/regions/{code}/analytics'",
+      "'/api/v1/trajectories/{id}/route-intelligence'",
+      "'/api/v1/trajectories/{id}/route-intelligence/latest'",
+      "'/api/v1/trajectories/{id}/route-intelligence/history'",
+      "'X-Internal-API-Key'",
     ],
     'mock API',
   )
@@ -215,6 +225,8 @@ export function validatePlaywrightFoundation(root) {
       'OpenAPI',
       'PLAYWRIGHT_E2E=PASS',
       'public Render deployment is never targeted',
+      'thirty-eight paths',
+      'Route Intelligence',
     ],
     'Document 176',
   )
@@ -268,7 +280,7 @@ function main() {
   }
 
   console.log(`PLAYWRIGHT_E2E_VERSION=1.62.0`)
-  console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=8')
+  console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=38')
   console.log('PLAYWRIGHT_E2E_SCENARIOS=4')
   console.log('PLAYWRIGHT_E2E_MOCK_API=PASS')
   console.log('PLAYWRIGHT_E2E_CONTRACT=PASS')

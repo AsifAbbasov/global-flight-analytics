@@ -1627,6 +1627,38 @@ semantic browser assertions, server-rendered snapshot, shareable region state, r
 navigation, traffic failure recovery, evidence retention, dedicated Continuous Integration
 workflow, and prohibition on targeting public deployments.
 
+<!-- OPENAPI-CONTRACT-CLOSURE-INVENTORY-V1:DOCUMENT-INDEX -->
+
+## Document 177 — OpenAPI Contract Closure Route Inventory
+
+`177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md`
+
+Records the source-backed inventory of 38 public operations and one internal metrics operation, the current 20-operation OpenAPI gap after the core read expansion, nested Fiber group and constant-backed path resolution, mutation and metrics authorization boundaries, permanent tests, and the dedicated Continuous Integration gate required before complete OpenAPI expansion.
+
+<!-- OPENAPI-CORE-READ-SURFACE-V1:DOCUMENT-INDEX -->
+
+## Document 178 — OpenAPI Core Read Surface
+
+`178_OPENAPI_CORE_READ_SURFACE.md`
+
+Closes the ten-operation core read slice for aircraft, flights, flight states, trajectories, route context, and the active-aircraft metric; expands the public OpenAPI contract from 8 to 18 operations; preserves nullable telemetry and typed error semantics; and keeps the Playwright mock surface exactly aligned.
+
+<!-- OPENAPI-ADVANCED-INTELLIGENCE-READ-SURFACE-V1:DOCUMENT-INDEX -->
+
+## Document 179 — OpenAPI Advanced Intelligence Read Surface
+
+`179_OPENAPI_ADVANCED_INTELLIGENCE_READ_SURFACE.md`
+
+Closes seventeen source-backed analytical GET operations for transponder evidence, current weather, analytical metrics, Airport Intelligence, Historical Intelligence, Projection Intelligence, Stability Intelligence, Weather Context, and Airspace Intelligence; expands OpenAPI coverage from 18 to 35 operations; and leaves only the three-operation Route Intelligence slice for final security-aware closure.
+
+<!-- OPENAPI-ROUTE-INTELLIGENCE-CONTRACT-CLOSURE-V1:DOCUMENT-INDEX -->
+
+## Document 180 — OpenAPI Route Intelligence Contract Closure
+
+`180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md`
+
+Closes the final protected Route Intelligence POST and two materialized GET reads; defines the X-Internal-API-Key security scheme and authorization failures; expands OpenAPI coverage from 35 to all 38 production public operations; and permanently reduces missing and extra route inventory counts to zero.
+
 <!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1:DOCUMENT-INDEX -->
 ## Document 170 — Production Observability and Alerting Closure
 

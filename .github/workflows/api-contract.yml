@@ -8,7 +8,14 @@ on:
       - 'openapi/**'
       - 'scripts/verify-openapi-contract.mjs'
       - 'scripts/verify-openapi-contract.test.mjs'
+      - 'scripts/verify-openapi-route-inventory.mjs'
+      - 'scripts/verify-openapi-route-inventory.test.mjs'
       - 'docs/175_OPENAPI_CONTRACT_FOUNDATION.md'
+      - 'docs/176_PLAYWRIGHT_E2E_FOUNDATION.md'
+      - 'docs/177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md'
+      - 'docs/178_OPENAPI_CORE_READ_SURFACE.md'
+      - 'docs/179_OPENAPI_ADVANCED_INTELLIGENCE_READ_SURFACE.md'
+      - 'docs/180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md'
       - 'docs/DOCUMENT_INDEX.md'
       - 'package.json'
       - 'scripts/verify-release.sh'
@@ -23,7 +30,14 @@ on:
       - 'openapi/**'
       - 'scripts/verify-openapi-contract.mjs'
       - 'scripts/verify-openapi-contract.test.mjs'
+      - 'scripts/verify-openapi-route-inventory.mjs'
+      - 'scripts/verify-openapi-route-inventory.test.mjs'
       - 'docs/175_OPENAPI_CONTRACT_FOUNDATION.md'
+      - 'docs/176_PLAYWRIGHT_E2E_FOUNDATION.md'
+      - 'docs/177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md'
+      - 'docs/178_OPENAPI_CORE_READ_SURFACE.md'
+      - 'docs/179_OPENAPI_ADVANCED_INTELLIGENCE_READ_SURFACE.md'
+      - 'docs/180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md'
       - 'docs/DOCUMENT_INDEX.md'
       - 'package.json'
       - 'scripts/verify-release.sh'
@@ -55,6 +69,8 @@ jobs:
 
       - name: Verify source-backed OpenAPI contract
         run: |
+          node --test scripts/verify-openapi-route-inventory.test.mjs
+          node scripts/verify-openapi-route-inventory.mjs
           node --test scripts/verify-openapi-contract.test.mjs
           node scripts/verify-openapi-contract.mjs
           node -e "JSON.parse(require('node:fs').readFileSync('openapi/openapi.json', 'utf8'))"
@@ -66,6 +82,11 @@ jobs:
           path: |
             openapi/openapi.json
             docs/175_OPENAPI_CONTRACT_FOUNDATION.md
+            docs/176_PLAYWRIGHT_E2E_FOUNDATION.md
+            docs/177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md
+            docs/178_OPENAPI_CORE_READ_SURFACE.md
+            docs/179_OPENAPI_ADVANCED_INTELLIGENCE_READ_SURFACE.md
+            docs/180_OPENAPI_ROUTE_INTELLIGENCE_CONTRACT_CLOSURE.md
           if-no-files-found: error
           retention-days: 30
 
