@@ -1,0 +1,25 @@
+{
+  "name": "@global-flight-analytics/api-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "generate": "node ../../scripts/generate-openapi-client.mjs --write",
+    "verify:generated": "node ../../scripts/generate-openapi-client.mjs --check",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "rm -rf dist && tsc && node --test tests/*.test.mjs; status=$?; rm -rf dist; exit $status"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
