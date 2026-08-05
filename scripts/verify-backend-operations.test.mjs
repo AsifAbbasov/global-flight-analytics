@@ -16,8 +16,8 @@ test('README records exact CI closure and verified public deployment', () => {
   assert.match(source, /Backend CI run `30715613342`/)
   assert.match(source, /Frontend CI run `30715613361`/)
   assert.match(source, new RegExp(productionSHA))
-  assert.match(source, /https:\/\/global-flight-analytics-web\.vercel\.app/)
-  assert.match(source, /https:\/\/global-flight-analytics-api\.onrender\.com/)
+  assert.ok(source.includes('https://global-flight-analytics-web.vercel.app'))
+  assert.ok(source.includes('https://global-flight-analytics-api.onrender.com'))
   assert.match(source, /visual and interaction redesign remains a separate product phase/i)
 })
 
