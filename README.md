@@ -95,6 +95,12 @@ commands, the selected architecture, its security boundary, and the evidence req
 close the limitation are documented in
 [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md).
 
+The repository-owned Worker foundation, security contract, test matrix, and safe
+deployment order are recorded in
+[`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md).
+The foundation is implemented in source but is not represented as deployed production
+infrastructure until controlled Cloudflare evidence and the fallback cutover pass.
+
 ## What Is Implemented
 
 ### Product experience

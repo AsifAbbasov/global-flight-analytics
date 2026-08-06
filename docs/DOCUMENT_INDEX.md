@@ -1682,3 +1682,14 @@ limitations, and the formal production observability closure statement.
 ## Document 181 — OpenAPI Developer Experience
 
 `181_OPENAPI_DEVELOPER_EXPERIENCE.md` records the embedded same-binary API documentation surface, exact canonical specification endpoint, dependency-free browser explorer, protected-mutation browser boundary, deterministic TypeScript client generation, byte-level embedded specification drift enforcement, generated-client drift enforcement, TypeScript validation, OpenAPI workflow integration, release-gate integration, and the exact baseline for the developer-experience increment.
+
+<!-- ZERO-COST-PRODUCTION-INGESTION-RELIABILITY:DOCUMENT-INDEX -->
+
+## Document 182 — Zero-Cost Production Ingestion Reliability Foundation
+
+`182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` records the repository-owned
+Cloudflare Worker foundation for a zero-cost primary scheduler and freshness watchdog,
+GitHub Actions run-state deduplication and dispatch provenance, the encrypted-token
+boundary, exact free-tier request shape, tests and Wrangler dry-run verification, safe
+deployment ordering, and the explicit rule that the existing ten-minute GitHub schedule
+must remain primary until controlled Cloudflare live evidence and fallback cutover pass.

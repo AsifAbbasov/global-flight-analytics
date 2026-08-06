@@ -22,6 +22,7 @@ on:
       - '.github/workflows/production-metrics-scrape.yml'
       - '.github/workflows/provision-grafana-observability.yml'
       - 'monitoring/**'
+      - 'infra/cloudflare/**'
       - '.github/dependabot.yml'
       - 'scripts/**'
       - 'docs/**'
@@ -239,6 +240,12 @@ jobs:
         run: |
           node --test scripts/verify-production-ingestion-contract.test.mjs scripts/verify-production-traffic-freshness.test.mjs
           node scripts/verify-production-ingestion-contract.mjs
+
+      - name: Verify zero-cost production ingestion reliability foundation
+        run: |
+          node --test infra/cloudflare/production-ingestion-reliability/test/*.test.mjs scripts/verify-production-ingestion-reliability.test.mjs
+          node scripts/verify-production-ingestion-reliability.mjs
+          npx --yes wrangler@4.94.0 deploy --dry-run --config infra/cloudflare/production-ingestion-reliability/wrangler.jsonc --outdir /tmp/gfa-cloudflare-worker
 
       - name: Verify production metrics scraper contract
         run: |

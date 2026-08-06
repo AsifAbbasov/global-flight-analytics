@@ -34,6 +34,8 @@
     "verify:repository-governance": "node scripts/verify-repository-governance.mjs",
     "test:production-ingestion-contract": "node --test scripts/verify-production-ingestion-contract.test.mjs scripts/verify-production-traffic-freshness.test.mjs",
     "verify:production-ingestion-contract": "node scripts/verify-production-ingestion-contract.mjs",
+    "test:production-ingestion-reliability": "node --test infra/cloudflare/production-ingestion-reliability/test/*.test.mjs scripts/verify-production-ingestion-reliability.test.mjs",
+    "verify:production-ingestion-reliability": "node scripts/verify-production-ingestion-reliability.mjs",
     "test:openapi-contract": "node --test scripts/verify-openapi-contract.test.mjs",
     "verify:openapi-contract": "node scripts/verify-openapi-contract.mjs",
     "test:openapi-route-inventory": "node --test scripts/verify-openapi-route-inventory.test.mjs",
