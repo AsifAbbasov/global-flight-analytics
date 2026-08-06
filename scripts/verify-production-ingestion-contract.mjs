@@ -31,8 +31,12 @@ const packageJSON = JSON.parse(read('package.json'))
 const releaseVerifier = read('scripts/verify-release.sh')
 
 assert(
-  workflow.includes("cron: '*/10 * * * *'"),
-  'production ingestion workflow must run every ten minutes'
+  workflow.includes("cron: '37 * * * *'"),
+  'production ingestion workflow must retain the offset hourly GitHub fallback'
+)
+assert(
+  !workflow.includes("cron: '*/10 * * * *'"),
+  'GitHub Actions must not remain the ten-minute primary after Cloudflare cutover'
 )
 assert(
   workflow.includes('workflow_dispatch:'),
