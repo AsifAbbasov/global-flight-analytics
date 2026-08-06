@@ -94,7 +94,7 @@ test('repository configuration excludes the GitHub token', () => {
   )
 })
 
-test('live deployment evidence is recorded without claiming final closure', () => {
+test('live deployment evidence records final reliability closure', () => {
   const foundation = read(
     'docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md'
   )
@@ -107,18 +107,79 @@ test('live deployment evidence is recorded without claiming final closure', () =
 
   assert.match(
     foundation,
-    /Cloudflare Worker deployed and initial live evidence verified/
+    /Status: production ingestion reliability closed\./
   )
   assert.match(
     runbook,
-    /Cloudflare live deployment status: verified on 2026-08-06/
+    /The production ingestion reliability stage is closed\./
   )
   assert.match(
     liveEvidence,
-    /PRODUCTION_INGESTION_RELIABILITY=PENDING/
+    /CLOUDFLARE_PRIMARY_REAL_DISPATCH=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /ACTIVE_RUN_DEDUPLICATION=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /GITHUB_SCHEDULED_FALLBACK=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /PRODUCTION_INGESTION_RELIABILITY=PASS/
   )
   assert.doesNotMatch(
     liveEvidence,
-    /PRODUCTION_INGESTION_RELIABILITY=PASS/
+    /PRODUCTION_INGESTION_RELIABILITY=PENDING/
+  )
+})
+test('closure evidence identities remain consistent across documents', () => {
+  const readme = read('README.md')
+  const documents = [
+    read('docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'),
+    read('docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md'),
+    read('docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md'),
+  ]
+  const expectedEvidence = [
+    'CLOSURE_REPOSITORY_REVISION=7dfc66685247a5a1aaea87b1391624d1014d7013',
+    'WATCHDOG_RECOVERY_RUN_ID=31103550357',
+    'PRIMARY_DISPATCH_RUN_ID=31112274607',
+    'PRIMARY_DISPATCH_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013',
+    'ACTIVE_RUN_AND_FALLBACK_RUN_ID=31113114700',
+    'ACTIVE_RUN_AND_FALLBACK_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013',
+    'FINAL_RUNTIME_VALIDATION_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013',
+    'FINAL_RUNTIME_VALIDATION_COMPLETED_AT=2026-08-06T15:31:58Z',
+  ]
+  const forbiddenPendingEvidence = [
+    'CLOUDFLARE_PRIMARY_REAL_DISPATCH=PENDING',
+    'ACTIVE_RUN_DEDUPLICATION=PENDING',
+    'GITHUB_SCHEDULED_FALLBACK=PENDING',
+    'FINAL_EXACT_REVISION_RUNTIME_VALIDATION=PENDING',
+    'PRODUCTION_INGESTION_RELIABILITY=PENDING',
+  ]
+
+  for (const document of documents) {
+    for (const evidence of expectedEvidence) {
+      assert.match(document, new RegExp(evidence))
+    }
+    for (const pendingEvidence of forbiddenPendingEvidence) {
+      assert.doesNotMatch(document, new RegExp(pendingEvidence))
+    }
+    assert.match(
+      document,
+      /Evidence ownership and verification boundary/
+    )
+  }
+
+  assert.match(readme, /repository-recorded closure evidence/)
+  assert.match(readme, /owner-local, non-secret supporting\s+evidence/)
+  assert.doesNotMatch(
+    readme,
+    /Diagnosis, recovery commands, architecture boundaries, and immutable run/
   )
 })
