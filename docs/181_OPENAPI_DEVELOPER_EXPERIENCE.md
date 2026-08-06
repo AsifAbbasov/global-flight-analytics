@@ -53,7 +53,7 @@ remain unchanged. The documentation transport is not counted as a production dom
 
 The assets are compiled into the Go API binary. Runtime containers do not need a repository checkout, Node.js, pnpm, a static file volume, or an external documentation CDN.
 
-The OpenAPI JSON and static assets expose a strong SHA-256 ETag and support `If-None-Match`. The HTML shell uses `Cache-Control: no-store` while immutable build assets use bounded public caching.
+The origin OpenAPI JSON and static assets expose a strong SHA-256 ETag and support `If-None-Match`. Production intermediaries may legally weaken that validator to `W/"<sha256>"`; conditional requests therefore use weak entity-tag comparison while retaining exact opaque SHA-256 identity. The HTML shell uses `Cache-Control: no-store` while immutable build assets use bounded public caching.
 
 ## Security boundary
 
@@ -136,6 +136,34 @@ The generator supports the JSON Schema forms used by the repository contract:
 - protected-operation metadata.
 
 The generated file includes the exact SHA-256 of `openapi/openapi.json`. Manual edits fail the drift check.
+
+## Production proxy conditional-request hardening
+
+Live production validation observed that the Render delivery path transforms the origin validator:
+
+```text
+"<sha256>"
+```
+
+into the semantically equivalent weak response validator:
+
+```text
+W/"<sha256>"
+```
+
+A browser or HTTP client correctly reuses the received value in `If-None-Match`. The original handler compared the request header to the origin strong validator byte-for-byte, so the proxy-weakened validator returned `200` instead of `304`.
+
+The hardened handler now:
+
+- applies the weak comparison required for `If-None-Match` on `GET`;
+- accepts both strong and proxy-weakened forms for the same opaque SHA-256 tag;
+- accepts comma-separated validator lists;
+- accepts the `*` wildcard;
+- preserves `200` for a non-matching validator;
+- keeps the origin-generated ETag deterministic and SHA-256-backed;
+- changes no OpenAPI operation, schema, authentication, or caching duration.
+
+Regression tests cover strong, weak, listed, wildcard, and mismatched validators.
 
 ## Verification
 
