@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	_ "embed"
 	"fmt"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -78,10 +79,60 @@ func serveCacheableAsset(
 	c.Set(fiber.HeaderETag, etag)
 	c.Set(fiber.HeaderCacheControl, "public, max-age=300")
 	c.Set(fiber.HeaderContentType, contentType)
-	if c.Get(fiber.HeaderIfNoneMatch) == etag {
+	if ifNoneMatchMatches(
+		c.Get(fiber.HeaderIfNoneMatch),
+		etag,
+	) {
 		return c.SendStatus(fiber.StatusNotModified)
 	}
 	return c.Send(content)
+}
+
+func ifNoneMatchMatches(
+	headerValue string,
+	currentETag string,
+) bool {
+	for _, candidate := range strings.Split(
+		headerValue,
+		",",
+	) {
+		normalizedCandidate := strings.TrimSpace(
+			candidate,
+		)
+		if normalizedCandidate == "*" ||
+			weakETagsEqual(
+				normalizedCandidate,
+				currentETag,
+			) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func weakETagsEqual(
+	left string,
+	right string,
+) bool {
+	return stripWeakETagPrefix(left) ==
+		stripWeakETagPrefix(right)
+}
+
+func stripWeakETagPrefix(
+	value string,
+) string {
+	normalized := strings.TrimSpace(value)
+	if strings.HasPrefix(normalized, "W/") {
+		return strings.TrimSpace(
+			strings.TrimPrefix(
+				normalized,
+				"W/",
+			),
+		)
+	}
+
+	return normalized
 }
 
 func setDocumentationHeaders(c *fiber.Ctx) {

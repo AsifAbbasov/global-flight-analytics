@@ -99,6 +99,83 @@ func TestOpenAPIAssetUsesStrongETag(t *testing.T) {
 	}
 }
 
+func TestOpenAPIAssetAcceptsWeakAndListedIfNoneMatchValidators(t *testing.T) {
+	app := fiber.New()
+	Register(app)
+
+	first, err := app.Test(
+		httptest.NewRequest(
+			"GET",
+			OpenAPIPath,
+			nil,
+		),
+	)
+	if err != nil {
+		t.Fatalf("first request: %v", err)
+	}
+	etag := first.Header.Get("ETag")
+	_ = first.Body.Close()
+	if etag == "" {
+		t.Fatal("expected ETag")
+	}
+
+	for _, headerValue := range []string{
+		"W/" + etag,
+		`"different", W/` + etag,
+		"*",
+	} {
+		request := httptest.NewRequest(
+			"GET",
+			OpenAPIPath,
+			nil,
+		)
+		request.Header.Set(
+			"If-None-Match",
+			headerValue,
+		)
+
+		response, requestErr := app.Test(request)
+		if requestErr != nil {
+			t.Fatalf(
+				"conditional request %q: %v",
+				headerValue,
+				requestErr,
+			)
+		}
+		_ = response.Body.Close()
+		if response.StatusCode !=
+			fiber.StatusNotModified {
+			t.Fatalf(
+				"expected %q to return 304, got %d",
+				headerValue,
+				response.StatusCode,
+			)
+		}
+	}
+
+	mismatch := httptest.NewRequest(
+		"GET",
+		OpenAPIPath,
+		nil,
+	)
+	mismatch.Header.Set(
+		"If-None-Match",
+		`W/"different"`,
+	)
+	mismatchResponse, err := app.Test(mismatch)
+	if err != nil {
+		t.Fatalf("mismatch request: %v", err)
+	}
+	defer mismatchResponse.Body.Close()
+	if mismatchResponse.StatusCode !=
+		fiber.StatusOK {
+		t.Fatalf(
+			"expected mismatched validator to return 200, got %d",
+			mismatchResponse.StatusCode,
+		)
+	}
+}
+
 func TestBrowserExplorerDoesNotCollectProtectedMutationCredentials(t *testing.T) {
 	source := string(applicationJavaScript)
 	for _, forbidden := range []string{"localStorage", "sessionStorage", "document.cookie", "internalApiKeyInput"} {
