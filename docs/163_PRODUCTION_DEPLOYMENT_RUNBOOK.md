@@ -337,16 +337,148 @@ LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS
 The manual dispatch restored service freshness and closed the exact-revision validation
 incident. It did **not** remove the scheduler reliability boundary.
 
-A permanent production solution should:
+### Selected zero-cost MVP reliability architecture
 
-- run ingestion through a dedicated scheduler or continuously running worker;
-- separate ingestion execution from GitHub Actions availability;
-- alert independently when no successful ingestion occurs within the freshness objective;
-- retain manual dispatch as a bounded recovery mechanism;
-- preserve exact run, revision, provider, storage, and public-read evidence.
+The selected design removes GitHub scheduled execution from the primary timing role while
+retaining the already verified GitHub workflow as the isolated ingestion executor.
 
-Until that architecture is deployed and verified, the GitHub Actions schedule remains a
-best-effort portfolio mechanism rather than a production availability guarantee.
+```text
+Cloudflare Cron Trigger — primary scheduler
+          |
+          | every 10 minutes
+          v
+GitHub workflow_dispatch
+          |
+          v
+Production Traffic Ingestion
+          |
+          +-- one bounded ingestion cycle
+          +-- write to Neon PostgreSQL
+          +-- verify public freshness
+
+
+Cloudflare Watchdog — every 5 minutes
+          |
+          +-- request /api/v1/traffic/current
+          +-- detect stale observations
+          +-- check that no workflow run is queued or in progress
+          +-- redispatch workflow_dispatch only when recovery is required
+
+
+GitHub scheduled fallback — infrequent, for example hourly
+          |
+          +-- secondary recovery path if Cloudflare scheduling is unavailable
+
+
+Manual final fallback
+gh workflow run production-traffic-ingestion.yml --ref main
+```
+
+The same design can be rendered as a dependency diagram:
+
+```mermaid
+flowchart TD
+    Primary[Cloudflare Cron Trigger<br/>every 10 minutes]
+    Watchdog[Cloudflare Watchdog<br/>every 5 minutes]
+    Fallback[GitHub scheduled fallback<br/>infrequent]
+    Manual[Manual workflow_dispatch]
+    Runs[GitHub Actions run-state check]
+    Dispatch[Production Traffic Ingestion workflow]
+    Cycle[One bounded ingestion cycle]
+    Neon[(Neon PostgreSQL)]
+    Public[Render public traffic API]
+    Freshness[Public freshness verification]
+
+    Primary --> Runs
+    Watchdog --> Public
+    Public --> Watchdog
+    Watchdog -->|stale and no active run| Runs
+    Runs -->|no queued or in-progress run| Dispatch
+    Fallback --> Dispatch
+    Manual --> Dispatch
+    Dispatch --> Cycle
+    Cycle --> Neon
+    Neon --> Public
+    Public --> Freshness
+```
+
+### Responsibility split
+
+| Component | Responsibility | Must not do |
+| --- | --- | --- |
+| Cloudflare primary trigger | request one GitHub workflow dispatch every ten minutes | ingest data directly or store database credentials |
+| Cloudflare watchdog | verify public freshness and request recovery only when stale | create duplicate runs while one is queued or active |
+| GitHub ingestion workflow | execute the existing bounded ingestion command and verify the public result | become the only scheduler or silently accept stale data |
+| GitHub scheduled fallback | provide an infrequent cross-provider fallback | claim an exact hourly or ten-minute availability guarantee |
+| Manual dispatch | provide the final owner-controlled recovery path | replace automated detection and recovery |
+| Neon PostgreSQL | persist ingestion runs, canonical states, and trajectories | act as an external scheduler |
+
+### Duplicate-run and failure controls
+
+Before Cloudflare requests a dispatch, it must query recent runs for
+`production-traffic-ingestion.yml`. A new dispatch is permitted only when:
+
+- no run is `queued` or `in_progress`;
+- the primary schedule is due, or public data exceeds the recovery freshness threshold;
+- the previous dispatch is outside a bounded deduplication interval.
+
+The GitHub workflow keeps its existing concurrency group:
+
+```yaml
+concurrency:
+  group: production-traffic-ingestion
+  cancel-in-progress: false
+```
+
+This protects execution after dispatch. The Cloudflare run-state check prevents unnecessary
+queue growth before dispatch. Public freshness verification remains the final success
+condition; a completed workflow is not sufficient evidence when the API still serves stale
+or empty traffic.
+
+### Secret and access boundary
+
+Cloudflare must store the GitHub credential only as an encrypted Worker secret. The
+credential must:
+
+- be restricted to the `global-flight-analytics` repository;
+- have only the permissions required to read Actions state and dispatch the selected workflow;
+- never appear in source, `wrangler.toml`, logs, README examples, or GitHub variables;
+- be rotated when it expires or when access scope changes.
+
+Cloudflare does not receive the Neon connection string, provider credentials, Render
+environment variables, API mutation key, or Grafana credentials. Production database
+access remains confined to the existing GitHub ingestion workflow and Render API.
+
+### Deployment truth and closure evidence
+
+This section records the selected design, not a claim that Cloudflare automation is already
+deployed. The reliability limitation remains open until all of the following evidence is
+recorded:
+
+```text
+CLOUDFLARE_PRIMARY_SCHEDULE=PASS
+CLOUDFLARE_WATCHDOG=PASS
+CLOUDFLARE_GITHUB_AUTHORIZATION_BOUNDARY=PASS
+ACTIVE_RUN_DEDUPLICATION=PASS
+STALE_TRAFFIC_RECOVERY_DISPATCH=PASS
+GITHUB_SCHEDULED_FALLBACK=PASS
+MANUAL_RECOVERY=PASS
+POST_RECOVERY_PUBLIC_FRESHNESS=PASS
+PRODUCTION_INGESTION_RELIABILITY=PASS
+```
+
+The live proof must include:
+
+1. one primary Cloudflare dispatch tied to an exact GitHub run ID and head SHA;
+2. one watchdog execution that observes fresh data and correctly skips recovery;
+3. one controlled stale-data test that dispatches exactly one recovery run;
+4. one active-run test that suppresses a duplicate dispatch;
+5. one successful public freshness result after recovery;
+6. one verified GitHub fallback run or bounded fallback simulation;
+7. one final exact-revision production runtime validation.
+
+Until those conditions pass, the current GitHub schedule remains a best-effort portfolio
+mechanism and the Cloudflare design remains the approved zero-cost implementation plan.
 
 ## 9. External Grafana Cloud metrics scraper
 

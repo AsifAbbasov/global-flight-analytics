@@ -84,10 +84,15 @@ freshness to five seconds, and allowed the complete live runtime validation to p
 
 This was an operational recovery, not a permanent guarantee that GitHub-hosted schedules
 will execute every ten minutes. The project therefore treats the current schedule as a
-best-effort portfolio automation boundary. A production-grade continuity design should
-move recurring ingestion to a dedicated scheduler or continuously running worker and keep
-independent stale-data alerting. Diagnosis, recovery commands, and the permanent hardening
-path are documented in
+best-effort portfolio automation boundary.
+
+The selected zero-cost MVP reliability design is not yet claimed as deployed: a Cloudflare
+Cron Trigger will become the primary ten-minute scheduler, a second Cloudflare trigger will
+check public freshness every five minutes and redispatch only when data is stale and no
+ingestion run is active, the GitHub schedule will remain as an infrequent fallback, and
+`workflow_dispatch` will remain the final manual recovery path. Diagnosis, recovery
+commands, the selected architecture, its security boundary, and the evidence required to
+close the limitation are documented in
 [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md).
 
 ## What Is Implemented
