@@ -246,6 +246,108 @@ A failed scheduled run is operational evidence that the public path, Cross-Origi
 Sharing configuration, or recorded deployment revision requires investigation. It does not
 automatically redeploy, migrate the database, or change repository state.
 
+## 8.1 Production traffic ingestion scheduler boundary and recovery
+
+The repository also contains
+`.github/workflows/production-traffic-ingestion.yml`. It declares:
+
+```yaml
+schedule:
+  - cron: '*/10 * * * *'
+workflow_dispatch:
+```
+
+The cron expression describes the intended sampling cadence. This project does not treat a
+GitHub-hosted scheduled workflow as a guaranteed ten-minute production scheduler.
+
+### Observed production incident
+
+During live runtime validation on 2026-08-06, the API served a traffic snapshot with:
+
+```text
+age_seconds=18189
+maximum_age_seconds=1800
+```
+
+The approximately five-hour gap was investigated before recovery. Historical and manual
+workflow evidence established that:
+
+- `PRODUCTION_INGESTION_DATABASE_URL` was configured;
+- the Airplanes.live request path succeeded;
+- bounded ingestion cycles stored flight states and trajectories;
+- the public API read from the same production database;
+- exact application revision, Vercel deployment, Render deployment, health, readiness,
+  version, and Cross-Origin Resource Sharing checks passed;
+- no application, database-schema, provider-authentication, or secret failure explained the
+  missing scheduled executions.
+
+The operational classification is therefore a scheduled-execution gap, not a data-path or
+application-code failure.
+
+### Recovery procedure
+
+Recovery must preserve exact revision evidence and must not edit the database manually.
+
+1. Confirm a clean `main` checkout synchronized with `origin/main`.
+2. Dispatch **Production Traffic Ingestion** manually against `main`.
+3. Record the workflow run ID, event, head SHA, ingestion counts, and freshness result.
+4. Require `PRODUCTION_TRAFFIC_FRESHNESS=PASS`.
+5. Rerun the exact-revision live production runtime validator.
+
+A minimal manual dispatch is:
+
+```bash
+gh workflow run production-traffic-ingestion.yml --ref main
+```
+
+Then identify and watch the created run:
+
+```bash
+gh run list --workflow production-traffic-ingestion.yml --event workflow_dispatch --branch main
+gh run watch '<run-id>' --exit-status
+gh run view '<run-id>' --log
+```
+
+The verified recovery run was:
+
+```text
+RUN_ID=31076668920
+EVENT=workflow_dispatch
+HEAD_SHA=855f82bf97cf0db47d1a3918f75ea70f7f2b06fe
+stored=4
+trajectories=4
+PRODUCTION_TRAFFIC_FRESHNESS=PASS
+age_seconds=5
+```
+
+After recovery, the complete live validator produced:
+
+```text
+PRODUCTION_TRAFFIC_DATA=PASS
+PRODUCTION_OPENAPI_LIVE_PARITY=PASS
+PRODUCTION_OPENAPI_ETAG=PASS
+PRODUCTION_OPENAPI_CONDITIONAL_GET=PASS
+PRODUCTION_MUTATION_AUTHENTICATION_BOUNDARY=PASS
+VALIDATION_NON_MUTATING=PASS
+LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS
+```
+
+### Resolution status
+
+The manual dispatch restored service freshness and closed the exact-revision validation
+incident. It did **not** remove the scheduler reliability boundary.
+
+A permanent production solution should:
+
+- run ingestion through a dedicated scheduler or continuously running worker;
+- separate ingestion execution from GitHub Actions availability;
+- alert independently when no successful ingestion occurs within the freshness objective;
+- retain manual dispatch as a bounded recovery mechanism;
+- preserve exact run, revision, provider, storage, and public-read evidence.
+
+Until that architecture is deployed and verified, the GitHub Actions schedule remains a
+best-effort portfolio mechanism rather than a production availability guarantee.
+
 ## 9. External Grafana Cloud metrics scraper
 
 The repository contains `.github/workflows/production-metrics-scrape.yml` and
