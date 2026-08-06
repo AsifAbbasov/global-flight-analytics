@@ -86,20 +86,20 @@ This was an operational recovery, not a permanent guarantee that GitHub-hosted s
 will execute every ten minutes. The project therefore treats the current schedule as a
 best-effort portfolio automation boundary.
 
-The selected zero-cost MVP reliability design is not yet claimed as deployed: a Cloudflare
-Cron Trigger will become the primary ten-minute scheduler, a second Cloudflare trigger will
-check public freshness every five minutes and redispatch only when data is stale and no
-ingestion run is active, the GitHub schedule will remain as an infrequent fallback, and
-`workflow_dispatch` will remain the final manual recovery path. Diagnosis, recovery
-commands, the selected architecture, its security boundary, and the evidence required to
-close the limitation are documented in
-[`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md).
+The zero-cost MVP reliability Worker is deployed on Cloudflare. Its primary Cron Trigger
+runs every ten minutes, its watchdog checks public freshness every five minutes, and stale
+traffic can create one bounded GitHub workflow dispatch while recent or active runs suppress
+duplicates. The GitHub schedule is retained at an offset hourly cadence as a fallback, and
+`workflow_dispatch` remains the final manual recovery path. Initial deployment, health,
+watchdog recovery, fresh-skip, and secret-boundary evidence have passed; final reliability
+closure remains pending the remaining primary-dispatch, active-run, fallback, and
+exact-revision proofs. Diagnosis, recovery commands, and the closure contract are documented
+in [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md).
 
-The repository-owned Worker foundation, security contract, test matrix, and safe
-deployment order are recorded in
-[`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md).
-The foundation is implemented in source but is not represented as deployed production
-infrastructure until controlled Cloudflare evidence and the fallback cutover pass.
+The repository-owned Worker foundation and live deployment evidence are recorded in
+[`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md)
+and
+[`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`](docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md).
 
 ## What Is Implemented
 

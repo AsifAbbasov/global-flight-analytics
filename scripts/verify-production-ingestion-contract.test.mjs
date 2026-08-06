@@ -16,7 +16,8 @@ function read(relativePath) {
 test('scheduled production ingestion remains bounded and serialized', () => {
   const workflow = read('.github/workflows/production-traffic-ingestion.yml')
 
-  assert.match(workflow, /cron: '\*\/10 \* \* \* \*'/)
+  assert.match(workflow, /cron: '37 \* \* \* \*'/)
+  assert.doesNotMatch(workflow, /cron: '\*\/10 \* \* \* \*'/)
   assert.match(workflow, /workflow_dispatch:/)
   assert.match(workflow, /group: production-traffic-ingestion/)
   assert.match(workflow, /cancel-in-progress: false/)

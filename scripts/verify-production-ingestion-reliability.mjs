@@ -39,6 +39,9 @@ const runbook = read('docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md')
 const foundation = read(
   'docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md'
 )
+const liveEvidence = read(
+  'docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md'
+)
 const documentIndex = read('docs/DOCUMENT_INDEX.md')
 
 assert(
@@ -123,8 +126,12 @@ assert(
   'Worker tests must cover active-run deduplication'
 )
 assert(
-  workflow.includes("cron: '*/10 * * * *'"),
-  'foundation must not weaken the active GitHub schedule before deployment'
+  workflow.includes("cron: '37 * * * *'"),
+  'GitHub Actions must remain available as an hourly fallback'
+)
+assert(
+  !workflow.includes("cron: '*/10 * * * *'"),
+  'GitHub Actions must not remain the ten-minute primary after Cloudflare cutover'
 )
 assert(
   workflow.includes('dispatch_source:'),
@@ -168,23 +175,36 @@ assert(
   'Backend CI must run the Worker foundation contract'
 )
 assert(
-  infraReadme.includes('deployment not yet verified') &&
+  infraReadme.includes(
+    'Cloudflare Worker deployed; GitHub hourly fallback configured'
+  ) &&
     foundation.includes(
-      'cloud deployment and production cutover not yet verified'
+      'Cloudflare Worker deployed and initial live evidence verified'
     ),
-  'documentation must preserve deployment truth'
+  'documentation must record the deployed cutover truth'
 )
 assert(
   runbook.includes(
-    'Repository foundation status: implemented, not deployed.'
+    'Cloudflare live deployment status: verified on 2026-08-06.'
   ),
-  'production runbook must record foundation status'
+  'production runbook must record live deployment status'
+)
+assert(
+  liveEvidence.includes('CLOUDFLARE_WORKER_DEPLOYMENT=PASS') &&
+    liveEvidence.includes('PRODUCTION_INGESTION_RELIABILITY=PENDING'),
+  'live evidence must record verified deployment without claiming final closure'
 )
 assert(
   documentIndex.includes(
     'Document 182 — Zero-Cost Production Ingestion Reliability Foundation'
   ),
   'document index must register the foundation'
+)
+assert(
+  documentIndex.includes(
+    'Document 183 — Cloudflare Ingestion Live Deployment Evidence'
+  ),
+  'document index must register the live deployment evidence'
 )
 assert(
   !fs.existsSync(

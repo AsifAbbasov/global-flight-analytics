@@ -1,6 +1,6 @@
 # Zero-Cost Production Ingestion Reliability Foundation
 
-Status: repository implementation complete; cloud deployment and production cutover not yet verified.
+Status: Cloudflare Worker deployed and initial live evidence verified; GitHub hourly fallback configured; final production closure pending.
 
 ## 1. Purpose
 
@@ -13,8 +13,10 @@ The repository implementation lives at:
 infra/cloudflare/production-ingestion-reliability/
 ```
 
-It does not claim that a Cloudflare Worker, Cron Trigger, token, or production
-recovery path is already active.
+The Cloudflare Worker, both Cron Triggers, encrypted GitHub credential, public
+health route, fresh-data watchdog skip, and stale-data recovery dispatch are now
+verified live. Final production reliability closure remains intentionally open until
+the remaining primary-dispatch, active-run, fallback, and exact-revision evidence pass.
 
 ## 2. Implemented repository surface
 
@@ -43,30 +45,25 @@ The Worker implements:
 
 ## 3. Current production safety boundary
 
-The existing GitHub schedule remains:
+Cloudflare now owns the primary ten-minute schedule through:
+
+```text
+3,13,23,33,43,53 * * * *
+```
+
+GitHub Actions remains available as an offset hourly fallback:
 
 ```yaml
 schedule:
-  - cron: '*/10 * * * *'
+  - cron: '37 * * * *'
 ```
 
-It remains unchanged during the foundation increment. The project must not
-reduce it to the infrequent fallback cadence until all of the following are
-true:
-
-1. the Worker is deployed under the owner-controlled Cloudflare account;
-2. `GITHUB_ACTIONS_TOKEN` is configured as an encrypted Worker secret;
-3. the Worker `/health` endpoint returns `200`;
-4. a primary trigger creates one exact workflow run;
-5. a fresh watchdog execution skips recovery;
-6. an active-run scenario suppresses duplicate dispatch;
-7. a controlled stale scenario creates exactly one recovery dispatch;
-8. public freshness returns to the accepted limit;
-9. Cloudflare logs contain no credentials;
-10. the complete production runtime validator passes.
-
-This ordering prevents a deployment gap from weakening the currently operating
-ten-minute GitHub path.
+The fallback cutover was permitted only after the Worker deployment, encrypted
+secret, `/health` endpoint, scheduled execution, fresh watchdog skip, stale
+recovery dispatch, public freshness recovery, and secret-safe live logs were
+verified. Final closure remains blocked until a primary Cloudflare dispatch,
+active-run suppression, one fallback execution or bounded simulation, and the
+complete exact-revision production validator pass.
 
 ## 4. GitHub authorization
 
@@ -161,17 +158,24 @@ ZERO_COST_INGESTION_RELIABILITY_FOUNDATION=PASS
 Production closure remains blocked until the live evidence markers documented
 in the production deployment runbook are recorded.
 
-## 9. Deferred cutover
+## 9. Live deployment and remaining closure work
 
-A later, separate increment will:
+The Worker is deployed at:
 
-- deploy the Worker;
-- collect primary, fresh-watchdog, active-run, and stale-recovery evidence;
-- change the GitHub schedule from the primary ten-minute cadence to an
-  infrequent fallback cadence;
-- verify the fallback path;
-- update README and runbook status from planned/foundation to deployed;
-- rerun the complete exact-revision production validator.
+```text
+https://global-flight-analytics-production-ingestion-reliability.aassifabbasov.workers.dev
+```
 
-Until that cutover passes, `PRODUCTION_INGESTION_RELIABILITY=PASS` must not be
+Initial live evidence is recorded in
+`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`.
+
+The following work remains:
+
+- observe one exact primary Cloudflare dispatch after the hourly fallback cutover;
+- capture one live active-run deduplication decision;
+- verify one hourly GitHub fallback execution or bounded fallback simulation;
+- rerun the complete exact-revision production validator;
+- update final documentation markers only after every required proof passes.
+
+Until those conditions pass, `PRODUCTION_INGESTION_RELIABILITY=PASS` must not be
 claimed.
