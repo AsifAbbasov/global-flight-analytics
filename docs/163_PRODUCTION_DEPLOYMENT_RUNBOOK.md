@@ -451,13 +451,14 @@ access remains confined to the existing GitHub ingestion workflow and Render API
 
 ### Deployment truth and closure evidence
 
-Repository foundation status: implemented, not deployed. The Worker source, tests,
-Wrangler configuration, authorization boundary, and safe deployment sequence are recorded
-in `docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`.
+Cloudflare live deployment status: verified on 2026-08-06. The Worker source, tests,
+Wrangler configuration, authorization boundary, deployment sequence, and initial live
+evidence are recorded in `docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` and
+`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`.
 
-This section records the selected design and repository foundation, not a claim that
-Cloudflare automation is already deployed. The reliability limitation remains open until
-all of the following evidence is recorded:
+The Worker, encrypted GitHub credential, stable health route, both Cron Triggers, fresh
+watchdog skip, stale recovery dispatch, and post-recovery public freshness are verified.
+The reliability limitation remains open until all required evidence is recorded:
 
 ```text
 CLOUDFLARE_PRIMARY_SCHEDULE=PASS
@@ -481,8 +482,10 @@ The live proof must include:
 6. one verified GitHub fallback run or bounded fallback simulation;
 7. one final exact-revision production runtime validation.
 
-Until those conditions pass, the current GitHub schedule remains a best-effort portfolio
-mechanism and the Cloudflare design remains the approved zero-cost implementation plan.
+Cloudflare is now the primary scheduler. GitHub Actions remains an offset hourly fallback
+at `37 * * * *`, and manual dispatch remains the final recovery path. Final closure still
+requires a primary Cloudflare dispatch, live active-run suppression, fallback proof, and
+the exact-revision production runtime validator.
 
 ## 9. External Grafana Cloud metrics scraper
 

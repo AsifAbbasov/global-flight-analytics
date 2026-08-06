@@ -38,7 +38,7 @@ test('repository reliability verifier accepts the current checkout', () => {
   )
 })
 
-test('foundation keeps GitHub primary cadence until live cutover', () => {
+test('cutover keeps Cloudflare primary and GitHub hourly fallback', () => {
   const workflow = read(
     '.github/workflows/production-traffic-ingestion.yml'
   )
@@ -48,7 +48,8 @@ test('foundation keeps GitHub primary cadence until live cutover', () => {
     )
   )
 
-  assert.match(workflow, /cron: '\*\/10 \* \* \* \*'/)
+  assert.match(workflow, /cron: '37 \* \* \* \*'/)
+  assert.doesNotMatch(workflow, /cron: '\*\/10 \* \* \* \*'/)
   assert.deepEqual(config.triggers.crons, [
     '3,13,23,33,43,53 * * * *',
     '*/5 * * * *',
@@ -93,24 +94,31 @@ test('repository configuration excludes the GitHub token', () => {
   )
 })
 
-test('deployment truth remains explicitly open', () => {
+test('live deployment evidence is recorded without claiming final closure', () => {
   const foundation = read(
     'docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md'
   )
   const runbook = read(
     'docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md'
   )
+  const liveEvidence = read(
+    'docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md'
+  )
 
   assert.match(
     foundation,
-    /deployment and production cutover not yet verified/
+    /Cloudflare Worker deployed and initial live evidence verified/
   )
   assert.match(
     runbook,
-    /implemented, not deployed/
+    /Cloudflare live deployment status: verified on 2026-08-06/
   )
   assert.match(
-    foundation,
-    /PRODUCTION_INGESTION_RELIABILITY=PASS` must not be\s+claimed/
+    liveEvidence,
+    /PRODUCTION_INGESTION_RELIABILITY=PENDING/
+  )
+  assert.doesNotMatch(
+    liveEvidence,
+    /PRODUCTION_INGESTION_RELIABILITY=PASS/
   )
 })

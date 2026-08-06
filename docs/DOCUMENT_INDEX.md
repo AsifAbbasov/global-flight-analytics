@@ -1693,3 +1693,14 @@ GitHub Actions run-state deduplication and dispatch provenance, the encrypted-to
 boundary, exact free-tier request shape, tests and Wrangler dry-run verification, safe
 deployment ordering, and the explicit rule that the existing ten-minute GitHub schedule
 must remain primary until controlled Cloudflare live evidence and fallback cutover pass.
+
+<!-- CLOUDFLARE-INGESTION-LIVE-DEPLOYMENT-EVIDENCE:DOCUMENT-INDEX -->
+
+## Document 183 — Cloudflare Ingestion Live Deployment Evidence
+
+`183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md` records the exact
+Cloudflare Worker deployment identity, stable health route, encrypted GitHub
+authorization boundary, live primary and watchdog executions, stale-recovery
+workflow run, post-recovery freshness, secret-safe logging evidence, offset
+hourly GitHub fallback cutover, and the remaining proof required before final
+production ingestion reliability closure.

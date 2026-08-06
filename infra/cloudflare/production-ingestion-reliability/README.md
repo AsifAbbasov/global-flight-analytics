@@ -1,6 +1,6 @@
 # Production ingestion reliability Worker
 
-Status: repository foundation implemented; Cloudflare deployment not yet verified.
+Status: Cloudflare Worker deployed; GitHub hourly fallback configured; final production closure pending.
 
 This Worker implements the zero-cost reliability design for production traffic
 ingestion:
@@ -48,6 +48,7 @@ curl 'http://127.0.0.1:8787/__scheduled?cron=3%2C13%2C23%2C33%2C43%2C53+*+*+*+*'
 curl 'http://127.0.0.1:8787/__scheduled?cron=*%2F5+*+*+*+*'
 ```
 
-Do not deploy from the repository installer. Deployment, secret configuration,
-controlled stale-data testing, fallback cutover, and final production closure
-are separate owner-controlled operations.
+The Worker is deployed at the stable account-owned `workers.dev` route. Repository
+installation must never configure secrets or perform production deployment. Secret
+rotation, live evidence collection, fallback verification, and final production closure
+remain separate owner-controlled operations.
