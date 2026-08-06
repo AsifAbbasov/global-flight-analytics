@@ -68,6 +68,33 @@ The immutable run evidence, security boundaries, exact resource identities, and
 remaining operational limitations are recorded in
 [`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md).
 
+## Production Traffic Freshness Boundary
+
+Live traffic ingestion is currently triggered by
+`.github/workflows/production-traffic-ingestion.yml` through the
+`*/10 * * * *` GitHub Actions schedule and an explicit manual-dispatch recovery path.
+
+During exact-revision production validation on 2026-08-06, the public traffic snapshot
+was `18,189` seconds old (about five hours and three minutes) even though the workflow
+expressed a ten-minute cadence. The ingestion command, provider request, database write,
+and public API path were independently verified as healthy. Manual workflow run
+`31076668920` on revision
+`855f82bf97cf0db47d1a3918f75ea70f7f2b06fe` stored four trajectories, restored public
+freshness to five seconds, and allowed the complete live runtime validation to pass.
+
+This was an operational recovery, not a permanent guarantee that GitHub-hosted schedules
+will execute every ten minutes. The project therefore treats the current schedule as a
+best-effort portfolio automation boundary.
+
+The selected zero-cost MVP reliability design is not yet claimed as deployed: a Cloudflare
+Cron Trigger will become the primary ten-minute scheduler, a second Cloudflare trigger will
+check public freshness every five minutes and redispatch only when data is stale and no
+ingestion run is active, the GitHub schedule will remain as an infrequent fallback, and
+`workflow_dispatch` will remain the final manual recovery path. Diagnosis, recovery
+commands, the selected architecture, its security boundary, and the evidence required to
+close the limitation are documented in
+[`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md).
+
 ## What Is Implemented
 
 ### Product experience
