@@ -55,6 +55,23 @@ test('foundation keeps GitHub primary cadence until live cutover', () => {
   ])
 })
 
+test('production Worker disables preview URLs while keeping workers.dev', () => {
+  const config = JSON.parse(
+    read(
+      'infra/cloudflare/production-ingestion-reliability/wrangler.jsonc'
+    )
+  )
+
+  assert.equal(config.workers_dev, true)
+  assert.equal(config.preview_urls, false)
+  assert.equal(typeof config.name, 'string')
+  assert.ok(config.name.length > 0)
+  assert.ok(
+    config.name.length <= 63,
+    `workers.dev Worker name is too long: ${config.name.length}`
+  )
+})
+
 test('repository configuration excludes the GitHub token', () => {
   const config = JSON.parse(
     read(

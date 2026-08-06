@@ -50,6 +50,20 @@ assert(
   'Wrangler compatibility date must be explicit'
 )
 assert(
+  config.workers_dev === true,
+  'production health verification requires the stable workers.dev route'
+)
+assert(
+  config.preview_urls === false,
+  'production scheduler must disable public versioned preview URLs'
+)
+assert(
+  typeof config.name === 'string' &&
+    config.name.length > 0 &&
+    config.name.length <= 63,
+  'workers.dev Worker name must fit the DNS label limit'
+)
+assert(
   Array.isArray(config.triggers?.crons) &&
     config.triggers.crons.length === 2,
   'Worker must define exactly two Cron Triggers'
