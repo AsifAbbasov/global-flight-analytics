@@ -248,17 +248,27 @@ automatically redeploy, migrate the database, or change repository state.
 
 ## 8.1 Production traffic ingestion scheduler boundary and recovery
 
-The repository also contains
-`.github/workflows/production-traffic-ingestion.yml`. It declares:
+Production traffic ingestion uses the deployed Cloudflare Worker as the
+primary timing authority:
+
+```text
+PRIMARY_CRON=3,13,23,33,43,53 * * * *
+WATCHDOG_CRON=*/5 * * * *
+```
+
+The repository workflow
+`.github/workflows/production-traffic-ingestion.yml` remains the isolated
+bounded ingestion executor and declares the offset hourly fallback plus the
+manual recovery path:
 
 ```yaml
 schedule:
-  - cron: '*/10 * * * *'
+  - cron: '37 * * * *'
 workflow_dispatch:
 ```
 
-The cron expression describes the intended sampling cadence. This project does not treat a
-GitHub-hosted scheduled workflow as a guaranteed ten-minute production scheduler.
+GitHub-hosted scheduling is therefore a cross-provider fallback, not the
+ten-minute production timing authority.
 
 ### Observed production incident
 
@@ -334,8 +344,11 @@ LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS
 
 ### Resolution status
 
-The manual dispatch restored service freshness and closed the exact-revision validation
-incident. It did **not** remove the scheduler reliability boundary.
+The manual dispatch restored service freshness and closed the original
+exact-revision validation incident. The scheduler reliability boundary was
+subsequently removed by the Cloudflare primary scheduler, five-minute
+watchdog, offset GitHub fallback, live duplicate-suppression proof, and final
+exact-revision runtime validation recorded below.
 
 ### Selected zero-cost MVP reliability architecture
 
@@ -456,36 +469,38 @@ Wrangler configuration, authorization boundary, deployment sequence, and initial
 evidence are recorded in `docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` and
 `docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`.
 
-The Worker, encrypted GitHub credential, stable health route, both Cron Triggers, fresh
-watchdog skip, stale recovery dispatch, and post-recovery public freshness are verified.
-The reliability limitation remains open until all required evidence is recorded:
+The complete reliability evidence is now recorded:
 
 ```text
 CLOUDFLARE_PRIMARY_SCHEDULE=PASS
+CLOUDFLARE_PRIMARY_REAL_DISPATCH=PASS
 CLOUDFLARE_WATCHDOG=PASS
 CLOUDFLARE_GITHUB_AUTHORIZATION_BOUNDARY=PASS
+RECENT_SUCCESS_DEDUPLICATION=PASS
 ACTIVE_RUN_DEDUPLICATION=PASS
 STALE_TRAFFIC_RECOVERY_DISPATCH=PASS
 GITHUB_SCHEDULED_FALLBACK=PASS
 MANUAL_RECOVERY=PASS
 POST_RECOVERY_PUBLIC_FRESHNESS=PASS
+LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS
 PRODUCTION_INGESTION_RELIABILITY=PASS
 ```
 
-The live proof must include:
+Exact live run identities:
 
-1. one primary Cloudflare dispatch tied to an exact GitHub run ID and head SHA;
-2. one watchdog execution that observes fresh data and correctly skips recovery;
-3. one controlled stale-data test that dispatches exactly one recovery run;
-4. one active-run test that suppresses a duplicate dispatch;
-5. one successful public freshness result after recovery;
-6. one verified GitHub fallback run or bounded fallback simulation;
-7. one final exact-revision production runtime validation.
+```text
+WATCHDOG_RECOVERY_RUN_ID=31103550357
+PRIMARY_DISPATCH_RUN_ID=31112274607
+PRIMARY_DISPATCH_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+ACTIVE_RUN_AND_FALLBACK_RUN_ID=31113114700
+ACTIVE_RUN_AND_FALLBACK_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+FINAL_RUNTIME_VALIDATION_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+FINAL_RUNTIME_VALIDATION_COMPLETED_AT=2026-08-06T15:31:58Z
+```
 
-Cloudflare is now the primary scheduler. GitHub Actions remains an offset hourly fallback
-at `37 * * * *`, and manual dispatch remains the final recovery path. Final closure still
-requires a primary Cloudflare dispatch, live active-run suppression, fallback proof, and
-the exact-revision production runtime validator.
+Cloudflare is the primary scheduler. GitHub Actions remains an offset hourly
+fallback at `37 * * * *`, and manual dispatch remains the final recovery path.
+The production ingestion reliability stage is closed.
 
 ## 9. External Grafana Cloud metrics scraper
 

@@ -1,12 +1,12 @@
-# Cloudflare Ingestion Live Deployment Evidence
+# Cloudflare Ingestion Live Deployment and Closure Evidence
 
-Status: initial live deployment and recovery evidence verified; final reliability closure pending.
+Status: production ingestion reliability closed.
 
 ## 1. Deployment identity
 
 ```text
 DEPLOYMENT_DATE=2026-08-06
-REPOSITORY_REVISION=ba5f8331d39035c95e2c4c3caa4b2f9ae9db4e1e
+CLOSURE_REPOSITORY_REVISION=7dfc66685247a5a1aaea87b1391624d1014d7013
 WORKER_NAME=global-flight-analytics-production-ingestion-reliability
 WORKER_VERSION_ID=b6e4d1eb-1c0e-4eb5-aad9-f902dfadc80a
 WORKER_URL=https://global-flight-analytics-production-ingestion-reliability.aassifabbasov.workers.dev
@@ -15,16 +15,10 @@ WATCHDOG_CRON=*/5 * * * *
 GITHUB_FALLBACK_CRON=37 * * * *
 ```
 
-Preview URLs are intentionally disabled. The stable account-owned `workers.dev`
-route remains enabled.
+Preview URLs are disabled. The stable account-owned `workers.dev` route remains
+enabled.
 
-## 2. Deployment and health evidence
-
-The corrected Wrangler deployment uploaded the Worker, preserved
-`GITHUB_ACTIONS_TOKEN` as a hidden binding, and deployed both Cron Triggers.
-
-The public `/health` route returned HTTP `200` with the exact expected
-configuration and no credential material:
+## 2. Deployment, health, and secret boundary
 
 ```text
 CLOUDFLARE_WORKER_DEPLOYMENT=PASS
@@ -32,13 +26,37 @@ CLOUDFLARE_HEALTH_ENDPOINT=PASS
 GITHUB_ACTIONS_SECRET=CONFIGURED
 PRIMARY_CRON_TRIGGER=DEPLOYED
 WATCHDOG_CRON_TRIGGER=DEPLOYED
+CLOUDFLARE_GITHUB_AUTHORIZATION_BOUNDARY=PASS
+LIVE_LOG_SECRET_EXPOSURE=NOT_OBSERVED
 ```
 
-## 3. Live scheduled-execution evidence
+The Worker receives only the restricted GitHub Actions token. It does not
+receive database, provider, Render, mutation, metrics, or Grafana credentials.
 
-A primary execution at 2026-08-06 17:03 Asia/Baku completed successfully and
-suppressed a duplicate because run `31103550357` had succeeded inside the
-eight-minute deduplication window:
+## 3. Watchdog stale recovery and fresh skip
+
+The watchdog created GitHub Actions recovery run `31103550357` with exact
+provenance:
+
+```text
+PRODUCTION_INGESTION_DISPATCH_SOURCE=cloudflare-watchdog
+GITHUB_RUN_ID=31103550357
+GITHUB_RUN_CONCLUSION=success
+LOADED=3
+STORED=3
+TRAJECTORIES=3
+PRODUCTION_TRAFFIC_FRESHNESS=PASS
+LATEST_AGE_SECONDS=6
+STALE_TRAFFIC_RECOVERY_DISPATCH=PASS
+POST_RECOVERY_PUBLIC_FRESHNESS=PASS
+```
+
+Subsequent watchdog executions observed fresh traffic and correctly skipped
+recovery.
+
+## 4. Primary dispatch and recent-success deduplication
+
+A scheduled primary execution first proved the bounded recent-success decision:
 
 ```text
 CLOUDFLARE_PRIMARY_SCHEDULE=PASS
@@ -46,87 +64,89 @@ RECENT_SUCCESS_DEDUPLICATION=PASS
 PRIMARY_ACTION=skipped-recent-success
 ```
 
-Watchdog executions at 17:05 and 17:10 Asia/Baku observed three aircraft and
-correctly skipped recovery while traffic remained below the 1,800-second
-freshness limit:
+After the fallback cutover, Cloudflare created the real primary run:
 
 ```text
-CLOUDFLARE_WATCHDOG=PASS
-WATCHDOG_ACTION=skipped-fresh-traffic
-AIRCRAFT_COUNT=3
-OBSERVED_AGE_SECONDS=572,872
+PRIMARY_DISPATCH_RUN_ID=31112274607
+PRIMARY_DISPATCH_CREATED_AT=2026-08-06T14:43:43Z
+PRIMARY_DISPATCH_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+PRIMARY_DISPATCH_CONCLUSION=success
+PRODUCTION_INGESTION_DISPATCH_SOURCE=cloudflare-primary
+CLOUDFLARE_PRIMARY_REAL_DISPATCH=PASS
+PRIMARY_GITHUB_PROVENANCE=PASS
+PRIMARY_POST_DISPATCH_FRESHNESS=PASS
 ```
 
-## 4. Stale-recovery dispatch evidence
+## 5. Active-run duplicate suppression and GitHub fallback
 
-Before the live tail session, the watchdog created GitHub Actions run
-`31103550357` with exact provenance:
+The bounded fallback simulation created run `31113114700`. While that run was
+`in_progress`, the 18:53 Asia/Baku Cloudflare primary execution observed it and
+published:
 
 ```text
-PRODUCTION_INGESTION_DISPATCH_SOURCE=cloudflare-watchdog
-GITHUB_RUN_ID=31103550357
-GITHUB_RUN_STATUS=completed
-GITHUB_RUN_CONCLUSION=success
+PRIMARY_ACTION=skipped-active-run
+DECISION_MARKER=ACTIVE_RUN_DEDUPLICATION
+ACTIVE_RUN_ID=31113114700
+ACTIVE_RUN_DEDUPLICATION=PASS
 ```
 
-The bounded ingestion cycle stored three usable states and three trajectories:
+The same run then completed successfully on the exact closure revision:
 
 ```text
-LOADED=3
-USABLE=3
-STORED=3
-TRAJECTORIES=3
+FALLBACK_SIMULATION_RUN_ID=31113114700
+FALLBACK_SIMULATION_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+FALLBACK_SIMULATION_CONCLUSION=success
+PRODUCTION_INGESTION_DISPATCH_SOURCE=schedule
+GITHUB_SCHEDULED_FALLBACK=PASS
+FALLBACK_POST_INGESTION_FRESHNESS=PASS
 ```
 
-The workflow then verified public freshness:
+This proves the cross-provider fallback can execute and the Cloudflare primary
+does not create a duplicate while it is active.
+
+## 6. Final exact-revision runtime validation
+
+The complete read-only production runtime validator passed on the closure
+revision:
 
 ```text
+FINAL_RUNTIME_VALIDATION_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+FINAL_RUNTIME_VALIDATION_COMPLETED_AT=2026-08-06T15:31:58Z
+PRODUCTION_API_EXACT_REVISION=PASS
+PRODUCTION_RELEASE_SMOKE=PASS
+PRODUCTION_FRONTEND_API_CORS=PASS
 PRODUCTION_TRAFFIC_FRESHNESS=PASS
-LATEST_AGE_SECONDS=6
-MAXIMUM_AGE_SECONDS=1800
-STALE_TRAFFIC_RECOVERY_DISPATCH=PASS
-POST_RECOVERY_PUBLIC_FRESHNESS=PASS
+PRODUCTION_TRAFFIC_DATA=PASS
+PRODUCTION_API_DOCS_HTML=PASS
+PRODUCTION_API_DOCS_SECURITY_HEADERS=PASS
+PRODUCTION_API_DOCS_NO_CDN=PASS
+PRODUCTION_OPENAPI_LIVE_PARITY=PASS
+PRODUCTION_OPENAPI_ETAG=PASS
+PRODUCTION_OPENAPI_CONDITIONAL_GET=PASS
+PRODUCTION_MUTATION_AUTHENTICATION_BOUNDARY=PASS
+VALIDATION_NON_MUTATING=PASS
+LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS
 ```
 
-This proves the Worker GitHub token can read workflow state and create the
-restricted `workflow_dispatch` request. Cloudflare never receives the production
-database URL or provider credentials.
+The command emits an owner-local validation log under `~/Downloads`.
+The local report is supporting operational evidence and is not committed to the
+repository. It contains no token values.
 
-## 5. Secret boundary
-
-The Worker health response exposes only a boolean token-configured marker.
-Wrangler displayed the binding as `(hidden)`, and the observed live Worker logs
-contained no Cloudflare or GitHub token values.
+## 7. Final closure
 
 ```text
+CLOUDFLARE_PRIMARY_SCHEDULE=PASS
+CLOUDFLARE_WATCHDOG=PASS
 CLOUDFLARE_GITHUB_AUTHORIZATION_BOUNDARY=PASS
-LIVE_LOG_SECRET_EXPOSURE=NOT_OBSERVED
+ACTIVE_RUN_DEDUPLICATION=PASS
+STALE_TRAFFIC_RECOVERY_DISPATCH=PASS
+GITHUB_SCHEDULED_FALLBACK=PASS
+MANUAL_RECOVERY=PASS
+POST_RECOVERY_PUBLIC_FRESHNESS=PASS
+LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS
+PRODUCTION_INGESTION_RELIABILITY=PASS
 ```
 
-## 6. Fallback cutover
-
-Cloudflare is now the primary ten-minute scheduler. GitHub Actions remains
-configured as an offset hourly fallback:
-
-```text
-37 * * * *
-```
-
-The fallback cadence avoids the Cloudflare primary minutes and reduces
-unnecessary duplicate scheduled runs. `workflow_dispatch` remains the final
-manual recovery path.
-
-## 7. Remaining closure evidence
-
-The following evidence is still required:
-
-```text
-CLOUDFLARE_PRIMARY_REAL_DISPATCH=PENDING
-ACTIVE_RUN_DEDUPLICATION=PENDING
-GITHUB_SCHEDULED_FALLBACK=PENDING
-FINAL_EXACT_REVISION_RUNTIME_VALIDATION=PENDING
-PRODUCTION_INGESTION_RELIABILITY=PENDING
-```
-
-No final reliability `PASS` claim is permitted until all remaining markers are
-verified.
+The production ingestion reliability implementation stage is closed. Token
+rotation, alert response, and revision-specific revalidation remain normal
+operations.

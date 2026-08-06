@@ -1,11 +1,11 @@
-# Zero-Cost Production Ingestion Reliability Foundation
+# Zero-Cost Production Ingestion Reliability Closure
 
-Status: Cloudflare Worker deployed and initial live evidence verified; GitHub hourly fallback configured; final production closure pending.
+Status: production ingestion reliability closed.
 
 ## 1. Purpose
 
-This document records the executable foundation for the zero-cost production
-traffic reliability design selected after the 2026-08-06 stale-data incident.
+This document records the closed zero-cost production traffic-ingestion
+reliability architecture selected after the 2026-08-06 scheduled-execution gap.
 
 The repository implementation lives at:
 
@@ -13,169 +13,105 @@ The repository implementation lives at:
 infra/cloudflare/production-ingestion-reliability/
 ```
 
-The Cloudflare Worker, both Cron Triggers, encrypted GitHub credential, public
-health route, fresh-data watchdog skip, and stale-data recovery dispatch are now
-verified live. Final production reliability closure remains intentionally open until
-the remaining primary-dispatch, active-run, fallback, and exact-revision evidence pass.
-
-## 2. Implemented repository surface
+## 2. Closed production architecture
 
 ```text
-infra/cloudflare/production-ingestion-reliability/
-├── README.md
-├── src/
-│   └── index.mjs
-├── test/
-│   └── index.test.mjs
-└── wrangler.jsonc
+Cloudflare primary Cron: 3,13,23,33,43,53 * * * *
+Cloudflare watchdog Cron: */5 * * * *
+GitHub hourly fallback: 37 * * * *
+Manual fallback: workflow_dispatch
+Executor: Production Traffic Ingestion
+Persistence: Neon PostgreSQL
+Public verification: /api/v1/traffic/current
 ```
 
-The Worker implements:
+Cloudflare owns the primary ten-minute schedule. The Worker checks GitHub run
+state before dispatch, suppresses queued or active duplicates, applies an
+eight-minute recent-success deduplication window, and uses the watchdog to
+recover stale or empty public traffic.
 
-- a primary Cron Trigger at minutes `3,13,23,33,43,53`;
-- a watchdog Cron Trigger every five minutes;
-- exact GitHub workflow-run lookup for `main`;
-- fail-closed active-run suppression;
-- an eight-minute recent-success deduplication window;
-- exact `workflow_dispatch` requests with dispatch provenance;
-- public traffic freshness parsing aligned with the production verifier;
-- stale and empty-snapshot recovery dispatch;
+GitHub Actions remains the isolated bounded executor. It performs one ingestion
+cycle, writes through the existing production database secret, and requires
+public freshness before reporting success.
+
+## 3. Security boundary
+
+`GITHUB_ACTIONS_TOKEN` is the only Worker secret. It is restricted to
+`AsifAbbasov/global-flight-analytics` with GitHub Actions read and write access.
+
+Cloudflare does not receive:
+
+- the Neon connection string;
+- provider credentials;
+- Render environment variables;
+- mutation or metrics keys;
+- Grafana credentials;
+- repository-content write access.
+
+The stable `/health` route exposes only non-secret configuration and a boolean
+secret-configured marker. Preview URLs are disabled.
+
+## 4. Repository and runtime contracts
+
+The Worker and repository contracts enforce:
+
+- two exact Cron Triggers;
+- fail-closed handling of unknown run states;
+- exact dispatch provenance;
+- exact GitHub `204` dispatch success;
+- active-run suppression;
+- recent-success deduplication;
+- stale and empty-snapshot recovery;
 - future-clock-skew rejection;
-- a no-store `/health` endpoint that never exposes the token.
+- hourly GitHub fallback;
+- immutable Action pins;
+- no committed Worker secret.
 
-## 3. Current production safety boundary
+## 5. Live closure evidence
 
-Cloudflare now owns the primary ten-minute schedule through:
-
-```text
-3,13,23,33,43,53 * * * *
-```
-
-GitHub Actions remains available as an offset hourly fallback:
-
-```yaml
-schedule:
-  - cron: '37 * * * *'
-```
-
-The fallback cutover was permitted only after the Worker deployment, encrypted
-secret, `/health` endpoint, scheduled execution, fresh watchdog skip, stale
-recovery dispatch, public freshness recovery, and secret-safe live logs were
-verified. Final closure remains blocked until a primary Cloudflare dispatch,
-active-run suppression, one fallback execution or bounded simulation, and the
-complete exact-revision production validator pass.
-
-## 4. GitHub authorization
-
-Use a fine-grained token restricted to:
+The following evidence passed on 2026-08-06:
 
 ```text
-Repository: AsifAbbasov/global-flight-analytics
-Repository permission: Actions — Read and write
+CLOUDFLARE_WORKER_DEPLOYMENT=PASS
+CLOUDFLARE_HEALTH_ENDPOINT=PASS
+CLOUDFLARE_PRIMARY_SCHEDULE=PASS
+CLOUDFLARE_PRIMARY_REAL_DISPATCH=PASS
+CLOUDFLARE_WATCHDOG=PASS
+CLOUDFLARE_GITHUB_AUTHORIZATION_BOUNDARY=PASS
+RECENT_SUCCESS_DEDUPLICATION=PASS
+ACTIVE_RUN_DEDUPLICATION=PASS
+STALE_TRAFFIC_RECOVERY_DISPATCH=PASS
+GITHUB_SCHEDULED_FALLBACK=PASS
+MANUAL_RECOVERY=PASS
+POST_RECOVERY_PUBLIC_FRESHNESS=PASS
+LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS
+PRODUCTION_INGESTION_RELIABILITY=PASS
 ```
 
-The Worker uses GitHub Actions read access to inspect recent workflow runs and
-write access to create a workflow dispatch. The token does not need the Neon
-connection string, provider credentials, Render environment variables, API
-mutation key, Grafana credentials, or repository-content write access.
-
-## 5. Dispatch provenance
-
-The production ingestion workflow now accepts the optional input:
+Exact run identities:
 
 ```text
-dispatch_source
+WATCHDOG_RECOVERY_RUN_ID=31103550357
+PRIMARY_DISPATCH_RUN_ID=31112274607
+PRIMARY_DISPATCH_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+ACTIVE_RUN_AND_FALLBACK_RUN_ID=31113114700
+ACTIVE_RUN_AND_FALLBACK_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+FINAL_RUNTIME_VALIDATION_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
+FINAL_RUNTIME_VALIDATION_COMPLETED_AT=2026-08-06T15:31:58Z
 ```
 
-Accepted values are:
-
-```text
-manual
-schedule
-cloudflare-primary
-cloudflare-watchdog
-```
-
-Each run prints:
-
-```text
-PRODUCTION_INGESTION_DISPATCH_SOURCE=<value>
-```
-
-The ingestion command, database secret, bounded cycle, concurrency group, and
-public freshness verification remain unchanged.
-
-## 6. Free-tier capacity
-
-The configured Worker uses two Cron Triggers. Normal operation generates:
-
-```text
-primary invocations per day=144
-watchdog invocations per day=288
-total scheduled invocations per day=432
-```
-
-This is intentionally far below the documented Workers Free request and Cron
-Trigger limits. The Worker performs at most three outbound requests during a
-stale recovery decision:
-
-1. public traffic freshness request;
-2. GitHub workflow-run lookup;
-3. GitHub workflow dispatch.
-
-## 7. Deployment procedure
-
-Pin Wrangler during validation and deployment:
-
-```bash
-cd infra/cloudflare/production-ingestion-reliability
-npx --yes wrangler@4.94.0 login
-npx --yes wrangler@4.94.0 secret put GITHUB_ACTIONS_TOKEN --config wrangler.jsonc
-npx --yes wrangler@4.94.0 deploy --dry-run --config wrangler.jsonc
-npx --yes wrangler@4.94.0 deploy --config wrangler.jsonc
-```
-
-Record the returned Worker URL and verify:
-
-```bash
-curl --fail --silent --show-error '<worker-url>/health'
-```
-
-Deployment must be followed by the controlled live proof described in
-`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`.
-
-## 8. Evidence markers
-
-Repository verification must publish:
-
-```text
-CLOUDFLARE_RELIABILITY_WORKER_TESTS=PASS
-CLOUDFLARE_RELIABILITY_SOURCE_CONTRACT=PASS
-CLOUDFLARE_RELIABILITY_WRANGLER_DRY_RUN=PASS
-ZERO_COST_INGESTION_RELIABILITY_FOUNDATION=PASS
-```
-
-Production closure remains blocked until the live evidence markers documented
-in the production deployment runbook are recorded.
-
-## 9. Live deployment and remaining closure work
-
-The Worker is deployed at:
-
-```text
-https://global-flight-analytics-production-ingestion-reliability.aassifabbasov.workers.dev
-```
-
-Initial live evidence is recorded in
+Detailed immutable runtime evidence is recorded in
 `docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`.
 
-The following work remains:
+## 6. Operational ownership
 
-- observe one exact primary Cloudflare dispatch after the hourly fallback cutover;
-- capture one live active-run deduplication decision;
-- verify one hourly GitHub fallback execution or bounded fallback simulation;
-- rerun the complete exact-revision production validator;
-- update final documentation markers only after every required proof passes.
+The architecture is closed, but operations remain owner-controlled:
 
-Until those conditions pass, `PRODUCTION_INGESTION_RELIABILITY=PASS` must not be
-claimed.
+- rotate the Cloudflare API token and GitHub fine-grained token before expiry;
+- investigate a failed watchdog recovery or stale public snapshot;
+- update the expected deployed revision after a new API deployment;
+- preserve manual dispatch as the final recovery path;
+- rerun exact-revision production validation after production application
+  changes.
+
+These are ongoing operational duties, not open implementation defects.

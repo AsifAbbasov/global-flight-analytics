@@ -176,12 +176,12 @@ assert(
 )
 assert(
   infraReadme.includes(
-    'Cloudflare Worker deployed; GitHub hourly fallback configured'
+    'Status: production ingestion reliability closed and live-verified.'
   ) &&
     foundation.includes(
-      'Cloudflare Worker deployed and initial live evidence verified'
+      'Status: production ingestion reliability closed.'
     ),
-  'documentation must record the deployed cutover truth'
+  'documentation must record the closed production reliability truth'
 )
 assert(
   runbook.includes(
@@ -191,8 +191,13 @@ assert(
 )
 assert(
   liveEvidence.includes('CLOUDFLARE_WORKER_DEPLOYMENT=PASS') &&
-    liveEvidence.includes('PRODUCTION_INGESTION_RELIABILITY=PENDING'),
-  'live evidence must record verified deployment without claiming final closure'
+    liveEvidence.includes('CLOUDFLARE_PRIMARY_REAL_DISPATCH=PASS') &&
+    liveEvidence.includes('ACTIVE_RUN_DEDUPLICATION=PASS') &&
+    liveEvidence.includes('GITHUB_SCHEDULED_FALLBACK=PASS') &&
+    liveEvidence.includes('LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS') &&
+    liveEvidence.includes('PRODUCTION_INGESTION_RELIABILITY=PASS') &&
+    !liveEvidence.includes('PRODUCTION_INGESTION_RELIABILITY=PENDING'),
+  'live evidence must record the complete production reliability closure'
 )
 assert(
   documentIndex.includes(
@@ -215,3 +220,4 @@ assert(
 
 console.log('CLOUDFLARE_RELIABILITY_SOURCE_CONTRACT=PASS')
 console.log('ZERO_COST_INGESTION_RELIABILITY_FOUNDATION=PASS')
+console.log('PRODUCTION_INGESTION_RELIABILITY=PASS')

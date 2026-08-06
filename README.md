@@ -70,31 +70,29 @@ remaining operational limitations are recorded in
 
 ## Production Traffic Freshness Boundary
 
-Live traffic ingestion is currently triggered by
-`.github/workflows/production-traffic-ingestion.yml` through the
-`*/10 * * * *` GitHub Actions schedule and an explicit manual-dispatch recovery path.
+Production traffic ingestion now uses the deployed Cloudflare Worker as the
+primary ten-minute scheduler. Its primary Cron Trigger runs at
+`3,13,23,33,43,53 * * * *`, the watchdog checks public freshness every five
+minutes, GitHub Actions provides an offset hourly fallback at `37 * * * *`,
+and `workflow_dispatch` remains the final manual recovery path.
 
-During exact-revision production validation on 2026-08-06, the public traffic snapshot
-was `18,189` seconds old (about five hours and three minutes) even though the workflow
-expressed a ten-minute cadence. The ingestion command, provider request, database write,
-and public API path were independently verified as healthy. Manual workflow run
-`31076668920` on revision
-`855f82bf97cf0db47d1a3918f75ea70f7f2b06fe` stored four trajectories, restored public
-freshness to five seconds, and allowed the complete live runtime validation to pass.
+The design was introduced after the 2026-08-06 scheduled-execution gap. Live
+closure evidence now proves stale-data recovery, fresh-data skip, recent-success
+deduplication, a real `cloudflare-primary` dispatch, active-run duplicate
+suppression, a bounded GitHub fallback simulation, post-ingestion freshness,
+and the complete exact-revision production runtime validator on
+`7dfc66685247a5a1aaea87b1391624d1014d7013`.
 
-This was an operational recovery, not a permanent guarantee that GitHub-hosted schedules
-will execute every ten minutes. The project therefore treats the current schedule as a
-best-effort portfolio automation boundary.
+```text
+PRODUCTION_INGESTION_RELIABILITY=PASS
+```
 
-The zero-cost MVP reliability Worker is deployed on Cloudflare. Its primary Cron Trigger
-runs every ten minutes, its watchdog checks public freshness every five minutes, and stale
-traffic can create one bounded GitHub workflow dispatch while recent or active runs suppress
-duplicates. The GitHub schedule is retained at an offset hourly cadence as a fallback, and
-`workflow_dispatch` remains the final manual recovery path. Initial deployment, health,
-watchdog recovery, fresh-skip, and secret-boundary evidence have passed; final reliability
-closure remains pending the remaining primary-dispatch, active-run, fallback, and
-exact-revision proofs. Diagnosis, recovery commands, and the closure contract are documented
-in [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md).
+Diagnosis, recovery commands, architecture boundaries, and immutable run
+evidence are documented in
+[`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md),
+[`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md),
+and
+[`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`](docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md).
 
 The repository-owned Worker foundation and live deployment evidence are recorded in
 [`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md)

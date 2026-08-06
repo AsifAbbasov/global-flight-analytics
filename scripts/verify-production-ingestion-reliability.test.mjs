@@ -94,7 +94,7 @@ test('repository configuration excludes the GitHub token', () => {
   )
 })
 
-test('live deployment evidence is recorded without claiming final closure', () => {
+test('live deployment evidence records final reliability closure', () => {
   const foundation = read(
     'docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md'
   )
@@ -107,18 +107,34 @@ test('live deployment evidence is recorded without claiming final closure', () =
 
   assert.match(
     foundation,
-    /Cloudflare Worker deployed and initial live evidence verified/
+    /Status: production ingestion reliability closed\./
   )
   assert.match(
     runbook,
-    /Cloudflare live deployment status: verified on 2026-08-06/
+    /The production ingestion reliability stage is closed\./
   )
   assert.match(
     liveEvidence,
-    /PRODUCTION_INGESTION_RELIABILITY=PENDING/
+    /CLOUDFLARE_PRIMARY_REAL_DISPATCH=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /ACTIVE_RUN_DEDUPLICATION=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /GITHUB_SCHEDULED_FALLBACK=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /LIVE_PRODUCTION_RUNTIME_VALIDATION=PASS/
+  )
+  assert.match(
+    liveEvidence,
+    /PRODUCTION_INGESTION_RELIABILITY=PASS/
   )
   assert.doesNotMatch(
     liveEvidence,
-    /PRODUCTION_INGESTION_RELIABILITY=PASS/
+    /PRODUCTION_INGESTION_RELIABILITY=PENDING/
   )
 })

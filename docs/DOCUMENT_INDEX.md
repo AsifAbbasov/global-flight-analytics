@@ -1687,12 +1687,11 @@ limitations, and the formal production observability closure statement.
 
 ## Document 182 — Zero-Cost Production Ingestion Reliability Foundation
 
-`182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` records the repository-owned
-Cloudflare Worker foundation for a zero-cost primary scheduler and freshness watchdog,
-GitHub Actions run-state deduplication and dispatch provenance, the encrypted-token
-boundary, exact free-tier request shape, tests and Wrangler dry-run verification, safe
-deployment ordering, and the explicit rule that the existing ten-minute GitHub schedule
-must remain primary until controlled Cloudflare live evidence and fallback cutover pass.
+`182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` records the closed
+repository-owned Cloudflare primary scheduler and freshness watchdog, GitHub Actions
+run-state deduplication and dispatch provenance, encrypted-token boundary, offset hourly
+fallback, controlled live evidence, exact-revision runtime validation, operational
+ownership, and the final production ingestion reliability closure statement.
 
 <!-- CLOUDFLARE-INGESTION-LIVE-DEPLOYMENT-EVIDENCE:DOCUMENT-INDEX -->
 
@@ -1700,7 +1699,7 @@ must remain primary until controlled Cloudflare live evidence and fallback cutov
 
 `183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md` records the exact
 Cloudflare Worker deployment identity, stable health route, encrypted GitHub
-authorization boundary, live primary and watchdog executions, stale-recovery
-workflow run, post-recovery freshness, secret-safe logging evidence, offset
-hourly GitHub fallback cutover, and the remaining proof required before final
+authorization boundary, watchdog recovery, real primary dispatch, recent-success
+and active-run deduplication, bounded hourly fallback simulation, post-ingestion
+freshness, exact-revision runtime validation, secret-safe logging, and the final
 production ingestion reliability closure.
