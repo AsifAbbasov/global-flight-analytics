@@ -1,0 +1,32 @@
+{
+  "name": "global-flight-analytics-production-ingestion-reliability",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-08-01",
+  "workers_dev": true,
+  "triggers": {
+    "crons": [
+      "3,13,23,33,43,53 * * * *",
+      "*/5 * * * *"
+    ]
+  },
+  "vars": {
+    "GITHUB_API_BASE_URL": "https://api.github.com/",
+    "GITHUB_API_VERSION": "2022-11-28",
+    "GITHUB_OWNER": "AsifAbbasov",
+    "GITHUB_REPOSITORY": "global-flight-analytics",
+    "GITHUB_WORKFLOW": "production-traffic-ingestion.yml",
+    "GITHUB_REF": "main",
+    "TRAFFIC_API_URL": "https://global-flight-analytics-api.onrender.com/api/v1/traffic/current",
+    "PRIMARY_CRON": "3,13,23,33,43,53 * * * *",
+    "WATCHDOG_CRON": "*/5 * * * *",
+    "MAX_TRAFFIC_AGE_SECONDS": "1800",
+    "MAX_FUTURE_SKEW_SECONDS": "60",
+    "DEDUPLICATION_WINDOW_SECONDS": "480",
+    "REQUEST_TIMEOUT_MILLISECONDS": "10000",
+    "WORKFLOW_RUNS_PER_PAGE": "20"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

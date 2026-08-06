@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '*/10 * * * *'
   workflow_dispatch:
+    inputs:
+      dispatch_source:
+        description: Origin of the bounded production ingestion request
+        required: false
+        default: manual
+        type: string
 
 permissions:
   contents: read
@@ -52,6 +58,24 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '24.9.0'
+
+      - name: Publish dispatch provenance
+        env:
+          DISPATCH_SOURCE: ${{ github.event.inputs.dispatch_source || github.event_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "$DISPATCH_SOURCE" in
+            manual|schedule|cloudflare-primary|cloudflare-watchdog)
+              ;;
+            *)
+              printf '%s\n' "Unsupported production ingestion dispatch source: $DISPATCH_SOURCE" >&2
+              exit 1
+              ;;
+          esac
+
+          printf 'PRODUCTION_INGESTION_DISPATCH_SOURCE=%s\n' "$DISPATCH_SOURCE"
 
       - name: Validate production ingestion secret
         shell: bash

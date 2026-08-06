@@ -451,9 +451,13 @@ access remains confined to the existing GitHub ingestion workflow and Render API
 
 ### Deployment truth and closure evidence
 
-This section records the selected design, not a claim that Cloudflare automation is already
-deployed. The reliability limitation remains open until all of the following evidence is
-recorded:
+Repository foundation status: implemented, not deployed. The Worker source, tests,
+Wrangler configuration, authorization boundary, and safe deployment sequence are recorded
+in `docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`.
+
+This section records the selected design and repository foundation, not a claim that
+Cloudflare automation is already deployed. The reliability limitation remains open until
+all of the following evidence is recorded:
 
 ```text
 CLOUDFLARE_PRIMARY_SCHEDULE=PASS
