@@ -91,6 +91,7 @@ PRODUCTION_INGESTION_RELIABILITY=PASS
 Exact run identities:
 
 ```text
+CLOSURE_REPOSITORY_REVISION=7dfc66685247a5a1aaea87b1391624d1014d7013
 WATCHDOG_RECOVERY_RUN_ID=31103550357
 PRIMARY_DISPATCH_RUN_ID=31112274607
 PRIMARY_DISPATCH_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
@@ -100,10 +101,22 @@ FINAL_RUNTIME_VALIDATION_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
 FINAL_RUNTIME_VALIDATION_COMPLETED_AT=2026-08-06T15:31:58Z
 ```
 
-Detailed immutable runtime evidence is recorded in
+Detailed repository-recorded closure evidence is documented in
 `docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`.
 
-## 6. Operational ownership
+## 6. Evidence ownership and verification boundary
+
+The repository records exact run identities, the closure revision, the
+runtime-validation timestamp, and stable closure markers. GitHub Actions retains
+the immutable execution history. The final validator log remains owner-local,
+non-secret supporting evidence and is not committed to the repository.
+
+The permanent verifier protects cross-document consistency and rejects stale
+`PENDING` claims. It does not independently prove that a historical production
+event occurred; that event evidence remains owned by the referenced GitHub runs
+and the owner-controlled runtime report.
+
+## 7. Operational ownership
 
 The architecture is closed, but operations remain owner-controlled:
 

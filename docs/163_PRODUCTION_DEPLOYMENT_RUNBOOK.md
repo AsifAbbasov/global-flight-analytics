@@ -489,6 +489,7 @@ PRODUCTION_INGESTION_RELIABILITY=PASS
 Exact live run identities:
 
 ```text
+CLOSURE_REPOSITORY_REVISION=7dfc66685247a5a1aaea87b1391624d1014d7013
 WATCHDOG_RECOVERY_RUN_ID=31103550357
 PRIMARY_DISPATCH_RUN_ID=31112274607
 PRIMARY_DISPATCH_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
@@ -497,6 +498,17 @@ ACTIVE_RUN_AND_FALLBACK_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
 FINAL_RUNTIME_VALIDATION_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
 FINAL_RUNTIME_VALIDATION_COMPLETED_AT=2026-08-06T15:31:58Z
 ```
+
+### Evidence ownership and verification boundary
+
+The repository records the exact run identities, closure revision, validation
+timestamp, and stable `PASS` markers. GitHub Actions retains the immutable run
+history. The final read-only validator log is owner-local, non-secret supporting
+evidence and is intentionally not committed.
+
+The repository verifier proves documentation consistency and prevents regression
+to stale `PENDING` claims. It does not independently recreate the historical
+Cloudflare or production runtime events.
 
 Cloudflare is the primary scheduler. GitHub Actions remains an offset hourly
 fallback at `37 * * * *`, and manual dispatch remains the final recovery path.

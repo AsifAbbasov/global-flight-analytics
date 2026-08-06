@@ -43,6 +43,7 @@ const liveEvidence = read(
   'docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md'
 )
 const documentIndex = read('docs/DOCUMENT_INDEX.md')
+const readme = read('README.md')
 
 assert(
   config.main === 'src/index.mjs',
@@ -199,17 +200,80 @@ assert(
     !liveEvidence.includes('PRODUCTION_INGESTION_RELIABILITY=PENDING'),
   'live evidence must record the complete production reliability closure'
 )
+
+const closureEvidenceDocuments = [
+  ['production runbook', runbook],
+  ['reliability closure', foundation],
+  ['live closure evidence', liveEvidence],
+]
+const expectedClosureEvidence = [
+  'CLOSURE_REPOSITORY_REVISION=7dfc66685247a5a1aaea87b1391624d1014d7013',
+  'WATCHDOG_RECOVERY_RUN_ID=31103550357',
+  'PRIMARY_DISPATCH_RUN_ID=31112274607',
+  'PRIMARY_DISPATCH_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013',
+  'ACTIVE_RUN_AND_FALLBACK_RUN_ID=31113114700',
+  'ACTIVE_RUN_AND_FALLBACK_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013',
+  'FINAL_RUNTIME_VALIDATION_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013',
+  'FINAL_RUNTIME_VALIDATION_COMPLETED_AT=2026-08-06T15:31:58Z',
+]
+const forbiddenPendingEvidence = [
+  'CLOUDFLARE_PRIMARY_REAL_DISPATCH=PENDING',
+  'ACTIVE_RUN_DEDUPLICATION=PENDING',
+  'GITHUB_SCHEDULED_FALLBACK=PENDING',
+  'FINAL_EXACT_REVISION_RUNTIME_VALIDATION=PENDING',
+  'PRODUCTION_INGESTION_RELIABILITY=PENDING',
+]
+
+for (const [documentName, document] of closureEvidenceDocuments) {
+  for (const expectedEvidence of expectedClosureEvidence) {
+    assert(
+      document.includes(expectedEvidence),
+      `${documentName} must record ${expectedEvidence}`
+    )
+  }
+
+  for (const pendingEvidence of forbiddenPendingEvidence) {
+    assert(
+      !document.includes(pendingEvidence),
+      `${documentName} must not retain ${pendingEvidence}`
+    )
+  }
+
+  assert(
+    document.includes('Evidence ownership and verification boundary'),
+    `${documentName} must explain the evidence verification boundary`
+  )
+}
+
+assert(
+  readme.includes('repository-recorded closure evidence') &&
+    readme.includes('owner-local, non-secret supporting') &&
+    !readme.includes(
+      'Diagnosis, recovery commands, architecture boundaries, and immutable run'
+    ),
+  'README must describe the repository and owner-local evidence boundary accurately'
+)
+assert(
+  readme.split(
+    'docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md'
+  ).length - 1 === 2 &&
+    readme.split(
+      'docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md'
+    ).length - 1 === 2,
+  'README must link each reliability closure document exactly once'
+)
+
 assert(
   documentIndex.includes(
-    'Document 182 — Zero-Cost Production Ingestion Reliability Foundation'
+    'Document 182 — Zero-Cost Production Ingestion Reliability Closure'
   ),
-  'document index must register the foundation'
+  'document index must register the reliability closure'
 )
 assert(
   documentIndex.includes(
-    'Document 183 — Cloudflare Ingestion Live Deployment Evidence'
+    'Document 183 — Cloudflare Ingestion Live Deployment and Closure Evidence'
   ),
-  'document index must register the live deployment evidence'
+  'document index must register the live deployment and closure evidence'
 )
 assert(
   !fs.existsSync(

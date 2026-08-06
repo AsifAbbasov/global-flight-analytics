@@ -87,17 +87,17 @@ and the complete exact-revision production runtime validator on
 PRODUCTION_INGESTION_RELIABILITY=PASS
 ```
 
-Diagnosis, recovery commands, architecture boundaries, and immutable run
-evidence are documented in
+Diagnosis, recovery commands, architecture boundaries, and
+repository-recorded closure evidence are documented in
 [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md),
 [`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md),
 and
 [`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`](docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md).
 
-The repository-owned Worker foundation and live deployment evidence are recorded in
-[`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md)
-and
-[`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`](docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md).
+These documents record the exact GitHub run identities, closure revision, and
+runtime-validation timestamp. GitHub Actions retains the immutable execution
+history. The final validator log remains owner-local, non-secret supporting
+evidence and is not committed to the repository.
 
 ## What Is Implemented
 

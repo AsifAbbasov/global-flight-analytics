@@ -1685,7 +1685,7 @@ limitations, and the formal production observability closure statement.
 
 <!-- ZERO-COST-PRODUCTION-INGESTION-RELIABILITY:DOCUMENT-INDEX -->
 
-## Document 182 — Zero-Cost Production Ingestion Reliability Foundation
+## Document 182 — Zero-Cost Production Ingestion Reliability Closure
 
 `182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` records the closed
 repository-owned Cloudflare primary scheduler and freshness watchdog, GitHub Actions
@@ -1695,7 +1695,7 @@ ownership, and the final production ingestion reliability closure statement.
 
 <!-- CLOUDFLARE-INGESTION-LIVE-DEPLOYMENT-EVIDENCE:DOCUMENT-INDEX -->
 
-## Document 183 — Cloudflare Ingestion Live Deployment Evidence
+## Document 183 — Cloudflare Ingestion Live Deployment and Closure Evidence
 
 `183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md` records the exact
 Cloudflare Worker deployment identity, stable health route, encrypted GitHub

@@ -40,6 +40,7 @@ provenance:
 
 ```text
 PRODUCTION_INGESTION_DISPATCH_SOURCE=cloudflare-watchdog
+WATCHDOG_RECOVERY_RUN_ID=31103550357
 GITHUB_RUN_ID=31103550357
 GITHUB_RUN_CONCLUSION=success
 LOADED=3
@@ -93,6 +94,8 @@ ACTIVE_RUN_DEDUPLICATION=PASS
 The same run then completed successfully on the exact closure revision:
 
 ```text
+ACTIVE_RUN_AND_FALLBACK_RUN_ID=31113114700
+ACTIVE_RUN_AND_FALLBACK_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
 FALLBACK_SIMULATION_RUN_ID=31113114700
 FALLBACK_SIMULATION_HEAD_SHA=7dfc66685247a5a1aaea87b1391624d1014d7013
 FALLBACK_SIMULATION_CONCLUSION=success
@@ -132,7 +135,20 @@ The command emits an owner-local validation log under `~/Downloads`.
 The local report is supporting operational evidence and is not committed to the
 repository. It contains no token values.
 
-## 7. Final closure
+## 7. Evidence ownership and verification boundary
+
+This document stores the exact closure metadata that can be reviewed in source:
+run identities, exact revisions, the validation timestamp, and stable result
+markers. The referenced GitHub Actions runs retain the immutable execution
+history.
+
+The owner-local runtime report supports the final validation event without
+placing operational logs in source control. The repository verifier checks that
+Documents 163, 182, and 183 remain internally consistent and contain no stale
+closure `PENDING` markers. It does not replace live runtime revalidation after a
+future deployment.
+
+## 8. Final closure
 
 ```text
 CLOUDFLARE_PRIMARY_SCHEDULE=PASS
