@@ -15,6 +15,11 @@ on:
       - '.github/workflows/backend-ci.yml'
       - '.github/workflows/production-smoke.yml'
       - 'README.md'
+      - 'docs/25_IMPLEMENTATION_SEQUENCE.md'
+      - 'docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md'
+      - 'docs/DOCUMENT_INDEX.md'
+      - 'scripts/verify-stage-13-frontend-analytics-closure.mjs'
+      - 'scripts/verify-stage-13-frontend-analytics-closure.test.mjs'
       - 'scripts/verify-release-portfolio.sh'
       - 'scripts/verify-release-portfolio.test.mjs'
       - 'scripts/verify-release.sh'
@@ -83,6 +88,11 @@ jobs:
           pnpm run test:release-contract
           pnpm run verify:release-contract
 
+      - name: Verify Stage 13 frontend analytics closure
+        run: |
+          pnpm run test:stage13-frontend-analytics-closure
+          pnpm run verify:stage13-frontend-analytics-closure
+
       - name: Verify scheduled production smoke contract
         run: |
           pnpm run test:scheduled-production-smoke
@@ -129,3 +139,5 @@ jobs:
 # STAGE-14-7-FRONTEND-DEPENDENCY-SECURITY
 
 # RELEASE-PORTFOLIO-CLOSURE-V1
+
+# STAGE-13-FRONTEND-ANALYTICS-CLOSURE-V1

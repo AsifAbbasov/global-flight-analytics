@@ -47,7 +47,9 @@
     "test:openapi-developer-experience": "node --test scripts/verify-openapi-developer-experience.test.mjs",
     "verify:openapi-developer-experience": "node scripts/verify-openapi-developer-experience.mjs",
     "typecheck:api-client": "pnpm --dir packages/api-client typecheck",
-    "test:api-client": "pnpm --dir packages/api-client test"
+    "test:api-client": "pnpm --dir packages/api-client test",
+    "test:stage13-frontend-analytics-closure": "node --test scripts/verify-stage-13-frontend-analytics-closure.test.mjs",
+    "verify:stage13-frontend-analytics-closure": "node scripts/verify-stage-13-frontend-analytics-closure.mjs"
   },
   "packageManager": "pnpm@11.8.0"
 }

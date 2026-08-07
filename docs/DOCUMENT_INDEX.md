@@ -1703,3 +1703,15 @@ authorization boundary, watchdog recovery, real primary dispatch, recent-success
 and active-run deduplication, bounded hourly fallback simulation, post-ingestion
 freshness, exact-revision runtime validation, secret-safe logging, and the final
 production ingestion reliability closure.
+
+<!-- STAGE-13-FRONTEND-ANALYTICS-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 184 — Stage 13 Frontend Analytics Integration Completion
+
+`184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`
+
+Records formal completion of the Projection, Projection Map, Weather Context and
+Stability and Explainability frontend slices, source-backed panel and query
+wiring, observed-versus-estimated MapLibre source separation, research-only
+scope boundaries, permanent Frontend CI and release-gate regression protection,
+and the separate visual-redesign product phase.

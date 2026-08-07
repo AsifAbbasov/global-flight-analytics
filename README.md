@@ -133,6 +133,28 @@ evidence and is not committed to the repository.
 - deterministic dependency policy, vulnerability checks and architecture audits;
 - rollback-safe incremental installers and exact changed-file manifests.
 
+<!-- STAGE-13-FRONTEND-ANALYTICS-CLOSURE-V1 -->
+## Frontend Analytics Integration
+
+Stage 13 is technically complete. The selected-aircraft workspace now connects
+persisted trajectory evidence to Projection, Weather and Stability Intelligence
+through validated TypeScript contracts and TanStack Query. Each panel preserves
+loading, refreshing, retry, confidence, provenance and limitation states rather
+than recomputing server-owned analytics in the browser.
+
+The MapLibre workspace renders projected path, forecast points and horizontal
+uncertainty through a dedicated projection GeoJSON source. The observed
+trajectory and estimated projection geometry remain separate, so estimated
+coordinates are never presented as observed flight history.
+
+Detailed completion scope, source evidence, contract boundaries and permanent
+regression gates are recorded in
+[`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md).
+
+This closes frontend analytics integration only. The visual and interaction
+redesign remains a separate product phase and will not change backend-owned
+analytical semantics.
+
 ## Architecture
 
 ```mermaid
