@@ -29,7 +29,7 @@ func (
 	ctx context.Context,
 ) ([]traffic.CurrentTrafficItem, error) {
 	const query = `
-		WITH latest_successful_run AS (
+		WITH latest_displayable_run AS (
 			SELECT ir.id
 			FROM ingestion_runs ir
 			WHERE ir.status = $1
@@ -38,6 +38,11 @@ func (
 				SELECT 1
 				FROM flight_states candidate
 				WHERE candidate.ingestion_run_id = ir.id
+				  AND candidate.latitude IS NOT NULL
+				  AND candidate.longitude IS NOT NULL
+				  AND candidate.velocity_mps IS NOT NULL
+				  AND candidate.heading_degrees IS NOT NULL
+				  AND candidate.on_ground IS NOT NULL
 			)
 			ORDER BY
 				ir.finished_at DESC,
@@ -61,7 +66,7 @@ func (
 			COALESCE(al.name, ''),
 			COALESCE(fs.origin_country, '')
 		FROM flight_states fs
-		JOIN latest_successful_run latest_run
+		JOIN latest_displayable_run latest_run
 			ON latest_run.id = fs.ingestion_run_id
 		LEFT JOIN aircraft a ON a.id = fs.aircraft_id
 		LEFT JOIN aircraft_models am ON am.id = a.model_id
@@ -98,7 +103,7 @@ func (
 	bounds traffic.Bounds,
 ) ([]traffic.CurrentTrafficItem, error) {
 	const query = `
-		WITH latest_successful_run AS (
+		WITH latest_displayable_run AS (
 			SELECT ir.id
 			FROM ingestion_runs ir
 			WHERE ir.status = $1
@@ -107,6 +112,11 @@ func (
 				SELECT 1
 				FROM flight_states candidate
 				WHERE candidate.ingestion_run_id = ir.id
+				  AND candidate.latitude IS NOT NULL
+				  AND candidate.longitude IS NOT NULL
+				  AND candidate.velocity_mps IS NOT NULL
+				  AND candidate.heading_degrees IS NOT NULL
+				  AND candidate.on_ground IS NOT NULL
 			)
 			ORDER BY
 				ir.finished_at DESC,
@@ -130,7 +140,7 @@ func (
 			COALESCE(al.name, ''),
 			COALESCE(fs.origin_country, '')
 		FROM flight_states fs
-		JOIN latest_successful_run latest_run
+		JOIN latest_displayable_run latest_run
 			ON latest_run.id = fs.ingestion_run_id
 		LEFT JOIN aircraft a ON a.id = fs.aircraft_id
 		LEFT JOIN aircraft_models am ON am.id = a.model_id
