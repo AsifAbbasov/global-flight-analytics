@@ -36,6 +36,8 @@ pnpm run verify:openapi-developer-experience
 node scripts/generate-openapi-client.mjs --check
 pnpm run test:playwright-e2e-contract
 pnpm run verify:playwright-e2e
+pnpm run test:stage13-frontend-analytics-closure
+pnpm run verify:stage13-frontend-analytics-closure
 pnpm run test:backend-operations-contract
 pnpm run verify:backend-operations-contract
 pnpm install --frozen-lockfile

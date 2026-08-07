@@ -439,11 +439,12 @@ Stage 12 evaluates analytical stability and explanation honesty without converti
 
 ## 15. Stage 13 — Frontend Analytics Integration
 
-Status: IN PROGRESS from 2026-07-17.
+Status: COMPLETED on 2026-08-07.
 
-Stage 13 is a proposed continuation after the completed official analytical sequence. It exposes existing backend intelligence without creating a new analytical engine.
+Stage 13 exposes existing backend intelligence without creating a new analytical
+engine or moving server-owned analytical computation into the browser.
 
-Frontend integration slices:
+Completed frontend integration slices:
 
 ```text
 Stage 13.1 — Projection Intelligence Frontend Foundation
@@ -464,8 +465,23 @@ persisted trajectory → bounded as-of forecast history → Stability Intelligen
 failure explanation, intervention guard and scope enforcement panel
 ```
 
-Observed trajectory geometry and estimated projection geometry remain separate MapLibre sources and layers. The interface must never render estimated coordinates as observed flight history.
+Completion evidence:
 
+```text
+docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md
+```
+
+Completion boundary:
+
+```text
+Observed trajectory geometry and estimated projection geometry remain separate.
+The frontend renders backend-owned evidence and does not recompute analytical metrics.
+Confidence remains bounded evidence rather than certainty or calibrated probability.
+Weather context remains association rather than proof of cause.
+Stability remains consistency evidence rather than accuracy certification.
+All analytical output remains research-only.
+The visual and interaction redesign remains a separate product phase.
+```
 ---
 
 ## 16. First Implementation Slice
