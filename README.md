@@ -99,6 +99,39 @@ runtime-validation timestamp. GitHub Actions retains the immutable execution
 history. The final validator log remains owner-local, non-secret supporting
 evidence and is not committed to the repository.
 
+
+<!-- RECENT-ENGINEERING-MILESTONES-2026-08-V1 -->
+## Recent Engineering Milestones — August 2026
+
+Three consecutive pull requests closed the latest reliability, correctness and
+frontend-integration work:
+
+- **PR #59 — Production ingestion reliability.** Closed the zero-cost production
+  ingestion topology around the Cloudflare primary scheduler, freshness
+  watchdog, bounded GitHub Actions fallback, deduplication and exact-revision
+  runtime validation. Squash merge: `3bcd07df3883827904cedfe5c71ca7ad58f6967c`.
+- **PR #60 — Latest displayable traffic snapshot correctness.** Fixed repository
+  selection so current traffic resolves the newest successful run containing
+  globally displayable flight-state evidence, applies geographic bounds only
+  after global snapshot selection, and preserves nullable altitude and valid
+  zero telemetry. Squash merge: `89c9b13292efe60c7924af750ab444d21dc4536a`.
+- **PR #61 — Stage 13 Frontend Analytics Integration.** Formally closed
+  Projection, Weather Context and Stability Intelligence frontend integration,
+  preserved separate observed/projected MapLibre evidence, and added permanent
+  Stage 13 regression verification to Frontend CI and the full release gate.
+  Squash merge: `d5e7f924320bb4696969b6d7dcbc3aabafe155cc`.
+
+Detailed production-ingestion and Stage 13 evidence remains in the dedicated
+sections and closure documents below. These milestones are all merged into
+`main` and protected by repository-owned regression verification.
+
+```text
+PRODUCTION_INGESTION_RELIABILITY=CLOSED
+LATEST_DISPLAYABLE_TRAFFIC_SNAPSHOT=CLOSED
+STAGE_13_FRONTEND_ANALYTICS_INTEGRATION=CLOSED
+RELEASE_VERIFICATION=PASS
+```
+
 ## What Is Implemented
 
 ### Product experience
