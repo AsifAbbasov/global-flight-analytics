@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
+export const MINIMUM_SAFE_NANOID_VERSION = "3.3.17";
+export const PINNED_NANOID_VERSION = "3.3.17";
 export const MINIMUM_SAFE_POSTCSS_VERSION = "8.5.23";
 export const PINNED_POSTCSS_VERSION = "8.5.23";
 export const MINIMUM_SAFE_SHARP_VERSION = "0.35.0";
@@ -49,6 +51,10 @@ function collectPackageVersions(lockfileText, packageName) {
   return [...versions].sort(compareVersions);
 }
 
+export function collectNanoidVersions(lockfileText) {
+  return collectPackageVersions(lockfileText, "nanoid");
+}
+
 export function collectPostCSSVersions(lockfileText) {
   return collectPackageVersions(lockfileText, "postcss");
 }
@@ -84,6 +90,27 @@ export function nextUsesPinnedPostCSS(lockfileText) {
     "postcss",
     PINNED_POSTCSS_VERSION,
   );
+}
+
+export function postCSSUsesPinnedNanoid(lockfileText) {
+  const escapedPostCSSVersion = PINNED_POSTCSS_VERSION.replaceAll(".", "\\.");
+  const blockPattern = new RegExp(
+    `^  postcss@${escapedPostCSSVersion}[^\\n]*:\\n([\\s\\S]*?)(?=^  \\S|\\Z)`,
+    "gm",
+  );
+
+  for (const match of lockfileText.matchAll(blockPattern)) {
+    if (
+      new RegExp(
+        `^\\s{6}nanoid:\\s+${PINNED_NANOID_VERSION.replaceAll(".", "\\.")}\\s*$`,
+        "m",
+      ).test(match[1])
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function importerDependencyUsesVersion(
@@ -165,6 +192,15 @@ function workspaceHasOverride(workspaceText, packageName, minimum, pinned) {
     `^\\s{2}['\"]?${packageName}@<${minimum.replaceAll(".", "\\.")}['\"]?:\\s+['\"]?${pinned.replaceAll(".", "\\.")}['\"]?\\s*$`,
     "m",
   ).test(workspaceText);
+}
+
+export function workspaceHasNanoidOverride(workspaceText) {
+  return workspaceHasOverride(
+    workspaceText,
+    "nanoid",
+    MINIMUM_SAFE_NANOID_VERSION,
+    PINNED_NANOID_VERSION,
+  );
 }
 
 export function workspaceHasTargetedOverride(workspaceText) {
@@ -294,6 +330,12 @@ export function verifyDependencySecurity({
     failures.push(error.message);
   }
 
+  if (!workspaceHasNanoidOverride(workspaceText)) {
+    failures.push(
+      `pnpm-workspace.yaml must override nanoid@<${MINIMUM_SAFE_NANOID_VERSION} to ${PINNED_NANOID_VERSION}`,
+    );
+  }
+
   if (!workspaceHasTargetedOverride(workspaceText)) {
     failures.push(
       `pnpm-workspace.yaml must override postcss@<${MINIMUM_SAFE_POSTCSS_VERSION} to ${PINNED_POSTCSS_VERSION}`,
@@ -330,6 +372,15 @@ export function verifyDependencySecurity({
     );
   }
 
+  const nanoidVersions = collectNanoidVersions(lockfileText);
+  validateResolvedVersions({
+    failures,
+    packageName: "nanoid",
+    versions: nanoidVersions,
+    minimumSafeVersion: MINIMUM_SAFE_NANOID_VERSION,
+    pinnedVersion: PINNED_NANOID_VERSION,
+  });
+
   const postcssVersions = collectPostCSSVersions(lockfileText);
   validateResolvedVersions({
     failures,
@@ -354,6 +405,12 @@ export function verifyDependencySecurity({
     );
   }
 
+  if (!postCSSUsesPinnedNanoid(lockfileText)) {
+    failures.push(
+      `PostCSS ${PINNED_POSTCSS_VERSION} does not resolve nanoid ${PINNED_NANOID_VERSION}`,
+    );
+  }
+
   if (!webImporterUsesPinnedSharp(lockfileText)) {
     failures.push(
       `apps/web importer does not resolve sharp ${PINNED_SHARP_VERSION}`,
@@ -368,8 +425,11 @@ export function verifyDependencySecurity({
     nextVersion: NEXT_VERSION,
     minimumSafeNextVersion: MINIMUM_SAFE_NEXT_VERSION,
     pinnedNextVersion: PINNED_NEXT_VERSION,
+    nanoidVersions,
     postcssVersions,
     sharpVersions,
+    minimumSafeNanoidVersion: MINIMUM_SAFE_NANOID_VERSION,
+    pinnedNanoidVersion: PINNED_NANOID_VERSION,
     minimumSafePostCSSVersion: MINIMUM_SAFE_POSTCSS_VERSION,
     minimumSafeSharpVersion: MINIMUM_SAFE_SHARP_VERSION,
     pinnedPostCSSVersion: PINNED_POSTCSS_VERSION,
@@ -396,7 +456,7 @@ async function main() {
   });
 
   console.log(
-    `FRONTEND_DEPENDENCY_SECURITY=PASS next=${result.nextVersion} minimum_safe_next=${result.minimumSafeNextVersion} pinned_next=${result.pinnedNextVersion} postcss=${result.postcssVersions.join(",")} sharp=${result.sharpVersions.join(",")} minimum_safe_postcss=${result.minimumSafePostCSSVersion} minimum_safe_sharp=${result.minimumSafeSharpVersion} fonts=${result.fontSource}`,
+    `FRONTEND_DEPENDENCY_SECURITY=PASS next=${result.nextVersion} minimum_safe_next=${result.minimumSafeNextVersion} pinned_next=${result.pinnedNextVersion} nanoid=${result.nanoidVersions.join(",")} postcss=${result.postcssVersions.join(",")} sharp=${result.sharpVersions.join(",")} minimum_safe_nanoid=${result.minimumSafeNanoidVersion} minimum_safe_postcss=${result.minimumSafePostCSSVersion} minimum_safe_sharp=${result.minimumSafeSharpVersion} fonts=${result.fontSource}`,
   );
 }
 
