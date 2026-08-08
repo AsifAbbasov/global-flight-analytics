@@ -1715,3 +1715,14 @@ Stability and Explainability frontend slices, source-backed panel and query
 wiring, observed-versus-estimated MapLibre source separation, research-only
 scope boundaries, permanent Frontend CI and release-gate regression protection,
 and the separate visual-redesign product phase.
+
+<!-- CI-REQUIRED-CHECK-RECOVERY-HARDENING:DOCUMENT-INDEX -->
+
+## Document 185 — CI Required-Check Recovery Hardening
+
+`185_CI_REQUIRED_CHECK_RECOVERY_HARDENING.md` defines the fail-closed recovery
+procedure for missing, cancelled or damaged required GitHub checks; exact
+pull-request head-SHA binding; reuse of the existing full Backend CI
+`workflow_dispatch`; read-only diagnosis; `cancel-in-progress` handling; the
+prohibition on empty retrigger commits and reduced recovery workflows; and the
+permanent CI/release regression contract.

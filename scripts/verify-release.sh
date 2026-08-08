@@ -18,6 +18,8 @@ pnpm run test:production-ingestion-contract
 pnpm run verify:production-ingestion-contract
 pnpm run test:production-ingestion-reliability
 pnpm run verify:production-ingestion-reliability
+pnpm run test:ci-recovery-hardening
+pnpm run verify:ci-recovery-hardening
 bash scripts/verify-recruiter-quickstart.sh
 pnpm run test:release-contract
 pnpm run verify:release-contract

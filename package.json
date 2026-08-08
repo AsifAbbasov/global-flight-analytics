@@ -49,7 +49,9 @@
     "typecheck:api-client": "pnpm --dir packages/api-client typecheck",
     "test:api-client": "pnpm --dir packages/api-client test",
     "test:stage13-frontend-analytics-closure": "node --test scripts/verify-stage-13-frontend-analytics-closure.test.mjs",
-    "verify:stage13-frontend-analytics-closure": "node scripts/verify-stage-13-frontend-analytics-closure.mjs"
+    "verify:stage13-frontend-analytics-closure": "node scripts/verify-stage-13-frontend-analytics-closure.mjs",
+    "test:ci-recovery-hardening": "node --test scripts/verify-ci-recovery-hardening.test.mjs",
+    "verify:ci-recovery-hardening": "node scripts/verify-ci-recovery-hardening.mjs"
   },
   "packageManager": "pnpm@11.8.0"
 }
