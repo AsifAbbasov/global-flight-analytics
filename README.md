@@ -103,8 +103,9 @@ evidence and is not committed to the repository.
 <!-- RECENT-ENGINEERING-MILESTONES-2026-08-V1 -->
 ## Recent Engineering Milestones — August 2026
 
-Three consecutive pull requests closed the latest reliability, correctness and
-frontend-integration work:
+Six recent merged pull requests capture the current reliability, correctness,
+frontend-integration, dependency-security, Continuous Integration recovery and
+browser-product-coverage closure:
 
 - **PR #59 — Production ingestion reliability.** Closed the zero-cost production
   ingestion topology around the Cloudflare primary scheduler, freshness
@@ -120,16 +121,95 @@ frontend-integration work:
   preserved separate observed/projected MapLibre evidence, and added permanent
   Stage 13 regression verification to Frontend CI and the full release gate.
   Squash merge: `d5e7f924320bb4696969b6d7dcbc3aabafe155cc`.
+- **PR #68 — Frontend dependency security.** Patched both High-severity
+  `nanoid` advisories through the safe `3.3.17` resolution, regenerated the
+  dependency lockfile and added permanent regression protection for the
+  production dependency graph. Squash merge:
+  `e645bd870428038200ca65571ef274ae81302c5f`.
+- **PR #69 — Required-check recovery hardening.** Added exact-head-SHA,
+  read-only Continuous Integration diagnostics; preserved the existing full
+  Backend CI recovery path; and prohibited empty retrigger commits or reduced
+  shadow workflows. Squash merge:
+  `b8e5905a3ac07e8ab66ab0ec4d6b24a6897ff9b3`.
+- **PR #70 — Playwright product coverage.** Expanded the original four-browser
+  foundation to twenty deterministic Chromium product journeys covering
+  aircraft, airport, historical analytics, Projection/Weather/Stability,
+  exports, failure/recovery, accessibility and desktop/mobile visual-layout
+  regression. Squash merge:
+  `f07c7555e18249354d4d4cd59b0dccbc4cea93f0`.
 
-Detailed production-ingestion and Stage 13 evidence remains in the dedicated
-sections and closure documents below. These milestones are all merged into
-`main` and protected by repository-owned regression verification.
+Detailed evidence remains in the dedicated closure documents. These milestones
+are merged into `main` and protected by repository-owned regression
+verification.
 
 ```text
 PRODUCTION_INGESTION_RELIABILITY=CLOSED
 LATEST_DISPLAYABLE_TRAFFIC_SNAPSHOT=CLOSED
 STAGE_13_FRONTEND_ANALYTICS_INTEGRATION=CLOSED
+FRONTEND_DEPENDENCY_SECURITY=CLOSED
+CI_REQUIRED_CHECK_RECOVERY_HARDENING=CLOSED
+PLAYWRIGHT_PRODUCT_COVERAGE=CLOSED
 RELEASE_VERIFICATION=PASS
+```
+
+<!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->
+## Current Engineering Status
+
+The current repository contract exposes **38 source-backed OpenAPI paths**:
+37 unauthenticated public read operations and one protected Route Intelligence
+mutation. The API developer experience includes embedded documentation at
+`/api/docs`, the embedded source-backed specification at
+`/api/docs/openapi.json`, and a generated TypeScript client whose metadata is
+verified against the canonical contract.
+
+Browser verification now contains **twenty deterministic Chromium product
+journeys** and **seven deterministic private mock scenarios**. The suite covers
+the application shell, canonical workspace URLs, mobile navigation, aircraft
+selection and deep links, Airport Intelligence, Historical Intelligence,
+Projection/Weather/Stability evidence, CSV and GeoJSON downloads, bounded
+failure/recovery, accessibility semantics and desktop/mobile layout invariants.
+Full-page screenshot evidence is retained without freezing the pre-redesign UI
+into pixel-golden baselines.
+
+The pull-request quality surface includes Backend CI, Frontend CI, OpenAPI
+Contract, CodeQL, API Load Baseline and Playwright E2E. The root
+`pnpm verify:release` command remains the complete local release gate.
+
+```text
+OPENAPI_CONTRACT_PATHS=38
+OPENAPI_PUBLIC_READ_OPERATIONS=37
+OPENAPI_PROTECTED_MUTATION_OPERATIONS=1
+PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20
+PLAYWRIGHT_E2E_MOCK_SCENARIOS=7
+PLAYWRIGHT_PRODUCT_COVERAGE=CLOSED
+CI_REQUIRED_CHECK_RECOVERY_HARDENING=CLOSED
+FRONTEND_DEPENDENCY_SECURITY=CLOSED
+RELEASE_VERIFICATION=PASS
+```
+
+## Remaining Portfolio v1.0.0 Work
+
+The heavy backend, persistence, analytical, API, production-reliability and
+functional browser work is closed for the current portfolio scope. The
+remaining release sequence is intentionally product-facing:
+
+1. complete the **Frontend Visual and Interaction Redesign**;
+2. add final **pixel-golden Playwright screenshot baselines** after the
+   redesigned interface is stable;
+3. run the complete release gate against the redesign;
+4. perform **final exact-production deployment validation** against the final
+   release revision rather than reusing historical deployment evidence;
+5. refresh release-truth documentation and publish the `v1.0.0` tag/release.
+
+No new microservice, Kubernetes, Redis, Kafka or separate backend topology is
+required for this release boundary.
+
+```text
+FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=OPEN
+PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
+FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
+FINAL_RELEASE_DOCUMENTATION=OPEN
+V1_RELEASE=OPEN
 ```
 
 ## What Is Implemented
