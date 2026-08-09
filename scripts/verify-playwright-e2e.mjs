@@ -10,10 +10,28 @@ import {
 } from '../apps/web/e2e/mock-api.mjs'
 
 export const expectedPlaywrightVersion = '1.62.0'
+export const expectedBrowserScenarioCount = 20
 export const expectedScenarios = new Set([
   'healthy',
   'traffic-error',
   'regions-error',
+  'aircraft-error',
+  'airport-error',
+  'historical-error',
+  'intelligence-error',
+])
+
+export const productTestFiles = Object.freeze([
+  'apps/web/e2e/tests/application-shell.spec.mjs',
+  'apps/web/e2e/tests/api-recovery.spec.mjs',
+  'apps/web/e2e/tests/aircraft-intelligence.spec.mjs',
+  'apps/web/e2e/tests/airport-intelligence.spec.mjs',
+  'apps/web/e2e/tests/historical-analytics.spec.mjs',
+  'apps/web/e2e/tests/advanced-intelligence.spec.mjs',
+  'apps/web/e2e/tests/exports.spec.mjs',
+  'apps/web/e2e/tests/product-recovery.spec.mjs',
+  'apps/web/e2e/tests/accessibility.spec.mjs',
+  'apps/web/e2e/tests/visual-regression.spec.mjs',
 ])
 
 function read(root, relativePath) {
@@ -36,6 +54,13 @@ function sorted(values) {
   return [...values].sort()
 }
 
+export function countBrowserScenarios(root) {
+  return productTestFiles.reduce((total, relativePath) => {
+    const source = read(root, relativePath)
+    return total + (source.match(/\btest\s*\(\s*['"`]/g) ?? []).length
+  }, 0)
+}
+
 export function validatePlaywrightFoundation(root) {
   const errors = []
   const openAPI = JSON.parse(read(root, 'openapi/openapi.json'))
@@ -53,6 +78,20 @@ export function validatePlaywrightFoundation(root) {
     JSON.stringify(sorted(expectedScenarios))
   ) {
     fail(errors, 'mock API scenario surface is not canonical')
+  }
+
+  for (const relativePath of productTestFiles) {
+    if (!fs.existsSync(path.join(root, relativePath))) {
+      fail(errors, `missing Playwright product test: ${relativePath}`)
+    }
+  }
+
+  const browserScenarioCount = countBrowserScenarios(root)
+  if (browserScenarioCount !== expectedBrowserScenarioCount) {
+    fail(
+      errors,
+      `expected ${expectedBrowserScenarioCount} browser scenarios, got ${browserScenarioCount}`,
+    )
   }
 
   const runner = read(root, 'scripts/run-playwright-e2e.sh')
@@ -86,9 +125,9 @@ export function validatePlaywrightFoundation(root) {
     errors,
     config,
     [
-      "workers: 1",
-      "fullyParallel: false",
-      "failOnFlakyTests: isCI",
+      'workers: 1',
+      'fullyParallel: false',
+      'failOnFlakyTests: isCI',
       "trace: 'retain-on-failure'",
       "screenshot: 'only-on-failure'",
       "video: 'retain-on-failure'",
@@ -103,15 +142,9 @@ export function validatePlaywrightFoundation(root) {
     fail(errors, 'Playwright config must not target a public deployment')
   }
 
-  const applicationTests = read(
-    root,
-    'apps/web/e2e/tests/application-shell.spec.mjs',
-  )
-  const recoveryTests = read(
-    root,
-    'apps/web/e2e/tests/api-recovery.spec.mjs',
-  )
-  const testSource = `${applicationTests}\n${recoveryTests}`
+  const testSource = productTestFiles
+    .map(relativePath => read(root, relativePath))
+    .join('\n')
   requireIncludes(
     errors,
     testSource,
@@ -120,18 +153,180 @@ export function validatePlaywrightFoundation(root) {
       "getByRole('combobox', { name: 'Region' })",
       "getByRole('region', { name: 'Live traffic data controls' })",
       "name: 'Retry traffic request'",
-      "page.setViewportSize({ width: 390, height: 844 })",
-      "region=WORLD&view=invalid",
-      "region=world&view=aircraft",
-      "region=az&view=aircraft",
+      'page.setViewportSize({ width: 390, height: 844 })',
+      'region=WORLD&view=invalid',
+      'region=world&view=aircraft',
+      'region=az&view=aircraft',
+      "name: 'Aircraft search results'",
+      "name: 'Search airport'",
+      "name: 'Airport Intelligence profile sections'",
+      "name: 'Compare persisted analytical evidence'",
+      "name: 'Projection confidence score'",
+      "name: 'Mean forecast stability score'",
+      "name: 'Download CSV'",
+      "name: 'Download GeoJSON'",
+      "name: 'Skip to main content'",
+      'testInfo.attach',
+      'boundingBox()',
     ],
-    'Playwright tests',
+    'Playwright product tests',
   )
   if (testSource.includes('data-testid') || testSource.includes('page.locator(')) {
     fail(errors, 'Playwright tests must prefer semantic locators')
   }
   if (/onrender\.com|vercel\.app/.test(testSource)) {
     fail(errors, 'Playwright tests must not target a public deployment')
+  }
+
+  const aircraftTests = read(
+    root,
+    'apps/web/e2e/tests/aircraft-intelligence.spec.mjs',
+  )
+  requireIncludes(
+    errors,
+    aircraftTests,
+    [
+      'Aircraft search results',
+      'Probable route and airport context',
+      'Latest trajectory',
+      'Projection and Estimated Arrival',
+      'Weather Context',
+      'Stability and Explainability',
+      'Clear selection',
+    ],
+    'aircraft journey',
+  )
+
+  const airportTests = read(
+    root,
+    'apps/web/e2e/tests/airport-intelligence.spec.mjs',
+  )
+  requireIncludes(
+    errors,
+    airportTests,
+    [
+      'Airport Intelligence',
+      'Search airport',
+      'Digital passport',
+      'Movement history',
+      'Published trend direction',
+      'Completed-day window',
+    ],
+    'airport journey',
+  )
+
+  const historicalTests = read(
+    root,
+    'apps/web/e2e/tests/historical-analytics.spec.mjs',
+  )
+  requireIncludes(
+    errors,
+    historicalTests,
+    [
+      'Compare persisted analytical evidence',
+      'historical bar chart',
+      'Complete the historical scope',
+      'Airport ICAO',
+      'Origin ICAO',
+      'Destination ICAO',
+    ],
+    'historical journey',
+  )
+
+  const advancedTests = read(
+    root,
+    'apps/web/e2e/tests/advanced-intelligence.spec.mjs',
+  )
+  requireIncludes(
+    errors,
+    advancedTests,
+    [
+      'Projection confidence score',
+      'Weather Encounter Profile',
+      'Projection uncertainty effect',
+      'Mean forecast stability score',
+      'Attribution and scope guards',
+    ],
+    'advanced intelligence journey',
+  )
+
+  const exportTests = read(root, 'apps/web/e2e/tests/exports.spec.mjs')
+  requireIncludes(
+    errors,
+    exportTests,
+    [
+      'Download CSV',
+      'Download GeoJSON',
+      'FeatureCollection',
+      'excluded_invalid_coordinate_count',
+      '4b1801,AZAL101',
+    ],
+    'export journey',
+  )
+
+  const recoveryTests = read(
+    root,
+    'apps/web/e2e/tests/product-recovery.spec.mjs',
+  )
+  requireIncludes(
+    errors,
+    recoveryTests,
+    [
+      'regions-error',
+      'aircraft-error',
+      'airport-error',
+      'historical-error',
+      'intelligence-error',
+      'Retry route context',
+      'Retry trajectory',
+      'Retry request',
+      'Retry Projection Intelligence',
+      'Retry Weather Context',
+      'Retry Stability Intelligence',
+    ],
+    'product recovery journeys',
+  )
+
+  const accessibilityTests = read(
+    root,
+    'apps/web/e2e/tests/accessibility.spec.mjs',
+  )
+  requireIncludes(
+    errors,
+    accessibilityTests,
+    [
+      'Skip to main content',
+      'Primary navigation',
+      'Mobile primary navigation',
+      'aria-selected',
+      'expectNoHorizontalOverflow',
+    ],
+    'accessibility journey',
+  )
+
+  const visualTests = read(
+    root,
+    'apps/web/e2e/tests/visual-regression.spec.mjs',
+  )
+  requireIncludes(
+    errors,
+    visualTests,
+    [
+      'width: 1440, height: 1100',
+      'width: 390, height: 844',
+      'boundingBox()',
+      'expectNoHorizontalOverflow',
+      "testInfo.attach('desktop-product-workspace.png'",
+      "testInfo.attach('mobile-selected-aircraft-workspace.png'",
+      'page.screenshot({',
+    ],
+    'visual layout regression',
+  )
+  if (visualTests.includes('toHaveScreenshot(')) {
+    fail(
+      errors,
+      'pre-redesign visual coverage must not fossilize current pixels with golden baselines',
+    )
   }
 
   const mockSource = read(root, 'apps/web/e2e/mock-api.mjs')
@@ -141,6 +336,10 @@ export function validatePlaywrightFoundation(root) {
     [
       "scenario === 'traffic-error'",
       "scenario === 'regions-error'",
+      "scenario === 'aircraft-error'",
+      "scenario === 'airport-error'",
+      "scenario === 'historical-error'",
+      "scenario === 'intelligence-error'",
       "'/__e2e/scenario'",
       "'Access-Control-Allow-Origin': 'http://127.0.0.1:3000'",
       "'Cache-Control': 'no-store'",
@@ -150,6 +349,9 @@ export function validatePlaywrightFoundation(root) {
       "'/api/v1/analytics/metrics/coverage-score'",
       "'/api/v1/historical-intelligence/aggregates/history'",
       "'/api/v1/trajectories/{id}/projection-intelligence'",
+      "'/api/v1/trajectories/{id}/stability-intelligence'",
+      'stabilityIntelligenceFixture(requestedAsOfTimes)',
+      "url.searchParams.get('as_of_times')",
       "'/api/v1/airspace/regions/{code}/analytics'",
       "'/api/v1/trajectories/{id}/route-intelligence'",
       "'/api/v1/trajectories/{id}/route-intelligence/latest'",
@@ -184,6 +386,8 @@ export function validatePlaywrightFoundation(root) {
       'node --test scripts/verify-playwright-e2e.test.mjs',
       'bash scripts/run-playwright-e2e.sh',
       'apps/web/e2e/playwright-report',
+      'apps/web/e2e/test-results',
+      'docs/186_PLAYWRIGHT_PRODUCT_COVERAGE.md',
       'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
     ],
     'Playwright workflow',
@@ -215,20 +419,42 @@ export function validatePlaywrightFoundation(root) {
     '.gitignore',
   )
 
-  const document = read(root, 'docs/176_PLAYWRIGHT_E2E_FOUNDATION.md')
+  const foundationDocument = read(
+    root,
+    'docs/176_PLAYWRIGHT_E2E_FOUNDATION.md',
+  )
   requireIncludes(
     errors,
-    document,
+    foundationDocument,
     [
       'Status: IMPLEMENTED',
-      'four Chromium end-to-end scenarios',
+      'original foundation contained four Chromium end-to-end scenarios',
       'OpenAPI',
       'PLAYWRIGHT_E2E=PASS',
       'public Render deployment is never targeted',
       'thirty-eight paths',
       'Route Intelligence',
+      '186_PLAYWRIGHT_PRODUCT_COVERAGE.md',
     ],
     'Document 176',
+  )
+
+  const coverageDocument = read(
+    root,
+    'docs/186_PLAYWRIGHT_PRODUCT_COVERAGE.md',
+  )
+  requireIncludes(
+    errors,
+    coverageDocument,
+    [
+      'Status: IMPLEMENTED',
+      'twenty deterministic Chromium browser scenarios',
+      'PLAYWRIGHT_E2E_MOCK_SCENARIOS=7',
+      'PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20',
+      'Pixel-golden `toHaveScreenshot` baselines are intentionally deferred',
+      'This closes the current functional Playwright product-journey debt.',
+    ],
+    'Document 186',
   )
 
   const documentIndex = read(root, 'docs/DOCUMENT_INDEX.md')
@@ -238,6 +464,8 @@ export function validatePlaywrightFoundation(root) {
     [
       'PLAYWRIGHT-E2E-FOUNDATION-V1:DOCUMENT-INDEX',
       '176_PLAYWRIGHT_E2E_FOUNDATION.md',
+      'PLAYWRIGHT-PRODUCT-COVERAGE-V1:DOCUMENT-INDEX',
+      '186_PLAYWRIGHT_PRODUCT_COVERAGE.md',
     ],
     'documentation index',
   )
@@ -279,9 +507,13 @@ function main() {
     process.exit(1)
   }
 
-  console.log(`PLAYWRIGHT_E2E_VERSION=1.62.0`)
+  console.log(`PLAYWRIGHT_E2E_VERSION=${expectedPlaywrightVersion}`)
   console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=38')
-  console.log('PLAYWRIGHT_E2E_SCENARIOS=4')
+  console.log(`PLAYWRIGHT_E2E_MOCK_SCENARIOS=${expectedScenarios.size}`)
+  console.log(`PLAYWRIGHT_E2E_BROWSER_SCENARIOS=${expectedBrowserScenarioCount}`)
+  console.log(`PLAYWRIGHT_E2E_SCENARIOS=${expectedBrowserScenarioCount}`)
+  console.log('PLAYWRIGHT_E2E_PRODUCT_COVERAGE=PASS')
+  console.log('PLAYWRIGHT_E2E_VISUAL_LAYOUT_REGRESSION=PASS')
   console.log('PLAYWRIGHT_E2E_MOCK_API=PASS')
   console.log('PLAYWRIGHT_E2E_CONTRACT=PASS')
 }
