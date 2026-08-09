@@ -47,6 +47,10 @@ export const supportedScenarios = new Set([
   'healthy',
   'traffic-error',
   'regions-error',
+  'aircraft-error',
+  'airport-error',
+  'historical-error',
+  'intelligence-error',
 ])
 
 const regions = [
@@ -233,10 +237,10 @@ const flightStates = [
 
 const trajectories = [
   {
-    id: 'trajectory-azal-101',
+    id: '11111111-1111-4111-8111-111111111111',
     identity_key: 'icao24:4b1801',
-    identity_basis: 'icao24',
-    split_reason: 'none',
+    identity_basis: 'aircraft_and_start_time',
+    split_reason: 'initial_observation',
     flight_id: 'flight-azal-101',
     aircraft_id: 'aircraft-4b1801',
     icao24: '4b1801',
@@ -252,13 +256,13 @@ const trajectories = [
     segments: [
       {
         id: 'segment-azal-101-1',
-        trajectory_id: 'trajectory-azal-101',
+        trajectory_id: '11111111-1111-4111-8111-111111111111',
         flight_id: 'flight-azal-101',
         aircraft_id: 'aircraft-4b1801',
         icao24: '4b1801',
         callsign: 'AZAL101',
         sequence_number: 1,
-        status: 'complete',
+        status: 'observed',
         quality_score: 0.96,
         start_time: '2026-08-04T17:45:00Z',
         end_time: '2026-08-04T18:00:00Z',
@@ -281,7 +285,7 @@ const trajectories = [
 const routeContexts = [
   {
     icao24: '4b1801',
-    trajectory_id: 'trajectory-azal-101',
+    trajectory_id: '11111111-1111-4111-8111-111111111111',
     origin: {
       airport: airports[0],
       distance_km: 3.4,
@@ -876,6 +880,85 @@ const stabilityIntelligence = {
   generated_at: '2026-08-04T18:00:04Z',
 }
 
+function stabilityIntelligenceFixture(asOfTimes) {
+  const normalizedAsOfTimes = asOfTimes
+    .map(value => String(value).trim())
+    .filter(Boolean)
+
+  const effectiveAsOfTimes =
+    normalizedAsOfTimes.length >= 2
+      ? normalizedAsOfTimes
+      : stabilityIntelligence.as_of_times
+
+  const projections = effectiveAsOfTimes.map(asOfTime =>
+    projectionFixture(asOfTime)
+  )
+  const forecastVersions = effectiveAsOfTimes.map((asOfTime, index) => ({
+    version_id: `forecast-v${index + 1}`,
+    ordinal: index + 1,
+    ...(index > 0 ? { parent_version_id: `forecast-v${index}` } : {}),
+    method_name: 'continuation',
+    method_version: 'v1',
+    policy_version: 'policy-v1',
+    implementation_version: 'implementation-v1',
+    input_fingerprint: advancedFingerprint,
+    output_fingerprint: advancedOutputFingerprint,
+    decision_fingerprint: advancedDecisionFingerprint,
+    created_at: new Date(Date.parse(asOfTime) + 2_000).toISOString(),
+  }))
+  const transitions = forecastVersions.slice(1).map((candidate, index) => ({
+    baseline_version_id: forecastVersions[index].version_id,
+    candidate_version_id: candidate.version_id,
+    level: 'stable',
+    score: 0.91,
+    metrics: {
+      aligned_point_count: 1,
+      aligned_point_share: 1,
+      mean_horizontal_shift_kilometers: 0.2,
+      maximum_horizontal_shift_kilometers: 0.2,
+      aggregate_confidence_delta: 0,
+      mean_relative_horizontal_uncertainty_change: 0,
+      arrival_comparable: false,
+      arrival_shift_seconds: 0,
+      method_changed: false,
+      policy_changed: false,
+      implementation_changed: false,
+      input_changed: false,
+      output_changed: false,
+    },
+    input_fingerprint: advancedFingerprint,
+    evaluated_at: new Date(
+      Date.parse(effectiveAsOfTimes[index + 1]) + 3_000,
+    ).toISOString(),
+  }))
+
+  return {
+    ...stabilityIntelligence,
+    as_of_times: effectiveAsOfTimes,
+    projections,
+    forecast_versions: forecastVersions,
+    transitions,
+    forecast_analysis: {
+      ...stabilityIntelligence.forecast_analysis,
+      metrics: {
+        ...stabilityIntelligence.forecast_analysis.metrics,
+        version_count: forecastVersions.length,
+        transition_count: transitions.length,
+        comparable_transition_count: transitions.length,
+        longest_stable_run: transitions.length,
+        latest_level: transitions.at(-1)?.level ?? 'stable',
+      },
+    },
+    propagated_confidence: {
+      ...stabilityIntelligence.propagated_confidence,
+      target_node_id: forecastVersions.at(-1)?.version_id ?? 'forecast-v1',
+    },
+    generated_at: new Date(
+      Date.parse(effectiveAsOfTimes.at(-1)) + 4_000,
+    ).toISOString(),
+  }
+}
+
 const emptyWeatherMetric = {
   present_count: 0,
   coverage_ratio: 0,
@@ -1440,6 +1523,22 @@ export function resolveMockResponse({
     })
   }
 
+  if (
+    scenario === 'aircraft-error' &&
+    method === 'GET' &&
+    [
+      '/api/v1/aircraft/{icao24}',
+      '/api/v1/aircraft/{icao24}/trajectory',
+      '/api/v1/aircraft/{icao24}/route-context',
+    ].includes(normalizePath(pathname))
+  ) {
+    return failure(
+      503,
+      'AIRCRAFT_FIXTURE_UNAVAILABLE',
+      'The deterministic aircraft intelligence fixture is unavailable.',
+    )
+  }
+
   if (method === 'GET' && pathname === '/api/v1/aircraft') {
     return success(
       aircraft.map(item => ({
@@ -1548,6 +1647,25 @@ export function resolveMockResponse({
   }
 
   if (
+    scenario === 'airport-error' &&
+    method === 'GET' &&
+    (
+      pathname === '/api/v1/airports/intelligence/ranking' ||
+      [
+        '/api/v1/airports/{icao}/intelligence/overview',
+        '/api/v1/airports/{icao}/intelligence/history',
+        '/api/v1/airports/{icao}/intelligence/trends',
+      ].includes(normalizePath(pathname))
+    )
+  ) {
+    return failure(
+      503,
+      'AIRPORT_INTELLIGENCE_FIXTURE_UNAVAILABLE',
+      'The deterministic Airport Intelligence fixture is unavailable.',
+    )
+  }
+
+  if (
     method === 'GET' &&
     pathname === '/api/v1/airports/intelligence/ranking'
   ) {
@@ -1576,6 +1694,21 @@ export function resolveMockResponse({
   }
 
   if (
+    scenario === 'historical-error' &&
+    method === 'GET' &&
+    (
+      pathname === '/api/v1/historical-intelligence/aggregates/latest' ||
+      pathname === '/api/v1/historical-intelligence/aggregates/history'
+    )
+  ) {
+    return failure(
+      503,
+      'HISTORICAL_INTELLIGENCE_FIXTURE_UNAVAILABLE',
+      'The deterministic Historical Intelligence fixture is unavailable.',
+    )
+  }
+
+  if (
     method === 'GET' &&
     pathname === '/api/v1/historical-intelligence/aggregates/latest'
   ) {
@@ -1593,6 +1726,22 @@ export function resolveMockResponse({
   }
 
   if (
+    scenario === 'intelligence-error' &&
+    method === 'GET' &&
+    [
+      '/api/v1/trajectories/{id}/projection-intelligence',
+      '/api/v1/trajectories/{id}/stability-intelligence',
+      '/api/v1/trajectories/{id}/weather-context',
+    ].includes(normalizePath(pathname))
+  ) {
+    return failure(
+      503,
+      'ADVANCED_INTELLIGENCE_FIXTURE_UNAVAILABLE',
+      'The deterministic advanced intelligence fixture is unavailable.',
+    )
+  }
+
+  if (
     method === 'GET' &&
     normalizePath(pathname) ===
       '/api/v1/trajectories/{id}/projection-intelligence'
@@ -1604,7 +1753,10 @@ export function resolveMockResponse({
     normalizePath(pathname) ===
       '/api/v1/trajectories/{id}/stability-intelligence'
   ) {
-    return success(stabilityIntelligence)
+    const requestedAsOfTimes = (
+      url.searchParams.get('as_of_times') ?? ''
+    ).split(',')
+    return success(stabilityIntelligenceFixture(requestedAsOfTimes))
   }
   if (
     method === 'GET' &&

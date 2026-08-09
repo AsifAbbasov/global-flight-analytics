@@ -7,13 +7,18 @@ import {
   createMockAPIServer,
   openAPIPaths,
   resolveMockResponse,
+  supportedScenarios,
 } from '../apps/web/e2e/mock-api.mjs'
 import {
+  countBrowserScenarios,
+  expectedBrowserScenarioCount,
   expectedPlaywrightVersion,
+  expectedScenarios,
+  productTestFiles,
   validatePlaywrightFoundation,
 } from './verify-playwright-e2e.mjs'
 
-test('repository Playwright foundation contract passes', () => {
+test('repository Playwright product coverage contract passes', () => {
   assert.deepEqual(validatePlaywrightFoundation(process.cwd()), [])
 })
 
@@ -25,8 +30,29 @@ test('mock API mirrors the exact OpenAPI path surface', () => {
   )
 })
 
-test('Playwright version is pinned', () => {
+test('Playwright version and browser scenario count are pinned', () => {
   assert.equal(expectedPlaywrightVersion, '1.62.0')
+  assert.equal(expectedBrowserScenarioCount, 20)
+  assert.equal(countBrowserScenarios(process.cwd()), 20)
+})
+
+test('mock failure scenario surface is explicit and bounded', () => {
+  assert.deepEqual(
+    [...supportedScenarios].sort(),
+    [...expectedScenarios].sort(),
+  )
+  assert.deepEqual(
+    [...supportedScenarios].sort(),
+    [
+      'aircraft-error',
+      'airport-error',
+      'healthy',
+      'historical-error',
+      'intelligence-error',
+      'regions-error',
+      'traffic-error',
+    ],
+  )
 })
 
 test('healthy traffic fixture is deterministic', () => {
@@ -52,8 +78,11 @@ test('core read fixtures preserve typed trajectory and metric envelopes', () => 
   })
   assert.equal(trajectory.status, 200)
   assert.equal(trajectory.body.success, true)
-  assert.equal(trajectory.body.data.id, 'trajectory-azal-101')
+  assert.equal(trajectory.body.data.id, '11111111-1111-4111-8111-111111111111')
   assert.equal(trajectory.body.data.segments.length, 1)
+  assert.equal(trajectory.body.data.identity_basis, 'aircraft_and_start_time')
+  assert.equal(trajectory.body.data.split_reason, 'initial_observation')
+  assert.equal(trajectory.body.data.segments[0].status, 'observed')
 
   const metric = resolveMockResponse({
     method: 'GET',
@@ -115,6 +144,40 @@ test('advanced intelligence fixtures preserve evidence pagination and uncertaint
   assert.equal(airspace.body.data.metrics.temporal_coverage, 1)
 })
 
+test('Stability Intelligence fixture mirrors requested analytical timestamps', () => {
+  const requested = [
+    '2026-08-04T17:59:00.000Z',
+    '2026-08-04T17:59:30.000Z',
+    '2026-08-04T18:00:00.000Z',
+  ]
+  const result = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/stability-intelligence?as_of_times=' +
+      encodeURIComponent(requested.join(',')) +
+      '&duration_seconds=300',
+    scenario: 'healthy',
+  })
+
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.body.data.as_of_times, requested)
+  assert.equal(result.body.data.projections.length, requested.length)
+  assert.equal(result.body.data.forecast_versions.length, requested.length)
+  assert.equal(result.body.data.transitions.length, requested.length - 1)
+  assert.equal(
+    result.body.data.forecast_analysis.metrics.version_count,
+    requested.length,
+  )
+  assert.equal(
+    result.body.data.forecast_analysis.metrics.transition_count,
+    requested.length - 1,
+  )
+  assert.equal(
+    result.body.data.propagated_confidence.target_node_id,
+    'forecast-v3',
+  )
+})
+
 test('Route Intelligence fixtures preserve mutation security and history pagination', () => {
   const requestURL =
     'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/route-intelligence'
@@ -167,6 +230,42 @@ test('Route Intelligence fixtures preserve mutation security and history paginat
   )
 })
 
+test('all deterministic failure scenarios preserve typed 503 envelopes', () => {
+  const cases = [
+    [
+      'aircraft-error',
+      'http://127.0.0.1:8091/api/v1/aircraft/4b1801/trajectory',
+      'AIRCRAFT_FIXTURE_UNAVAILABLE',
+    ],
+    [
+      'airport-error',
+      'http://127.0.0.1:8091/api/v1/airports/intelligence/ranking?days=30&limit=100',
+      'AIRPORT_INTELLIGENCE_FIXTURE_UNAVAILABLE',
+    ],
+    [
+      'historical-error',
+      'http://127.0.0.1:8091/api/v1/historical-intelligence/aggregates/latest?metric=active_aircraft&scope=global&granularity=day',
+      'HISTORICAL_INTELLIGENCE_FIXTURE_UNAVAILABLE',
+    ],
+    [
+      'intelligence-error',
+      'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/projection-intelligence?as_of_time=2026-08-04T18:00:00Z',
+      'ADVANCED_INTELLIGENCE_FIXTURE_UNAVAILABLE',
+    ],
+  ]
+
+  for (const [scenario, requestURL, code] of cases) {
+    const result = resolveMockResponse({
+      method: 'GET',
+      requestURL,
+      scenario,
+    })
+    assert.equal(result.status, 503, scenario)
+    assert.equal(result.body.success, false, scenario)
+    assert.equal(result.body.error.code, code, scenario)
+  }
+})
+
 test('traffic-error fixture preserves the typed error envelope', () => {
   const result = resolveMockResponse({
     method: 'GET',
@@ -193,36 +292,41 @@ test('mock control endpoint changes the live scenario', async () => {
     const control = await fetch(`${origin}/__e2e/scenario`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scenario: 'traffic-error' }),
+      body: JSON.stringify({ scenario: 'intelligence-error' }),
     })
     assert.equal(control.status, 200)
-    assert.equal(mock.getScenario(), 'traffic-error')
+    assert.equal(mock.getScenario(), 'intelligence-error')
 
-    const traffic = await fetch(
-      `${origin}/api/v1/traffic/current?region=world`,
+    const projection = await fetch(
+      `${origin}/api/v1/trajectories/11111111-1111-4111-8111-111111111111/projection-intelligence?as_of_time=2026-08-04T18:00:00Z`,
     )
-    assert.equal(traffic.status, 503)
-    assert.equal((await traffic.json()).success, false)
+    assert.equal(projection.status, 503)
+    assert.equal((await projection.json()).success, false)
   } finally {
     await mock.close()
   }
 })
 
-test('browser tests use semantic locators and no public deployment', () => {
-  const source = [
-    fs.readFileSync(
-      'apps/web/e2e/tests/application-shell.spec.mjs',
-      'utf8',
-    ),
-    fs.readFileSync(
-      'apps/web/e2e/tests/api-recovery.spec.mjs',
-      'utf8',
-    ),
-  ].join('\n')
+test('browser product coverage uses semantic locators and no public deployment', () => {
+  const source = productTestFiles
+    .map(relativePath => fs.readFileSync(relativePath, 'utf8'))
+    .join('\n')
   assert.match(source, /getByRole/)
   assert.doesNotMatch(source, /page\.locator\(/)
   assert.doesNotMatch(source, /data-testid/)
   assert.doesNotMatch(source, /onrender\.com|vercel\.app/)
+})
+
+test('visual regression records evidence without freezing pre-redesign pixels', () => {
+  const source = fs.readFileSync(
+    'apps/web/e2e/tests/visual-regression.spec.mjs',
+    'utf8',
+  )
+  assert.match(source, /testInfo\.attach/)
+  assert.match(source, /page\.screenshot/)
+  assert.match(source, /boundingBox/)
+  assert.match(source, /expectNoHorizontalOverflow/)
+  assert.doesNotMatch(source, /toHaveScreenshot/)
 })
 
 test('CI rejects flaky browser tests and waits for hydration', () => {

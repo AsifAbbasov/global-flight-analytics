@@ -1726,3 +1726,15 @@ pull-request head-SHA binding; reuse of the existing full Backend CI
 `workflow_dispatch`; read-only diagnosis; `cancel-in-progress` handling; the
 prohibition on empty retrigger commits and reduced recovery workflows; and the
 permanent CI/release regression contract.
+
+<!-- PLAYWRIGHT-PRODUCT-COVERAGE-V1:DOCUMENT-INDEX -->
+
+## Document 186 — Playwright Product Coverage Expansion
+
+`186_PLAYWRIGHT_PRODUCT_COVERAGE.md` records the expansion from the original
+four-scenario browser foundation to twenty deterministic Chromium product journeys
+covering aircraft, airport, historical, Projection/Weather/Stability evidence,
+CSV and GeoJSON exports, bounded failure/recovery paths, accessibility semantics,
+desktop/mobile layout regression invariants, and screenshot evidence retained in
+Playwright CI artifacts. Pixel-golden baselines remain intentionally coupled to
+the later visual-redesign closure.

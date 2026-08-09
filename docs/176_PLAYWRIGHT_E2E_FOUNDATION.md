@@ -31,7 +31,7 @@ part of the production API contract.
 
 ## 3. Covered User Scenarios
 
-The foundation still contains four Chromium end-to-end scenarios:
+The original foundation contained four Chromium end-to-end scenarios:
 
 1. the server-rendered application shell publishes a healthy initial aircraft snapshot;
 2. selecting Azerbaijan updates the visible workspace and canonical shareable URL;
@@ -41,6 +41,9 @@ The foundation still contains four Chromium end-to-end scenarios:
 The larger mock surface is a transport-contract foundation, not a false claim that every route
 already has a dedicated browser workflow. Route Intelligence fixture tests verify method,
 credential, record, and history semantics at the mock-contract layer.
+
+The current expanded product-journey coverage is recorded separately in
+`docs/186_PLAYWRIGHT_PRODUCT_COVERAGE.md`.
 
 ## 4. Isolated Playwright Runtime
 
