@@ -247,6 +247,12 @@ jobs:
           node scripts/verify-production-ingestion-reliability.mjs
           npx --yes wrangler@4.94.0 deploy --dry-run --config infra/cloudflare/production-ingestion-reliability/wrangler.jsonc --outdir /tmp/gfa-cloudflare-worker
 
+      - name: Verify required-check recovery hardening
+        run: |
+          node --test scripts/verify-ci-recovery-hardening.test.mjs
+          node scripts/verify-ci-recovery-hardening.mjs
+          bash -n scripts/diagnose-ci-required-check-recovery.sh
+
       - name: Verify production metrics scraper contract
         run: |
           node --test scripts/verify-production-metrics-scrape.test.mjs
