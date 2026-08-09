@@ -32,6 +32,29 @@ test('README presents the implemented product instead of an obsolete first slice
   assert.doesNotMatch(portfolio, /## First Coding Slice/)
 })
 
+test('README records current engineering closure and remaining v1 boundary', async () => {
+  const readme = await text('README.md')
+
+  assert.match(readme, /CURRENT-ENGINEERING-STATUS-2026-08-V1/)
+  assert.match(readme, /PR #68 — Frontend dependency security/)
+  assert.match(readme, /PR #69 — Required-check recovery hardening/)
+  assert.match(readme, /PR #70 — Playwright product coverage/)
+  assert.match(readme, /38 source-backed OpenAPI paths/)
+  assert.match(readme, /twenty deterministic Chromium product journeys/)
+  assert.match(readme, /seven deterministic private mock scenarios/)
+  assert.match(readme, /OPENAPI_CONTRACT_PATHS=38/)
+  assert.match(readme, /PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20/)
+  assert.match(readme, /FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=OPEN/)
+  assert.match(readme, /PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN/)
+  assert.match(readme, /FINAL_EXACT_PRODUCTION_VALIDATION=OPEN/)
+  assert.match(readme, /FINAL_RELEASE_DOCUMENTATION=OPEN/)
+  assert.match(readme, /V1_RELEASE=OPEN/)
+  assert.match(readme, /pixel-golden Playwright screenshot baselines/)
+  assert.match(readme, /final exact-production deployment validation/)
+  assert.match(readme, /`v1\.0\.0`/)
+  assert.doesNotMatch(readme, /GLOBAL_FLIGHT_ANALYTICS_V1=COMPLETE/)
+})
+
 test('root package publishes one release verification and one production smoke entry point', async () => {
   const packageJSON = JSON.parse(await text('package.json'))
   assert.equal(packageJSON.scripts['test:release-contract'], 'node --test scripts/verify-release-portfolio.test.mjs')
