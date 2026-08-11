@@ -18,46 +18,36 @@ test('desktop map-first workspace stays dominant before analytical sections', as
     { waitUntil: 'domcontentloaded' },
   )
 
-  const liveHeading = page.getByRole('heading', {
-    name: 'Current Traffic — World',
-  })
+  const tracker = page.getByRole('region', { name: 'Live flight tracker' })
   const liveMap = page.getByRole('region', {
     name: 'Current traffic map focused on World',
   })
   const trafficWorkspace = page.getByRole('complementary', {
     name: 'Traffic workspace',
   })
-  const airport = page.getByRole('region', { name: 'Airport Intelligence' })
-  const historical = page.getByRole('region', {
-    name: 'Compare persisted analytical evidence',
-  })
+  const mapTools = page.getByRole('navigation', { name: 'Map tools' })
 
-  await expect(liveHeading).toBeVisible()
+  await expect(tracker).toBeVisible()
   await expect(liveMap).toBeVisible()
   await expect(trafficWorkspace).toBeVisible()
-  await expect(airport).toBeVisible()
-  await expect(historical).toBeVisible()
+  await expect(mapTools).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'Airport Intelligence' }),
+  ).toHaveCount(0)
 
-  const headingBox = await liveHeading.boundingBox()
+  const trackerBox = await tracker.boundingBox()
   const mapBox = await liveMap.boundingBox()
   const workspaceBox = await trafficWorkspace.boundingBox()
-  const airportBox = await airport.boundingBox()
-  const historicalBox = await historical.boundingBox()
 
-  expect(headingBox).not.toBeNull()
+  expect(trackerBox).not.toBeNull()
   expect(mapBox).not.toBeNull()
   expect(workspaceBox).not.toBeNull()
-  expect(airportBox).not.toBeNull()
-  expect(historicalBox).not.toBeNull()
 
-  expect(headingBox.y).toBeLessThan(180)
+  expect(trackerBox.y).toBeLessThan(180)
   expect(mapBox.width).toBeGreaterThan(700)
   expect(mapBox.height).toBeGreaterThan(560)
   expect(workspaceBox.width).toBeGreaterThan(320)
-  expect(airportBox.width).toBeGreaterThan(900)
-  expect(historicalBox.width).toBeGreaterThan(900)
-  expect(airportBox.y).toBeGreaterThan(mapBox.y)
-  expect(historicalBox.y).toBeGreaterThan(airportBox.y)
+  expect(mapBox.x).toBeGreaterThanOrEqual(workspaceBox.x + workspaceBox.width - 2)
 
   await expectNoHorizontalOverflow(page)
 
@@ -80,7 +70,7 @@ test('mobile map-first workspace preserves intelligence flow and screenshot evid
   )
 
   await expect(
-    page.getByRole('heading', { name: 'Current Traffic — Azerbaijan' }),
+    page.getByRole('region', { name: 'Live flight tracker' }),
   ).toBeVisible()
   await expect(
     page.getByRole('region', {

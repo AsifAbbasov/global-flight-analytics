@@ -13,6 +13,12 @@ export async function setScenario(request, scenario) {
   expect(response.ok()).toBeTruthy()
 }
 
+export async function waitForMapFirstHydration(page) {
+  await expect(
+    page.getByRole('region', { name: 'Live flight tracker' }),
+  ).toHaveAttribute('data-hydrated', 'true')
+}
+
 export async function readDownloadedText(download) {
   const downloadedPath = await download.path()
   expect(downloadedPath).not.toBeNull()

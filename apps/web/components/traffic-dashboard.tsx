@@ -184,7 +184,11 @@ export function TrafficDashboard({
   }
 
   return (
-    <section className='gfa-tracker-page' aria-label='Live flight tracker'>
+    <section
+      className='gfa-tracker-page'
+      aria-label='Live flight tracker'
+      data-hydrated={statusNow > 0 ? 'true' : 'false'}
+    >
       <aside className='gfa-tracker-sidebar' aria-label='Traffic workspace'>
         <div className='gfa-sidebar-heading'>
           <div>

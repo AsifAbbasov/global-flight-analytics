@@ -75,7 +75,10 @@ test('aircraft deep link restores intelligence and clearing selection returns to
     page.getByText('Selected aircraft', { exact: true }),
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: '4B1801', exact: true }),
+    page
+      .getByRole('tabpanel')
+      .getByText('4B1801', { exact: true })
+      .first(),
   ).toBeVisible()
 
   await page.getByRole('button', { name: 'Clear selection' }).click()

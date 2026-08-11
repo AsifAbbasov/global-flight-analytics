@@ -162,14 +162,15 @@ mutation. The API developer experience includes embedded documentation at
 `/api/docs/openapi.json`, and a generated TypeScript client whose metadata is
 verified against the canonical contract.
 
-Browser verification now contains **twenty deterministic Chromium product
-journeys** and **seven deterministic private mock scenarios**. The suite covers
-the application shell, canonical workspace URLs, mobile navigation, aircraft
-selection and deep links, Airport Intelligence, Historical Intelligence,
-Projection/Weather/Stability evidence, CSV and GeoJSON downloads, bounded
-failure/recovery, accessibility semantics and desktop/mobile layout invariants.
-Full-page screenshot evidence is retained without freezing the pre-redesign UI
-into pixel-golden baselines.
+Browser verification contains **twenty deterministic Chromium product
+journeys** and **seven deterministic private mock scenarios**. On the active
+map-first redesign branch, browser coverage follows the aircraft-only frontend:
+the suite covers the application shell, canonical workspace URLs, mobile
+navigation, aircraft selection and deep links, the explicit no-Airport frontend
+boundary, Historical Intelligence, Projection/Weather/Stability evidence, CSV
+and GeoJSON downloads, bounded failure/recovery, accessibility semantics and
+desktop/mobile layout invariants. Full-page screenshot evidence is retained
+without freezing the in-progress redesign into pixel-golden baselines.
 
 The pull-request quality surface includes Backend CI, Frontend CI, OpenAPI
 Contract, CodeQL, API Load Baseline and Playwright E2E. The root

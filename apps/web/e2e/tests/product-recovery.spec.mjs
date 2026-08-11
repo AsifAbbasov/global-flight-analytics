@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test'
 
-import { setScenario } from './helpers.mjs'
+import {
+  setScenario,
+  waitForMapFirstHydration,
+} from './helpers.mjs'
 
 test('region catalog failure preserves World and recovers on reload', async ({
   page,
@@ -8,14 +11,22 @@ test('region catalog failure preserves World and recovers on reload', async ({
 }) => {
   await setScenario(request, 'regions-error')
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await waitForMapFirstHydration(page)
 
+  await page
+    .getByLabel('Open live data controls')
+    .click()
+  const liveControls = page.getByRole('region', {
+    name: 'Live traffic data controls',
+  })
+  await expect(liveControls).toBeVisible()
   await expect(
-    page.getByText(
+    liveControls.getByText(
       'The region list is temporarily unavailable. World view remains available; reload the page to retry.',
       { exact: true },
     ),
   ).toBeVisible()
-  const region = page.getByRole('combobox', { name: 'Region' })
+  const region = page.getByRole('combobox', { name: 'Traffic region' })
   await expect(region).toHaveValue('world')
 
   await setScenario(request, 'healthy')
@@ -64,26 +75,32 @@ test('aircraft profile route context and trajectory recover independently', asyn
   await expect(page.getByText('4K-AZ01', { exact: true })).toBeVisible()
 })
 
-test('Airport Intelligence ranking recovers without reloading the product shell', async ({
+test('aircraft-only frontend does not issue hidden Airport Intelligence requests', async ({
   page,
   request,
 }) => {
+  const airportRequests = []
+  page.on('request', browserRequest => {
+    if (browserRequest.url().includes('/api/v1/airports/intelligence')) {
+      airportRequests.push(browserRequest.url())
+    }
+  })
+
   await setScenario(request, 'airport-error')
-  await page.goto('/#airport-intelligence', {
+  await page.goto('/?region=world&view=aircraft#live-traffic', {
     waitUntil: 'domcontentloaded',
   })
 
-  const workspace = page.getByRole('region', { name: 'Airport Intelligence' })
   await expect(
-    workspace.getByText('Analytics request failed', { exact: true }),
+    page.getByRole('region', { name: 'Live flight tracker' }),
   ).toBeVisible()
-
-  await setScenario(request, 'healthy')
-  await workspace.getByRole('button', { name: 'Retry request' }).click()
-
   await expect(
-    workspace.getByRole('button', { name: /UBBB/i }),
+    page.getByRole('heading', { name: 'Aircraft Explorer' }),
   ).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'Airport Intelligence' }),
+  ).toHaveCount(0)
+  expect(airportRequests).toEqual([])
 })
 
 test('Historical Intelligence latest aggregate recovers through its visible Retry action', async ({

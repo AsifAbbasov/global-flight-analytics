@@ -9,7 +9,7 @@ test.beforeEach(async ({ request }) => {
   await setScenario(request, 'healthy')
 })
 
-test('skip links landmarks and major research sections remain keyboard reachable', async ({
+test('skip links landmarks and map-first research controls remain keyboard reachable', async ({
   page,
 }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
@@ -24,16 +24,24 @@ test('skip links landmarks and major research sections remain keyboard reachable
 
   await expect(page.getByRole('main')).toBeVisible()
   await expect(
-    page.getByRole('navigation', { name: 'Primary navigation' }),
+    page.getByRole('navigation', { name: 'Tracker tools' }),
   ).toBeVisible()
   await expect(
-    page.getByRole('region', { name: 'Airport Intelligence' }),
+    page.getByRole('complementary', { name: 'Traffic workspace' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('navigation', { name: 'Map tools' }),
   ).toBeVisible()
   await expect(
     page.getByRole('region', {
-      name: 'Compare persisted analytical evidence',
+      name: 'Current traffic map focused on World',
     }),
   ).toBeVisible()
+
+  const liveData = page.getByLabel('Open live data controls')
+  await liveData.focus()
+  await expect(liveData).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(
     page.getByRole('region', { name: 'Live traffic data controls' }),
   ).toBeVisible()
@@ -53,13 +61,16 @@ test('mobile navigation and analytical controls keep accessible names without ov
     name: 'Mobile primary navigation',
   })
   await expect(
-    navigation.getByRole('link', { name: 'Airport Intelligence' }),
+    navigation.getByRole('link', { name: 'Live map' }),
   ).toBeVisible()
   await expect(
-    navigation.getByRole('link', { name: 'Historical Analytics' }),
+    navigation.getByRole('link', { name: 'Analytics' }),
   ).toBeVisible()
   await expect(
-    navigation.getByRole('link', { name: 'Live workspace' }),
+    navigation.getByRole('link', { name: 'History' }),
+  ).toBeVisible()
+  await expect(
+    navigation.getByRole('link', { name: 'About' }),
   ).toBeVisible()
 
   await expect(

@@ -1,6 +1,8 @@
 /* global process */
 import { expect, test } from '@playwright/test'
 
+import { waitForMapFirstHydration } from './helpers.mjs'
+
 const mockAPIOrigin =
   process.env.PLAYWRIGHT_API_ORIGIN ?? 'http://127.0.0.1:8091'
 
@@ -17,30 +19,31 @@ test('traffic failure preserves the map-first shell and recovers through Retry',
 }) => {
   await setScenario(request, 'traffic-error')
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await waitForMapFirstHydration(page)
 
   await expect(
     page.getByText('Initial API snapshot unavailable', { exact: true }),
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Current Traffic — World' }),
+    page.getByRole('region', { name: 'Live flight tracker' }),
   ).toBeVisible()
 
-  const liveControls = page.getByRole('region', {
-    name: 'Live traffic data controls',
-  })
-  const retry = liveControls.getByRole('button', {
-    name: 'Retry traffic request',
-  })
-  await expect(retry).toBeVisible()
+  const alert = page.getByRole('alert')
   await expect(
-    liveControls.getByText('Traffic snapshot unavailable', {
-      exact: true,
-    }),
+    alert.getByText('Live data unavailable', { exact: true }),
   ).toBeVisible()
+  const retry = alert.getByRole('button', { name: 'Retry' })
+  await expect(retry).toBeVisible()
 
   await setScenario(request, 'healthy')
   await retry.click()
 
+  await page
+    .getByLabel('Open live data controls')
+    .click()
+  const liveControls = page.getByRole('region', {
+    name: 'Live traffic data controls',
+  })
   await expect(
     liveControls.getByText('Snapshot current', { exact: true }),
   ).toBeVisible()
