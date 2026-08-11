@@ -1,3 +1,7 @@
+// FRONTEND_MAP_FIRST_REDESIGN_V1
+// FRONTEND_FLIGHT_TRACKER_REFERENCE_V2
+// FRONTEND_FLIGHT_TRACKER_CLEAN_REBUILD_V1
+// FRONTEND_RUNTIME_STABILIZATION_V2
 'use client'
 
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -116,6 +120,37 @@ export function TrafficMap({
       markers.clear()
       map.remove()
       mapRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+    const container = mapContainerRef.current
+
+    if (!map || !container) {
+      return
+    }
+
+    const resizeMap = () => {
+      map.resize()
+    }
+
+    resizeMap()
+
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(resizeMap)
+    const animationFrameID =
+      window.requestAnimationFrame(resizeMap)
+
+    resizeObserver?.observe(container)
+    map.once('load', resizeMap)
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameID)
+      resizeObserver?.disconnect()
+      map.off('load', resizeMap)
     }
   }, [])
 
@@ -278,8 +313,8 @@ export function TrafficMap({
     }
   }, [aircraft, selectedAircraftICAO24])
 
-  return <div className='relative'>
-    <div className='h-[600px] w-full overflow-hidden rounded-xl' ref={mapContainerRef} aria-label={`Current traffic map focused on ${region.name}`} data-region-code={region.code}/>
+  return <div className='gfa-tracker-map-shell'>
+    <div className='gfa-tracker-map-canvas' ref={mapContainerRef} role='region' aria-label={`Current traffic map focused on ${region.name}`} data-region-code={region.code}/>
     {projection?.points.length?<div className='pointer-events-none absolute bottom-3 left-3 rounded-lg border border-violet-300/30 bg-slate-950/90 px-3 py-2 text-xs text-slate-200 shadow-xl'><p><span className='mr-2 inline-block h-0.5 w-5 border-t-2 border-dashed border-violet-300 align-middle'/>Projected path</p><p className='mt-1'><span className='mr-2 inline-block h-3 w-5 rounded border border-violet-300/50 bg-violet-400/20 align-middle'/>Horizontal uncertainty</p></div>:null}
   </div>
 }
@@ -480,9 +515,10 @@ function createMarkerRecord(
   )
 
   const icon = document.createElement('span')
-  icon.textContent = '✈'
-  icon.style.display = 'inline-block'
-  icon.style.fontSize = '18px'
+  icon.innerHTML = "<svg viewBox='0 0 24 24' aria-hidden='true' focusable='false'><path d='M12 2.25c.61 0 .98.45.98 1.05v5.58l6.62 3.59v1.67l-6.62-1.8v4.8l2 1.65v1.11L12 19l-2.98.9v-1.11l2-1.65v-4.8l-6.62 1.8v-1.67l6.62-3.59V3.3c0-.6.37-1.05.98-1.05Z'/></svg>"
+  icon.style.display = 'grid'
+  icon.style.width = '16px'
+  icon.style.height = '16px'
   icon.style.lineHeight = '1'
 
   const label = document.createElement('span')
@@ -531,9 +567,9 @@ function updateMarkerRecord(
     isSelected ? 'true' : 'false'
   )
   record.root.className = isSelected
-    ? 'flex items-center gap-2 rounded-full border border-amber-300 bg-amber-300 px-3 py-1 text-xs font-semibold text-slate-950 shadow-2xl ring-4 ring-amber-300/25'
-    : 'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
-  record.icon.style.color = isSelected ? '#0f172a' : '#38bdf8'
+    ? 'gfa-aircraft-marker is-selected'
+    : 'gfa-aircraft-marker'
+  record.icon.style.color = ''
   record.icon.style.transform =
     `rotate(${normalizeHeading(item.heading_degrees)}deg)`
   record.label.textContent = name
@@ -547,9 +583,9 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
   container.style.maxWidth = '260px'
   container.style.padding = '14px'
   container.style.border =
-    '1px solid rgba(56, 189, 248, 0.45)'
-  container.style.borderRadius = '14px'
-  container.style.background = 'rgba(15, 23, 42, 0.98)'
+    '1px solid rgba(0, 0, 0, 0.28)'
+  container.style.borderRadius = '4px'
+  container.style.background = '#25282c'
   container.style.color = '#e5e7eb'
   container.style.fontFamily = 'Arial, Helvetica, sans-serif'
   container.style.fontSize = '13px'
@@ -562,7 +598,7 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
     item.callsign.trim() || 'Unknown callsign'
   title.style.fontSize = '16px'
   title.style.fontWeight = '700'
-  title.style.color = '#38bdf8'
+  title.style.color = '#e3b021'
 
   const details = document.createElement('div')
   details.style.marginTop = '10px'

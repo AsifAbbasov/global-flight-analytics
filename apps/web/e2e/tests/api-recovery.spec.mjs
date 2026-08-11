@@ -11,7 +11,7 @@ async function setScenario(request, scenario) {
   expect(response.ok()).toBeTruthy()
 }
 
-test('traffic failure preserves the shell and recovers through Retry', async ({
+test('traffic failure preserves the map-first shell and recovers through Retry', async ({
   page,
   request,
 }) => {
@@ -22,8 +22,8 @@ test('traffic failure preserves the shell and recovers through Retry', async ({
     page.getByText('Initial API snapshot unavailable', { exact: true }),
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { level: 1 }),
-  ).toContainText('Observe aviation data.')
+    page.getByRole('heading', { level: 1, name: 'Current Traffic — World' }),
+  ).toBeVisible()
 
   const liveControls = page.getByRole('region', {
     name: 'Live traffic data controls',

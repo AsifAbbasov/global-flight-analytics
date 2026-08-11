@@ -15,20 +15,18 @@ test.beforeEach(async ({ request }) => {
   await setScenario(request, 'healthy')
 })
 
-test('renders an OpenAPI-backed server snapshot', async ({ page }) => {
+test('renders an OpenAPI-backed server snapshot in the map-first shell', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    'Observe aviation data.',
-  )
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Current Traffic — World' }),
+  ).toBeVisible()
   await expect(
     page.getByText('Initial snapshot ready', { exact: true }),
   ).toBeVisible()
-
-  const initialAircraftCard = page
-    .getByRole('article')
-    .filter({ hasText: 'Initial aircraft' })
-  await expect(initialAircraftCard).toContainText('2')
+  await expect(
+    page.getByRole('banner').getByText('2 aircraft', { exact: true }),
+  ).toBeVisible()
 
   const region = page.getByRole('combobox', { name: 'Region' })
   await expect(region).toHaveValue('world')
@@ -37,7 +35,7 @@ test('renders an OpenAPI-backed server snapshot', async ({ page }) => {
   await expect(region).toContainText('Turkey')
 
   await expect(
-    page.getByRole('heading', { name: 'Current Traffic — World' }),
+    page.getByRole('region', { name: 'Current traffic map focused on World' }),
   ).toBeVisible()
   await expect(
     page

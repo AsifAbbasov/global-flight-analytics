@@ -187,13 +187,57 @@ FRONTEND_DEPENDENCY_SECURITY=CLOSED
 RELEASE_VERIFICATION=PASS
 ```
 
+<!-- FRONTEND-MAP-FIRST-REDESIGN-2026-08-V1 -->
+## Frontend Map-First Redesign — Current Branch Status
+
+The active frontend redesign is converting the existing analytical interface into
+an aircraft-first, map-first research experience while preserving backend-owned
+analytical semantics and existing persistence contracts.
+
+Current feature-branch work includes:
+
+- a clean map-first application shell with a dedicated Aircraft Explorer sidebar;
+- an intentionally aircraft-only primary frontend scope: Airport Intelligence
+  navigation and workspace mounting are temporarily removed from the redesign UI,
+  while the backend, API implementation and repository documentation remain intact
+  for later product reintegration;
+- a full-stage MapLibre workspace with container-resize observation so the map
+  resizes with the product shell instead of rendering as a partial strip;
+- deterministic live-traffic hydration: initial query timestamps are derived from
+  observation evidence, absolute timestamps are rendered in UTC, and the live age
+  clock starts after hydration through `requestAnimationFrame`;
+- lazy mounting for hidden analytical drawers so closed workspaces do not issue
+  their data requests merely because they exist in the page structure;
+- one-open-at-a-time behavior across all right-side surfaces: Live Data, Traffic
+  Analysis, Analytics Overview and Historical Workspace now close the previously
+  active right-side surface before opening the next one;
+- removal of the stale Airport Intelligence map-tool control from the current
+  aircraft-only frontend surface.
+
+Latest local validation for this feature-branch increment:
+
+```text
+FRONTEND_TESTS=88/88_PASS
+FRONTEND_LINT=PASS
+FRONTEND_TYPECHECK=PASS
+AIRCRAFT_ONLY_FRONTEND_SCOPE=PASS
+MAP_STAGE_FULL_HEIGHT=PASS
+RIGHT_SIDEBAR_POLICY=ONE_OPEN_AT_A_TIME
+```
+
+These markers describe local feature-branch evidence only. They do not replace
+the final pixel-golden Playwright baseline, complete release verification,
+exact-production deployment validation or the final `v1.0.0` release closure.
+
 ## Remaining Portfolio v1.0.0 Work
 
 The heavy backend, persistence, analytical, API, production-reliability and
-functional browser work is closed for the current portfolio scope. The
-remaining release sequence is intentionally product-facing:
+functional browser work is closed for the current portfolio scope. The map-first
+frontend redesign is now in progress: its current runtime and interaction
+hardening is locally validated, while final visual polish and release validation
+remain open. The remaining release sequence is intentionally product-facing:
 
-1. complete the **Frontend Visual and Interaction Redesign**;
+1. finish visual polish and interaction review for the **Frontend Visual and Interaction Redesign**;
 2. add final **pixel-golden Playwright screenshot baselines** after the
    redesigned interface is stable;
 3. run the complete release gate against the redesign;
@@ -205,7 +249,7 @@ No new microservice, Kubernetes, Redis, Kafka or separate backend topology is
 required for this release boundary.
 
 ```text
-FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=OPEN
+FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IN_PROGRESS
 PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
 FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
 FINAL_RELEASE_DOCUMENTATION=OPEN

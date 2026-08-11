@@ -36,6 +36,10 @@ export function useCurrentTraffic(
       : normalizeLiveTrafficRefreshInterval(
           options.refreshIntervalMilliseconds
         )
+  const initialDataUpdatedAt =
+    options.initialData === undefined
+      ? undefined
+      : resolveInitialTrafficUpdatedAt(options.initialData)
 
   return useQuery({
     queryKey: trafficQueryKeys.current(normalizedRegionCode),
@@ -45,10 +49,26 @@ export function useCurrentTraffic(
       }),
     enabled: normalizedRegionCode.length > 0,
     initialData: options.initialData,
+    initialDataUpdatedAt,
     refetchInterval: refreshIntervalMilliseconds,
     refetchIntervalInBackground: false,
     retry: shouldRetryTrafficQuery,
   })
+}
+
+function resolveInitialTrafficUpdatedAt(
+  aircraft: TrafficAircraft[]
+): number {
+  let latestTimestamp = 0
+
+  for (const item of aircraft) {
+    const timestamp = Date.parse(item.observed_at)
+    if (Number.isFinite(timestamp) && timestamp > latestTimestamp) {
+      latestTimestamp = timestamp
+    }
+  }
+
+  return latestTimestamp
 }
 
 function shouldRetryTrafficQuery(
