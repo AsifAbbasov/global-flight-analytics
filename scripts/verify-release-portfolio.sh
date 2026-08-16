@@ -63,7 +63,7 @@ require_literal README.md 'Visual and interaction redesign remains a separate pr
   'README remaining frontend redesign boundary is missing'
 require_literal README.md '<!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->' \
   'README current engineering status marker is missing'
-require_literal README.md 'OPENAPI_CONTRACT_PATHS=38' \
+require_literal README.md 'OPENAPI_CONTRACT_PATHS=39' \
   'README current OpenAPI path count is missing'
 require_literal README.md 'PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20' \
   'README current Playwright browser scenario count is missing'

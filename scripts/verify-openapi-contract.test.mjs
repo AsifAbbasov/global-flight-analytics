@@ -19,12 +19,15 @@ test('repository OpenAPI contract passes', () => {
     ['scripts/verify-openapi-contract.mjs'],
     { encoding: 'utf8' },
   )
+  assert.match(output, /OPENAPI_CONTRACT_PATHS=39/)
+  assert.match(output, /OPENAPI_PUBLIC_READ_OPERATIONS=38/)
+  assert.match(output, /OPENAPI_PROTECTED_MUTATION_OPERATIONS=1/)
   assert.match(output, /OPENAPI_CONTRACT=PASS/)
 })
 
-test('contract exposes 37 reads and one protected mutation across 38 paths', () => {
+test('contract exposes 38 reads and one protected mutation across 39 paths', () => {
   const spec = loadSpec()
-  assert.equal(Object.keys(spec.paths).length, 38)
+  assert.equal(Object.keys(spec.paths).length, 39)
   assert.deepEqual(
     Object.keys(spec.paths).sort(),
     [
@@ -242,4 +245,20 @@ test('operation identifiers must remain unique', () => {
       error.includes('duplicate operationId'),
     ),
   )
+})
+
+test('live traffic query contract remains bounded', () => {
+  const spec = loadSpec()
+  const operation = spec.paths['/api/v1/traffic/live'].get
+  assert.equal(operation.operationId, 'getLiveTraffic')
+  const parameters = new Map(operation.parameters.map((parameter) => [parameter.name, parameter]))
+  assert.deepEqual(parameters.get('limit').schema, {
+    type: 'integer',
+    minimum: 1,
+    maximum: 5000,
+    default: 1500,
+  })
+  assert.equal(parameters.get('selected').required, false)
+  assert.deepEqual(spec.components.schemas.LiveTrafficItem.properties.altitude_m.type, ['number', 'null'])
+  assert.deepEqual(spec.components.schemas.LiveTrafficItem.properties.on_ground.type, ['boolean', 'null'])
 })

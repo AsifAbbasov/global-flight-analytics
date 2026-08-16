@@ -1738,3 +1738,9 @@ CSV and GeoJSON exports, bounded failure/recovery paths, accessibility semantics
 desktop/mobile layout regression invariants, and screenshot evidence retained in
 Playwright CI artifacts. Pixel-golden baselines remain intentionally coupled to
 the later visual-redesign closure.
+
+<!-- REALTIME-FLIGHT-DATA-FOUNDATION:DOCUMENT-INDEX -->
+
+## Document 187 — Realtime Flight Data Foundation
+
+`187_REALTIME_FLIGHT_DATA_FOUNDATION.md` records the post-FR24-audit separation of the realtime current-state lane from durable PostgreSQL sampling, the bounded in-memory latest-state store, compact live snapshot API, selected-aircraft and bounding-box semantics, source-policy fail-closed rules, zero-cost constraints, preserved analytics/history pipeline, and the explicit boundary that rapid production provider activation remains open until a policy-compliant free source can support it.

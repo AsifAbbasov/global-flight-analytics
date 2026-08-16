@@ -19,13 +19,14 @@ const (
 )
 
 const (
-	trafficProviderEnvironmentVariable        = "TRAFFIC_PROVIDER"
-	openSkyBaseURLEnvironmentVariable         = "OPENSKY_BASE_URL"
-	openSkyTokenURLEnvironmentVariable        = "OPENSKY_TOKEN_URL"
-	openSkyClientIDEnvironmentVariable        = "OPENSKY_CLIENT_ID"
-	openSkyClientSecretEnvironmentVariable    = "OPENSKY_CLIENT_SECRET"
-	openSkyTimeoutEnvironmentVariable         = "OPENSKY_TIMEOUT"
-	openSkyPollingIntervalEnvironmentVariable = "OPENSKY_POLLING_INTERVAL"
+	trafficProviderEnvironmentVariable                      = "TRAFFIC_PROVIDER"
+	openSkyBaseURLEnvironmentVariable                       = "OPENSKY_BASE_URL"
+	openSkyTokenURLEnvironmentVariable                      = "OPENSKY_TOKEN_URL"
+	openSkyClientIDEnvironmentVariable                      = "OPENSKY_CLIENT_ID"
+	openSkyClientSecretEnvironmentVariable                  = "OPENSKY_CLIENT_SECRET"
+	openSkyTimeoutEnvironmentVariable                       = "OPENSKY_TIMEOUT"
+	openSkyPollingIntervalEnvironmentVariable               = "OPENSKY_POLLING_INTERVAL"
+	openSkyOperationalAgreementConfirmedEnvironmentVariable = "OPENSKY_OPERATIONAL_AGREEMENT_CONFIRMED"
 )
 
 var (
@@ -35,17 +36,24 @@ var (
 	ErrOpenSkyCredentialPairRequired = errors.New(
 		"OpenSky client id and client secret must be configured together",
 	)
+	ErrOpenSkyOperationalAgreementRequired = errors.New(
+		"OpenSky operational REST use requires a prior written agreement",
+	)
+	ErrOpenSkyOperationalAgreementInvalid = errors.New(
+		"OPENSKY_OPERATIONAL_AGREEMENT_CONFIRMED must be true or false",
+	)
 )
 
 type TrafficProviderConfig struct {
 	Provider TrafficProvider
 
-	OpenSkyBaseURL         string
-	OpenSkyTokenURL        string
-	OpenSkyClientID        string
-	OpenSkyClientSecret    string
-	OpenSkyTimeout         time.Duration
-	OpenSkyPollingInterval time.Duration
+	OpenSkyBaseURL                       string
+	OpenSkyTokenURL                      string
+	OpenSkyClientID                      string
+	OpenSkyClientSecret                  string
+	OpenSkyTimeout                       time.Duration
+	OpenSkyPollingInterval               time.Duration
+	OpenSkyOperationalAgreementConfirmed bool
 }
 
 func LoadTrafficProviderConfig() (
@@ -67,6 +75,22 @@ func LoadTrafficProviderConfig() (
 			"%w: %q",
 			ErrTrafficProviderInvalid,
 			provider,
+		)
+	}
+
+	openSkyOperationalAgreementConfirmed, err := trafficProviderOptionalBoolean(
+		openSkyOperationalAgreementConfirmedEnvironmentVariable,
+		false,
+	)
+	if err != nil {
+		return TrafficProviderConfig{}, err
+	}
+	if (provider == TrafficProviderOpenSky || provider == TrafficProviderAuto) &&
+		!openSkyOperationalAgreementConfirmed {
+		return TrafficProviderConfig{}, fmt.Errorf(
+			"%w: set %s=true only after the required written agreement is confirmed",
+			ErrOpenSkyOperationalAgreementRequired,
+			openSkyOperationalAgreementConfirmedEnvironmentVariable,
 		)
 	}
 
@@ -110,13 +134,14 @@ func LoadTrafficProviderConfig() (
 	)
 
 	result := TrafficProviderConfig{
-		Provider:               provider,
-		OpenSkyBaseURL:         baseURL,
-		OpenSkyTokenURL:        tokenURL,
-		OpenSkyClientID:        clientID,
-		OpenSkyClientSecret:    clientSecret,
-		OpenSkyTimeout:         timeout,
-		OpenSkyPollingInterval: pollingInterval,
+		Provider:                             provider,
+		OpenSkyBaseURL:                       baseURL,
+		OpenSkyTokenURL:                      tokenURL,
+		OpenSkyClientID:                      clientID,
+		OpenSkyClientSecret:                  clientSecret,
+		OpenSkyTimeout:                       timeout,
+		OpenSkyPollingInterval:               pollingInterval,
+		OpenSkyOperationalAgreementConfirmed: openSkyOperationalAgreementConfirmed,
 	}
 
 	openSkyConfig := opensky.DefaultConfig()
@@ -144,6 +169,29 @@ func trafficProviderOptionalTrimmedString(
 		return fallback
 	}
 	return value
+}
+
+func trafficProviderOptionalBoolean(
+	name string,
+	fallback bool,
+) (bool, error) {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return fallback, nil
+	}
+
+	switch strings.ToLower(value) {
+	case "true":
+		return true, nil
+	case "false":
+		return false, nil
+	default:
+		return false, fmt.Errorf(
+			"%w: %q",
+			ErrOpenSkyOperationalAgreementInvalid,
+			value,
+		)
+	}
 }
 
 func trafficProviderOptionalPositiveDuration(

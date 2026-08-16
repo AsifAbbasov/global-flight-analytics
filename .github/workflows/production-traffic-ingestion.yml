@@ -31,6 +31,9 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.PRODUCTION_INGESTION_DATABASE_URL }}
       DATABASE_CONNECT_TIMEOUT: 10s
+      # Durable zero-cost sampling remains on Airplanes.live. Do not switch this to
+      # OpenSky or auto merely to bypass an outage: OpenSky operational REST use is
+      # fail-closed until the required written agreement is confirmed.
       TRAFFIC_PROVIDER: airplanes.live
       TRAFFIC_INGESTION_LATITUDE: '40.4093'
       TRAFFIC_INGESTION_LONGITUDE: '49.8671'

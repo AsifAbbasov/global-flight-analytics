@@ -155,8 +155,8 @@ RELEASE_VERIFICATION=PASS
 <!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->
 ## Current Engineering Status
 
-The current repository contract exposes **38 source-backed OpenAPI paths**:
-37 unauthenticated public read operations and one protected Route Intelligence
+The current repository contract exposes **39 source-backed OpenAPI paths**:
+38 unauthenticated public read operations and one protected Route Intelligence
 mutation. The API developer experience includes embedded documentation at
 `/api/docs`, the embedded source-backed specification at
 `/api/docs/openapi.json`, and a generated TypeScript client whose metadata is
@@ -177,8 +177,8 @@ Contract, CodeQL, API Load Baseline and Playwright E2E. The root
 `pnpm verify:release` command remains the complete local release gate.
 
 ```text
-OPENAPI_CONTRACT_PATHS=38
-OPENAPI_PUBLIC_READ_OPERATIONS=37
+OPENAPI_CONTRACT_PATHS=39
+OPENAPI_PUBLIC_READ_OPERATIONS=38
 OPENAPI_PROTECTED_MUTATION_OPERATIONS=1
 PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20
 PLAYWRIGHT_E2E_MOCK_SCENARIOS=7
@@ -989,3 +989,35 @@ regression tests, and permanent Backend Continuous Integration audit enforcement
 The production API remains the only Render service. A serialized GitHub Actions workflow runs the existing ingestion pipeline in explicit one-shot mode every ten minutes and verifies that the public traffic endpoint contains observations no older than thirty minutes.
 
 `PRODUCTION_INGESTION_DATABASE_URL` is stored only as a GitHub Actions repository secret. Scheduled execution is best effort and does not imply continuous, operational or safety-critical tracking. See `docs/173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md`.
+
+<!-- REALTIME-FLIGHT-DATA-FOUNDATION-V1 -->
+## Realtime Flight Data Foundation
+
+The original production traffic path remains the durable research lane: governed provider ingestion samples observations into PostgreSQL for trajectories, history and analytics. The FR24 architecture audit showed that a smooth live map needs a separate hot path, so the backend now also owns a bounded in-memory current-state engine and a compact public `GET /api/v1/traffic/live` snapshot contract.
+
+```text
+governed provider -> normalization -> current-state store -> live snapshot -> browser interpolation
+                                      \
+                                       -> sampled observations -> PostgreSQL -> analytics/history
+```
+
+The current-state store keeps the latest state per ICAO24, preserves nullable telemetry and source provenance, applies deterministic deduplication, time-to-live stale eviction and bounded capacity, exposes server time plus a monotonically increasing sequence, supports geographic bounding boxes, and keeps explicitly selected aircraft in the response even when they move outside the visible box. Provider acquisition is centralized; browsers read current state rather than multiplying upstream provider calls.
+
+PostgreSQL is deliberately not used as per-frame realtime transport, and browser interpolation is display-only estimated motion rather than measured aviation evidence. The existing durable scheduler remains active and no animation frame is persisted as an observation.
+
+The zero-cost boundary is also explicit. No Redis, Kafka, Kubernetes, paid API or new microservice is required. Airplanes.live remains the configured durable production provider, but its free quota is not treated as permission for a continuous 5–10 second production poll. OpenSky provider modes fail closed unless the required written operational agreement has actually been confirmed with `OPENSKY_OPERATIONAL_AGREEMENT_CONFIRMED=true`. Future community providers remain behind the existing adapter and are activated only after their operational-use requirements are accepted.
+
+This gives GFA a faster and more scalable live-data foundation while preserving the deeper analytical architecture. Denser future policy-compliant sampling can improve trajectory continuity, flight-phase detection, route inference, density and freshness analysis, but the system never claims greater sensor accuracy than its sources provide.
+
+Scoped local verification completed on the active feature branch: the full Go test suite, OpenAPI contract and route inventory, embedded developer documentation, generated TypeScript client, durable ingestion and reliability contracts, repository governance, release portfolio contract, and diff integrity all passed. The complete release gate remains deferred only because unrelated frontend redesign work already existed in the working tree before this increment; rapid live-provider production activation and frontend realtime integration remain separate open stages.
+
+```text
+REALTIME_CURRENT_STATE_FOUNDATION=CLOSED
+LIVE_SNAPSHOT_CONTRACT=CLOSED
+ZERO_COST_LIVE_SOURCE_POLICY=CLOSED
+DURABLE_SAMPLING_BOUNDARY=PRESERVED
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=OPEN
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+Detailed boundaries and activation constraints are recorded in [`docs/187_REALTIME_FLIGHT_DATA_FOUNDATION.md`](docs/187_REALTIME_FLIGHT_DATA_FOUNDATION.md).

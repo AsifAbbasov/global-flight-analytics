@@ -971,3 +971,27 @@ Status: IMPLEMENTED PENDING PROTECTED-MAIN AND RUNTIME ACTIVATION EVIDENCE.
 The existing provider, canonical processing, quality, trajectory and PostgreSQL path now has a bounded `--once` command mode and a serialized free scheduled workflow. Source closure requires the production ingestion contract tests. Runtime closure additionally requires the repository database secret, a successful manual workflow dispatch, fresh public traffic evidence and a later scheduled run that advances `observed_at`.
 
 This increment does not add a paid Render worker and does not claim guaranteed real-time or operational surveillance continuity.
+
+<!-- REALTIME-FLIGHT-DATA-FOUNDATION:IMPLEMENTATION-SEQUENCE -->
+
+## Post-FR24 Architecture Increment — Realtime Flight Data Foundation
+
+The completed analytical and persistence stages remain authoritative. The post-audit realtime sequence extends them without reopening Stage 13 or Stage 14:
+
+```text
+source usage policy
+↓
+existing provider abstraction
+↓
+normalized current-state engine
+↓
+GET /api/v1/traffic/live
+↓
+policy-compliant rapid provider activation
+↓
+durable observation sampling
+↓
+frontend GPU rendering and interpolation
+```
+
+The current increment closes the source-policy gate, current-state engine and live snapshot contract while preserving the existing durable scheduler. Rapid production provider activation and frontend realtime integration remain later steps because the zero-cost provider quota and operational-use boundaries must be respected.

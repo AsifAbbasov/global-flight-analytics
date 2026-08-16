@@ -6,6 +6,7 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/security/internalapikey"
+	livetraffic "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/live"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -34,6 +35,7 @@ type Config struct {
 	Logger                *slog.Logger
 	OpenMeteoTimeout      time.Duration
 	ObservabilityRegistry *observability.Registry
+	LiveTrafficStore      *livetraffic.Store
 	MetricsKeyDigest      internalapikey.Digest
 	MetricsKeyConfigured  bool
 	Protection            ProtectionConfig
