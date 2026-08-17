@@ -248,7 +248,7 @@ func TestAuditRepositoryDetectsOutdatedGoToolchain(t *testing.T) {
 	}
 
 	failures := auditRepository(root, &bytes.Buffer{})
-	if !containsFailureDetail(failures, "go 1.26.5") {
+	if !containsFailureDetail(failures, "go 1.26.6") {
 		t.Fatalf("outdated Go toolchain was not detected: %#v", failures)
 	}
 }
@@ -537,8 +537,8 @@ func TestRunReturnsFailureForMissingDocument(t *testing.T) {
 func createCompleteFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	writeFixtureFile(t, root, "apps/api/go.mod", "module example.com/stage14\n\ngo 1.26.5\n")
-	writeFixtureFile(t, root, "apps/api/Dockerfile", "ARG GO_IMAGE=golang:1.26.5-alpine3.24\n")
+	writeFixtureFile(t, root, "apps/api/go.mod", "module example.com/stage14\n\ngo 1.26.6\n")
+	writeFixtureFile(t, root, "apps/api/Dockerfile", "ARG GO_IMAGE=golang:1.26.6-alpine3.24\n")
 	writeFixtureFile(t, root, "apps/web/package.json", "{}\n")
 	writeFixtureFile(
 		t,
@@ -635,7 +635,7 @@ func rollbackMigrationTransaction() { ctx, cancel := context.WithTimeout(context
 		root,
 		"scripts/verify-stage-14-completion.sh",
 		strings.Join([]string{
-			"GOTOOLCHAIN=go1.26.5+auto",
+			"GOTOOLCHAIN=go1.26.6+auto",
 			"go env GOVERSION",
 			"STAGE_14_GO_TOOLCHAIN_AUDIT=PASS",
 			"scripts/verify-backend-final-correctness.sh",

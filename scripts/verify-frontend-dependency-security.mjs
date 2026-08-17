@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
-export const MINIMUM_SAFE_NANOID_VERSION = "3.3.17";
-export const PINNED_NANOID_VERSION = "3.3.17";
+export const MINIMUM_SAFE_NANOID_VERSION = "3.3.18";
+export const PINNED_NANOID_VERSION = "3.3.18";
 export const MINIMUM_SAFE_POSTCSS_VERSION = "8.5.23";
 export const PINNED_POSTCSS_VERSION = "8.5.23";
 export const MINIMUM_SAFE_SHARP_VERSION = "0.35.0";

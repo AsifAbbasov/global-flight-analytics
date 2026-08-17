@@ -23,7 +23,7 @@ import {
 const secureWorkspace = `packages:
   - 'apps/*'
 overrides:
-  'nanoid@<3.3.17': 3.3.17
+  'nanoid@<3.3.18': 3.3.18
   'postcss@<8.5.23': 8.5.23
   'sharp@<0.35.0': 0.35.3
 `;
@@ -70,7 +70,7 @@ importers:
         version: 16.2.12
 
 packages:
-  nanoid@3.3.17:
+  nanoid@3.3.18:
     resolution: {integrity: sha512-nanoid}
 
   postcss@8.5.23:
@@ -83,11 +83,11 @@ snapshots:
   next@16.2.12(react@19.2.4):
     dependencies:
       postcss: 8.5.23
-  nanoid@3.3.17: {}
+  nanoid@3.3.18: {}
 
   postcss@8.5.23:
     dependencies:
-      nanoid: 3.3.17
+      nanoid: 3.3.18
 
   sharp@0.35.3: {}
 `;
@@ -119,7 +119,7 @@ test("nanoid resolutions are collected deterministically", () => {
     collectNanoidVersions(
       `${secureLockfile}\n  nanoid@3.3.15:\n    resolution: {integrity: sha512-second}\n`,
     ),
-    ["3.3.15", "3.3.17"],
+    ["3.3.15", "3.3.18"],
   );
 });
 
@@ -180,14 +180,14 @@ test("Next.js PostCSS, PostCSS nanoid and web Sharp resolutions are recognized",
 
 test("secure dependency graph passes", () => {
   const result = verify();
-  assert.deepEqual(result.nanoidVersions, ["3.3.17"]);
+  assert.deepEqual(result.nanoidVersions, ["3.3.18"]);
   assert.deepEqual(result.postcssVersions, ["8.5.23"]);
   assert.deepEqual(result.sharpVersions, ["0.35.3"]);
 });
 
 test("vulnerable nanoid resolution fails", () => {
   const vulnerableLockfile = secureLockfile.replaceAll(
-    "3.3.17",
+    "3.3.18",
     "3.3.15",
   );
 
@@ -223,7 +223,7 @@ test("vulnerable sharp resolution fails", () => {
 
 test("missing nanoid override fails", () => {
   const workspaceText = secureWorkspace.replace(
-    "  'nanoid@<3.3.17': 3.3.17\n",
+    "  'nanoid@<3.3.18': 3.3.18\n",
     "",
   );
 
