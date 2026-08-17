@@ -11,6 +11,7 @@ export const openAPIPaths = new Set([
   '/api/v1/airports',
   '/api/v1/airports/{icao}',
   '/api/v1/traffic/current',
+  '/api/v1/traffic/live',
   '/api/v1/metrics/active-aircraft',
   '/api/v1/aircraft/{icao24}/trajectory',
   '/api/v1/aircraft/{icao24}/route-context',
@@ -1510,6 +1511,54 @@ export function resolveMockResponse({
         ? traffic
         : traffic.filter(item => item.region_code === requestedRegion)
     return success(selectedTraffic.map(publicTrafficItem))
+  }
+
+  if (method === 'GET' && pathname === '/api/v1/traffic/live') {
+    if (scenario === 'traffic-error') {
+      return failure(
+        503,
+        'TRAFFIC_FIXTURE_UNAVAILABLE',
+        'The deterministic traffic fixture is unavailable.',
+      )
+    }
+
+    const serverTime = '2026-08-04T18:00:10Z'
+    const limitCandidate = Number.parseInt(
+      url.searchParams.get('limit') ?? '1500',
+      10,
+    )
+    const limit =
+      Number.isInteger(limitCandidate) &&
+      limitCandidate >= 1 &&
+      limitCandidate <= 5000
+        ? limitCandidate
+        : 1500
+
+    const liveAircraft = traffic.map((item, index) => ({
+      icao24: item.icao24,
+      callsign: item.callsign,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      altitude_m: item.altitude_m,
+      velocity_mps: item.velocity_mps,
+      heading_degrees: item.heading_degrees,
+      vertical_rate_mps: index === 0 ? 0 : 1.2,
+      on_ground: item.on_ground,
+      observed_at: item.observed_at,
+      received_at: '2026-08-04T18:00:06Z',
+      source: 'playwright-fixture',
+      freshness_ms:
+        Date.parse(serverTime) - Date.parse(item.observed_at),
+    }))
+
+    return success({
+      server_time: serverTime,
+      sequence: 42,
+      aircraft: liveAircraft.slice(0, limit),
+      total_active: liveAircraft.length,
+      matching: liveAircraft.length,
+      truncated: liveAircraft.length > limit,
+    })
   }
 
   if (method === 'GET' && pathname === '/api/v1/metrics/active-aircraft') {

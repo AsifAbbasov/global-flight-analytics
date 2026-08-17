@@ -509,7 +509,7 @@ function main() {
   }
 
   console.log(`PLAYWRIGHT_E2E_VERSION=${expectedPlaywrightVersion}`)
-  console.log('PLAYWRIGHT_E2E_OPENAPI_PATHS=38')
+  console.log(`PLAYWRIGHT_E2E_OPENAPI_PATHS=${openAPIPaths.size}`)
   console.log(`PLAYWRIGHT_E2E_MOCK_SCENARIOS=${expectedScenarios.size}`)
   console.log(`PLAYWRIGHT_E2E_BROWSER_SCENARIOS=${expectedBrowserScenarioCount}`)
   console.log(`PLAYWRIGHT_E2E_SCENARIOS=${expectedBrowserScenarioCount}`)
