@@ -252,7 +252,10 @@ func isSupportedWindow(
 }
 
 func airplanesLivePolicy() Policy {
-	const reference = "https://airplanes.live/api-guide/"
+	const (
+		guideReference = "https://airplanes.live/api-guide/"
+		tierReference  = "https://airplanes.live/api/"
+	)
 
 	return Policy{
 		Provider:   ProviderAirplanesLive,
@@ -262,7 +265,13 @@ func airplanesLivePolicy() Policy {
 				MaxRequests: 1,
 				Window:      WindowSecond,
 				Provenance:  ProvenanceSourceBacked,
-				Reference:   reference,
+				Reference:   guideReference,
+			},
+			{
+				MaxRequests: 500,
+				Window:      WindowDay,
+				Provenance:  ProvenanceSourceBacked,
+				Reference:   tierReference,
 			},
 		},
 	}

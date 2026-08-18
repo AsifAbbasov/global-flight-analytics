@@ -47,33 +47,30 @@ func TestAirplanesLiveUsesSourceBackedLimit(
 		)
 	}
 
-	if len(policy.RequestLimits) != 1 {
+	if len(policy.RequestLimits) != 2 {
 		t.Fatalf(
-			"expected one request limit, got %d",
+			"expected two request limits, got %d",
 			len(policy.RequestLimits),
 		)
 	}
 
-	limit := policy.RequestLimits[0]
-
-	if limit.MaxRequests != 1 {
+	secondLimit := policy.RequestLimits[0]
+	if secondLimit.MaxRequests != 1 ||
+		secondLimit.Window != WindowSecond ||
+		secondLimit.Provenance != ProvenanceSourceBacked {
 		t.Fatalf(
-			"expected one request, got %d",
-			limit.MaxRequests,
+			"unexpected per-second limit: %+v",
+			secondLimit,
 		)
 	}
 
-	if limit.Window != WindowSecond {
+	dailyLimit := policy.RequestLimits[1]
+	if dailyLimit.MaxRequests != 500 ||
+		dailyLimit.Window != WindowDay ||
+		dailyLimit.Provenance != ProvenanceSourceBacked {
 		t.Fatalf(
-			"expected second window, got %s",
-			limit.Window,
-		)
-	}
-
-	if limit.Provenance != ProvenanceSourceBacked {
-		t.Fatalf(
-			"expected source-backed provenance, got %s",
-			limit.Provenance,
+			"unexpected daily free-tier limit: %+v",
+			dailyLimit,
 		)
 	}
 }

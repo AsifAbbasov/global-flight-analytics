@@ -1021,3 +1021,26 @@ FRONTEND_REALTIME_INTEGRATION=OPEN
 ```
 
 Detailed boundaries and activation constraints are recorded in [`docs/187_REALTIME_FLIGHT_DATA_FOUNDATION.md`](docs/187_REALTIME_FLIGHT_DATA_FOUNDATION.md).
+
+<!-- CENTRAL-LIVE-TRAFFIC-COLLECTOR-CORE-V1 -->
+## Central Live Traffic Collector Core
+
+The post-Realtime-Foundation data plane now has a provider-agnostic central collector core. It accepts the existing regional provider contract, performs one centralized acquisition loop for configured geographic targets, writes canonical `FlightState` observations into the existing in-memory live traffic store, and never performs upstream requests per browser session.
+
+The collector owns lifecycle cancellation, per-request timeouts, sequential target spacing, exponential failure backoff, non-negative jitter that never intentionally polls faster than the configured base cadence, provider retry-at evidence, and immutable health/status snapshots. It does not generate synthetic intermediate aircraft positions; browser interpolation remains a later display-only responsibility.
+
+The canonical Airplanes.live provider policy now records both published limits relevant to the free tier: one request per second and 500 requests per day. For one geographic target the daily budget implies a minimum average request interval of 172.8 seconds. This means Airplanes.live remains useful for durable/research acquisition but is not represented as a free 5-10 second production live source.
+
+The collector core is intentionally not production-activated yet. `adsb.lol` is the leading zero-cost rapid-live candidate because its public API is free, ODbL-licensed, and exposes a 250 nm point endpoint, but its operator explicitly asks production users to make contact first. Production activation therefore remains fail-closed until that operational dependency is resolved and encoded as source policy.
+
+```text
+CENTRAL_LIVE_COLLECTOR_CORE=CLOSED
+AIRPLANES_LIVE_FREE_DAILY_BUDGET=500
+AIRPLANES_LIVE_RAPID_FREE_POLLING=NOT_SUPPORTED
+ADSB_LOL_PRODUCTION_POLICY_REVIEW=OPEN
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=OPEN
+CENTRAL_COLLECTOR_SERVER_WIRING=OPEN
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+Detailed implementation boundaries are recorded in [`docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md`](docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md).

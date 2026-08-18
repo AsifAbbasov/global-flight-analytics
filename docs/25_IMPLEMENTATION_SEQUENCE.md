@@ -995,3 +995,17 @@ frontend GPU rendering and interpolation
 ```
 
 The current increment closes the source-policy gate, current-state engine and live snapshot contract while preserving the existing durable scheduler. Rapid production provider activation and frontend realtime integration remain later steps because the zero-cost provider quota and operational-use boundaries must be respected.
+
+<!-- CENTRAL-LIVE-TRAFFIC-COLLECTOR-CORE-V1 -->
+## Post-Realtime Increment - Central Live Traffic Collector Core
+
+The Realtime Flight Data Foundation remains closed. The next acquisition increment adds the provider-agnostic central collector core and corrects the canonical Airplanes.live free-tier budget to include 500 requests/day.
+
+```text
+CENTRAL_LIVE_COLLECTOR_CORE=CLOSED
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=OPEN
+CENTRAL_COLLECTOR_SERVER_WIRING=OPEN
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+See `docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md`.
