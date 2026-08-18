@@ -1,6 +1,16 @@
 name: Provision Grafana Observability
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'monitoring/grafana-cloud/**'
+      - 'scripts/render-grafana-observability.mjs'
+      - 'scripts/provision-grafana-observability.sh'
+      - 'scripts/verify-grafana-observability.mjs'
+      - 'scripts/verify-grafana-observability.test.mjs'
+      - '.github/workflows/provision-grafana-observability.yml'
   workflow_dispatch:
 
 permissions:
