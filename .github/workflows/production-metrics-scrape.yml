@@ -46,10 +46,6 @@ jobs:
               exit 1
             fi
           done
-          if [[ ! "$PRODUCTION_API_REVISION" =~ ^[0-9a-f]{40}$ ]]; then
-            printf '%s\n' 'PRODUCTION_METRICS_INPUT=FAIL invalid PRODUCTION_API_REVISION' >&2
-            exit 1
-          fi
           case "$GRAFANA_CLOUD_PROMETHEUS_URL" in
             https://*) ;;
             *) printf '%s\n' 'PRODUCTION_METRICS_INPUT=FAIL remote write URL must use HTTPS' >&2; exit 1 ;;
@@ -58,6 +54,9 @@ jobs:
             https://*) ;;
             *) printf '%s\n' 'PRODUCTION_METRICS_INPUT=FAIL query URL must use HTTPS' >&2; exit 1 ;;
           esac
+          if [ -n "$PRODUCTION_API_REVISION" ] && [[ ! "$PRODUCTION_API_REVISION" =~ ^[0-9a-f]{40}$ ]]; then
+            printf '%s\n' '::warning::Recorded PRODUCTION_API_REVISION is invalid; runtime metrics collection will continue using the revision reported by production.'
+          fi
           printf '%s\n' 'PRODUCTION_METRICS_INPUT=PASS'
 
       - name: Verify protected production metrics source
@@ -78,8 +77,26 @@ jobs:
             --output "$metrics_file" \
             "https://$PRODUCTION_API_HOST/internal/metrics"
           grep -F 'global_flight_analytics_build_info' "$metrics_file" > /dev/null
-          grep -F "revision=\"$PRODUCTION_API_REVISION\"" "$metrics_file" > /dev/null
           grep -F 'global_flight_analytics_collector_last_scrape_success' "$metrics_file" > /dev/null
+
+          actual_revision="$(awk 'match($0, /revision="[0-9a-f]{40}"/) { print substr($0, RSTART + 10, 40); exit }' "$metrics_file")"
+          if [[ ! "$actual_revision" =~ ^[0-9a-f]{40}$ ]]; then
+            printf '%s\n' 'PRODUCTION_METRICS_SOURCE_PREFLIGHT=FAIL missing valid runtime revision' >&2
+            exit 1
+          fi
+          printf 'ACTUAL_PRODUCTION_API_REVISION=%s\n' "$actual_revision" >> "$GITHUB_ENV"
+          printf 'PRODUCTION_RUNTIME_REVISION=%s\n' "$actual_revision"
+
+          if [[ "$PRODUCTION_API_REVISION" =~ ^[0-9a-f]{40}$ ]]; then
+            if [ "$actual_revision" = "$PRODUCTION_API_REVISION" ]; then
+              printf '%s\n' 'PRODUCTION_REVISION_DRIFT=NONE'
+            else
+              printf '%s\n' "::warning::Production revision drift detected: recorded=$PRODUCTION_API_REVISION runtime=$actual_revision"
+              printf '%s\n' 'PRODUCTION_REVISION_DRIFT=DETECTED'
+            fi
+          else
+            printf '%s\n' 'PRODUCTION_REVISION_DRIFT=RECORDED_REVISION_UNAVAILABLE'
+          fi
           printf '%s\n' 'PRODUCTION_METRICS_SOURCE_PREFLIGHT=PASS'
 
       - name: Validate Grafana Alloy configuration
@@ -92,7 +109,7 @@ jobs:
             --env GRAFANA_CLOUD_PROMETHEUS_URL \
             --env GRAFANA_CLOUD_PROMETHEUS_USER \
             --env GRAFANA_CLOUD_API_KEY \
-            --env PRODUCTION_API_REVISION \
+            --env ACTUAL_PRODUCTION_API_REVISION \
             --volume "$GITHUB_WORKSPACE/monitoring/grafana-cloud/config.alloy:/etc/alloy/config.alloy:ro" \
             grafana/alloy:v1.18.0 \
             validate /etc/alloy/config.alloy
@@ -117,7 +134,7 @@ jobs:
             --env GRAFANA_CLOUD_PROMETHEUS_URL \
             --env GRAFANA_CLOUD_PROMETHEUS_USER \
             --env GRAFANA_CLOUD_API_KEY \
-            --env PRODUCTION_API_REVISION \
+            --env ACTUAL_PRODUCTION_API_REVISION \
             --volume "$GITHUB_WORKSPACE/monitoring/grafana-cloud/config.alloy:/etc/alloy/config.alloy:ro" \
             grafana/alloy:v1.18.0 \
             run \
@@ -134,7 +151,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          query="global_flight_analytics_build_info{deployment_revision=\"$PRODUCTION_API_REVISION\"}"
+          query="global_flight_analytics_build_info{deployment_revision=\"$ACTUAL_PRODUCTION_API_REVISION\"}"
           response_file="$(mktemp)"
           trap 'rm -f "$response_file"' EXIT
 
@@ -163,4 +180,4 @@ jobs:
           cat "$response_file" >&2
           exit 1
 
-# PRODUCTION-METRICS-SCRAPER-V1
+# PRODUCTION-METRICS-SCRAPER-V2

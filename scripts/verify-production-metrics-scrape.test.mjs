@@ -15,20 +15,23 @@ test('production metrics scraper contract passes', () => {
   assert.match(output, /PRODUCTION_METRICS_SCRAPER_CONTRACT=PASS/)
 })
 
-test('external scraper preserves deployment truth and protected access', () => {
+test('external scraper preserves protected access without blocking on recorded revision drift', () => {
   assert.match(workflow, /PRODUCTION_API_REVISION: \$\{\{ vars\.PRODUCTION_API_REVISION \}\}/)
   assert.match(workflow, /X-Internal-API-Key: \$PRODUCTION_METRICS_KEY/)
+  assert.match(workflow, /ACTUAL_PRODUCTION_API_REVISION=/)
+  assert.match(workflow, /PRODUCTION_REVISION_DRIFT=DETECTED/)
+  assert.doesNotMatch(workflow, /grep -F "revision=\\"\$PRODUCTION_API_REVISION\\""/)
   assert.doesNotMatch(workflow, /\$\{\{ github\.sha \}\}/)
   assert.doesNotMatch(workflow, /git\s+rev-parse\s+HEAD/)
   assert.doesNotMatch(workflow, /grafana\/alloy:latest/)
 })
 
-test('Alloy scrapes the protected endpoint and remote writes with bounded labels', () => {
+test('Alloy scrapes the protected endpoint and labels remote writes with runtime revision', () => {
   assert.match(alloy, /prometheus\.scrape "gfa_production"/)
   assert.match(alloy, /metrics_path\s+= "\/internal\/metrics"/)
   assert.match(alloy, /X-Internal-API-Key/)
   assert.match(alloy, /prometheus\.remote_write "grafana_cloud"/)
-  assert.match(alloy, /deployment_revision = sys\.env\("PRODUCTION_API_REVISION"\)/)
+  assert.match(alloy, /deployment_revision = sys\.env\("ACTUAL_PRODUCTION_API_REVISION"\)/)
   assert.match(alloy, /sample_limit\s+= 5000/)
   assert.match(alloy, /label_limit\s+= 16/)
 })

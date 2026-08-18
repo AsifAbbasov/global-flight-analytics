@@ -12,7 +12,7 @@ API_IMAGE="global-flight-analytics-api:stage14-audit-$$"
 
 # Use the exact patched toolchain required by go.mod. Hosts running an older
 # Go 1.21+ command can download and select it automatically.
-export GOTOOLCHAIN=go1.26.5+auto
+export GOTOOLCHAIN=go1.26.6+auto
 
 cleanup() {
   set +e
@@ -35,16 +35,16 @@ for command_name in git go gofmt pnpm node docker curl awk; do
 done
 
 EFFECTIVE_GO_VERSION="$(go env GOVERSION)"
-if [ "$EFFECTIVE_GO_VERSION" != "go1.26.5" ]; then
-  printf '%s\n' "ERROR: expected effective Go toolchain go1.26.5, found $EFFECTIVE_GO_VERSION" >&2
+if [ "$EFFECTIVE_GO_VERSION" != "go1.26.6" ]; then
+  printf '%s\n' "ERROR: expected effective Go toolchain go1.26.6, found $EFFECTIVE_GO_VERSION" >&2
   exit 1
 fi
-if ! grep -Fxq 'go 1.26.5' "$API_ROOT/go.mod"; then
-  printf '%s\n' "ERROR: apps/api/go.mod does not pin Go 1.26.5" >&2
+if ! grep -Fxq 'go 1.26.6' "$API_ROOT/go.mod"; then
+  printf '%s\n' "ERROR: apps/api/go.mod does not pin Go 1.26.6" >&2
   exit 1
 fi
-if ! grep -Fq 'ARG GO_IMAGE=golang:1.26.5-alpine3.24' "$API_ROOT/Dockerfile"; then
-  printf '%s\n' "ERROR: backend Dockerfile does not pin the Go 1.26.5 builder" >&2
+if ! grep -Fq 'ARG GO_IMAGE=golang:1.26.6-alpine3.24' "$API_ROOT/Dockerfile"; then
+  printf '%s\n' "ERROR: backend Dockerfile does not pin the Go 1.26.6 builder" >&2
   exit 1
 fi
 echo 'STAGE_14_GO_TOOLCHAIN_AUDIT=PASS'
