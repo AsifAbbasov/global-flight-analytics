@@ -142,6 +142,15 @@ func run(
 		)
 	}
 
+	liveTrafficConfig, err := config.LoadLiveTrafficCollectorConfig()
+	if err != nil {
+		return fmt.Errorf(
+			"%w: %w",
+			errServerConfigurationLoad,
+			err,
+		)
+	}
+
 	dbPool, err := openServerDatabase(
 		ctx,
 		cfg,
@@ -187,12 +196,27 @@ func run(
 		}
 	}
 
+	liveTraffic, err := composeLiveTrafficCollector(
+		dbPool,
+		metricsRegistry,
+		liveTrafficConfig,
+		log,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"%w: compose live traffic collector: %w",
+			errServerInitialization,
+			err,
+		)
+	}
+
 	app, err := server.New(
 		server.Config{
 			DatabasePool:          dbPool,
 			Logger:                log,
 			OpenMeteoTimeout:      cfg.OpenMeteoTimeout,
 			ObservabilityRegistry: metricsRegistry,
+			LiveTrafficStore:      liveTraffic.Store,
 			MetricsKeyDigest:      observabilityConfig.MetricsKeyDigest,
 			MetricsKeyConfigured:  observabilityConfig.MetricsKeyConfigured,
 			Protection: server.ProtectionConfig{
@@ -216,6 +240,35 @@ func run(
 			"%w: %w",
 			errServerInitialization,
 			err,
+		)
+	}
+
+	if liveTraffic.Collector != nil {
+		collectorContext, cancelCollector := context.WithCancel(ctx)
+		collectorDone := make(chan struct{})
+		go func() {
+			defer close(collectorDone)
+			if collectorErr := liveTraffic.Collector.Run(collectorContext); collectorErr != nil &&
+				collectorContext.Err() == nil {
+				log.Error(
+					"central live traffic collector stopped unexpectedly",
+					"error_type",
+					fmt.Sprintf("%T", collectorErr),
+				)
+			}
+		}()
+		defer func() {
+			cancelCollector()
+			<-collectorDone
+		}()
+		log.Info(
+			"central live traffic collector started",
+			"provider",
+			string(liveTrafficConfig.Provider),
+			"target",
+			liveTrafficConfig.TargetName,
+			"poll_interval",
+			liveTrafficConfig.PollInterval,
 		)
 	}
 

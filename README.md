@@ -1044,3 +1044,28 @@ FRONTEND_REALTIME_INTEGRATION=OPEN
 ```
 
 Detailed implementation boundaries are recorded in [`docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md`](docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md).
+
+<!-- RAPID-LIVE-PROVIDER-SERVER-WIRING-V1 -->
+## Rapid Live Provider Activation and Server Wiring
+
+The API process now has a production-ready composition path for the central live collector. The implementation reuses the existing provider budget, provider response, provider health, ingestion orchestration and regional-provider boundaries instead of introducing a second live-provider framework.
+
+`adsb.lol` is implemented as a bounded point-query adapter and mapped into the canonical `FlightState` model before entering the current-state store. GFA applies its own conservative application cap of six requests per minute and a collector poll interval floor of ten seconds. These are project safety limits, not claims about a provider-published quota.
+
+Production activation remains deliberately fail-closed. The current `adsb.lol` API terms say production users should contact the operator so API changes do not unexpectedly break their applications. Therefore `LIVE_TRAFFIC_COLLECTOR_ENABLED=true` is rejected unless `ADSB_LOL_PRODUCTION_CONTACT_CONFIRMED=true` is explicitly configured after that operational dependency has been resolved.
+
+When disabled, which remains the default, the API starts exactly as before and the public live snapshot remains healthy but empty/stale-pruned until another approved collector populates it.
+
+```text
+ADSB_LOL_ADAPTER=CLOSED
+CENTRAL_COLLECTOR_SERVER_WIRING=CLOSED
+PROVIDER_ORCHESTRATION_REUSED=YES
+UPSTREAM_REQUESTS_PER_BROWSER=NO
+ADSB_LOL_APPLICATION_CAP=6_PER_MINUTE
+ADSB_LOL_MINIMUM_COLLECTOR_INTERVAL=10_SECONDS
+ADSB_LOL_PRODUCTION_CONTACT_CONFIRMED=REQUIRED_FOR_ENABLE
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=BLOCKED_EXTERNAL_CONFIRMATION
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+See `docs/189_RAPID_LIVE_PROVIDER_ACTIVATION_AND_SERVER_WIRING.md`.

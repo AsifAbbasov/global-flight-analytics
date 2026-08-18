@@ -1751,3 +1751,10 @@ the later visual-redesign closure.
 `188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md`
 
 Defines the provider-agnostic centralized live acquisition loop, lifecycle/backoff/retry-at semantics, canonical Airplanes.live 500/day free-tier budget, and the explicit production-activation boundary for the next rapid-live provider.
+
+<!-- RAPID-LIVE-PROVIDER-SERVER-WIRING:DOCUMENT-189 -->
+### 189 - Rapid Live Provider Activation and Server Wiring
+
+`189_RAPID_LIVE_PROVIDER_ACTIVATION_AND_SERVER_WIRING.md`
+
+Defines the adsb.lol adapter, application-owned safety cap, fail-closed production-contact gate, durable provider-budget composition and single-process central collector wiring.

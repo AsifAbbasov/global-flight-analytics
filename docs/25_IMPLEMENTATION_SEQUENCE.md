@@ -1009,3 +1009,17 @@ FRONTEND_REALTIME_INTEGRATION=OPEN
 ```
 
 See `docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md`.
+
+<!-- RAPID-LIVE-PROVIDER-SERVER-WIRING-V1 -->
+## Post-Realtime Increment - Rapid Live Provider Activation and Server Wiring
+
+The central collector is now composable inside the Go API process through the existing provider-governance stack. `adsb.lol` has a canonical adapter and application-defined safety cap. Production remains fail-closed until the provider-contact dependency is confirmed.
+
+```text
+ADSB_LOL_ADAPTER=CLOSED
+CENTRAL_COLLECTOR_SERVER_WIRING=CLOSED
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=BLOCKED_EXTERNAL_CONFIRMATION
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+See `docs/189_RAPID_LIVE_PROVIDER_ACTIVATION_AND_SERVER_WIRING.md`.
