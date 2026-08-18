@@ -43,6 +43,26 @@ export default function RootLayout({
             {children}
           </RuntimeResilienceBoundary>
         </QueryProvider>
+        <footer className='border-t border-white/10 px-4 py-3 text-center text-xs text-slate-400'>
+          Live aircraft data ©{' '}
+          <a
+            className='underline underline-offset-2 hover:text-slate-200'
+            href='https://www.adsb.lol/'
+            rel='noreferrer'
+            target='_blank'
+          >
+            ADSB.lol contributors
+          </a>{' '}
+          · licensed under{' '}
+          <a
+            className='underline underline-offset-2 hover:text-slate-200'
+            href='https://opendatacommons.org/licenses/odbl/1-0/'
+            rel='noreferrer'
+            target='_blank'
+          >
+            ODbL 1.0
+          </a>
+        </footer>
       </body>
     </html>
   )
