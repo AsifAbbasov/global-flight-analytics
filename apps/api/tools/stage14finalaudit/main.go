@@ -384,7 +384,7 @@ func auditGoToolchainSecurity(root string) []auditFailure {
 			Name: "Go module pins the patched standard library",
 			Path: "apps/api/go.mod",
 			Required: []string{
-				"go 1.26.5",
+				"go 1.26.6",
 			},
 			Forbidden: []string{
 				"go 1.26.2",
@@ -394,7 +394,7 @@ func auditGoToolchainSecurity(root string) []auditFailure {
 			Name: "Backend image uses the patched Go builder",
 			Path: "apps/api/Dockerfile",
 			Required: []string{
-				"ARG GO_IMAGE=golang:1.26.5-alpine3.24",
+				"ARG GO_IMAGE=golang:1.26.6-alpine3.24",
 			},
 			Forbidden: []string{
 				"golang:1.26.2",
@@ -404,7 +404,7 @@ func auditGoToolchainSecurity(root string) []auditFailure {
 			Name: "Stage 14 audit selects and verifies the patched toolchain",
 			Path: "scripts/verify-stage-14-completion.sh",
 			Required: []string{
-				"GOTOOLCHAIN=go1.26.5+auto",
+				"GOTOOLCHAIN=go1.26.6+auto",
 				"go env GOVERSION",
 				"STAGE_14_GO_TOOLCHAIN_AUDIT=PASS",
 			},
@@ -425,7 +425,7 @@ func auditUnifiedVerification(root string) []auditFailure {
 			Name: "Stage 14 current-scope script covers every enforced boundary",
 			Path: "scripts/verify-stage-14-completion.sh",
 			Required: []string{
-				"GOTOOLCHAIN=go1.26.5+auto",
+				"GOTOOLCHAIN=go1.26.6+auto",
 				"STAGE_14_GO_TOOLCHAIN_AUDIT=PASS",
 				"scripts/verify-backend-final-correctness.sh",
 				"go run ./tools/stage14finalaudit -strict",

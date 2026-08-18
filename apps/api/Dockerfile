@@ -1,4 +1,4 @@
-ARG GO_IMAGE=golang:1.26.5-alpine3.24
+ARG GO_IMAGE=golang:1.26.6-alpine3.24
 ARG APP_VERSION=1.0.0
 ARG VCS_REF=
 ARG RENDER_GIT_COMMIT=unknown
