@@ -117,8 +117,8 @@ func composeLiveTrafficCollector(
 
 	client, err := adsblol.NewClientWithResponseObserver(
 		integrationcommon.HTTPClientConfig{
-			BaseURL: cfg.ADSBLOLBaseURL,
-			Timeout: cfg.ADSBLOLTimeout,
+			BaseURL:   cfg.ADSBLOLBaseURL,
+			Timeout:   cfg.ADSBLOLTimeout,
 			UserAgent: "GlobalFlightAnalytics/1.0 (+https://github.com/AsifAbbasov/global-flight-analytics; contact: aassifabbasov@gmail.com)",
 		},
 		responseObserver,
