@@ -30,6 +30,8 @@ for (const literal of [
   'GRAFANA_CLOUD_API_KEY: ${{ secrets.GRAFANA_CLOUD_API_KEY }}',
   'PRODUCTION_API_REVISION: ${{ vars.PRODUCTION_API_REVISION }}',
   'https://$PRODUCTION_API_HOST/internal/metrics',
+  'ACTUAL_PRODUCTION_API_REVISION=',
+  'PRODUCTION_REVISION_DRIFT=DETECTED',
   'grafana/alloy:v1.18.0',
   'GRAFANA_CLOUD_REMOTE_WRITE=PASS',
   'GRAFANA_CLOUD_QUERY_EVIDENCE=PASS',
@@ -40,7 +42,8 @@ if (workflow.includes('grafana/alloy:latest')) fail('workflow uses a mutable All
 if (workflow.includes('${{ github.sha }}')) fail('workflow substitutes source SHA for deployed revision')
 if (/git\s+rev-parse\s+HEAD/.test(workflow)) fail('workflow derives deployed revision from local HEAD')
 if (!workflow.includes('X-Internal-API-Key: $PRODUCTION_METRICS_KEY')) fail('source scrape does not use the protected metrics key')
-if (!workflow.includes('deployment_revision=\\"$PRODUCTION_API_REVISION\\"')) fail('Grafana query does not bind exact deployment revision')
+if (workflow.includes('grep -F "revision=\\"$PRODUCTION_API_REVISION\\""')) fail('metrics forwarding is still blocked by recorded revision drift')
+if (!workflow.includes('deployment_revision=\\"$ACTUAL_PRODUCTION_API_REVISION\\"')) fail('Grafana query does not bind the runtime deployment revision')
 
 for (const literal of [
   'prometheus.scrape "gfa_production"',
@@ -51,7 +54,7 @@ for (const literal of [
   'url            = sys.env("GRAFANA_CLOUD_PROMETHEUS_URL")',
   'username = sys.env("GRAFANA_CLOUD_PROMETHEUS_USER")',
   'password = sys.env("GRAFANA_CLOUD_API_KEY")',
-  'deployment_revision = sys.env("PRODUCTION_API_REVISION")',
+  'deployment_revision = sys.env("ACTUAL_PRODUCTION_API_REVISION")',
 ]) {
   if (!alloy.includes(literal)) fail(`Alloy config is missing ${literal}`)
 }
@@ -69,8 +72,8 @@ for (const command of [
   if (!release.includes(command)) fail(`release verification is missing ${command}`)
 }
 for (const literal of [
-  ".github/workflows/production-metrics-scrape.yml",
-  "monitoring/**",
+  '.github/workflows/production-metrics-scrape.yml',
+  'monitoring/**',
   'Verify production metrics scraper contract',
   'Validate Grafana Alloy scrape configuration',
 ]) {
