@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import test from 'node:test'
 
@@ -29,6 +31,37 @@ test('alert group uses modern Math conditions with exact SLO semantics', () => {
     const condition = rule.data.find((item) => item.refId === 'B')
     assert.equal(condition?.model?.type, 'math')
     assert.doesNotMatch(JSON.stringify(condition), /classic_conditions/)
+  }
+})
+
+test('rendered production alert aligns ingestion freshness with the 1800 second runtime budget', () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'gfa-grafana-test-'))
+  try {
+    const output = execFileSync(
+      process.execPath,
+      ['scripts/render-grafana-observability.mjs', outputDirectory],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GRAFANA_PROMETHEUS_DATASOURCE_UID: 'prometheus-test-uid',
+        },
+      },
+    )
+    assert.match(output, /ingestion_freshness_budget_seconds=1800/)
+
+    const renderedAlerts = JSON.parse(
+      fs.readFileSync(path.join(outputDirectory, 'alert-rules.json'), 'utf8'),
+    )
+    const freshness = renderedAlerts.rules.find(
+      (rule) => rule.uid === 'gfa-ingestion-freshness',
+    )
+    const condition = freshness?.data.find((item) => item.refId === 'B')
+    assert.equal(condition?.model?.expression, '$A > 1800')
+    assert.equal(freshness?.title, 'Latest ingestion age above 1800 seconds')
+    assert.match(freshness?.annotations?.summary ?? '', /older than 1800 seconds/)
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true })
   }
 })
 
