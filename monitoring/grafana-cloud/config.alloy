@@ -23,7 +23,7 @@ prometheus.remote_write "grafana_cloud" {
   external_labels = {
     environment         = "production",
     service             = "global-flight-analytics-api",
-    deployment_revision = sys.env("PRODUCTION_API_REVISION"),
+    deployment_revision = sys.env("ACTUAL_PRODUCTION_API_REVISION"),
   }
 
   endpoint {
