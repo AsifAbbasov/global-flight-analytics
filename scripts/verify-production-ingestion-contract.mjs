@@ -31,8 +31,8 @@ const packageJSON = JSON.parse(read('package.json'))
 const releaseVerifier = read('scripts/verify-release.sh')
 
 assert(
-  workflow.includes("cron: '37 * * * *'"),
-  'production ingestion workflow must retain the offset hourly GitHub fallback'
+  workflow.includes("cron: '*/15 * * * *'"),
+  'production ingestion workflow must retain the fifteen-minute GitHub fallback'
 )
 assert(
   !workflow.includes("cron: '*/10 * * * *'"),
@@ -73,6 +73,10 @@ assert(
 assert(
   workflow.includes('verify-production-traffic-freshness.mjs'),
   'production ingestion workflow must verify end-to-end freshness'
+)
+assert(
+  workflow.includes("MAX_TRAFFIC_AGE_SECONDS: '1800'"),
+  'production ingestion workflow must retain the 1800-second freshness budget'
 )
 assert(
   count(workflow, /uses:\s+[^\s]+@[0-9a-f]{40}(?:\s+#\s+v\d+)?/g) ===
