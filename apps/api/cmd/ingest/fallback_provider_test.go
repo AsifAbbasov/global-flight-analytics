@@ -265,7 +265,7 @@ func TestTrafficFallbackProviderUsesOpenSkyAfterPrimaryServerFailure(
 	}
 }
 
-func TestTrafficFallbackProviderDoesNotHideUnauthorizedConfiguration(
+func TestTrafficFallbackProviderUsesOpenSkyAfterPrimaryUnauthorized(
 	t *testing.T,
 ) {
 	primaryProvider := &fallbackTrafficProviderStub{
@@ -277,6 +277,124 @@ func TestTrafficFallbackProviderDoesNotHideUnauthorizedConfiguration(
 	}
 	secondaryProvider := &fallbackTrafficProviderStub{
 		sourceName: "opensky",
+		states: []flightstate.FlightState{
+			{ICAO24: "FALL403"},
+		},
+	}
+	recorder := &fallbackDecisionRecorderStub{}
+
+	provider := mustTrafficFallbackProvider(
+		t,
+		primaryProvider,
+		secondaryProvider,
+		recorder,
+	)
+
+	result, err := provider.LoadByPointWithSource(
+		context.Background(),
+		40.4093,
+		49.8671,
+		100,
+	)
+	if err != nil {
+		t.Fatalf(
+			"load fallback after unauthorized primary: %v",
+			err,
+		)
+	}
+
+	if result.SourceName != "opensky" {
+		t.Fatalf(
+			"source = %q, want opensky",
+			result.SourceName,
+		)
+	}
+	if primaryProvider.calls != 1 ||
+		secondaryProvider.calls != 1 {
+		t.Fatalf(
+			"calls primary=%d secondary=%d, want 1 and 1",
+			primaryProvider.calls,
+			secondaryProvider.calls,
+		)
+	}
+	if len(recorder.decisions) != 1 {
+		t.Fatalf(
+			"decisions = %d, want 1",
+			len(recorder.decisions),
+		)
+	}
+
+	decision := recorder.decisions[0]
+	if decision.Outcome !=
+		providerfallback.OutcomeFallbackSelected {
+		t.Fatalf(
+			"outcome = %s, want fallback_selected",
+			decision.Outcome,
+		)
+	}
+	if decision.SelectedProvider !=
+		providerpolicy.ProviderOpenSky {
+		t.Fatalf(
+			"selected provider = %s, want opensky",
+			decision.SelectedProvider,
+		)
+	}
+	if !decision.UsedFallback {
+		t.Fatal("used fallback = false, want true")
+	}
+	if decision.TriggerReason !=
+		providerbudget.DecisionReasonProviderUnavailable {
+		t.Fatalf(
+			"trigger reason = %q, want provider-unavailable",
+			decision.TriggerReason,
+		)
+	}
+	if len(decision.Attempts) != 2 {
+		t.Fatalf(
+			"attempts = %d, want 2",
+			len(decision.Attempts),
+		)
+	}
+	if decision.Attempts[0].Provider !=
+		providerpolicy.ProviderAirplanesLive ||
+		decision.Attempts[0].Outcome !=
+			providerfallback.AttemptOutcomeFailed ||
+		decision.Attempts[0].ErrorClass !=
+			providerfallback.AttemptErrorClassUnauthorized ||
+		!decision.Attempts[0].RequestAttempted {
+		t.Fatalf(
+			"unexpected airplanes.live attempt evidence: %+v",
+			decision.Attempts[0],
+		)
+	}
+	if decision.Attempts[1].Provider !=
+		providerpolicy.ProviderOpenSky ||
+		decision.Attempts[1].Outcome !=
+			providerfallback.AttemptOutcomeSuccess ||
+		!decision.Attempts[1].RequestAttempted {
+		t.Fatalf(
+			"unexpected OpenSky attempt evidence: %+v",
+			decision.Attempts[1],
+		)
+	}
+}
+
+func TestTrafficFallbackProviderReportsNoProviderAvailableAfterPrimaryUnauthorized(
+	t *testing.T,
+) {
+	primaryProvider := &fallbackTrafficProviderStub{
+		sourceName: "airplanes.live",
+		err: fmt.Errorf(
+			"primary request: %w",
+			integrationcommon.ErrProviderUnauthorized,
+		),
+	}
+	secondaryProvider := &fallbackTrafficProviderStub{
+		sourceName: "opensky",
+		err: fmt.Errorf(
+			"secondary request: %w",
+			integrationcommon.ErrProviderServer,
+		),
 	}
 	recorder := &fallbackDecisionRecorderStub{}
 
@@ -293,16 +411,61 @@ func TestTrafficFallbackProviderDoesNotHideUnauthorizedConfiguration(
 		49.8671,
 		100,
 	)
-	if !errors.Is(
-		err,
-		integrationcommon.ErrProviderUnauthorized,
-	) {
-		t.Fatalf("expected unauthorized error, got %v", err)
-	}
-	if secondaryProvider.calls != 0 {
+
+	var unavailableError *providerfallback.NoProviderAvailableError
+	if !errors.As(err, &unavailableError) {
 		t.Fatalf(
-			"secondary calls = %d, want 0",
+			"expected no-provider-available error, got %v",
+			err,
+		)
+	}
+	if primaryProvider.calls != 1 ||
+		secondaryProvider.calls != 1 {
+		t.Fatalf(
+			"calls primary=%d secondary=%d, want 1 and 1",
+			primaryProvider.calls,
 			secondaryProvider.calls,
+		)
+	}
+
+	decision := unavailableError.Decision
+	if decision.Outcome !=
+		providerfallback.OutcomeNoProviderAvailable {
+		t.Fatalf(
+			"outcome = %s, want no_provider_available",
+			decision.Outcome,
+		)
+	}
+	if !decision.UsedFallback {
+		t.Fatal("used fallback = false, want true")
+	}
+	if decision.TriggerReason !=
+		providerbudget.DecisionReasonProviderUnavailable {
+		t.Fatalf(
+			"trigger reason = %q, want provider-unavailable",
+			decision.TriggerReason,
+		)
+	}
+	if len(decision.Attempts) != 2 {
+		t.Fatalf(
+			"attempts = %d, want 2",
+			len(decision.Attempts),
+		)
+	}
+	if decision.Attempts[0].ErrorClass !=
+		providerfallback.AttemptErrorClassUnauthorized ||
+		!decision.Attempts[0].RequestAttempted {
+		t.Fatalf(
+			"unexpected primary attempt evidence: %+v",
+			decision.Attempts[0],
+		)
+	}
+	if decision.Attempts[1].ErrorClass !=
+		providerfallback.AttemptErrorClassProviderServer ||
+		!decision.Attempts[1].RequestAttempted {
+		t.Fatalf(
+			"unexpected secondary attempt evidence: %+v",
+			decision.Attempts[1],
 		)
 	}
 	if len(recorder.decisions) != 1 {
@@ -312,9 +475,9 @@ func TestTrafficFallbackProviderDoesNotHideUnauthorizedConfiguration(
 		)
 	}
 	if recorder.decisions[0].Outcome !=
-		providerfallback.OutcomeTerminalFailure {
+		providerfallback.OutcomeNoProviderAvailable {
 		t.Fatalf(
-			"outcome = %s, want terminal_failure",
+			"recorded outcome = %s, want no_provider_available",
 			recorder.decisions[0].Outcome,
 		)
 	}
