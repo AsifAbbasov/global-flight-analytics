@@ -10,6 +10,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const reconciliationOldestPendingAgeQuery = `SELECT COALESCE(
+	EXTRACT(EPOCH FROM (now() - MIN(next_attempt_at)))::double precision,
+	0
+ )
+ FROM derived_reconciliation_tasks
+ WHERE status = 'pending'
+	AND next_attempt_at <= now()`
+
 type PostgresCollector struct {
 	pool *pgxpool.Pool
 }
@@ -270,19 +278,14 @@ func (
 	var oldestPendingAge float64
 	if err := collector.pool.QueryRow(
 		ctx,
-		`SELECT COALESCE(
-			EXTRACT(EPOCH FROM (now() - MIN(created_at)))::double precision,
-			0
-		 )
-		 FROM derived_reconciliation_tasks
-		 WHERE status = 'pending'`,
+		reconciliationOldestPendingAgeQuery,
 	).Scan(&oldestPendingAge); err != nil {
 		return err
 	}
 	writeHelpAndType(
 		builder,
 		metricNamespace+"_reconciliation_oldest_pending_age_seconds",
-		"Age in seconds of the oldest pending reconciliation task.",
+		"Age in seconds since the oldest due reconciliation task became eligible for processing.",
 		"gauge",
 	)
 	fmt.Fprintf(
