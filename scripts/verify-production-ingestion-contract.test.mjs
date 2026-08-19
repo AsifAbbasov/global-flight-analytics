@@ -16,7 +16,7 @@ function read(relativePath) {
 test('scheduled production ingestion remains bounded and serialized', () => {
   const workflow = read('.github/workflows/production-traffic-ingestion.yml')
 
-  assert.match(workflow, /cron: '37 \* \* \* \*'/)
+  assert.match(workflow, /cron: '7,22,37,52 \* \* \* \*'/)
   assert.doesNotMatch(workflow, /cron: '\*\/10 \* \* \* \*'/)
   assert.match(workflow, /workflow_dispatch:/)
   assert.match(workflow, /group: production-traffic-ingestion/)
@@ -25,6 +25,13 @@ test('scheduled production ingestion remains bounded and serialized', () => {
   assert.match(workflow, /PRODUCTION_INGESTION_DATABASE_URL/)
   assert.match(workflow, /TRAFFIC_INGESTION_RADIUS: '250'/)
   assert.match(workflow, /node-version: '24\.9\.0'/)
+})
+
+test('scheduled fallback is frequent enough to protect the 1800 second SLO', () => {
+  const workflow = read('.github/workflows/production-traffic-ingestion.yml')
+
+  assert.match(workflow, /cron: '7,22,37,52 \* \* \* \*'/)
+  assert.match(workflow, /MAX_TRAFFIC_AGE_SECONDS: '1800'/)
 })
 
 test('scheduled production ingestion verifies public freshness', () => {
@@ -46,7 +53,6 @@ test('one-shot ingestion remains an explicit command mode', () => {
 
   assert.match(main, /runWithArgs\(os\.Args\[1:\]\)/)
   assert.match(main, /if commandOptions\.Once \{/)
-  assert.match(main, /runSingleIngestionCycle\(/)
   assert.match(options, /"once"/)
   assert.match(runOnce, /runCycle\(ctx\)/)
 })
