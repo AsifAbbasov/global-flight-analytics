@@ -19,19 +19,28 @@ if (!datasourceUID || !/^[A-Za-z0-9_-]{3,128}$/.test(datasourceUID)) {
 function applyProductionSLOPolicy(name, parsed) {
   if (name !== 'alert-rules.json') return parsed
 
-  const rule = parsed.rules?.find((candidate) => candidate.uid === 'gfa-ingestion-freshness')
-  if (!rule) fail('alert-rules.json is missing gfa-ingestion-freshness')
+  const freshnessRule = parsed.rules?.find((candidate) => candidate.uid === 'gfa-ingestion-freshness')
+  if (!freshnessRule) fail('alert-rules.json is missing gfa-ingestion-freshness')
 
-  const condition = rule.data?.find((item) => item.refId === 'B')
-  if (condition?.model?.type !== 'math') {
+  const freshnessCondition = freshnessRule.data?.find((item) => item.refId === 'B')
+  if (freshnessCondition?.model?.type !== 'math') {
     fail('gfa-ingestion-freshness must use a Grafana-managed Math condition')
   }
 
-  condition.model.expression = `$A > ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS}`
-  rule.title = `Latest ingestion age above ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} seconds`
-  rule.annotations ??= {}
-  rule.annotations.summary = `Latest successful ingestion is older than ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} seconds.`
-  rule.annotations.description = `Production SLO alert for latest ingestion age above ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} seconds.`
+  freshnessCondition.model.expression = `$A > ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS}`
+  freshnessRule.title = `Latest ingestion age above ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} seconds`
+  freshnessRule.annotations ??= {}
+  freshnessRule.annotations.summary = `Latest successful ingestion is older than ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} seconds.`
+  freshnessRule.annotations.description = `Production SLO alert for latest ingestion age above ${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} seconds.`
+
+  const reconciliationRule = parsed.rules?.find((candidate) => candidate.uid === 'gfa-reconciliation-backlog')
+  if (!reconciliationRule) fail('alert-rules.json is missing gfa-reconciliation-backlog')
+
+  const reconciliationQuery = reconciliationRule.data?.find((item) => item.refId === 'A')
+  if (typeof reconciliationQuery?.model?.expr !== 'string') {
+    fail('gfa-reconciliation-backlog must expose a Prometheus query')
+  }
+  reconciliationQuery.model.expr = `(${reconciliationQuery.model.expr}) or vector(0)`
 
   return parsed
 }
@@ -47,4 +56,4 @@ for (const name of ['folder.json', 'dashboard.json', 'alert-rules.json']) {
   const rendered = JSON.stringify(parsed, null, 2) + '\n'
   fs.writeFileSync(path.join(outputDirectory, name), rendered)
 }
-console.log(`GRAFANA_OBSERVABILITY_RENDER=PASS ingestion_freshness_budget_seconds=${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS}`)
+console.log(`GRAFANA_OBSERVABILITY_RENDER=PASS ingestion_freshness_budget_seconds=${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} reconciliation_no_data=zero`)

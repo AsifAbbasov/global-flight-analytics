@@ -21,6 +21,66 @@ function count(source, pattern) {
   return source.match(pattern)?.length ?? 0
 }
 
+function parseFallbackMinutes(workflowSource) {
+  const cronMatches = [
+    ...workflowSource.matchAll(/^\s*-\s+cron:\s+['"]([^'"]+)['"]\s*$/gm),
+  ]
+  assert(
+    cronMatches.length === 1,
+    'production ingestion workflow must declare exactly one GitHub fallback cron'
+  )
+
+  const cron = cronMatches[0][1].trim()
+  const fields = cron.split(/\s+/)
+  assert(
+    fields.length === 5,
+    'production ingestion fallback must use a five-field cron expression'
+  )
+  assert(
+    fields.slice(1).every((field) => field === '*'),
+    'production ingestion fallback must run uniformly across all hours and days'
+  )
+
+  const minuteField = fields[0]
+  let minutes
+  const stepMatch = /^\*\/(\d+)$/.exec(minuteField)
+  if (stepMatch) {
+    const step = Number(stepMatch[1])
+    assert(
+      Number.isInteger(step) && step > 0 && step <= 60,
+      'production ingestion fallback minute step must be between 1 and 60'
+    )
+    minutes = []
+    for (let minute = 0; minute < 60; minute += step) minutes.push(minute)
+  } else {
+    minutes = minuteField.split(',').map((value) => Number(value))
+    assert(
+      minutes.length > 0 &&
+        minutes.every(
+          (minute) => Number.isInteger(minute) && minute >= 0 && minute < 60
+        ),
+      'production ingestion fallback minutes must be valid minute values'
+    )
+    minutes = [...new Set(minutes)].sort((left, right) => left - right)
+  }
+
+  assert(
+    minutes.length >= 2,
+    'production ingestion fallback must run more than once per hour'
+  )
+
+  const gaps = minutes.map((minute, index) => {
+    const next = minutes[(index + 1) % minutes.length]
+    return index === minutes.length - 1 ? next + 60 - minute : next - minute
+  })
+
+  return {
+    cron,
+    minimumGapMinutes: Math.min(...gaps),
+    maximumGapMinutes: Math.max(...gaps),
+  }
+}
+
 const workflow = read('.github/workflows/production-traffic-ingestion.yml')
 const main = read('apps/api/cmd/ingest/main.go')
 const options = read('apps/api/cmd/ingest/command_options.go')
@@ -29,14 +89,15 @@ const freshness = read('scripts/verify-production-traffic-freshness.mjs')
 const renderBlueprint = read('render.yaml')
 const packageJSON = JSON.parse(read('package.json'))
 const releaseVerifier = read('scripts/verify-release.sh')
+const fallbackSchedule = parseFallbackMinutes(workflow)
 
 assert(
-  workflow.includes("cron: '37 * * * *'"),
-  'production ingestion workflow must retain the offset hourly GitHub fallback'
+  fallbackSchedule.maximumGapMinutes <= 15,
+  'production ingestion GitHub fallback must never leave more than fifteen minutes between runs'
 )
 assert(
-  !workflow.includes("cron: '*/10 * * * *'"),
-  'GitHub Actions must not remain the ten-minute primary after Cloudflare cutover'
+  fallbackSchedule.minimumGapMinutes >= 15,
+  'GitHub Actions fallback must not become a higher-frequency primary scheduler'
 )
 assert(
   workflow.includes('workflow_dispatch:'),
@@ -73,6 +134,10 @@ assert(
 assert(
   workflow.includes('verify-production-traffic-freshness.mjs'),
   'production ingestion workflow must verify end-to-end freshness'
+)
+assert(
+  workflow.includes("MAX_TRAFFIC_AGE_SECONDS: '1800'"),
+  'production ingestion workflow must retain the 1800-second freshness budget'
 )
 assert(
   count(workflow, /uses:\s+[^\s]+@[0-9a-f]{40}(?:\s+#\s+v\d+)?/g) ===
@@ -126,4 +191,9 @@ assert(
   'release verification must run production ingestion source verification'
 )
 
+console.log(
+  `PRODUCTION_INGESTION_FALLBACK_CRON=${fallbackSchedule.cron} ` +
+    `MIN_GAP_MINUTES=${fallbackSchedule.minimumGapMinutes} ` +
+    `MAX_GAP_MINUTES=${fallbackSchedule.maximumGapMinutes}`
+)
 console.log('PRODUCTION_INGESTION_CONTRACT=PASS')

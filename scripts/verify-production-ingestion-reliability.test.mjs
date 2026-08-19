@@ -17,6 +17,28 @@ function read(relativePath) {
   )
 }
 
+function scheduledMinuteGaps(workflow) {
+  const match = workflow.match(/cron: '([^']+)'/)
+  assert.ok(match, 'production ingestion workflow must define a cron schedule')
+
+  const [minuteField, hourField, dayOfMonth, month, dayOfWeek] = match[1].split(/\s+/)
+  assert.equal(hourField, '*')
+  assert.equal(dayOfMonth, '*')
+  assert.equal(month, '*')
+  assert.equal(dayOfWeek, '*')
+
+  const minutes = [...new Set(minuteField.split(',').map(Number))].sort(
+    (left, right) => left - right
+  )
+  assert.ok(minutes.length >= 2)
+  assert.ok(minutes.every((value) => Number.isInteger(value) && value >= 0 && value <= 59))
+
+  return minutes.map((minute, index) => {
+    const next = minutes[(index + 1) % minutes.length]
+    return index === minutes.length - 1 ? 60 - minute + next : next - minute
+  })
+}
+
 test('repository reliability verifier accepts the current checkout', () => {
   const result = spawnSync(
     process.execPath,
@@ -36,9 +58,10 @@ test('repository reliability verifier accepts the current checkout', () => {
     result.stdout,
     /CLOUDFLARE_RELIABILITY_SOURCE_CONTRACT=PASS/
   )
+  assert.match(result.stdout, /MIN_GAP_MINUTES=15 MAX_GAP_MINUTES=15/)
 })
 
-test('cutover keeps Cloudflare primary and GitHub hourly fallback', () => {
+test('cutover keeps Cloudflare primary and a fifteen-minute GitHub fallback', () => {
   const workflow = read(
     '.github/workflows/production-traffic-ingestion.yml'
   )
@@ -48,7 +71,9 @@ test('cutover keeps Cloudflare primary and GitHub hourly fallback', () => {
     )
   )
 
-  assert.match(workflow, /cron: '37 \* \* \* \*'/)
+  const gaps = scheduledMinuteGaps(workflow)
+  assert.equal(Math.min(...gaps), 15)
+  assert.equal(Math.max(...gaps), 15)
   assert.doesNotMatch(workflow, /cron: '\*\/10 \* \* \* \*'/)
   assert.deepEqual(config.triggers.crons, [
     '3,13,23,33,43,53 * * * *',

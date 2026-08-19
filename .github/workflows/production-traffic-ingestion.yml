@@ -2,7 +2,7 @@ name: Production Traffic Ingestion
 
 on:
   schedule:
-    - cron: '37 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       dispatch_source:

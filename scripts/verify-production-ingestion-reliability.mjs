@@ -22,6 +22,37 @@ function assert(condition, message) {
   }
 }
 
+function parseScheduledMinutes(workflow) {
+  const match = workflow.match(/cron: '([^']+)'/)
+  assert(match, 'production ingestion workflow must define a cron schedule')
+
+  const cron = match[1]
+  const [minuteField, hourField, dayOfMonth, month, dayOfWeek] = cron.split(/\s+/)
+  assert(
+    hourField === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*',
+    'production ingestion GitHub fallback must remain an every-hour minute schedule'
+  )
+
+  const minutes = minuteField.split(',').map((value) => Number(value))
+  assert(
+    minutes.length >= 2 &&
+      minutes.every((value) => Number.isInteger(value) && value >= 0 && value <= 59),
+    'production ingestion GitHub fallback must use explicit bounded minute offsets'
+  )
+
+  const sorted = [...new Set(minutes)].sort((left, right) => left - right)
+  const gaps = sorted.map((minute, index) => {
+    const next = sorted[(index + 1) % sorted.length]
+    return index === sorted.length - 1 ? 60 - minute + next : next - minute
+  })
+
+  return {
+    cron,
+    minGapMinutes: Math.min(...gaps),
+    maxGapMinutes: Math.max(...gaps),
+  }
+}
+
 const workerPath =
   'infra/cloudflare/production-ingestion-reliability'
 const source = read(`${workerPath}/src/index.mjs`)
@@ -32,6 +63,7 @@ const infraReadme = read(`${workerPath}/README.md`)
 const workflow = read(
   '.github/workflows/production-traffic-ingestion.yml'
 )
+const fallbackSchedule = parseScheduledMinutes(workflow)
 const packageJSON = JSON.parse(read('package.json'))
 const releaseVerifier = read('scripts/verify-release.sh')
 const backendCI = read('.github/workflows/backend-ci.yml')
@@ -127,8 +159,12 @@ assert(
   'Worker tests must cover active-run deduplication'
 )
 assert(
-  workflow.includes("cron: '37 * * * *'"),
-  'GitHub Actions must remain available as an hourly fallback'
+  fallbackSchedule.maxGapMinutes <= 15,
+  'GitHub Actions fallback must run at least every fifteen minutes'
+)
+assert(
+  fallbackSchedule.minGapMinutes >= 15,
+  'GitHub Actions fallback must not become more frequent than every fifteen minutes'
 )
 assert(
   !workflow.includes("cron: '*/10 * * * *'"),
@@ -282,6 +318,9 @@ assert(
   'repository must not contain local Worker secrets'
 )
 
+console.log(
+  `GITHUB_FALLBACK_CRON=${fallbackSchedule.cron} MIN_GAP_MINUTES=${fallbackSchedule.minGapMinutes} MAX_GAP_MINUTES=${fallbackSchedule.maxGapMinutes}`
+)
 console.log('CLOUDFLARE_RELIABILITY_SOURCE_CONTRACT=PASS')
 console.log('ZERO_COST_INGESTION_RELIABILITY_FOUNDATION=PASS')
 console.log('PRODUCTION_INGESTION_RELIABILITY=PASS')

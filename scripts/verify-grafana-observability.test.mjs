@@ -65,6 +65,35 @@ test('rendered production alert aligns ingestion freshness with the 1800 second 
   }
 })
 
+test('rendered reconciliation alert treats missing pending series as zero', () => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'gfa-grafana-test-'))
+  try {
+    const output = execFileSync(
+      process.execPath,
+      ['scripts/render-grafana-observability.mjs', outputDirectory],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GRAFANA_PROMETHEUS_DATASOURCE_UID: 'prometheus-test-uid',
+        },
+      },
+    )
+    assert.match(output, /reconciliation_no_data=zero/)
+
+    const renderedAlerts = JSON.parse(
+      fs.readFileSync(path.join(outputDirectory, 'alert-rules.json'), 'utf8'),
+    )
+    const reconciliation = renderedAlerts.rules.find(
+      (rule) => rule.uid === 'gfa-reconciliation-backlog',
+    )
+    const query = reconciliation?.data.find((item) => item.refId === 'A')
+    assert.match(query?.model?.expr ?? '', /or vector\(0\)$/)
+  } finally {
+    fs.rmSync(outputDirectory, { recursive: true, force: true })
+  }
+})
+
 test('Grafana Cloud provisioning uses the stack namespace', () => {
   assert.match(workflow, /GRAFANA_STACK_ID: \$\{\{ vars\.GRAFANA_STACK_ID \}\}/)
   assert.match(provision, /GRAFANA_NAMESPACE="stacks-\$GRAFANA_STACK_ID"/)
