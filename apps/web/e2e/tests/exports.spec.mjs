@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import {
   readDownloadedText,
   setScenario,
+  waitForMapFirstHydration,
 } from './helpers.mjs'
 
 test.beforeEach(async ({ request }) => {
@@ -16,6 +17,11 @@ test('CSV export downloads the deterministic typed traffic snapshot', async ({
     waitUntil: 'domcontentloaded',
   })
 
+  await waitForMapFirstHydration(page)
+
+  await page
+    .getByLabel('Open live data controls')
+    .click()
   const exportRegion = page.getByRole('region', {
     name: 'Research snapshot export',
   })
@@ -49,14 +55,28 @@ test('GeoJSON export preserves coordinates and provenance metadata', async ({
     waitUntil: 'domcontentloaded',
   })
 
+  await waitForMapFirstHydration(page)
+
+  await page
+    .getByLabel('Open live data controls')
+    .click()
   const exportRegion = page.getByRole('region', {
     name: 'Research snapshot export',
   })
+  await expect(exportRegion).toBeVisible()
+  await expect(
+    exportRegion.getByText('2 records ready for reproducible export.', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  const downloadButton = exportRegion.getByRole('button', {
+    name: 'Download GeoJSON',
+  })
+  await expect(downloadButton).toBeEnabled()
+
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    exportRegion
-      .getByRole('button', { name: 'Download GeoJSON' })
-      .click(),
+    downloadButton.click(),
   ])
 
   expect(download.suggestedFilename()).toMatch(

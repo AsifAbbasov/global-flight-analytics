@@ -77,6 +77,10 @@ func New(
 		v1,
 		normalizedConfig.DatabasePool,
 	)
+	registerLiveTrafficRoutes(
+		v1,
+		normalizedConfig.LiveTrafficStore,
+	)
 
 	if normalizedConfig.DatabasePool != nil {
 		mutationAuthorization, err :=

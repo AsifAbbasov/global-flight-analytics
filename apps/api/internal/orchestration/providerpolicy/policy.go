@@ -8,6 +8,7 @@ import (
 type Provider string
 
 const (
+	ProviderADSBLOL       Provider = "adsb.lol"
 	ProviderAirplanesLive Provider = "airplanes.live"
 	ProviderOpenMeteo     Provider = "open_meteo"
 	ProviderOurAirports   Provider = "ourairports"
@@ -17,8 +18,9 @@ const (
 type Provenance string
 
 const (
-	ProvenanceSourceBacked     Provenance = "SOURCE-BACKED"
-	ProvenanceProviderDirected Provenance = "PROVIDER-DIRECTED"
+	ProvenanceSourceBacked       Provenance = "SOURCE-BACKED"
+	ProvenanceProviderDirected   Provenance = "PROVIDER-DIRECTED"
+	ProvenanceApplicationDefined Provenance = "APPLICATION-DEFINED"
 )
 
 type BudgetMode string
@@ -75,6 +77,8 @@ func Get(
 	provider Provider,
 ) (Policy, error) {
 	switch provider {
+	case ProviderADSBLOL:
+		return adsbLOLPolicy(), nil
 	case ProviderAirplanesLive:
 		return airplanesLivePolicy(), nil
 	case ProviderOpenMeteo:
@@ -94,6 +98,7 @@ func Get(
 
 func All() []Policy {
 	return []Policy{
+		adsbLOLPolicy(),
 		airplanesLivePolicy(),
 		openMeteoPolicy(),
 		ourAirportsPolicy(),
@@ -251,8 +256,40 @@ func isSupportedWindow(
 	}
 }
 
+func adsbLOLPolicy() Policy {
+	const reference = "docs/189_RAPID_LIVE_PROVIDER_ACTIVATION_AND_SERVER_WIRING.md"
+
+	return Policy{
+		Provider:   ProviderADSBLOL,
+		BudgetMode: BudgetModeFixedWindow,
+		RequestLimits: []RequestLimit{
+			{
+				MaxRequests: 6,
+				Window:      WindowMinute,
+				Provenance:  ProvenanceApplicationDefined,
+				Reference:   reference,
+			},
+			{
+				MaxRequests: 360,
+				Window:      WindowHour,
+				Provenance:  ProvenanceApplicationDefined,
+				Reference:   reference,
+			},
+			{
+				MaxRequests: 8640,
+				Window:      WindowDay,
+				Provenance:  ProvenanceApplicationDefined,
+				Reference:   reference,
+			},
+		},
+	}
+}
+
 func airplanesLivePolicy() Policy {
-	const reference = "https://airplanes.live/api-guide/"
+	const (
+		guideReference = "https://airplanes.live/api-guide/"
+		tierReference  = "https://airplanes.live/api/"
+	)
 
 	return Policy{
 		Provider:   ProviderAirplanesLive,
@@ -262,7 +299,13 @@ func airplanesLivePolicy() Policy {
 				MaxRequests: 1,
 				Window:      WindowSecond,
 				Provenance:  ProvenanceSourceBacked,
-				Reference:   reference,
+				Reference:   guideReference,
+			},
+			{
+				MaxRequests: 500,
+				Window:      WindowDay,
+				Provenance:  ProvenanceSourceBacked,
+				Reference:   tierReference,
 			},
 		},
 	}

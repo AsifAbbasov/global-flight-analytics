@@ -15,30 +15,35 @@ test.beforeEach(async ({ request }) => {
   await setScenario(request, 'healthy')
 })
 
-test('renders an OpenAPI-backed server snapshot', async ({ page }) => {
+test('renders an OpenAPI-backed server snapshot in the map-first shell', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    'Observe aviation data.',
-  )
+  await expect(
+    page.getByRole('region', { name: 'Live flight tracker' }),
+  ).toBeVisible()
   await expect(
     page.getByText('Initial snapshot ready', { exact: true }),
   ).toBeVisible()
+  const initialStatus = page.getByLabel('Initial platform status')
+  await expect(
+    initialStatus.getByText('2', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    initialStatus.getByText('aircraft', { exact: true }),
+  ).toBeVisible()
 
-  const initialAircraftCard = page
-    .getByRole('article')
-    .filter({ hasText: 'Initial aircraft' })
-  await expect(initialAircraftCard).toContainText('2')
-
-  const region = page.getByRole('combobox', { name: 'Region' })
+  const region = page.getByRole('combobox', { name: 'Traffic region' })
   await expect(region).toHaveValue('world')
   await expect(region).toContainText('World')
   await expect(region).toContainText('Azerbaijan')
   await expect(region).toContainText('Turkey')
 
   await expect(
-    page.getByRole('heading', { name: 'Current Traffic — World' }),
+    page.getByRole('region', { name: 'Current traffic map focused on World' }),
   ).toBeVisible()
+  await page
+    .getByLabel('Open live data controls')
+    .click()
   await expect(
     page
       .getByRole('region', { name: 'Live traffic data controls' })
@@ -57,7 +62,7 @@ test('changing region updates the shareable workspace URL', async ({
     /\/\?region=world&view=aircraft#live-traffic$/,
   )
 
-  const region = page.getByRole('combobox', { name: 'Region' })
+  const region = page.getByRole('combobox', { name: 'Traffic region' })
   await expect(region).toHaveValue('world')
   await region.selectOption('az')
 
@@ -66,10 +71,13 @@ test('changing region updates the shareable workspace URL', async ({
   )
   await expect(region).toHaveValue('az')
   await expect(
-    page.getByRole('heading', {
-      name: 'Current Traffic — Azerbaijan',
+    page.getByRole('region', {
+      name: 'Current traffic map focused on Azerbaijan',
     }),
   ).toBeVisible()
+  await page
+    .getByLabel('Open live data controls')
+    .click()
   await expect(
     page
       .getByRole('region', { name: 'Live traffic data controls' })
@@ -88,10 +96,16 @@ test('mobile navigation keeps product sections reachable', async ({
     name: 'Mobile primary navigation',
   })
   await expect(
-    mobileNavigation.getByRole('link', { name: 'Live workspace' }),
+    mobileNavigation.getByRole('link', { name: 'Live map' }),
   ).toBeVisible()
   await expect(
-    mobileNavigation.getByRole('link', { name: 'Research scope' }),
+    mobileNavigation.getByRole('link', { name: 'Analytics' }),
+  ).toBeVisible()
+  await expect(
+    mobileNavigation.getByRole('link', { name: 'History' }),
+  ).toBeVisible()
+  await expect(
+    mobileNavigation.getByRole('link', { name: 'About' }),
   ).toBeVisible()
 
   const canonicalURL = new URL(page.url())

@@ -11,6 +11,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/response"
 	internalmiddleware "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/middleware"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/observability"
+	livetraffic "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/services/traffic/live"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -39,6 +40,16 @@ func normalizeConfig(
 		return Config{}, fmt.Errorf(
 			"configured metrics key digest must not be zero",
 		)
+	}
+	if cfg.LiveTrafficStore == nil {
+		liveStore, err := livetraffic.NewStore(livetraffic.DefaultConfig())
+		if err != nil {
+			return Config{}, fmt.Errorf(
+				"create default live traffic store: %w",
+				err,
+			)
+		}
+		cfg.LiveTrafficStore = liveStore
 	}
 
 	protection, err := normalizeProtectionConfig(

@@ -14,6 +14,7 @@ func TestLoadTrafficProviderConfigDefaultsToAirplanesLive(
 	t.Setenv(openSkyClientSecretEnvironmentVariable, "")
 	t.Setenv(openSkyTimeoutEnvironmentVariable, "")
 	t.Setenv(openSkyPollingIntervalEnvironmentVariable, "")
+	t.Setenv(openSkyOperationalAgreementConfirmedEnvironmentVariable, "false")
 
 	config, err := LoadTrafficProviderConfig()
 	if err != nil {
@@ -34,6 +35,7 @@ func TestLoadTrafficProviderConfigAcceptsAutomaticFallback(
 	t.Setenv(openSkyClientIDEnvironmentVariable, "")
 	t.Setenv(openSkyClientSecretEnvironmentVariable, "")
 	t.Setenv(openSkyPollingIntervalEnvironmentVariable, "")
+	t.Setenv(openSkyOperationalAgreementConfirmedEnvironmentVariable, "true")
 
 	config, err := LoadTrafficProviderConfig()
 	if err != nil {
@@ -54,6 +56,7 @@ func TestLoadTrafficProviderConfigUsesAuthenticatedMinimum(
 	t.Setenv(openSkyClientIDEnvironmentVariable, "client")
 	t.Setenv(openSkyClientSecretEnvironmentVariable, "secret")
 	t.Setenv(openSkyPollingIntervalEnvironmentVariable, "")
+	t.Setenv(openSkyOperationalAgreementConfirmedEnvironmentVariable, "true")
 
 	config, err := LoadTrafficProviderConfig()
 	if err != nil {
@@ -83,6 +86,7 @@ func TestLoadTrafficProviderConfigRejectsAnonymousFiveSecondPolling(
 	t.Setenv(openSkyClientIDEnvironmentVariable, "")
 	t.Setenv(openSkyClientSecretEnvironmentVariable, "")
 	t.Setenv(openSkyPollingIntervalEnvironmentVariable, "5s")
+	t.Setenv(openSkyOperationalAgreementConfirmedEnvironmentVariable, "true")
 
 	_, err := LoadTrafficProviderConfig()
 	if err == nil {

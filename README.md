@@ -155,29 +155,30 @@ RELEASE_VERIFICATION=PASS
 <!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->
 ## Current Engineering Status
 
-The current repository contract exposes **38 source-backed OpenAPI paths**:
-37 unauthenticated public read operations and one protected Route Intelligence
+The current repository contract exposes **39 source-backed OpenAPI paths**:
+38 unauthenticated public read operations and one protected Route Intelligence
 mutation. The API developer experience includes embedded documentation at
 `/api/docs`, the embedded source-backed specification at
 `/api/docs/openapi.json`, and a generated TypeScript client whose metadata is
 verified against the canonical contract.
 
-Browser verification now contains **twenty deterministic Chromium product
-journeys** and **seven deterministic private mock scenarios**. The suite covers
-the application shell, canonical workspace URLs, mobile navigation, aircraft
-selection and deep links, Airport Intelligence, Historical Intelligence,
-Projection/Weather/Stability evidence, CSV and GeoJSON downloads, bounded
-failure/recovery, accessibility semantics and desktop/mobile layout invariants.
-Full-page screenshot evidence is retained without freezing the pre-redesign UI
-into pixel-golden baselines.
+Browser verification contains **twenty deterministic Chromium product
+journeys** and **seven deterministic private mock scenarios**. On the active
+map-first redesign branch, browser coverage follows the aircraft-only frontend:
+the suite covers the application shell, canonical workspace URLs, mobile
+navigation, aircraft selection and deep links, the explicit no-Airport frontend
+boundary, Historical Intelligence, Projection/Weather/Stability evidence, CSV
+and GeoJSON downloads, bounded failure/recovery, accessibility semantics and
+desktop/mobile layout invariants. Full-page screenshot evidence is retained
+without freezing the in-progress redesign into pixel-golden baselines.
 
 The pull-request quality surface includes Backend CI, Frontend CI, OpenAPI
 Contract, CodeQL, API Load Baseline and Playwright E2E. The root
 `pnpm verify:release` command remains the complete local release gate.
 
 ```text
-OPENAPI_CONTRACT_PATHS=38
-OPENAPI_PUBLIC_READ_OPERATIONS=37
+OPENAPI_CONTRACT_PATHS=39
+OPENAPI_PUBLIC_READ_OPERATIONS=38
 OPENAPI_PROTECTED_MUTATION_OPERATIONS=1
 PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20
 PLAYWRIGHT_E2E_MOCK_SCENARIOS=7
@@ -187,13 +188,57 @@ FRONTEND_DEPENDENCY_SECURITY=CLOSED
 RELEASE_VERIFICATION=PASS
 ```
 
+<!-- FRONTEND-MAP-FIRST-REDESIGN-2026-08-V1 -->
+## Frontend Map-First Redesign — Current Branch Status
+
+The active frontend redesign is converting the existing analytical interface into
+an aircraft-first, map-first research experience while preserving backend-owned
+analytical semantics and existing persistence contracts.
+
+Current feature-branch work includes:
+
+- a clean map-first application shell with a dedicated Aircraft Explorer sidebar;
+- an intentionally aircraft-only primary frontend scope: Airport Intelligence
+  navigation and workspace mounting are temporarily removed from the redesign UI,
+  while the backend, API implementation and repository documentation remain intact
+  for later product reintegration;
+- a full-stage MapLibre workspace with container-resize observation so the map
+  resizes with the product shell instead of rendering as a partial strip;
+- deterministic live-traffic hydration: initial query timestamps are derived from
+  observation evidence, absolute timestamps are rendered in UTC, and the live age
+  clock starts after hydration through `requestAnimationFrame`;
+- lazy mounting for hidden analytical drawers so closed workspaces do not issue
+  their data requests merely because they exist in the page structure;
+- one-open-at-a-time behavior across all right-side surfaces: Live Data, Traffic
+  Analysis, Analytics Overview and Historical Workspace now close the previously
+  active right-side surface before opening the next one;
+- removal of the stale Airport Intelligence map-tool control from the current
+  aircraft-only frontend surface.
+
+Latest local validation for this feature-branch increment:
+
+```text
+FRONTEND_TESTS=88/88_PASS
+FRONTEND_LINT=PASS
+FRONTEND_TYPECHECK=PASS
+AIRCRAFT_ONLY_FRONTEND_SCOPE=PASS
+MAP_STAGE_FULL_HEIGHT=PASS
+RIGHT_SIDEBAR_POLICY=ONE_OPEN_AT_A_TIME
+```
+
+These markers describe local feature-branch evidence only. They do not replace
+the final pixel-golden Playwright baseline, complete release verification,
+exact-production deployment validation or the final `v1.0.0` release closure.
+
 ## Remaining Portfolio v1.0.0 Work
 
 The heavy backend, persistence, analytical, API, production-reliability and
-functional browser work is closed for the current portfolio scope. The
-remaining release sequence is intentionally product-facing:
+functional browser work is closed for the current portfolio scope. The map-first
+frontend redesign is now in progress: its current runtime and interaction
+hardening is locally validated, while final visual polish and release validation
+remain open. The remaining release sequence is intentionally product-facing:
 
-1. complete the **Frontend Visual and Interaction Redesign**;
+1. finish visual polish and interaction review for the **Frontend Visual and Interaction Redesign**;
 2. add final **pixel-golden Playwright screenshot baselines** after the
    redesigned interface is stable;
 3. run the complete release gate against the redesign;
@@ -205,7 +250,7 @@ No new microservice, Kubernetes, Redis, Kafka or separate backend topology is
 required for this release boundary.
 
 ```text
-FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=OPEN
+FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IN_PROGRESS
 PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
 FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
 FINAL_RELEASE_DOCUMENTATION=OPEN
@@ -944,3 +989,83 @@ regression tests, and permanent Backend Continuous Integration audit enforcement
 The production API remains the only Render service. A serialized GitHub Actions workflow runs the existing ingestion pipeline in explicit one-shot mode every ten minutes and verifies that the public traffic endpoint contains observations no older than thirty minutes.
 
 `PRODUCTION_INGESTION_DATABASE_URL` is stored only as a GitHub Actions repository secret. Scheduled execution is best effort and does not imply continuous, operational or safety-critical tracking. See `docs/173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md`.
+
+<!-- REALTIME-FLIGHT-DATA-FOUNDATION-V1 -->
+## Realtime Flight Data Foundation
+
+The original production traffic path remains the durable research lane: governed provider ingestion samples observations into PostgreSQL for trajectories, history and analytics. The FR24 architecture audit showed that a smooth live map needs a separate hot path, so the backend now also owns a bounded in-memory current-state engine and a compact public `GET /api/v1/traffic/live` snapshot contract.
+
+```text
+governed provider -> normalization -> current-state store -> live snapshot -> browser interpolation
+                                      \
+                                       -> sampled observations -> PostgreSQL -> analytics/history
+```
+
+The current-state store keeps the latest state per ICAO24, preserves nullable telemetry and source provenance, applies deterministic deduplication, time-to-live stale eviction and bounded capacity, exposes server time plus a monotonically increasing sequence, supports geographic bounding boxes, and keeps explicitly selected aircraft in the response even when they move outside the visible box. Provider acquisition is centralized; browsers read current state rather than multiplying upstream provider calls.
+
+PostgreSQL is deliberately not used as per-frame realtime transport, and browser interpolation is display-only estimated motion rather than measured aviation evidence. The existing durable scheduler remains active and no animation frame is persisted as an observation.
+
+The zero-cost boundary is also explicit. No Redis, Kafka, Kubernetes, paid API or new microservice is required. Airplanes.live remains the configured durable production provider, but its free quota is not treated as permission for a continuous 5–10 second production poll. OpenSky provider modes fail closed unless the required written operational agreement has actually been confirmed with `OPENSKY_OPERATIONAL_AGREEMENT_CONFIRMED=true`. Future community providers remain behind the existing adapter and are activated only after their operational-use requirements are accepted.
+
+This gives GFA a faster and more scalable live-data foundation while preserving the deeper analytical architecture. Denser future policy-compliant sampling can improve trajectory continuity, flight-phase detection, route inference, density and freshness analysis, but the system never claims greater sensor accuracy than its sources provide.
+
+Scoped local verification completed on the active feature branch: the full Go test suite, OpenAPI contract and route inventory, embedded developer documentation, generated TypeScript client, durable ingestion and reliability contracts, repository governance, release portfolio contract, and diff integrity all passed. The complete release gate remains deferred only because unrelated frontend redesign work already existed in the working tree before this increment; rapid live-provider production activation and frontend realtime integration remain separate open stages.
+
+```text
+REALTIME_CURRENT_STATE_FOUNDATION=CLOSED
+LIVE_SNAPSHOT_CONTRACT=CLOSED
+ZERO_COST_LIVE_SOURCE_POLICY=CLOSED
+DURABLE_SAMPLING_BOUNDARY=PRESERVED
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=OPEN
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+Detailed boundaries and activation constraints are recorded in [`docs/187_REALTIME_FLIGHT_DATA_FOUNDATION.md`](docs/187_REALTIME_FLIGHT_DATA_FOUNDATION.md).
+
+<!-- CENTRAL-LIVE-TRAFFIC-COLLECTOR-CORE-V1 -->
+## Central Live Traffic Collector Core
+
+The post-Realtime-Foundation data plane now has a provider-agnostic central collector core. It accepts the existing regional provider contract, performs one centralized acquisition loop for configured geographic targets, writes canonical `FlightState` observations into the existing in-memory live traffic store, and never performs upstream requests per browser session.
+
+The collector owns lifecycle cancellation, per-request timeouts, sequential target spacing, exponential failure backoff, non-negative jitter that never intentionally polls faster than the configured base cadence, provider retry-at evidence, and immutable health/status snapshots. It does not generate synthetic intermediate aircraft positions; browser interpolation remains a later display-only responsibility.
+
+The canonical Airplanes.live provider policy now records both published limits relevant to the free tier: one request per second and 500 requests per day. For one geographic target the daily budget implies a minimum average request interval of 172.8 seconds. This means Airplanes.live remains useful for durable/research acquisition but is not represented as a free 5-10 second production live source.
+
+The collector core is intentionally not production-activated yet. `adsb.lol` is the leading zero-cost rapid-live candidate because its public API is free, ODbL-licensed, and exposes a 250 nm point endpoint, but its operator explicitly asks production users to make contact first. Production activation therefore remains fail-closed until that operational dependency is resolved and encoded as source policy.
+
+```text
+CENTRAL_LIVE_COLLECTOR_CORE=CLOSED
+AIRPLANES_LIVE_FREE_DAILY_BUDGET=500
+AIRPLANES_LIVE_RAPID_FREE_POLLING=NOT_SUPPORTED
+ADSB_LOL_PRODUCTION_POLICY_REVIEW=OPEN
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=OPEN
+CENTRAL_COLLECTOR_SERVER_WIRING=OPEN
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+Detailed implementation boundaries are recorded in [`docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md`](docs/188_CENTRAL_LIVE_TRAFFIC_COLLECTOR_CORE.md).
+
+<!-- RAPID-LIVE-PROVIDER-SERVER-WIRING-V1 -->
+## Rapid Live Provider Activation and Server Wiring
+
+The API process now has a production-ready composition path for the central live collector. The implementation reuses the existing provider budget, provider response, provider health, ingestion orchestration and regional-provider boundaries instead of introducing a second live-provider framework.
+
+`adsb.lol` is implemented as a bounded point-query adapter and mapped into the canonical `FlightState` model before entering the current-state store. GFA applies its own conservative application cap of six requests per minute and a collector poll interval floor of ten seconds. These are project safety limits, not claims about a provider-published quota.
+
+Production activation remains deliberately fail-closed. The current `adsb.lol` API terms say production users should contact the operator so API changes do not unexpectedly break their applications. Therefore `LIVE_TRAFFIC_COLLECTOR_ENABLED=true` is rejected unless `ADSB_LOL_PRODUCTION_CONTACT_CONFIRMED=true` is explicitly configured after that operational dependency has been resolved.
+
+When disabled, which remains the default, the API starts exactly as before and the public live snapshot remains healthy but empty/stale-pruned until another approved collector populates it.
+
+```text
+ADSB_LOL_ADAPTER=CLOSED
+CENTRAL_COLLECTOR_SERVER_WIRING=CLOSED
+PROVIDER_ORCHESTRATION_REUSED=YES
+UPSTREAM_REQUESTS_PER_BROWSER=NO
+ADSB_LOL_APPLICATION_CAP=6_PER_MINUTE
+ADSB_LOL_MINIMUM_COLLECTOR_INTERVAL=10_SECONDS
+ADSB_LOL_PRODUCTION_CONTACT_CONFIRMED=REQUIRED_FOR_ENABLE
+RAPID_LIVE_PROVIDER_PRODUCTION_ACTIVATION=BLOCKED_EXTERNAL_CONFIRMATION
+FRONTEND_REALTIME_INTEGRATION=OPEN
+```
+
+See `docs/189_RAPID_LIVE_PROVIDER_ACTIVATION_AND_SERVER_WIRING.md`.

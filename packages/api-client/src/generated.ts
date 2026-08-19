@@ -1,6 +1,6 @@
 /* eslint-disable */
 // This file is generated from openapi/openapi.json. Do not edit manually.
-// OpenAPI SHA-256: 3a4c8765e3f91af66c3d894e826615af1de08c0fd413a293ffdd45e45f1a9022
+// OpenAPI SHA-256: ca293fd4ff3649b593efabdb2b5225d3846213541f6dd0a76b0c54e3c4cd9109
 
 export type ActiveAircraftMetric = {
   readonly metric: "active_aircraft"
@@ -888,6 +888,36 @@ export type IntelligenceNotice = {
   readonly message: string
 }
 
+export type LiveTrafficItem = {
+  readonly icao24: string
+  readonly callsign: string
+  readonly latitude: number
+  readonly longitude: number
+  readonly altitude_m: number | null
+  readonly velocity_mps: number | null
+  readonly heading_degrees: number | null
+  readonly vertical_rate_mps: number | null
+  readonly on_ground: boolean | null
+  readonly observed_at: string
+  readonly received_at: string
+  readonly source: string
+  readonly freshness_ms: number
+}
+
+export type LiveTrafficResponse = {
+  readonly success: true
+  readonly data: LiveTrafficSnapshot
+}
+
+export type LiveTrafficSnapshot = {
+  readonly server_time: string
+  readonly sequence: number
+  readonly aircraft: ReadonlyArray<LiveTrafficItem>
+  readonly total_active: number
+  readonly matching: number
+  readonly truncated: boolean
+}
+
 export type MetricConfidence = {
   readonly level: "high" | "medium" | "low" | "none"
   readonly score: number
@@ -1771,6 +1801,16 @@ export interface OperationParameters {
       readonly icao24: string
     }
   }
+  readonly getLiveTraffic: {
+    readonly query?: {
+      readonly min_lat?: number
+      readonly min_lon?: number
+      readonly max_lat?: number
+      readonly max_lon?: number
+      readonly selected?: string
+      readonly limit?: number
+    }
+  }
   readonly getProjectionIntelligenceByTrajectoryID: {
     readonly path: {
       readonly id: string
@@ -1872,6 +1912,7 @@ export interface OperationResponses {
   readonly getLatestRouteIntelligenceByTrajectoryID: RouteIntelligenceRecordResponse
   readonly getLatestTrajectoryByICAO24: TrajectoryResponse
   readonly getLatestTransponderEvidence: TransponderEvidenceResponse
+  readonly getLiveTraffic: LiveTrafficResponse
   readonly getProjectionIntelligenceByTrajectoryID: ProjectionIntelligenceResponse
   readonly getReadiness: ReadinessResponse
   readonly getRegionByCode: RegionResponse
@@ -2052,6 +2093,13 @@ export const operationDefinitions = {
       protected: false,
       hasBody: false,
       parameters: [{"name":"icao24","in":"path","required":true}],
+    },
+  getLiveTraffic: {
+      method: "GET",
+      path: "/api/v1/traffic/live",
+      protected: false,
+      hasBody: false,
+      parameters: [{"name":"min_lat","in":"query","required":false},{"name":"min_lon","in":"query","required":false},{"name":"max_lat","in":"query","required":false},{"name":"max_lon","in":"query","required":false},{"name":"selected","in":"query","required":false},{"name":"limit","in":"query","required":false}],
     },
   getProjectionIntelligenceByTrajectoryID: {
       method: "GET",

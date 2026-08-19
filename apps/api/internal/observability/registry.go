@@ -428,6 +428,8 @@ func normalizeProvider(
 		return "open_meteo"
 	case "airplanes_live", "airplanes.live":
 		return "airplanes_live"
+	case "adsb_lol", "adsb.lol":
+		return "adsb_lol"
 	case "opensky", "open_sky":
 		return "opensky"
 	default:

@@ -12,6 +12,7 @@ export const requiredOperations = new Map([
   ['/api/v1/airports', 'listAirports'],
   ['/api/v1/airports/{icao}', 'getAirportByICAO'],
   ['/api/v1/traffic/current', 'getCurrentTraffic'],
+  ['/api/v1/traffic/live', 'getLiveTraffic'],
   ['/api/v1/metrics/active-aircraft', 'getActiveAircraftMetric'],
   ['/api/v1/aircraft/{icao24}/trajectory', 'getLatestTrajectoryByICAO24'],
   ['/api/v1/aircraft/{icao24}/route-context', 'getAircraftRouteContextByICAO24'],
@@ -233,6 +234,9 @@ export function validateOpenAPIContract(spec) {
     'AirportListItem',
     'AirportProfile',
     'CurrentTrafficItem',
+    'LiveTrafficItem',
+    'LiveTrafficSnapshot',
+    'LiveTrafficResponse',
     'ActiveAircraftMetric',
     'AircraftListItem',
     'AircraftProfile',
@@ -312,6 +316,7 @@ export function validateOpenAPIContract(spec) {
     'AirportResponse',
     'AirportsResponse',
     'CurrentTrafficResponse',
+    'LiveTrafficResponse',
     'ActiveAircraftMetricResponse',
     'AircraftListResponse',
     'AircraftResponse',
@@ -579,9 +584,9 @@ function main() {
     }
     process.exit(1)
   }
-  console.log('OPENAPI_CONTRACT_PATHS=38')
-  console.log('OPENAPI_PUBLIC_READ_OPERATIONS=37')
-  console.log('OPENAPI_PROTECTED_MUTATION_OPERATIONS=1')
+  console.log(`OPENAPI_CONTRACT_PATHS=${requiredOperations.size + requiredMutationOperations.size}`)
+  console.log(`OPENAPI_PUBLIC_READ_OPERATIONS=${requiredOperations.size}`)
+  console.log(`OPENAPI_PROTECTED_MUTATION_OPERATIONS=${requiredMutationOperations.size}`)
   console.log('OPENAPI_ROUTE_INTELLIGENCE_OPERATIONS=3')
   console.log('OPENAPI_CONTRACT_SCHEMAS=PASS')
   console.log('OPENAPI_CONTRACT_SECURITY=PASS')

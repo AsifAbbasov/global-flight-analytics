@@ -19,6 +19,7 @@ type SuccessPayload interface {
 		dto.FlightStateItem |
 		dto.TransponderEvidenceResponse |
 		[]dto.CurrentTrafficItem |
+		dto.LiveTrafficSnapshot |
 		dto.Trajectory |
 		dto.AircraftRouteContext |
 		dto.RouteIntelligenceRecord |

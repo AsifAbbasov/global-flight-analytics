@@ -1,4 +1,5 @@
 // FRONTEND_LIVE_TRAFFIC_CONTROL_V1
+// FRONTEND_RUNTIME_STABILIZATION_V2
 'use client'
 
 import type { ChangeEvent, ReactNode } from 'react'
@@ -387,13 +388,14 @@ function formatDuration(value: number): string {
 }
 
 function formatAbsoluteTimestamp(value: number): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return `${new Intl.DateTimeFormat('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-  }).format(new Date(value))
+    hour12: false,
+    timeZone: 'UTC',
+  }).format(new Date(value))} UTC`
 }
-
 function formatInteger(value: number): string {
   return new Intl.NumberFormat().format(value)
 }

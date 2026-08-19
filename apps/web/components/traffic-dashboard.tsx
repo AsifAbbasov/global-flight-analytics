@@ -1,4 +1,12 @@
 // FRONTEND_TRAFFIC_DATA_QUALITY_LENS_V1
+// FRONTEND_MAP_FIRST_REDESIGN_V1
+// FRONTEND_FLIGHT_TRACKER_REFERENCE_V2
+// FRONTEND_FLIGHT_TRACKER_REFERENCE_V3
+// FRONTEND_FLIGHT_TRACKER_CLEAN_REBUILD_V1
+// FRONTEND_RUNTIME_STABILIZATION_V2
+// FRONTEND_AIRCRAFT_ONLY_SCOPE_V1
+// FRONTEND_EXCLUSIVE_MAP_POPOVERS_V1
+// FRONTEND_UNIFIED_RIGHT_SIDEBAR_EXCLUSIVITY_V1
 'use client'
 
 import { useEffect, useState, type ChangeEvent } from 'react'
@@ -12,9 +20,9 @@ import { WeatherContextPanel } from '@/components/aircraft/weather-context-panel
 import { TrafficGlobe } from '@/components/globe/traffic-globe'
 import { TrafficMap } from '@/components/map/traffic-map'
 import { LiveTrafficControl } from '@/components/traffic/live-traffic-control'
-import { TrafficSnapshotExport } from '@/components/traffic/traffic-snapshot-export'
-import { TrafficDataQualityLens } from '@/components/traffic/traffic-data-quality-lens'
 import { RegionalTrafficBrief } from '@/components/traffic/regional-traffic-brief'
+import { TrafficDataQualityLens } from '@/components/traffic/traffic-data-quality-lens'
+import { TrafficSnapshotExport } from '@/components/traffic/traffic-snapshot-export'
 import { getRequestErrorMessage } from '@/lib/api/client'
 import { useProjectionIntelligence } from '@/lib/queries/projection-intelligence'
 import { useAircraftRouteContext } from '@/lib/queries/route-context'
@@ -24,12 +32,12 @@ import {
   useStabilityIntelligence,
 } from '@/lib/queries/stability-intelligence'
 import { useCurrentTraffic } from '@/lib/queries/traffic'
+import { useLatestAircraftTrajectory } from '@/lib/queries/trajectory'
+import { useWeatherContext } from '@/lib/queries/weather-context'
 import {
   defaultLiveTrafficRefreshIntervalMilliseconds,
   type LiveTrafficRefreshIntervalMilliseconds,
 } from '@/lib/traffic/live-traffic-status-model'
-import { useLatestAircraftTrajectory } from '@/lib/queries/trajectory'
-import { useWeatherContext } from '@/lib/queries/weather-context'
 import {
   buildTrafficWorkspaceSelection,
   type TrafficWorkspacePanel,
@@ -37,6 +45,8 @@ import {
 } from '@/lib/traffic/traffic-workspace-model'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
+
+export type MapToolPopoverID = 'live-data' | 'traffic-analysis'
 
 interface TrafficDashboardProps {
   regions: Region[]
@@ -46,6 +56,9 @@ interface TrafficDashboardProps {
   onSelectedRegionCodeChange: (regionCode: string) => void
   onWorkspaceSelectionChange: (selection: TrafficWorkspaceSelection) => void
   onWorkspacePanelChange: (panel: TrafficWorkspacePanel) => void
+  activeMapPopover: MapToolPopoverID | null
+  onMapPopoverToggle: (popover: MapToolPopoverID, open: boolean) => void
+  onCloseMapPopovers: () => void
   initialTraffic: TrafficAircraft[]
   initialError: string | null
   regionsWarning: string | null
@@ -61,6 +74,9 @@ export function TrafficDashboard({
   onSelectedRegionCodeChange,
   onWorkspaceSelectionChange,
   onWorkspacePanelChange,
+  activeMapPopover,
+  onMapPopoverToggle,
+  onCloseMapPopovers,
   initialTraffic,
   initialError,
   regionsWarning,
@@ -72,14 +88,18 @@ export function TrafficDashboard({
     useState<LiveTrafficRefreshIntervalMilliseconds>(
       defaultLiveTrafficRefreshIntervalMilliseconds
     )
-  const [statusNow, setStatusNow] = useState(() => Date.now())
+  const [statusNow, setStatusNow] = useState(0)
 
   useEffect(() => {
+    const animationFrameID = window.requestAnimationFrame(() => {
+      setStatusNow(Date.now())
+    })
     const intervalID = window.setInterval(() => {
       setStatusNow(Date.now())
     }, 1000)
 
     return () => {
+      window.cancelAnimationFrame(animationFrameID)
       window.clearInterval(intervalID)
     }
   }, [])
@@ -164,23 +184,142 @@ export function TrafficDashboard({
   }
 
   return (
-    <>
-      <section className='mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4'>
-        <div className='flex flex-wrap items-end justify-between gap-4'>
-          <div className='min-w-64 flex-1'>
-            <label
-              className='block text-sm font-medium text-slate-300'
-              htmlFor='traffic-region'
-            >
-              Region
-            </label>
+    <section
+      className='gfa-tracker-page'
+      aria-label='Live flight tracker'
+      data-hydrated={statusNow > 0 ? 'true' : 'false'}
+    >
+      <aside className='gfa-tracker-sidebar' aria-label='Traffic workspace'>
+        <div className='gfa-sidebar-heading'>
+          <div>
+            <p>Flight tracker map</p>
+            <strong>{selectedRegion.name}</strong>
+          </div>
+          <span className='gfa-sidebar-live'>
+            <span aria-hidden='true' />
+            LIVE
+          </span>
+        </div>
+
+        <WorkspaceTabs
+          activePanel={workspacePanel}
+          selectedAircraftICAO24={selectedAircraftICAO24}
+          onPanelChange={onWorkspacePanelChange}
+        />
+
+        <div
+          id='traffic-workspace-panel'
+          role='tabpanel'
+          aria-labelledby={`traffic-workspace-${workspacePanel}-tab`}
+          className='gfa-sidebar-scroll'
+        >
+          {workspacePanel === 'aircraft' ? (
+            <AircraftExplorer
+              aircraft={traffic}
+              selectedAircraftICAO24={selectedAircraftICAO24}
+              onSelectAircraft={selectAircraft}
+              isFetching={trafficQuery.isFetching}
+            />
+          ) : selectedAircraftICAO24 === null ? (
+            <IntelligenceSelectionPrompt
+              onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
+            />
+          ) : (
+            <div className='space-y-4'>
+              <SelectedAircraftContext
+                icao24={selectedAircraftICAO24}
+                onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
+                onClear={() => selectAircraft(null)}
+              />
+              <AircraftDetailPanel
+                selectedICAO24={selectedAircraftICAO24}
+                aircraft={selectedAircraft}
+                routeContext={routeContextQuery.data}
+                routeContextIsPending={routeContextQuery.isPending}
+                routeContextIsFetching={routeContextQuery.isFetching}
+                routeContextError={routeContextQuery.error}
+                onRetryRouteContext={() => {
+                  void routeContextQuery.refetch()
+                }}
+                trajectory={trajectoryQuery.data}
+                trajectoryIsPending={trajectoryQuery.isPending}
+                trajectoryIsFetching={trajectoryQuery.isFetching}
+                trajectoryError={trajectoryQuery.error}
+                onRetryTrajectory={() => {
+                  void trajectoryQuery.refetch()
+                }}
+                onClose={() => selectAircraft(null)}
+              />
+              <RouteIntelligencePanel
+                selectedICAO24={selectedAircraftICAO24}
+                trajectoryID={routeIntelligenceTrajectoryID}
+                record={routeIntelligenceQuery.data}
+                isPending={routeIntelligenceQuery.isPending}
+                isFetching={routeIntelligenceQuery.isFetching}
+                error={routeIntelligenceQuery.error}
+                onRetry={() => {
+                  void routeIntelligenceQuery.refetch()
+                }}
+              />
+              <ProjectionIntelligencePanel
+                selectedICAO24={selectedAircraftICAO24}
+                trajectoryID={projectionTrajectoryID}
+                result={projectionQuery.data}
+                isPending={projectionQuery.isPending}
+                isFetching={projectionQuery.isFetching}
+                error={projectionQuery.error}
+                onRetry={() => {
+                  void projectionQuery.refetch()
+                }}
+              />
+              <WeatherContextPanel
+                selectedICAO24={selectedAircraftICAO24}
+                trajectoryID={projectionTrajectoryID}
+                result={weatherContextQuery.data}
+                isPending={weatherContextQuery.isPending}
+                isFetching={weatherContextQuery.isFetching}
+                error={weatherContextQuery.error}
+                onRetry={() => {
+                  void weatherContextQuery.refetch()
+                }}
+              />
+              <StabilityIntelligencePanel
+                selectedICAO24={selectedAircraftICAO24}
+                trajectoryID={projectionTrajectoryID}
+                asOfTimes={stabilityAsOfTimes}
+                result={stabilityQuery.data}
+                isPending={stabilityQuery.isPending}
+                isFetching={stabilityQuery.isFetching}
+                error={stabilityQuery.error}
+                onRetry={() => {
+                  void stabilityQuery.refetch()
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <div className='gfa-tracker-map-stage' aria-busy={trafficQuery.isFetching}>
+        <TrafficMap
+          aircraft={traffic}
+          region={selectedRegion}
+          selectedAircraftICAO24={selectedAircraftICAO24}
+          trajectory={trajectoryQuery.data}
+          projection={projectionQuery.data?.projection}
+          onSelectAircraft={selectAircraft}
+        />
+
+        <div className='gfa-map-commandbar' aria-label='Map controls'>
+          <label className='gfa-map-region' htmlFor='traffic-region'>
+            <span aria-hidden='true'>⌖</span>
             <select
               id='traffic-region'
               value={selectedRegion.code}
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 changeRegion(event.target.value)
               }}
-              className='mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white'
+              aria-label='Traffic region'
             >
               {regions.map(region => (
                 <option key={region.code} value={region.code}>
@@ -188,211 +327,160 @@ export function TrafficDashboard({
                 </option>
               ))}
             </select>
-          </div>
-          <div className='flex flex-wrap gap-2'>
-            <button
-              type='button'
-              onClick={() => {
-                void copyCurrentViewLink()
-              }}
-              className='rounded-lg border border-sky-400/35 bg-sky-400/5 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/10'
-            >
-              {shareViewStatus === 'copied'
-                ? 'View link copied'
-                : shareViewStatus === 'unavailable'
-                  ? 'Clipboard unavailable'
-                  : 'Copy view link'}
-            </button>
+          </label>
+
+          <button
+            type='button'
+            onClick={() => {
+              void trafficQuery.refetch()
+            }}
+            disabled={trafficQuery.isFetching}
+            className='gfa-map-command'
+            aria-label='Refresh current traffic'
+            title='Refresh traffic'
+          >
+            ↻
+          </button>
+          <button
+            type='button'
+            onClick={() => {
+              void copyCurrentViewLink()
+            }}
+            className='gfa-map-command'
+            aria-label='Share current map view'
+            title={shareViewStatus === 'copied' ? 'Link copied' : 'Share map view'}
+          >
+            ↗
+          </button>
+        </div>
+
+        <nav className='gfa-map-toolrail' aria-label='Map tools'>
+          <a
+            href='#overview'
+            className='gfa-map-tool'
+            aria-label='Open analytics overview'
+            title='Analytics'
+            onClick={onCloseMapPopovers}
+          >
+            <span aria-hidden='true'>▦</span>
+          </a>
+          <a
+            href='#historical-analytics'
+            className='gfa-map-tool'
+            aria-label='Open Historical Analytics'
+            title='History'
+            onClick={onCloseMapPopovers}
+          >
+            <span aria-hidden='true'>◷</span>
+          </a>
+
+          <details
+            className='gfa-map-tool-menu'
+            name='gfa-map-tool-popovers'
+            open={activeMapPopover === 'live-data'}
+            onToggle={event => {
+              onMapPopoverToggle('live-data', event.currentTarget.open)
+            }}
+          >
+            <summary className='gfa-map-tool' aria-label='Open live data controls' title='Live data'>
+              <span aria-hidden='true'>☷</span>
+            </summary>
+            <div className='gfa-map-popover'>
+              <LiveTrafficControl
+                regionName={selectedRegion.name}
+                aircraftCount={traffic.length}
+                selectedAircraftICAO24={selectedAircraftICAO24}
+                dataUpdatedAt={trafficQuery.dataUpdatedAt}
+                now={statusNow}
+                isInitialLoading={isInitialLoading}
+                isRefreshing={isRefreshing}
+                errorMessage={errorMessage}
+                regionsWarning={regionsWarning}
+                autoRefreshEnabled={autoRefreshEnabled}
+                refreshIntervalMilliseconds={refreshIntervalMilliseconds}
+                onAutoRefreshEnabledChange={setAutoRefreshEnabled}
+                onRefreshIntervalChange={setRefreshIntervalMilliseconds}
+                onRetry={() => {
+                  void trafficQuery.refetch()
+                }}
+              />
+              <TrafficSnapshotExport
+                aircraft={traffic}
+                regionCode={selectedRegion.code}
+                regionName={selectedRegion.name}
+                snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
+                selectedAircraftICAO24={selectedAircraftICAO24}
+              />
+            </div>
+          </details>
+
+          <details
+            className='gfa-map-tool-menu'
+            name='gfa-map-tool-popovers'
+            open={activeMapPopover === 'traffic-analysis'}
+            onToggle={event => {
+              onMapPopoverToggle('traffic-analysis', event.currentTarget.open)
+            }}
+          >
+            <summary className='gfa-map-tool' aria-label='Open traffic analysis' title='Traffic analysis'>
+              <span aria-hidden='true'>≋</span>
+            </summary>
+            <div className='gfa-map-popover gfa-map-analysis-popover'>
+              <RegionalTrafficBrief
+                aircraft={traffic}
+                regionName={selectedRegion.name}
+                isFetching={trafficQuery.isFetching}
+              />
+              <TrafficDataQualityLens
+                aircraft={traffic}
+                regionName={selectedRegion.name}
+                snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
+                isFetching={trafficQuery.isFetching}
+              />
+              <div className='gfa-globe-slot' aria-busy={trafficQuery.isFetching}>
+                <TrafficGlobe aircraft={traffic} region={selectedRegion} />
+              </div>
+            </div>
+          </details>
+        </nav>
+
+        <div className='gfa-map-statusbar' aria-live='polite'>
+          <span className='gfa-map-live'>LIVE</span>
+          <strong>{formatInteger(traffic.length)}</strong>
+          <span>aircraft</span>
+          <i aria-hidden='true' />
+          <span>{selectedRegion.name}</span>
+          {selectedAircraftICAO24 ? (
+            <>
+              <i aria-hidden='true' />
+              <span className='font-mono uppercase'>{selectedAircraftICAO24}</span>
+            </>
+          ) : null}
+        </div>
+
+        {errorMessage ? (
+          <div className='gfa-map-alert' role='alert'>
+            <strong>Live data unavailable</strong>
+            <span>{errorMessage}</span>
             <button
               type='button'
               onClick={() => {
                 void trafficQuery.refetch()
               }}
-              disabled={trafficQuery.isFetching}
-              className='rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-60'
             >
-              {trafficQuery.isFetching ? 'Refreshing traffic…' : 'Refresh traffic'}
+              Retry
             </button>
           </div>
-        </div>
-
-        <LiveTrafficControl
-          regionName={selectedRegion.name}
-          aircraftCount={traffic.length}
-          selectedAircraftICAO24={selectedAircraftICAO24}
-          dataUpdatedAt={trafficQuery.dataUpdatedAt}
-          now={statusNow}
-          isInitialLoading={isInitialLoading}
-          isRefreshing={isRefreshing}
-          errorMessage={errorMessage}
-          regionsWarning={regionsWarning}
-          autoRefreshEnabled={autoRefreshEnabled}
-          refreshIntervalMilliseconds={refreshIntervalMilliseconds}
-          onAutoRefreshEnabledChange={setAutoRefreshEnabled}
-          onRefreshIntervalChange={setRefreshIntervalMilliseconds}
-          onRetry={() => {
-            void trafficQuery.refetch()
-          }}
-        />
-
-        <TrafficSnapshotExport
-          aircraft={traffic}
-          regionCode={selectedRegion.code}
-          regionName={selectedRegion.name}
-          snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
-          selectedAircraftICAO24={selectedAircraftICAO24}
-        />
-      </section>
-
-      <div className='mt-4' aria-busy={trafficQuery.isFetching}>
-        <TrafficGlobe aircraft={traffic} region={selectedRegion} />
-      </div>
-
-      <RegionalTrafficBrief
-        aircraft={traffic}
-        regionName={selectedRegion.name}
-        isFetching={trafficQuery.isFetching}
-      />
-
-      <TrafficDataQualityLens
-        aircraft={traffic}
-        regionName={selectedRegion.name}
-        snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
-        isFetching={trafficQuery.isFetching}
-      />
-
-      <section className='mt-8 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-6'>
-        <h2 className='text-xl font-semibold'>
-          Current Traffic — {selectedRegion.name}
-        </h2>
-        <p className='mt-2 text-sm leading-6 text-slate-400'>
-          The map remains visible while the workspace switches between aircraft
-          discovery and the selected aircraft intelligence record.
-        </p>
-
-        <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_480px]'>
-          <div aria-busy={trafficQuery.isFetching}>
-            <TrafficMap
-              aircraft={traffic}
-              region={selectedRegion}
-              selectedAircraftICAO24={selectedAircraftICAO24}
-              trajectory={trajectoryQuery.data}
-              projection={projectionQuery.data?.projection}
-              onSelectAircraft={selectAircraft}
-            />
-          </div>
-
-          <aside
-            className='min-w-0 rounded-xl border border-slate-700 bg-slate-950/60 p-3'
-            aria-label='Traffic workspace'
-          >
-            <WorkspaceTabs
-              activePanel={workspacePanel}
-              selectedAircraftICAO24={selectedAircraftICAO24}
-              onPanelChange={onWorkspacePanelChange}
-            />
-
-            <div
-              id='traffic-workspace-panel'
-              role='tabpanel'
-              aria-labelledby={`traffic-workspace-${workspacePanel}-tab`}
-              className='mt-3'
-            >
-              {workspacePanel === 'aircraft' ? (
-                <AircraftExplorer
-                  aircraft={traffic}
-                  selectedAircraftICAO24={selectedAircraftICAO24}
-                  onSelectAircraft={selectAircraft}
-                  isFetching={trafficQuery.isFetching}
-                />
-              ) : selectedAircraftICAO24 === null ? (
-                <IntelligenceSelectionPrompt
-                  onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
-                />
-              ) : (
-                <div className='space-y-4'>
-                  <SelectedAircraftContext
-                    icao24={selectedAircraftICAO24}
-                    onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
-                    onClear={() => selectAircraft(null)}
-                  />
-                  <AircraftDetailPanel
-                    selectedICAO24={selectedAircraftICAO24}
-                    aircraft={selectedAircraft}
-                    routeContext={routeContextQuery.data}
-                    routeContextIsPending={routeContextQuery.isPending}
-                    routeContextIsFetching={routeContextQuery.isFetching}
-                    routeContextError={routeContextQuery.error}
-                    onRetryRouteContext={() => {
-                      void routeContextQuery.refetch()
-                    }}
-                    trajectory={trajectoryQuery.data}
-                    trajectoryIsPending={trajectoryQuery.isPending}
-                    trajectoryIsFetching={trajectoryQuery.isFetching}
-                    trajectoryError={trajectoryQuery.error}
-                    onRetryTrajectory={() => {
-                      void trajectoryQuery.refetch()
-                    }}
-                    onClose={() => selectAircraft(null)}
-                  />
-                  <RouteIntelligencePanel
-                    selectedICAO24={selectedAircraftICAO24}
-                    trajectoryID={routeIntelligenceTrajectoryID}
-                    record={routeIntelligenceQuery.data}
-                    isPending={routeIntelligenceQuery.isPending}
-                    isFetching={routeIntelligenceQuery.isFetching}
-                    error={routeIntelligenceQuery.error}
-                    onRetry={() => {
-                      void routeIntelligenceQuery.refetch()
-                    }}
-                  />
-                  <ProjectionIntelligencePanel
-                    selectedICAO24={selectedAircraftICAO24}
-                    trajectoryID={projectionTrajectoryID}
-                    result={projectionQuery.data}
-                    isPending={projectionQuery.isPending}
-                    isFetching={projectionQuery.isFetching}
-                    error={projectionQuery.error}
-                    onRetry={() => {
-                      void projectionQuery.refetch()
-                    }}
-                  />
-                  <WeatherContextPanel
-                    selectedICAO24={selectedAircraftICAO24}
-                    trajectoryID={projectionTrajectoryID}
-                    result={weatherContextQuery.data}
-                    isPending={weatherContextQuery.isPending}
-                    isFetching={weatherContextQuery.isFetching}
-                    error={weatherContextQuery.error}
-                    onRetry={() => {
-                      void weatherContextQuery.refetch()
-                    }}
-                  />
-                  <StabilityIntelligencePanel
-                    selectedICAO24={selectedAircraftICAO24}
-                    trajectoryID={projectionTrajectoryID}
-                    asOfTimes={stabilityAsOfTimes}
-                    result={stabilityQuery.data}
-                    isPending={stabilityQuery.isPending}
-                    isFetching={stabilityQuery.isFetching}
-                    error={stabilityQuery.error}
-                    onRetry={() => {
-                      void stabilityQuery.refetch()
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </aside>
-        </div>
+        ) : null}
 
         {!trafficQuery.isFetching && !errorMessage && traffic.length === 0 ? (
-          <p className='mt-4 text-sm text-slate-400'>
-            No aircraft were returned for the selected region.
-          </p>
+          <div className='gfa-map-alert'>
+            <strong>No live aircraft</strong>
+            <span>No aircraft were returned for {selectedRegion.name}.</span>
+          </div>
         ) : null}
-      </section>
-    </>
+      </div>
+    </section>
   )
 }
 
@@ -409,7 +497,7 @@ function WorkspaceTabs({
     <div
       role='tablist'
       aria-label='Traffic workspace view'
-      className='grid grid-cols-2 gap-2 rounded-lg border border-slate-800 bg-slate-950 p-1'
+      className='gfa-workspace-tabs'
     >
       <WorkspaceTab
         id='traffic-workspace-aircraft-tab'
@@ -455,16 +543,10 @@ function WorkspaceTab({
       aria-controls='traffic-workspace-panel'
       tabIndex={active ? 0 : -1}
       onClick={onClick}
-      className={`rounded-md px-3 py-2 text-left transition ${
-        active
-          ? 'bg-sky-400/10 text-sky-100 ring-1 ring-sky-400/40'
-          : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
-      }`}
+      className={active ? 'gfa-workspace-tab is-active' : 'gfa-workspace-tab'}
     >
-      <span className='block text-sm font-semibold'>{label}</span>
-      <span className='mt-0.5 block truncate text-[11px] opacity-75'>
-        {detail}
-      </span>
+      <span>{label}</span>
+      <small>{detail}</small>
     </button>
   )
 }
@@ -475,20 +557,19 @@ function IntelligenceSelectionPrompt({
   onOpenAircraft: () => void
 }) {
   return (
-    <div className='rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-5'>
-      <p className='text-sm font-semibold text-slate-200'>
-        Select an aircraft to open Intelligence
-      </p>
-      <p className='mt-2 text-sm leading-6 text-slate-400'>
+    <div className='gfa-intelligence-prompt'>
+      <span className='gfa-prompt-plane' aria-hidden='true'>
+        <svg viewBox='0 0 24 24' focusable='false'>
+          <path d='M12 2.25c.61 0 .98.45.98 1.05v5.58l6.62 3.59v1.67l-6.62-1.8v4.8l2 1.65v1.11L12 19l-2.98.9v-1.11l2-1.65v-4.8l-6.62 1.8v-1.67l6.62-3.59V3.3c0-.6.37-1.05.98-1.05Z' />
+        </svg>
+      </span>
+      <p className='gfa-prompt-title'>Select an aircraft to open Intelligence</p>
+      <p className='gfa-prompt-copy'>
         Use the Aircraft tab or select a marker on the map. Route, trajectory,
         projection, weather and stability evidence will open here.
       </p>
-      <button
-        type='button'
-        onClick={onOpenAircraft}
-        className='mt-4 rounded-lg border border-sky-400/40 px-3 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/10'
-      >
-        Open Aircraft Explorer
+      <button type='button' onClick={onOpenAircraft} className='gfa-prompt-button'>
+        Browse aircraft
       </button>
     </div>
   )
@@ -504,29 +585,23 @@ function SelectedAircraftContext({
   onClear: () => void
 }) {
   return (
-    <div className='flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-400/30 bg-sky-400/5 p-3'>
+    <div className='gfa-selected-aircraft-context'>
       <div>
-        <p className='text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-300'>
-          Selected aircraft
-        </p>
-        <p className='mt-1 font-mono text-sm uppercase text-white'>{icao24}</p>
+        <p>Selected aircraft</p>
+        <strong>{icao24.toUpperCase()}</strong>
       </div>
-      <div className='flex flex-wrap gap-2'>
-        <button
-          type='button'
-          onClick={onOpenAircraft}
-          className='rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-900'
-        >
+      <div className='gfa-selected-aircraft-actions'>
+        <button type='button' onClick={onOpenAircraft}>
           Aircraft list
         </button>
-        <button
-          type='button'
-          onClick={onClear}
-          className='rounded-md border border-rose-400/30 px-3 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-400/10'
-        >
+        <button type='button' onClick={onClear} className='is-danger'>
           Clear selection
         </button>
       </div>
     </div>
   )
+}
+
+function formatInteger(value: number): string {
+  return new Intl.NumberFormat().format(value)
 }

@@ -69,6 +69,28 @@ test('healthy traffic fixture is deterministic', () => {
   assert.equal('region_code' in result.body.data[0], false)
 })
 
+test('live traffic fixture mirrors the current-state snapshot contract', () => {
+  const result = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/traffic/live?limit=1',
+    scenario: 'healthy',
+  })
+
+  assert.equal(result.status, 200)
+  assert.equal(result.body.success, true)
+  assert.equal(result.body.data.server_time, '2026-08-04T18:00:10Z')
+  assert.equal(result.body.data.sequence, 42)
+  assert.equal(result.body.data.total_active, 2)
+  assert.equal(result.body.data.matching, 2)
+  assert.equal(result.body.data.truncated, true)
+  assert.equal(result.body.data.aircraft.length, 1)
+  assert.equal(result.body.data.aircraft[0].icao24, '4b1801')
+  assert.equal(result.body.data.aircraft[0].source, 'playwright-fixture')
+  assert.equal(typeof result.body.data.aircraft[0].freshness_ms, 'number')
+  assert.equal('altitude_status' in result.body.data.aircraft[0], false)
+})
+
 test('core read fixtures preserve typed trajectory and metric envelopes', () => {
   const trajectory = resolveMockResponse({
     method: 'GET',
