@@ -123,6 +123,14 @@ assert(
   'Wrangler configuration must not contain a bearer token'
 )
 assert(
+  config.vars?.DISPATCH_ENABLED === 'false',
+  'production dispatch must remain fail-closed during the provider incident'
+)
+assert(
+  config.vars?.RECENT_FAILURE_COOLDOWN_SECONDS === '21600',
+  'production Worker must define the six-hour recent-failure cooldown'
+)
+assert(
   source.includes('async scheduled(controller, environment)'),
   'Worker must expose a scheduled handler'
 )
@@ -151,12 +159,28 @@ assert(
   'Worker must publish active-run suppression evidence'
 )
 assert(
+  source.includes('RECENT_FAILURE_CIRCUIT_BREAKER'),
+  'Worker must publish recent-failure circuit-breaker evidence'
+)
+assert(
+  source.includes('CLOUDFLARE_DISPATCH_DISABLED'),
+  'Worker must publish fail-closed dispatch-disabled evidence'
+)
+assert(
   tests.includes('watchdog dispatches exactly once'),
   'Worker tests must cover stale recovery'
 )
 assert(
   tests.includes('suppresses an active run'),
   'Worker tests must cover active-run deduplication'
+)
+assert(
+  tests.includes('dispatch kill switch suppresses both Cron Triggers'),
+  'Worker tests must cover the fail-closed dispatch kill switch'
+)
+assert(
+  tests.includes('recent failed workflow run opens the circuit breaker'),
+  'Worker tests must cover recent-failure circuit breaking'
 )
 assert(
   fallbackSchedule.maxGapMinutes <= 15,

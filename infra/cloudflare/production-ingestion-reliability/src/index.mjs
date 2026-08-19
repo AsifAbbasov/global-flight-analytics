@@ -15,6 +15,8 @@ const DEFAULTS = Object.freeze({
   maxTrafficAgeSeconds: 1800,
   maxFutureSkewSeconds: 60,
   deduplicationWindowSeconds: 480,
+  recentFailureCooldownSeconds: 21600,
+  dispatchEnabled: false,
   requestTimeoutMilliseconds: 10000,
   workflowRunsPerPage: 20,
 })
@@ -38,6 +40,17 @@ function optionalString(environment, name, defaultValue) {
     return defaultValue
   }
   return String(value).trim()
+}
+
+function strictBoolean(environment, name, defaultValue) {
+  const rawValue = optionalString(environment, name, String(defaultValue))
+  if (rawValue === 'true') {
+    return true
+  }
+  if (rawValue === 'false') {
+    return false
+  }
+  throw new Error(`${name} must be true or false`)
 }
 
 function positiveInteger(environment, name, defaultValue, maximum) {
@@ -134,6 +147,11 @@ export function loadConfig(environment) {
     trafficAPIURL,
     primaryCron,
     watchdogCron,
+    dispatchEnabled: strictBoolean(
+      environment,
+      'DISPATCH_ENABLED',
+      DEFAULTS.dispatchEnabled
+    ),
     maxTrafficAgeSeconds: positiveInteger(
       environment,
       'MAX_TRAFFIC_AGE_SECONDS',
@@ -151,6 +169,12 @@ export function loadConfig(environment) {
       'DEDUPLICATION_WINDOW_SECONDS',
       DEFAULTS.deduplicationWindowSeconds,
       3600
+    ),
+    recentFailureCooldownSeconds: positiveInteger(
+      environment,
+      'RECENT_FAILURE_COOLDOWN_SECONDS',
+      DEFAULTS.recentFailureCooldownSeconds,
+      86400
     ),
     requestTimeoutMilliseconds: positiveInteger(
       environment,
@@ -250,16 +274,16 @@ function parseRunTimestamp(run, field) {
 export function classifyWorkflowRuns(
   workflowRuns,
   nowMilliseconds,
-  deduplicationWindowSeconds
+  deduplicationWindowSeconds,
+  recentFailureCooldownSeconds = deduplicationWindowSeconds
 ) {
   if (!Array.isArray(workflowRuns)) {
     throw new Error('workflow runs must be an array')
   }
 
   let activeRun = null
-  let recentSuccessfulRun = null
-  const recentBoundary =
-    nowMilliseconds - deduplicationWindowSeconds * 1000
+  let latestCompletedRun = null
+  let latestCompletedTimestamp = Number.NEGATIVE_INFINITY
 
   for (const run of workflowRuns) {
     if (run === null || typeof run !== 'object') {
@@ -280,25 +304,46 @@ export function classifyWorkflowRuns(
       continue
     }
 
-    if (run.conclusion !== 'success') {
-      continue
-    }
-
     const createdAt = parseRunTimestamp(run, 'created_at')
-    if (createdAt >= recentBoundary) {
-      recentSuccessfulRun ??= {
+    if (createdAt > latestCompletedTimestamp) {
+      latestCompletedTimestamp = createdAt
+      latestCompletedRun = {
         id: run.id ?? null,
         status,
-        conclusion: run.conclusion,
+        conclusion: run.conclusion ?? null,
         event: run.event ?? null,
         createdAt: new Date(createdAt).toISOString(),
       }
     }
   }
 
+  let recentSuccessfulRun = null
+  let recentFailedRun = null
+
+  if (latestCompletedRun !== null) {
+    const successBoundary =
+      nowMilliseconds - deduplicationWindowSeconds * 1000
+    const failureBoundary =
+      nowMilliseconds - recentFailureCooldownSeconds * 1000
+
+    if (
+      latestCompletedRun.conclusion === 'success' &&
+      latestCompletedTimestamp >= successBoundary
+    ) {
+      recentSuccessfulRun = latestCompletedRun
+    } else if (
+      latestCompletedRun.conclusion !== 'success' &&
+      latestCompletedTimestamp >= failureBoundary
+    ) {
+      recentFailedRun = latestCompletedRun
+    }
+  }
+
   return {
     activeRun,
+    latestCompletedRun,
     recentSuccessfulRun,
+    recentFailedRun,
   }
 }
 
@@ -337,7 +382,8 @@ async function dispatchUnlessBlocked(
   const classification = classifyWorkflowRuns(
     workflowRuns,
     nowMilliseconds,
-    config.deduplicationWindowSeconds
+    config.deduplicationWindowSeconds,
+    config.recentFailureCooldownSeconds
   )
 
   if (classification.activeRun !== null) {
@@ -353,6 +399,14 @@ async function dispatchUnlessBlocked(
       action: 'skipped-recent-success',
       decisionMarker: 'RECENT_SUCCESS_DEDUPLICATION',
       run: classification.recentSuccessfulRun,
+    }
+  }
+
+  if (classification.recentFailedRun !== null) {
+    return {
+      action: 'skipped-recent-failure',
+      decisionMarker: 'RECENT_FAILURE_CIRCUIT_BREAKER',
+      run: classification.recentFailedRun,
     }
   }
 
@@ -482,6 +536,19 @@ export async function executeScheduled(
   const config = loadConfig(environment)
   const effectiveNow = scheduledTime(controller, nowMilliseconds)
   const cron = controller?.cron
+
+  if (cron !== config.primaryCron && cron !== config.watchdogCron) {
+    throw new Error(`unsupported Cron Trigger ${JSON.stringify(cron)}`)
+  }
+
+  if (!config.dispatchEnabled) {
+    return {
+      marker: 'CLOUDFLARE_DISPATCH_DISABLED',
+      status: 'PASS',
+      cron,
+      action: 'skipped-dispatch-disabled',
+    }
+  }
 
   if (cron === config.primaryCron) {
     const dispatch = await dispatchUnlessBlocked(

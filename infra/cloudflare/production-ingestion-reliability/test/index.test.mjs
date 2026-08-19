@@ -28,6 +28,8 @@ function environment(overrides = {}) {
     MAX_TRAFFIC_AGE_SECONDS: '1800',
     MAX_FUTURE_SKEW_SECONDS: '60',
     DEDUPLICATION_WINDOW_SECONDS: '480',
+    RECENT_FAILURE_COOLDOWN_SECONDS: '21600',
+    DISPATCH_ENABLED: 'true',
     REQUEST_TIMEOUT_MILLISECONDS: '10000',
     WORKFLOW_RUNS_PER_PAGE: '20',
     ...overrides,
@@ -92,6 +94,27 @@ test('configuration requires a secret and distinct Cron Triggers', () => {
       ),
     /must be an HTTPS URL/
   )
+})
+
+test('dispatch kill switch suppresses both Cron Triggers without network calls', async () => {
+  for (const cron of [
+    environment().PRIMARY_CRON,
+    environment().WATCHDOG_CRON,
+  ]) {
+    const mock = sequenceFetch([])
+    const result = await executeScheduled(
+      controller(cron),
+      environment({ DISPATCH_ENABLED: 'false' }),
+      {
+        fetchImpl: mock.fetchImpl,
+        nowMilliseconds: NOW,
+      }
+    )
+
+    assert.equal(result.marker, 'CLOUDFLARE_DISPATCH_DISABLED')
+    assert.equal(result.action, 'skipped-dispatch-disabled')
+    assert.equal(mock.calls.length, 0)
+  }
 })
 
 test('primary schedule dispatches one exact workflow request', async () => {
@@ -186,6 +209,74 @@ test('primary schedule suppresses a recent successful run', async () => {
 
   assert.equal(result.action, 'skipped-recent-success')
   assert.equal(result.run.id, 102)
+  assert.equal(mock.calls.length, 1)
+})
+
+test('recent failed workflow run opens the circuit breaker', async () => {
+  const mock = sequenceFetch([
+    () =>
+      JSONResponse({
+        workflow_runs: [
+          {
+            id: 105,
+            status: 'completed',
+            conclusion: 'failure',
+            event: 'workflow_dispatch',
+            created_at: '2026-08-06T06:55:00Z',
+          },
+        ],
+      }),
+  ])
+
+  const result = await executeScheduled(
+    controller(environment().PRIMARY_CRON),
+    environment(),
+    {
+      fetchImpl: mock.fetchImpl,
+      nowMilliseconds: NOW,
+    }
+  )
+
+  assert.equal(result.action, 'skipped-recent-failure')
+  assert.equal(result.decisionMarker, 'RECENT_FAILURE_CIRCUIT_BREAKER')
+  assert.equal(result.run.id, 105)
+  assert.equal(mock.calls.length, 1)
+})
+
+test('newer success resets an older failure circuit breaker', async () => {
+  const mock = sequenceFetch([
+    () =>
+      JSONResponse({
+        workflow_runs: [
+          {
+            id: 106,
+            status: 'completed',
+            conclusion: 'failure',
+            event: 'workflow_dispatch',
+            created_at: '2026-08-06T06:50:00Z',
+          },
+          {
+            id: 107,
+            status: 'completed',
+            conclusion: 'success',
+            event: 'workflow_dispatch',
+            created_at: '2026-08-06T06:58:00Z',
+          },
+        ],
+      }),
+  ])
+
+  const result = await executeScheduled(
+    controller(environment().PRIMARY_CRON),
+    environment(),
+    {
+      fetchImpl: mock.fetchImpl,
+      nowMilliseconds: NOW,
+    }
+  )
+
+  assert.equal(result.action, 'skipped-recent-success')
+  assert.equal(result.run.id, 107)
   assert.equal(mock.calls.length, 1)
 })
 
@@ -337,6 +428,7 @@ test('traffic and workflow classifiers preserve exact boundaries', () => {
   )
   assert.equal(runs.activeRun, null)
   assert.equal(runs.recentSuccessfulRun, null)
+  assert.equal(runs.recentFailedRun?.id, 104)
 })
 
 test('health endpoint exposes configuration but never the token', async () => {

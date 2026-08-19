@@ -15,7 +15,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/orchestration/providerpolicy"
 )
 
-func TestTrafficFallbackProviderRecordsMixedTerminalFailure(
+func TestTrafficFallbackProviderRecordsMixedUnavailableFailures(
 	t *testing.T,
 ) {
 	primaryProvider := &fallbackTrafficProviderStub{
@@ -46,12 +46,13 @@ func TestTrafficFallbackProviderRecordsMixedTerminalFailure(
 		49.8671,
 		100,
 	)
-	if !errors.Is(
+	var unavailable *providerfallback.NoProviderAvailableError
+	if !errors.As(
 		err,
-		integrationcommon.ErrProviderUnauthorized,
+		&unavailable,
 	) {
 		t.Fatalf(
-			"expected unauthorized terminal error, got %v",
+			"expected no provider available error, got %v",
 			err,
 		)
 	}
@@ -63,11 +64,14 @@ func TestTrafficFallbackProviderRecordsMixedTerminalFailure(
 	}
 	decision := recorder.decisions[0]
 	if decision.Outcome !=
-		providerfallback.OutcomeTerminalFailure {
+		providerfallback.OutcomeNoProviderAvailable {
 		t.Fatalf(
-			"outcome = %s, want terminal_failure",
+			"outcome = %s, want no_provider_available",
 			decision.Outcome,
 		)
+	}
+	if !decision.UsedFallback {
+		t.Fatal("used fallback = false, want true")
 	}
 	if len(decision.Attempts) != 2 {
 		t.Fatalf(
@@ -75,11 +79,31 @@ func TestTrafficFallbackProviderRecordsMixedTerminalFailure(
 			len(decision.Attempts),
 		)
 	}
-	if decision.Attempts[1].ErrorClass !=
-		providerfallback.AttemptErrorClassUnauthorized {
+	if decision.Attempts[0].ErrorClass !=
+		providerfallback.AttemptErrorClassProviderServer ||
+		decision.Attempts[0].Outcome !=
+			providerfallback.AttemptOutcomeFailed ||
+		!decision.Attempts[0].RequestAttempted {
 		t.Fatalf(
-			"secondary error class = %s",
-			decision.Attempts[1].ErrorClass,
+			"unexpected primary attempt evidence: %+v",
+			decision.Attempts[0],
+		)
+	}
+	if decision.Attempts[1].ErrorClass !=
+		providerfallback.AttemptErrorClassUnauthorized ||
+		decision.Attempts[1].Outcome !=
+			providerfallback.AttemptOutcomeFailed ||
+		!decision.Attempts[1].RequestAttempted {
+		t.Fatalf(
+			"unexpected secondary attempt evidence: %+v",
+			decision.Attempts[1],
+		)
+	}
+	if unavailable.Decision.Outcome !=
+		providerfallback.OutcomeNoProviderAvailable {
+		t.Fatalf(
+			"error decision outcome = %s, want no_provider_available",
+			unavailable.Decision.Outcome,
 		)
 	}
 }
