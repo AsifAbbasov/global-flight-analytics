@@ -24,6 +24,9 @@ case "$GRAFANA_STACK_ID" in
   ''|*[!0-9]*) fail 'GRAFANA_STACK_ID must be numeric' ;;
 esac
 GRAFANA_NAMESPACE="stacks-$GRAFANA_STACK_ID"
+GRAFANA_API_MAX_ATTEMPTS=5
+GRAFANA_API_BASE_DELAY_SECONDS=2
+GRAFANA_API_MAX_RETRY_AFTER_SECONDS=30
 
 TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/gfa-grafana-observability.XXXXXX")"
 cleanup() { rm -rf "$TEMP_ROOT"; }
@@ -32,19 +35,85 @@ trap cleanup EXIT
 node scripts/render-grafana-observability.mjs "$TEMP_ROOT"
 
 auth_header="Authorization: Bearer $GRAFANA_SERVICE_ACCOUNT_TOKEN"
-api() {
-  method="$1"; endpoint="$2"; input_file="${3:-}"; output_file="${4:-$TEMP_ROOT/response.json}"
-  args=(--fail --silent --show-error --request "$method" --header "$auth_header" --header 'Accept: application/json')
-  if [ -n "$input_file" ]; then
-    args+=(--header 'Content-Type: application/json' --data-binary "@$input_file")
+
+is_retryable_status() {
+  case "$1" in
+    429|502|503|504) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+retry_delay_seconds() {
+  headers_file="$1"
+  attempt="$2"
+  retry_after="$(awk 'BEGIN { IGNORECASE=1 } /^Retry-After:/ { gsub("\r", "", $2); print $2; exit }' "$headers_file" 2>/dev/null || true)"
+  if [ -n "$retry_after" ] && [ "$retry_after" -eq "$retry_after" ] 2>/dev/null && [ "$retry_after" -le "$GRAFANA_API_MAX_RETRY_AFTER_SECONDS" ]; then
+    printf '%s\n' "$retry_after"
+    return
   fi
-  curl "${args[@]}" --output "$output_file" "$GRAFANA_INSTANCE_URL$endpoint"
+
+  delay=$((GRAFANA_API_BASE_DELAY_SECONDS * (2 ** (attempt - 1))))
+  if [ "$delay" -gt "$GRAFANA_API_MAX_RETRY_AFTER_SECONDS" ]; then
+    delay="$GRAFANA_API_MAX_RETRY_AFTER_SECONDS"
+  fi
+  printf '%s\n' "$delay"
+}
+
+request_status() {
+  method="$1"
+  endpoint="$2"
+  input_file="${3:-}"
+  output_file="${4:-$TEMP_ROOT/response.json}"
+  headers_file="$TEMP_ROOT/headers.txt"
+  attempt=1
+
+  while :; do
+    args=(--silent --show-error --request "$method" --header "$auth_header" --header 'Accept: application/json' --dump-header "$headers_file" --output "$output_file" --write-out '%{http_code}')
+    if [ -n "$input_file" ]; then
+      args+=(--header 'Content-Type: application/json' --data-binary "@$input_file")
+    fi
+
+    set +e
+    status="$(curl "${args[@]}" "$GRAFANA_INSTANCE_URL$endpoint")"
+    curl_status=$?
+    set -e
+
+    if [ "$curl_status" -ne 0 ]; then
+      fail "$method $endpoint transport failed with curl exit $curl_status"
+    fi
+
+    if is_retryable_status "$status" && [ "$attempt" -lt "$GRAFANA_API_MAX_ATTEMPTS" ]; then
+      delay="$(retry_delay_seconds "$headers_file" "$attempt")"
+      printf '%s\n' "GRAFANA_API_RETRY method=$method endpoint=$endpoint status=$status attempt=$attempt delay_seconds=$delay" >&2
+      sleep "$delay"
+      attempt=$((attempt + 1))
+      continue
+    fi
+
+    printf '%s\n' "$status"
+    return
+  done
+}
+
+api() {
+  method="$1"
+  endpoint="$2"
+  input_file="${3:-}"
+  output_file="${4:-$TEMP_ROOT/response.json}"
+  status="$(request_status "$method" "$endpoint" "$input_file" "$output_file")"
+  case "$status" in
+    2??) ;;
+    *)
+      cat "$output_file" >&2 || true
+      fail "$method $endpoint returned HTTP $status"
+      ;;
+  esac
 }
 
 upsert_resource() {
   kind="$1"; collection="$2"; name="$3"; source="$4"
   current="$TEMP_ROOT/${kind}-current.json"
-  status="$(curl --silent --show-error --output "$current" --write-out '%{http_code}' --header "$auth_header" --header 'Accept: application/json' "$GRAFANA_INSTANCE_URL$collection/$name")"
+  status="$(request_status GET "$collection/$name" '' "$current")"
   if [ "$status" = '404' ]; then
     api POST "$collection" "$source" "$TEMP_ROOT/${kind}-created.json"
   elif [ "$status" = '200' ]; then
