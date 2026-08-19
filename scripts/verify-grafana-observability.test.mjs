@@ -95,6 +95,6 @@ test('provisioning retries only bounded transient Grafana HTTP failures', () => 
   assert.match(provision, /429\|502\|503\|504/)
   assert.match(provision, /Retry-After:/)
   assert.match(provision, /GRAFANA_API_RETRY method=/)
-  assert.match(provision, /attempt -lt \"\$GRAFANA_API_MAX_ATTEMPTS\"/)
+  assert.match(provision, /\$attempt" -lt "\$GRAFANA_API_MAX_ATTEMPTS/)
   assert.doesNotMatch(provision, /401\|403/)
 })
