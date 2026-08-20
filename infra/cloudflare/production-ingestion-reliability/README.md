@@ -10,6 +10,10 @@ ingestion:
 - queued or active workflow runs suppress duplicate dispatches;
 - a recent successful run inside the deduplication window suppresses an
   unnecessary dispatch;
+- a recent failed run opens a bounded six-hour circuit breaker instead of
+  creating an endless failure/dispatch loop;
+- `DISPATCH_ENABLED=false` is a fail-closed production kill switch and is
+  intentionally active while the upstream provider incident is unresolved;
 - stale or empty traffic requests one recovery dispatch;
 - the Worker never receives the Neon database URL or provider credentials.
 

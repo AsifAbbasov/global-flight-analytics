@@ -351,6 +351,15 @@ func trafficFallbackCandidate(
 	switch {
 	case errors.Is(
 		requestErr,
+		integrationcommon.ErrProviderUnauthorized,
+	):
+		return unavailableTrafficProviderCandidate(
+			providerID,
+			providerfallback.AttemptErrorClassUnauthorized,
+		), true
+
+	case errors.Is(
+		requestErr,
 		integrationcommon.ErrProviderRateLimited,
 	):
 		return providerfallback.Candidate{
@@ -454,11 +463,6 @@ func classifyTerminalTrafficError(
 	requestErr error,
 ) providerfallback.AttemptErrorClass {
 	switch {
-	case errors.Is(
-		requestErr,
-		integrationcommon.ErrProviderUnauthorized,
-	):
-		return providerfallback.AttemptErrorClassUnauthorized
 	case errors.Is(
 		requestErr,
 		integrationcommon.ErrProviderResponseTooLarge,
