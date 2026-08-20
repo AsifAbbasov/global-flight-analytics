@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS = 1800
+const PRODUCTION_RECONCILIATION_LOOKBACK_MINUTES = 45
 
 function fail(message) {
   console.error(`GRAFANA_OBSERVABILITY_RENDER=FAIL reason=${message}`)
@@ -40,6 +41,16 @@ function applyProductionSLOPolicy(name, parsed) {
   if (typeof reconciliationQuery?.model?.expr !== 'string') {
     fail('gfa-reconciliation-backlog must expose a Prometheus query')
   }
+
+  const reconciliationLookbackPattern = /global_flight_analytics_reconciliation_oldest_pending_age_seconds(\{[^}]*\})?\[(\d+)m\]/
+  if (!reconciliationLookbackPattern.test(reconciliationQuery.model.expr)) {
+    fail('gfa-reconciliation-backlog must use a bounded minute lookback over the reconciliation age metric')
+  }
+
+  reconciliationQuery.model.expr = reconciliationQuery.model.expr.replace(
+    reconciliationLookbackPattern,
+    (_match, labels = '') => `global_flight_analytics_reconciliation_oldest_pending_age_seconds${labels}[${PRODUCTION_RECONCILIATION_LOOKBACK_MINUTES}m]`,
+  )
   reconciliationQuery.model.expr = `(${reconciliationQuery.model.expr}) or vector(0)`
 
   return parsed
@@ -56,4 +67,4 @@ for (const name of ['folder.json', 'dashboard.json', 'alert-rules.json']) {
   const rendered = JSON.stringify(parsed, null, 2) + '\n'
   fs.writeFileSync(path.join(outputDirectory, name), rendered)
 }
-console.log(`GRAFANA_OBSERVABILITY_RENDER=PASS ingestion_freshness_budget_seconds=${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} reconciliation_no_data=zero`)
+console.log(`GRAFANA_OBSERVABILITY_RENDER=PASS ingestion_freshness_budget_seconds=${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} reconciliation_lookback_minutes=${PRODUCTION_RECONCILIATION_LOOKBACK_MINUTES} reconciliation_no_data=zero`)
