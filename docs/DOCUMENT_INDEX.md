@@ -1738,3 +1738,15 @@ CSV and GeoJSON exports, bounded failure/recovery paths, accessibility semantics
 desktop/mobile layout regression invariants, and screenshot evidence retained in
 Playwright CI artifacts. Pixel-golden baselines remain intentionally coupled to
 the later visual-redesign closure.
+
+<!-- PRODUCTION-INGESTION-RESILIENCE-INCIDENT:CLOSURE:DOCUMENT-INDEX -->
+
+## Document 191 — Production Ingestion Resilience Incident Closure
+
+`191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`
+
+Records the August 2026 production ingestion incident caused by provider-level
+`403 Unauthorized` responses combined with an unbounded external dispatch loop,
+the fail-closed GitHub and Cloudflare containment, recent-failure circuit breaker,
+multi-provider unauthorized fallback semantics, deployment evidence, remaining
+provider-approval boundary, and controlled production-reactivation criteria.

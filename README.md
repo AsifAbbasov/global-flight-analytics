@@ -100,6 +100,49 @@ history. The final validator log remains owner-local, non-secret supporting
 evidence and is not committed to the repository.
 
 
+<!-- PRODUCTION-INGESTION-RESILIENCE-INCIDENT-2026-08-V1 -->
+## Production Ingestion Resilience Incident — August 2026
+
+During production traffic ingestion, the configured `airplanes.live` source began
+returning HTTP `403 Unauthorized`. The ingestion workflow correctly failed, but the
+external Cloudflare scheduler/watchdog could repeatedly dispatch the same known-failing
+GitHub Actions workflow because its deduplication policy suppressed active runs and
+recent successful runs, but not recent failed runs. This created repeated failed
+`workflow_dispatch` executions and notification noise without restoring freshness.
+
+The incident was contained without hiding the provider failure:
+
+- `Production Traffic Ingestion` was disabled at the GitHub Actions gate while the
+  provider remained unavailable;
+- the Cloudflare Worker gained a fail-closed `DISPATCH_ENABLED=false` kill switch;
+- recent failed workflow runs now open a bounded six-hour circuit breaker instead of
+  causing an endless dispatch/failure loop;
+- provider-level `Unauthorized` remains visible in health/fallback telemetry but is now
+  recoverable at the multi-provider orchestration boundary, allowing a permitted
+  secondary provider to be attempted;
+- OpenSky production use remains fail-closed behind the existing operational-agreement
+  gate, so the recovery does not bypass provider terms merely to make CI green.
+
+The resilience fix is recorded by commit
+`557636f3818b8ecb241b2320503a32660ca05aa2`. The fail-closed Worker deployment was
+verified with `DISPATCH_ENABLED=false`, `RECENT_FAILURE_COOLDOWN_SECONDS=21600`, and
+Cloudflare Worker version `2dd252b1-40eb-4858-8905-e2e4508bd0dc`.
+
+```text
+PRODUCTION_INGESTION_RESILIENCE_INCIDENT=CONTAINED
+CLOUDFLARE_DISPATCH_KILL_SWITCH=ACTIVE
+RECENT_FAILURE_CIRCUIT_BREAKER=DEPLOYED
+UNAUTHORIZED_PROVIDER_FALLBACK=HARDENED
+PRODUCTION_TRAFFIC_INGESTION_WORKFLOW=DISABLED
+PRODUCTION_PROVIDER_RECOVERY=OPEN
+```
+
+The production ingestion service is intentionally offline until an approved and
+operational provider path passes a real production smoke test, freshness verification,
+and a subsequent scheduled-run check. Full diagnosis, root cause, remediation,
+verification evidence, and reactivation criteria are recorded in
+[`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md).
+
 <!-- RECENT-ENGINEERING-MILESTONES-2026-08-V1 -->
 ## Recent Engineering Milestones — August 2026
 
