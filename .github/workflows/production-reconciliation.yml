@@ -1,0 +1,65 @@
+name: Production Reconciliation
+
+on:
+  schedule:
+    - cron: '4,14,24,34,44,54 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Reconcile Derived Production Data
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: apps/api
+
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_INGESTION_DATABASE_URL }}
+      DATABASE_CONNECT_TIMEOUT: 10s
+      TRAJECTORY_MAX_TIME_GAP: 90s
+      TRAJECTORY_MAX_GROUND_SPEED_MPS: '420'
+      RECONCILIATION_WORKER_MAX_ATTEMPTS: '5'
+      RECONCILIATION_WORKER_RETRY_BASE_DELAY: 30s
+      RECONCILIATION_WORKER_RETRY_MAXIMUM_DELAY: 15m
+      RECONCILIATION_WORKER_STALE_AFTER: 10m
+      RECONCILIATION_WORKER_MAXIMUM_TASKS: '100'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Validate production reconciliation secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            printf '%s\n' 'PRODUCTION_RECONCILIATION_DATABASE_URL=FAIL' >&2
+            exit 1
+          fi
+          printf '%s\n' 'PRODUCTION_RECONCILIATION_DATABASE_URL=PASS'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run one bounded reconciliation batch
+        shell: bash
+        run: |
+          set -euo pipefail
+          go run ./cmd/reconcile
+          printf '%s\n' 'PRODUCTION_RECONCILIATION_BATCH=PASS'
