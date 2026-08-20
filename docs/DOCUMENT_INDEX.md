@@ -1748,5 +1748,19 @@ the later visual-redesign closure.
 Records the August 2026 production ingestion incident caused by provider-level
 `403 Unauthorized` responses combined with an unbounded external dispatch loop,
 the fail-closed GitHub and Cloudflare containment, recent-failure circuit breaker,
-multi-provider unauthorized fallback semantics, deployment evidence, remaining
-provider-approval boundary, and controlled production-reactivation criteria.
+multi-provider unauthorized fallback semantics, externally confirmed Airplanes.live
+free-API withdrawal and feeder/sponsorship access boundary, deployment evidence,
+remaining provider-recovery boundary, and controlled production-reactivation criteria.
+
+<!-- PRODUCTION-RECONCILIATION-ALERT-STABILITY-INCIDENT:CLOSURE:DOCUMENT-INDEX -->
+
+## Document 192 — Production Reconciliation Alert Stability Incident
+
+`192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`
+
+Records the real approximately 16.7-day reconciliation backlog, the missing scheduled
+production consumer, the 20-minute Grafana lookback false-resolution mechanism, the
+bounded scheduled reconciliation remediation, the preserved 300-second SLO and
+25-minute missing-metrics rule, production worker run `32372102564`, fresh metrics run
+`32373146931`, verified empty due backlog, stable alert behavior, and formal production
+recovery closure.

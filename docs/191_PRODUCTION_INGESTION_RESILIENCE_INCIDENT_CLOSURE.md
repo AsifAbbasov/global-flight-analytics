@@ -99,6 +99,28 @@ another GitHub `workflow_dispatch`.
 
 This turned one provider incident into repeated automation noise.
 
+### 3.5 Provider access policy was confirmed externally
+
+On 2026-08-20, Airplanes.live responded directly to the project's REST API access
+request and confirmed that its general free API had been taken down.
+
+The provider stated that:
+
+- feeders may access the API from the same IP as the feeder;
+- API users are encouraged to operate a feeder;
+- application, website, and other higher-volume users are directed to sponsorship;
+- the quoted sponsorship options at the time of the response were USD 25/month and
+  USD 50/month for developer sponsorship.
+
+No free external API access exception or project-specific credential was granted to
+Global Flight Analytics.
+
+This changes the interpretation of the production `403`: it is not treated as a
+transient provider outage or an application authentication bug. It is an externally
+confirmed access-policy boundary. Under the project's current zero-cost production
+constraint, Airplanes.live is therefore not an available general external production
+provider path unless a compatible feeder-origin access model is introduced.
+
 ---
 
 ## 4. Containment
@@ -274,7 +296,11 @@ GITHUB_WORKFLOW_GATE=DISABLED
 CLOUDFLARE_DISPATCH_KILL_SWITCH=ACTIVE
 RECENT_FAILURE_CIRCUIT_BREAKER=DEPLOYED
 UNAUTHORIZED_PROVIDER_FALLBACK=HARDENED
-AIRPLANES_LIVE=UNAVAILABLE_403
+AIRPLANES_LIVE_HTTP_STATUS=403
+AIRPLANES_LIVE_PROVIDER_POLICY_CONFIRMED=YES
+AIRPLANES_LIVE_FREE_EXTERNAL_API=UNAVAILABLE
+AIRPLANES_LIVE_FEEDER_ACCESS=SAME_IP_ONLY
+AIRPLANES_LIVE_PROJECT_EXCEPTION=NOT_GRANTED
 PRODUCTION_PROVIDER_RECOVERY=OPEN
 PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
 ```
