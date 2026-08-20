@@ -42,9 +42,5 @@ services:
         value: /app/migrations
       - key: MIGRATION_TIMEOUT
         value: 2m
-      - key: TRAFFIC_PROVIDER
-        value: airplanes.live
-      - key: AIRPLANES_LIVE_TIMEOUT
-        value: 10s
       - key: OPEN_METEO_TIMEOUT
         value: 10s

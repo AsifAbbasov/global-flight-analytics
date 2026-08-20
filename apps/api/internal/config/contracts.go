@@ -42,8 +42,6 @@ type IngestConfig struct {
 	TrafficIngestionLongitude float64
 	TrafficIngestionRadius    int
 
-	AirplanesLiveTimeout time.Duration
-
 	TrajectoryMaxTimeGap        time.Duration
 	TrajectoryMaxGroundSpeedMPS float64
 }

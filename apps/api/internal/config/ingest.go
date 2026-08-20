@@ -9,8 +9,6 @@ const (
 
 	trafficIngestionRadiusEnvironmentVariable = "TRAFFIC_INGESTION_RADIUS"
 
-	airplanesLiveTimeoutEnvironmentVariable = "AIRPLANES_LIVE_TIMEOUT"
-
 	trajectoryMaxTimeGapEnvironmentVariable = "TRAJECTORY_MAX_TIME_GAP"
 
 	trajectoryMaxGroundSpeedMPSEnvironmentVariable = "TRAJECTORY_MAX_GROUND_SPEED_MPS"
@@ -70,16 +68,6 @@ func LoadIngestConfig() (
 		)
 	}
 
-	airplanesLiveTimeout, err := requiredPositiveDurationEnvironmentVariable(
-		airplanesLiveTimeoutEnvironmentVariable,
-	)
-	if err != nil {
-		return IngestConfig{}, fmt.Errorf(
-			"load airplanes.live timeout: %w",
-			err,
-		)
-	}
-
 	trajectoryMaxTimeGap, err := requiredNonNegativeDurationEnvironmentVariable(
 		trajectoryMaxTimeGapEnvironmentVariable,
 	)
@@ -108,7 +96,6 @@ func LoadIngestConfig() (
 		TrafficIngestionLatitude:    trafficIngestionLatitude,
 		TrafficIngestionLongitude:   trafficIngestionLongitude,
 		TrafficIngestionRadius:      trafficIngestionRadius,
-		AirplanesLiveTimeout:        airplanesLiveTimeout,
 		TrajectoryMaxTimeGap:        trajectoryMaxTimeGap,
 		TrajectoryMaxGroundSpeedMPS: trajectoryMaxGroundSpeedMPS,
 	}, nil

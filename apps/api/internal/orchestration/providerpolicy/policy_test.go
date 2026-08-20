@@ -27,6 +27,28 @@ func TestAllPoliciesAreValid(
 	}
 }
 
+func TestADSBLOLUsesProjectConservativeLimit(
+	t *testing.T,
+) {
+	policy, err := Get(ProviderADSBLOL)
+	if err != nil {
+		t.Fatalf("get ADSB.lol policy: %v", err)
+	}
+	if policy.BudgetMode != BudgetModeFixedWindow {
+		t.Fatalf("expected fixed-window budget mode, got %s", policy.BudgetMode)
+	}
+	if len(policy.RequestLimits) != 1 {
+		t.Fatalf("expected one request limit, got %d", len(policy.RequestLimits))
+	}
+	limit := policy.RequestLimits[0]
+	if limit.MaxRequests != 1 || limit.Window != WindowMinute {
+		t.Fatalf("unexpected ADSB.lol safety limit: %+v", limit)
+	}
+	if limit.Provenance != ProvenanceProjectConservative {
+		t.Fatalf("expected project-conservative provenance, got %s", limit.Provenance)
+	}
+}
+
 func TestAirplanesLiveUsesSourceBackedLimit(
 	t *testing.T,
 ) {

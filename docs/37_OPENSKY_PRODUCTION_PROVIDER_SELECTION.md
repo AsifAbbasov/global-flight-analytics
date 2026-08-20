@@ -80,3 +80,20 @@ regional bounding-box controls.
 ## Extended State Vector request
 
 The production OpenSky provider sends `extended=1` so the optional aircraft category can be returned. Compatibility parsing still accepts the base seventeen-field response.
+
+
+<!-- OPENSKY-OPERATIONAL-AGREEMENT-GATE-V2 -->
+## August 2026 operational-use gate
+
+Direct `TRAFFIC_PROVIDER=opensky` selection is rejected unless:
+
+```text
+OPENSKY_OPERATIONAL_AGREEMENT_CONFIRMED=true
+```
+
+Automatic mode no longer assumes OpenSky is available. ADSB.lol is the default
+primary provider, and OpenSky is considered as a secondary only after the owner
+has obtained and explicitly confirmed the required operational agreement.
+
+This gate is an executable runtime policy boundary rather than documentation-only
+guidance.

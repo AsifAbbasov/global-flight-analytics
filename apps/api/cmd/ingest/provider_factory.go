@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/config"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/adsblol"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/airplaneslive"
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/opensky"
@@ -23,7 +23,6 @@ type trafficProviderSelection struct {
 }
 
 func buildTrafficProvider(
-	airplanesLiveTimeout time.Duration,
 	selection config.TrafficProviderConfig,
 	executor regionalprovider.Executor,
 	responseObserver integrationcommon.ProviderResponseObserver,
@@ -31,10 +30,10 @@ func buildTrafficProvider(
 	healthSources ...trafficProviderHealthSource,
 ) (trafficProviderSelection, error) {
 	switch selection.Provider {
-	case config.TrafficProviderAirplanesLive,
+	case config.TrafficProviderADSBLOL,
+		config.TrafficProviderAirplanesLive,
 		config.TrafficProviderOpenSky:
 		result, err := buildSingleTrafficProvider(
-			airplanesLiveTimeout,
 			selection,
 			selection.Provider,
 			executor,
@@ -47,30 +46,42 @@ func buildTrafficProvider(
 		return result, nil
 
 	case config.TrafficProviderAuto:
+		candidates := selection.AutomaticCandidates()
+		if len(candidates) == 0 {
+			return trafficProviderSelection{}, fmt.Errorf(
+				"automatic traffic provider selection returned no candidates",
+			)
+		}
+
 		primary, err := buildSingleTrafficProvider(
-			airplanesLiveTimeout,
 			selection,
-			config.TrafficProviderAirplanesLive,
+			candidates[0],
 			executor,
 			responseObserver,
 		)
 		if err != nil {
 			return trafficProviderSelection{}, fmt.Errorf(
-				"build primary airplanes.live provider: %w",
+				"build primary %s provider: %w",
+				candidates[0],
 				err,
 			)
 		}
 
+		if len(candidates) == 1 {
+			primary.Mode = config.TrafficProviderAuto
+			return primary, nil
+		}
+
 		secondary, err := buildSingleTrafficProvider(
-			airplanesLiveTimeout,
 			selection,
-			config.TrafficProviderOpenSky,
+			candidates[1],
 			executor,
 			responseObserver,
 		)
 		if err != nil {
 			return trafficProviderSelection{}, fmt.Errorf(
-				"build secondary OpenSky provider: %w",
+				"build secondary %s provider: %w",
+				candidates[1],
 				err,
 			)
 		}
@@ -108,18 +119,43 @@ func buildTrafficProvider(
 }
 
 func buildSingleTrafficProvider(
-	airplanesLiveTimeout time.Duration,
 	selection config.TrafficProviderConfig,
 	providerName config.TrafficProvider,
 	executor regionalprovider.Executor,
 	responseObserver integrationcommon.ProviderResponseObserver,
 ) (trafficProviderSelection, error) {
+	if err := selection.RequireEligible(providerName); err != nil {
+		return trafficProviderSelection{}, err
+	}
+
 	switch providerName {
+	case config.TrafficProviderADSBLOL:
+		client, err := adsblol.NewClientWithResponseObserver(
+			integrationcommon.HTTPClientConfig{
+				BaseURL:   selection.ADSBLOL.BaseURL,
+				Timeout:   selection.ADSBLOL.Timeout,
+				UserAgent: "global-flight-analytics-ingest",
+			},
+			responseObserver,
+		)
+		if err != nil {
+			return trafficProviderSelection{}, fmt.Errorf(
+				"create ADSB.lol client: %w",
+				err,
+			)
+		}
+
+		return orchestrateTrafficProvider(
+			adsblol.NewProvider(client),
+			providerpolicy.ProviderADSBLOL,
+			executor,
+		)
+
 	case config.TrafficProviderAirplanesLive:
 		client, err := airplaneslive.NewClientWithResponseObserver(
 			integrationcommon.HTTPClientConfig{
 				BaseURL:   airplaneslive.BaseURL,
-				Timeout:   airplanesLiveTimeout,
+				Timeout:   selection.AirplanesLive.Timeout,
 				UserAgent: "global-flight-analytics-ingest",
 			},
 			responseObserver,
@@ -139,15 +175,15 @@ func buildSingleTrafficProvider(
 
 	case config.TrafficProviderOpenSky:
 		clientConfig := opensky.DefaultConfig()
-		clientConfig.BaseURL = selection.OpenSkyBaseURL
-		clientConfig.TokenURL = selection.OpenSkyTokenURL
-		clientConfig.ClientID = selection.OpenSkyClientID
-		clientConfig.ClientSecret = selection.OpenSkyClientSecret
+		clientConfig.BaseURL = selection.OpenSky.BaseURL
+		clientConfig.TokenURL = selection.OpenSky.TokenURL
+		clientConfig.ClientID = selection.OpenSky.ClientID
+		clientConfig.ClientSecret = selection.OpenSky.ClientSecret
 		clientConfig.HTTPClient = &http.Client{
-			Timeout: selection.OpenSkyTimeout,
+			Timeout: selection.OpenSky.Timeout,
 		}
 		clientConfig.UserAgent = "global-flight-analytics-ingest"
-		clientConfig.PollingInterval = selection.OpenSkyPollingInterval
+		clientConfig.PollingInterval = selection.OpenSky.PollingInterval
 
 		client, err := opensky.NewClientWithResponseObserver(
 			clientConfig,
@@ -159,6 +195,7 @@ func buildSingleTrafficProvider(
 				err,
 			)
 		}
+
 		provider, err := opensky.NewProvider(client)
 		if err != nil {
 			return trafficProviderSelection{}, fmt.Errorf(
