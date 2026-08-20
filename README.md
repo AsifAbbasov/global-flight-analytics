@@ -144,7 +144,8 @@ and a subsequent scheduled-run check. Full diagnosis, root cause, remediation,
 verification evidence, and reactivation criteria are recorded in
 [`docs/190_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/190_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md).
 
-\n<!-- RECENT-ENGINEERING-MILESTONES-2026-08-V1 -->
+
+<!-- RECENT-ENGINEERING-MILESTONES-2026-08-V1 -->
 ## Recent Engineering Milestones — August 2026
 
 Six recent merged pull requests capture the current reliability, correctness,

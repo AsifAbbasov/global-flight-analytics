@@ -280,4 +280,4 @@ PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
 ```
 
 The resilience/containment increment is closed. Provider recovery and controlled
-production reactivation are a separate follow-up increment.\n
+production reactivation are a separate follow-up increment.
