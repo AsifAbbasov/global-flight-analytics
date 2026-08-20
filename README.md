@@ -110,6 +110,13 @@ GitHub Actions workflow because its deduplication policy suppressed active runs 
 recent successful runs, but not recent failed runs. This created repeated failed
 `workflow_dispatch` executions and notification noise without restoring freshness.
 
+Airplanes.live subsequently confirmed directly to the project on 2026-08-20 that its
+general free API had been taken down. The provider stated that feeder-origin API access
+remains available from the same IP as the feeder and directed application/site users
+toward sponsorship. No free project-specific access exception was granted to Global
+Flight Analytics. The `403` is therefore treated as an externally confirmed provider
+access-policy boundary rather than a transient application defect.
+
 The incident was contained without hiding the provider failure:
 
 - `Production Traffic Ingestion` was disabled at the GitHub Actions gate while the
@@ -142,6 +149,51 @@ operational provider path passes a real production smoke test, freshness verific
 and a subsequent scheduled-run check. Full diagnosis, root cause, remediation,
 verification evidence, and reactivation criteria are recorded in
 [`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md).
+
+<!-- PRODUCTION-RECONCILIATION-RECOVERY-2026-08-V1 -->
+## Production Reconciliation Recovery — August 2026
+
+A real reconciliation backlog exposed two independent production gaps: durable
+reconciliation work had no scheduled production consumer, and the Grafana backlog rule
+could falsely resolve when sparse production metrics aged out of its observation window.
+
+The remediation added a bounded scheduled reconciliation consumer and expanded the
+backlog observation window from 20 to 45 minutes without weakening the existing
+300-second backlog SLO. Production recovery was then verified against the real production
+database and monitoring path.
+
+Manual `Production Reconciliation` run `32372102564` completed successfully on `main` and
+reported no remaining due work:
+
+```text
+requeued_stale=0
+processed=0
+completed=0
+retries=0
+failed=0
+requeued_by_new_signal=0
+maximum_tasks=100
+PRODUCTION_RECONCILIATION_BATCH=PASS
+```
+
+Fresh `Production Metrics Scrape` run `32373146931` then completed successfully with
+protected-source verification, Grafana Alloy validation, remote write, and Grafana Cloud
+query evidence all passing. No new reconciliation `FIRING` notification or
+production-metrics-missing notification appeared after the fresh write during closure
+verification.
+
+```text
+PRODUCTION_RECONCILIATION_CONSUMER=PASS
+PRODUCTION_RECONCILIATION_BACKLOG=EMPTY
+PRODUCTION_RECONCILIATION_BATCH=PASS
+RECONCILIATION_ALERT_STABILITY=PASS
+PRODUCTION_RECOVERY_VERIFICATION=PASS
+RECONCILIATION_INCIDENT=CLOSED
+```
+
+The full root-cause analysis, false-resolution mechanism, safety boundaries, runtime
+evidence, and closure criteria are recorded in
+[`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md).
 
 <!-- RECENT-ENGINEERING-MILESTONES-2026-08-V1 -->
 ## Recent Engineering Milestones — August 2026

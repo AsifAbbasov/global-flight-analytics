@@ -1,6 +1,6 @@
 # Production Reconciliation and Alert Stability Incident
 
-Status: remediation implemented; production recovery verification pending
+Status: Incident closed; production recovery verified
 Date: 2026-08-20
 Scope: reconciliation task consumption and Grafana reconciliation-backlog stability
 
@@ -191,15 +191,77 @@ code and integration tests already exercise.
 
 ---
 
-## 7. Current State
+## 7. Production Recovery Verification
+
+The repository remediation was merged to `main` at revision:
+
+```text
+1c98329c026e47377140f9f3eb5c2e438efd7a7b
+fix: run production reconciliation and stabilize backlog alert (#80)
+```
+
+Grafana observability provisioning for the merged rules completed successfully.
+
+The owner then manually dispatched `Production Reconciliation` against `main`:
+
+```text
+run=32372102564
+conclusion=success
+```
+
+The production worker connected through the configured production database secret and
+reported:
+
+```text
+requeued_stale=0
+processed=0
+completed=0
+retries=0
+failed=0
+requeued_by_new_signal=0
+maximum_tasks=100
+PRODUCTION_RECONCILIATION_BATCH=PASS
+```
+
+Because `processed=0` and `failed=0`, no due reconciliation work remained at the time of
+the production verification batch. No manual PostgreSQL status rewrite or task deletion
+was used.
+
+A fresh production metrics collection was then manually dispatched:
+
+```text
+run=32373146931
+conclusion=success
+PRODUCTION_METRICS_SOURCE_PREFLIGHT=PASS
+GRAFANA_ALLOY_CONFIG=PASS
+GRAFANA_CLOUD_REMOTE_WRITE=PASS
+GRAFANA_CLOUD_QUERY_EVIDENCE=PASS
+```
+
+Mailbox verification after the fresh metrics write found no newer reconciliation
+`FIRING` notification and no production-metrics-missing notification. The prior real
+backlog alert had already resolved, and the repeated `FIRING -> RESOLVED -> FIRING`
+pattern did not recur during closure verification.
+
+The recovery criteria in Section 5 are therefore satisfied.
+
+---
+
+## 8. Current State
 
 ```text
 REAL_RECONCILIATION_BACKLOG=CONFIRMED
 BACKLOG_AGE_AT_INCIDENT≈16.7_DAYS
-PRODUCTION_RECONCILIATION_CONSUMER=IMPLEMENTED
+PRODUCTION_RECONCILIATION_CONSUMER=PASS
+PRODUCTION_RECONCILIATION_BACKLOG=EMPTY
+PRODUCTION_RECONCILIATION_BATCH=PASS
 RECONCILIATION_ALERT_LOOKBACK=45_MINUTES
 RECONCILIATION_ALERT_THRESHOLD=300_SECONDS_UNCHANGED
 METRICS_MISSING_ALERT=25_MINUTES_PRESERVED
+GRAFANA_CLOUD_REMOTE_WRITE=PASS
+GRAFANA_CLOUD_QUERY_EVIDENCE=PASS
+RECONCILIATION_ALERT_STABILITY=PASS
 PRODUCTION_TRAFFIC_INGESTION=INTENTIONALLY_OFFLINE
-PRODUCTION_RECOVERY_VERIFICATION=PENDING
+PRODUCTION_RECOVERY_VERIFICATION=PASS
+RECONCILIATION_INCIDENT=CLOSED
 ```
