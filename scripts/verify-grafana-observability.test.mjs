@@ -9,6 +9,7 @@ const dashboard = JSON.parse(fs.readFileSync('monitoring/grafana-cloud/dashboard
 const alerts = JSON.parse(fs.readFileSync('monitoring/grafana-cloud/alert-rules.json', 'utf8'))
 const provision = fs.readFileSync('scripts/provision-grafana-observability.sh', 'utf8')
 const workflow = fs.readFileSync('.github/workflows/provision-grafana-observability.yml', 'utf8')
+const reconciliationWorkflow = fs.readFileSync('.github/workflows/production-reconciliation.yml', 'utf8')
 const backendCI = fs.readFileSync('.github/workflows/backend-ci.yml', 'utf8')
 
 test('Grafana observability contract passes', () => {
@@ -65,7 +66,7 @@ test('rendered production alert aligns ingestion freshness with the 1800 second 
   }
 })
 
-test('rendered reconciliation alert treats missing pending series as zero', () => {
+test('rendered reconciliation alert survives sparse metrics without hiding missing telemetry', () => {
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'gfa-grafana-test-'))
   try {
     const output = execFileSync(
@@ -79,6 +80,7 @@ test('rendered reconciliation alert treats missing pending series as zero', () =
         },
       },
     )
+    assert.match(output, /reconciliation_lookback_minutes=45/)
     assert.match(output, /reconciliation_no_data=zero/)
 
     const renderedAlerts = JSON.parse(
@@ -88,10 +90,31 @@ test('rendered reconciliation alert treats missing pending series as zero', () =
       (rule) => rule.uid === 'gfa-reconciliation-backlog',
     )
     const query = reconciliation?.data.find((item) => item.refId === 'A')
-    assert.match(query?.model?.expr ?? '', /or vector\(0\)$/)
+    const expression = query?.model?.expr ?? ''
+    assert.match(expression, /reconciliation_oldest_pending_age_seconds\{[^}]*\}\[45m\]/)
+    assert.match(expression, /or vector\(0\)$/)
+    assert.doesNotMatch(expression, /reconciliation_oldest_pending_age_seconds\{[^}]*\}\[20m\]/)
+
+    const metricsMissing = renderedAlerts.rules.find(
+      (rule) => rule.uid === 'gfa-metrics-missing',
+    )
+    const missingQuery = metricsMissing?.data.find((item) => item.refId === 'A')
+    assert.match(missingQuery?.model?.expr ?? '', /\[25m\]/)
   } finally {
     fs.rmSync(outputDirectory, { recursive: true, force: true })
   }
+})
+
+test('production reconciliation has a bounded scheduled consumer', () => {
+  assert.match(reconciliationWorkflow, /name: Production Reconciliation/)
+  assert.match(reconciliationWorkflow, /cron: '4,14,24,34,44,54 \* \* \* \*'/)
+  assert.match(reconciliationWorkflow, /workflow_dispatch:/)
+  assert.match(reconciliationWorkflow, /group: production-reconciliation/)
+  assert.match(reconciliationWorkflow, /cancel-in-progress: false/)
+  assert.match(reconciliationWorkflow, /DATABASE_URL: \$\{\{ secrets\.PRODUCTION_INGESTION_DATABASE_URL \}\}/)
+  assert.match(reconciliationWorkflow, /RECONCILIATION_WORKER_MAXIMUM_TASKS: '100'/)
+  assert.match(reconciliationWorkflow, /go run \.\/cmd\/reconcile/)
+  assert.match(reconciliationWorkflow, /PRODUCTION_RECONCILIATION_BATCH=PASS/)
 })
 
 test('Grafana Cloud provisioning uses the stack namespace', () => {
