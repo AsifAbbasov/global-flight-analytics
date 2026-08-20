@@ -142,7 +142,7 @@ The production ingestion service is intentionally offline until an approved and
 operational provider path passes a real production smoke test, freshness verification,
 and a subsequent scheduled-run check. Full diagnosis, root cause, remediation,
 verification evidence, and reactivation criteria are recorded in
-[`docs/190_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/190_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md).
+[`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md).
 
 
 <!-- RECENT-ENGINEERING-MILESTONES-2026-08-V1 -->
