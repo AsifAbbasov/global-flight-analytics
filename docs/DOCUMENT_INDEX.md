@@ -1758,3 +1758,14 @@ Defines the provider-agnostic centralized live acquisition loop, lifecycle/backo
 `189_RAPID_LIVE_PROVIDER_ACTIVATION_AND_SERVER_WIRING.md`
 
 Defines the adsb.lol adapter, application-owned safety cap, fail-closed production-contact gate, durable provider-budget composition and single-process central collector wiring.
+\n\n<!-- PRODUCTION-INGESTION-RESILIENCE-INCIDENT:CLOSURE:DOCUMENT-INDEX -->
+
+## Document 190 — Production Ingestion Resilience Incident Closure
+
+`190_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`
+
+Records the August 2026 production ingestion incident caused by provider-level
+`403 Unauthorized` responses combined with an unbounded external dispatch loop,
+the fail-closed GitHub and Cloudflare containment, recent-failure circuit breaker,
+multi-provider unauthorized fallback semantics, deployment evidence, remaining
+provider-approval boundary, and controlled production-reactivation criteria.\n
