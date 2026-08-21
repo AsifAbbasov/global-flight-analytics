@@ -15,12 +15,14 @@ confidence, provenance and limitations visible.
 <!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
 <!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
 <!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->
+<!-- STAGE-14-36-FINAL-CLOSURE:README -->
 ## Current Engineering Status
 
 The heavy backend, PostgreSQL, analytical, API, OpenAPI and frontend-integration work is
-closed for the current portfolio scope. Stage 14 is formally closed. Production-provider
-recovery and free-tier runtime recovery remain intentionally fail-closed until external
-provider confirmation and live post-reset verification can be completed.
+closed for the current portfolio scope. **Stage 14 is closed** for the current repository
+scope. Production-provider recovery and free-tier runtime recovery remain intentionally
+fail-closed until external provider confirmation and live post-reset verification can be
+completed.
 
 ```text
 ADSB.lol adapter / provider policy        IMPLEMENTED
