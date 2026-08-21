@@ -3,13 +3,13 @@
 [![Backend CI](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/backend-ci.yml)
 [![Frontend CI](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/frontend-ci.yml)
 
-Global Flight Analytics is a full-stack open-data aviation research platform built to
-show how production engineering, data quality, temporal analytics and explainable
-inference can coexist in one coherent product.
+Global Flight Analytics is a full-stack open-data aviation research platform built to show
+how production engineering, data quality, temporal analytics and explainable inference can
+coexist in one coherent product.
 
-It is not air traffic control, navigation guidance, ticketing, a commercial flight
-status service or regulated aviation software. Every analytical surface keeps its data
-window, confidence, provenance and limitations visible.
+It is not air traffic control, navigation guidance, ticketing, a commercial flight status
+service or regulated aviation software. Every analytical surface keeps its data window,
+confidence, provenance and limitations visible.
 
 <!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
 <!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
@@ -21,8 +21,6 @@ The heavy backend, PostgreSQL, analytical, API, OpenAPI and frontend-integration
 closed for the current portfolio scope. Stage 14 is formally closed. Production-provider
 recovery and free-tier runtime recovery remain intentionally fail-closed until external
 provider confirmation and live post-reset verification can be completed.
-
-Current recovery architecture:
 
 ```text
 ADSB.lol adapter / provider policy        IMPLEMENTED
@@ -38,13 +36,12 @@ Neon monthly quota reset                  2026-09-01T00:00:00Z
 Frontend visual and interaction redesign  NEXT PRODUCT PHASE
 ```
 
-The free-tier deployment profile deliberately accepts Render/Neon cold starts instead of
-using keep-alive traffic. Cloudflare is the single scheduled owner for future production
+The free-tier deployment profile accepts Render/Neon cold starts instead of using
+keep-alive traffic. Cloudflare is the single scheduled owner for future production
 ingestion. The GitHub production ingestion workflow is `workflow_dispatch`-only, so there
 is no second independent ingestion scheduler waking Render or Neon.
 
-The free-tier budget, incident evidence, wake-window policy and recovery criteria are
-recorded in
+The current free-tier budget and recovery criteria are recorded in
 [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md).
 
 ## Portfolio Release Evidence
@@ -64,9 +61,15 @@ revision:
 - API: `https://global-flight-analytics-api.onrender.com`
 - Database: owner-controlled Neon PostgreSQL
 
-The visual and interaction redesign remains a separate product phase. The current frontend
-is technically integrated and publicly deployed, but it is not presented as the final
-visual design.
+Historical release verification recorded:
+
+```text
+PRODUCTION_RELEASE_SMOKE=PASS
+```
+
+Visual and interaction redesign remains a separate product phase. The current frontend is
+technically integrated and publicly deployed, but it is not presented as the final visual
+design.
 
 <!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1 -->
 ## Production Observability
@@ -146,8 +149,6 @@ not sustained high compute scaling. Live inspection recorded approximately 373.6
 hours, approximately 101.2 CU-hours and approximately 0.27 CU average effective compute,
 close to the 0.25 CU minimum. Scale-to-zero was observed working after inactivity.
 
-The repository now enforces a bounded deployment profile:
-
 ```text
 TARGET_MONTHLY_NEON_COMPUTE <= 60 CU-hours
 RESERVE_FOR_INTERACTIVE_AND_RECOVERY_WORK >= 40 CU-hours
@@ -158,12 +159,10 @@ no keep-alive traffic
 ```
 
 The incident remains open until quota availability returns and live production evidence
-shows successful ingestion, PostgreSQL persistence, Grafana recovery and bounded sleep/
+shows successful ingestion, PostgreSQL persistence, Grafana recovery and bounded sleep /
 compute behavior under the new cadence.
 
 ## Recent Engineering Milestones — August 2026
-
-The current release boundary retains the latest durable portfolio milestones:
 
 - **PR #68 — Frontend dependency security.** Closed the production dependency security
   baseline and permanent dependency-graph protection.
@@ -299,7 +298,7 @@ Run the complete source gate:
 pnpm verify:release
 ```
 
-For an explicitly selected, deployed revision, the production smoke entry point remains:
+For an explicitly selected deployed revision, the production smoke entry point remains:
 
 ```bash
 FRONTEND_URL="https://global-flight-analytics-web.vercel.app" \
