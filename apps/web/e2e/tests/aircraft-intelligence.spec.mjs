@@ -71,12 +71,21 @@ test('aircraft deep link restores intelligence and clearing selection returns to
   await expect(page).toHaveURL(
     /\/\?region=az&aircraft=4b1801&view=intelligence#live-traffic$/,
   )
-  await expect(
-    page.getByText('Selected aircraft', { exact: true }),
-  ).toBeVisible()
-  await expect(page.getByText('4B1801', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Clear selection' }).click()
+  const intelligenceTab = page.getByRole('tab', { name: /Intelligence/i })
+  await expect(intelligenceTab).toHaveAttribute('aria-selected', 'true')
+
+  const intelligencePanel = page.getByRole('tabpanel')
+  await expect(
+    intelligencePanel.getByText('Selected aircraft', { exact: true }),
+  ).toBeVisible()
+  await expect(intelligencePanel.getByText(/^4b1801$/i)).toBeVisible()
+
+  const clearSelection = intelligencePanel.getByRole('button', {
+    name: 'Clear selection',
+  })
+  await expect(clearSelection).toBeVisible()
+  await clearSelection.click()
 
   const url = new URL(page.url())
   expect(url.searchParams.get('region')).toBe('az')

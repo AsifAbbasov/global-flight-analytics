@@ -66,14 +66,6 @@ func TestLoadIngestConfig(
 		)
 	}
 
-	if loadedConfig.AirplanesLiveTimeout != 10*time.Second {
-		t.Fatalf(
-			"expected airplanes.live timeout %s, got %s",
-			10*time.Second,
-			loadedConfig.AirplanesLiveTimeout,
-		)
-	}
-
 	if loadedConfig.TrajectoryMaxTimeGap != 90*time.Second {
 		t.Fatalf(
 			"expected trajectory maximum time gap %s, got %s",
@@ -303,74 +295,6 @@ func TestLoadIngestConfigRejectsInvalidRadius(
 	}
 }
 
-func TestLoadIngestConfigRejectsNonPositiveProviderTimeouts(
-	t *testing.T,
-) {
-	tests := []struct {
-		name                    string
-		environmentVariableName string
-		value                   string
-		expectedError           string
-	}{
-		{
-			name:                    "zero airplanes live timeout",
-			environmentVariableName: airplanesLiveTimeoutEnvironmentVariable,
-			value:                   "0s",
-			expectedError: "load airplanes.live timeout: " +
-				"AIRPLANES_LIVE_TIMEOUT must be greater than zero",
-		},
-		{
-			name:                    "negative airplanes live timeout",
-			environmentVariableName: airplanesLiveTimeoutEnvironmentVariable,
-			value:                   "-1s",
-			expectedError: "load airplanes.live timeout: " +
-				"AIRPLANES_LIVE_TIMEOUT must be greater than zero",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(
-			test.name,
-			func(t *testing.T) {
-				setValidIngestEnvironment(
-					t,
-				)
-
-				t.Setenv(
-					test.environmentVariableName,
-					test.value,
-				)
-
-				loadedConfig, err := LoadIngestConfig()
-
-				if err == nil {
-					t.Fatal(
-						"expected ingest configuration error, got nil",
-					)
-				}
-
-				if loadedConfig != (IngestConfig{}) {
-					t.Fatalf(
-						"expected zero ingest configuration, got %+v",
-						loadedConfig,
-					)
-				}
-
-				if !strings.Contains(
-					err.Error(),
-					test.expectedError,
-				) {
-					t.Fatalf(
-						"expected error containing %q, got %q",
-						test.expectedError,
-						err.Error(),
-					)
-				}
-			},
-		)
-	}
-}
-
 func TestLoadIngestConfigAcceptsDisabledTrajectoryThresholds(
 	t *testing.T,
 ) {
@@ -554,11 +478,6 @@ func setValidIngestEnvironment(
 	t.Setenv(
 		trafficIngestionRadiusEnvironmentVariable,
 		"  250  ",
-	)
-
-	t.Setenv(
-		airplanesLiveTimeoutEnvironmentVariable,
-		"  10s  ",
 	)
 
 	t.Setenv(

@@ -1764,3 +1764,16 @@ bounded scheduled reconciliation remediation, the preserved 300-second SLO and
 25-minute missing-metrics rule, production worker run `32372102564`, fresh metrics run
 `32373146931`, verified empty due backlog, stable alert behavior, and formal production
 recovery closure.
+
+
+<!-- PRODUCTION-TRAFFIC-PROVIDER-RECOVERY:DOCUMENT-INDEX -->
+
+## Document 193 — Production Traffic Provider Recovery
+
+`193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`
+
+Records the ADSB.lol recovery candidate, dedicated readsb-compatible adapter,
+project-conservative request budget, Airplanes.live and OpenSky access gates,
+fail-closed production contact gate, Render ingestion/runtime boundary and the
+real production evidence required before `PRODUCTION_PROVIDER_RECOVERY` can be
+closed.

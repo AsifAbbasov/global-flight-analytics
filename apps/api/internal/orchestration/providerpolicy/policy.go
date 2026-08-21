@@ -8,6 +8,7 @@ import (
 type Provider string
 
 const (
+	ProviderADSBLOL       Provider = "adsb.lol"
 	ProviderAirplanesLive Provider = "airplanes.live"
 	ProviderOpenMeteo     Provider = "open_meteo"
 	ProviderOurAirports   Provider = "ourairports"
@@ -17,8 +18,9 @@ const (
 type Provenance string
 
 const (
-	ProvenanceSourceBacked     Provenance = "SOURCE-BACKED"
-	ProvenanceProviderDirected Provenance = "PROVIDER-DIRECTED"
+	ProvenanceSourceBacked        Provenance = "SOURCE-BACKED"
+	ProvenanceProviderDirected    Provenance = "PROVIDER-DIRECTED"
+	ProvenanceProjectConservative Provenance = "PROJECT-CONSERVATIVE"
 )
 
 type BudgetMode string
@@ -75,6 +77,8 @@ func Get(
 	provider Provider,
 ) (Policy, error) {
 	switch provider {
+	case ProviderADSBLOL:
+		return adsbLOLPolicy(), nil
 	case ProviderAirplanesLive:
 		return airplanesLivePolicy(), nil
 	case ProviderOpenMeteo:
@@ -94,6 +98,7 @@ func Get(
 
 func All() []Policy {
 	return []Policy{
+		adsbLOLPolicy(),
 		airplanesLivePolicy(),
 		openMeteoPolicy(),
 		ourAirportsPolicy(),
@@ -248,6 +253,23 @@ func isSupportedWindow(
 		return true
 	default:
 		return false
+	}
+}
+
+func adsbLOLPolicy() Policy {
+	const reference = "https://api.adsb.lol/"
+
+	return Policy{
+		Provider:   ProviderADSBLOL,
+		BudgetMode: BudgetModeFixedWindow,
+		RequestLimits: []RequestLimit{
+			{
+				MaxRequests: 1,
+				Window:      WindowMinute,
+				Provenance:  ProvenanceProjectConservative,
+				Reference:   reference,
+			},
+		},
 	}
 }
 

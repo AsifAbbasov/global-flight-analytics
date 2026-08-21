@@ -17,7 +17,8 @@ export OURAIRPORTS_COUNTRY_CODES="${OURAIRPORTS_COUNTRY_CODES:-AZ,GE,AM,TR}"
 export TRAFFIC_INGESTION_LATITUDE="${TRAFFIC_INGESTION_LATITUDE:-40.4093}"
 export TRAFFIC_INGESTION_LONGITUDE="${TRAFFIC_INGESTION_LONGITUDE:-49.8671}"
 export TRAFFIC_INGESTION_RADIUS="${TRAFFIC_INGESTION_RADIUS:-100}"
-export AIRPLANES_LIVE_TIMEOUT="${AIRPLANES_LIVE_TIMEOUT:-10s}"
+export TRAFFIC_PROVIDER="${TRAFFIC_PROVIDER:-adsb.lol}"
+export ADSBLOL_TIMEOUT="${ADSBLOL_TIMEOUT:-10s}"
 export TRAJECTORY_MAX_TIME_GAP="${TRAJECTORY_MAX_TIME_GAP:-90s}"
 export TRAJECTORY_MAX_GROUND_SPEED_MPS="${TRAJECTORY_MAX_GROUND_SPEED_MPS:-420}"
 
@@ -62,7 +63,7 @@ if ! grep -Eq '^[[:space:]]*DATABASE_URL=[^[:space:]].*$' "$API_DIR/.env" && [[ 
   exit 1
 fi
 
-if [[ "$(git -C "$PROJECT_ROOT" branch --show-current)" != "main" ]]; then
+if [[ "$(git -C "$PROJECT_ROOT" rev-parse --abbrev-ref HEAD)" != "main" ]]; then
   echo "ERROR: runtime smoke must run from main"
   exit 1
 fi

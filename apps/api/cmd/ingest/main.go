@@ -198,7 +198,6 @@ func runWithArgs(
 	}
 
 	trafficSelection, err := buildTrafficProvider(
-		cfg.AirplanesLiveTimeout,
 		trafficProviderConfig,
 		orchestrator,
 		responseObserver,

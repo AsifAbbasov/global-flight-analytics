@@ -31,7 +31,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.PRODUCTION_INGESTION_DATABASE_URL }}
       DATABASE_CONNECT_TIMEOUT: 10s
-      TRAFFIC_PROVIDER: airplanes.live
+      TRAFFIC_PROVIDER: adsb.lol
       TRAFFIC_INGESTION_LATITUDE: '40.4093'
       TRAFFIC_INGESTION_LONGITUDE: '49.8671'
       TRAFFIC_INGESTION_RADIUS: '250'
@@ -39,7 +39,7 @@ jobs:
       TRAFFIC_INGESTION_TERMINAL_TIMEOUT: 30s
       TRAFFIC_INGESTION_STALE_RUN_AFTER: 30m
       TRAFFIC_INGESTION_MAX_BACKOFF: 2m
-      AIRPLANES_LIVE_TIMEOUT: 15s
+      ADSBLOL_TIMEOUT: 15s
       TRAJECTORY_MAX_TIME_GAP: 90s
       TRAJECTORY_MAX_GROUND_SPEED_MPS: '420'
 
@@ -76,6 +76,21 @@ jobs:
           esac
 
           printf 'PRODUCTION_INGESTION_DISPATCH_SOURCE=%s\n' "$DISPATCH_SOURCE"
+
+      - name: Validate ADSB.lol production contact gate
+        env:
+          ADSBLOL_PRODUCTION_CONTACT_CONFIRMED: ${{ vars.ADSBLOL_PRODUCTION_CONTACT_CONFIRMED }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "$ADSBLOL_PRODUCTION_CONTACT_CONFIRMED" != "true" ]; then
+            printf '%s\n' 'ADSBLOL_PRODUCTION_CONTACT_CONFIRMED must be true before production traffic ingestion can run' >&2
+            exit 1
+          fi
+
+          printf '%s\n' 'ADSBLOL_PRODUCTION_CONTACT_GATE=PASS'
+
 
       - name: Validate production ingestion secret
         shell: bash

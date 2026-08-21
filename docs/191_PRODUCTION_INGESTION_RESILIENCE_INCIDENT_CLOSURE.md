@@ -307,3 +307,22 @@ PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
 
 The resilience/containment increment is closed. Provider recovery and controlled
 production reactivation are a separate follow-up increment.
+
+
+<!-- ADSBLOL-RECOVERY-SUCCESSOR-V1 -->
+## Provider recovery successor
+
+The follow-on recovery implementation uses ADSB.lol as the default open-data
+traffic provider candidate. The adapter, provider policy, access gates and
+source-ready production workflow are recorded in Document 193.
+
+This does not close `PRODUCTION_PROVIDER_RECOVERY` by itself. Production remains
+intentionally offline until ADSB.lol production-use contact is confirmed and the
+real production smoke, freshness and subsequent scheduled-run checks pass.
+
+```text
+ADSBLOL_IMPLEMENTATION_FOUNDATION=READY
+ADSBLOL_PRODUCTION_CONTACT=PENDING
+PRODUCTION_PROVIDER_RECOVERY=OPEN
+PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
+```

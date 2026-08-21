@@ -282,19 +282,55 @@ FRONTEND_DEPENDENCY_SECURITY=CLOSED
 RELEASE_VERIFICATION=PASS
 ```
 
+<!-- PRODUCTION-TRAFFIC-PROVIDER-RECOVERY-2026-08-V1 -->
+## Production Traffic Provider Recovery — ADSB.lol
+
+The implementation foundation for traffic-provider recovery uses ADSB.lol as
+the default open-data provider candidate. The backend has a dedicated
+readsb-compatible ADSB.lol adapter, a conservative project-owned request budget,
+source-specific provenance and policy-aware fallback selection.
+
+`TRAFFIC_PROVIDER=auto` starts with ADSB.lol. Airplanes.live is eligible only
+after feeder/sponsorship-compatible access is explicitly approved, and OpenSky
+is eligible only after its operational agreement is explicitly confirmed.
+
+Production activation remains fail-closed. The GitHub Actions ingestion workflow
+rejects execution until the owner-controlled
+`ADSBLOL_PRODUCTION_CONTACT_CONFIRMED` variable is set to `true` after the
+production-use contact step.
+
+```text
+ADSBLOL_ADAPTER=IMPLEMENTED
+ADSBLOL_PROVIDER_POLICY=IMPLEMENTED
+PRODUCTION_WORKFLOW_SOURCE_READY=YES
+ADSBLOL_PRODUCTION_CONTACT=PENDING
+PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
+PRODUCTION_PROVIDER_RECOVERY=OPEN
+```
+
+Implementation details and activation criteria are recorded in
+[`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md).
+
+
 ## Remaining Portfolio v1.0.0 Work
 
-The heavy backend, persistence, analytical, API, production-reliability and
-functional browser work is closed for the current portfolio scope. The
-remaining release sequence is intentionally product-facing:
+The heavy backend, persistence, analytical and API work is closed for the
+current portfolio scope. Production reliability infrastructure is also closed,
+but the external traffic-provider recovery boundary remains open after the
+Airplanes.live access-policy change.
 
-1. complete the **Frontend Visual and Interaction Redesign**;
-2. add final **pixel-golden Playwright screenshot baselines** after the
+The remaining release sequence is:
+
+1. complete **Production Traffic Provider Recovery** by confirming ADSB.lol
+   production use, enabling the fail-closed ingestion workflow, and verifying a
+   real smoke, freshness recovery and subsequent scheduled run;
+2. complete the **Frontend Visual and Interaction Redesign**;
+3. add final **pixel-golden Playwright screenshot baselines** after the
    redesigned interface is stable;
-3. run the complete release gate against the redesign;
-4. perform **final exact-production deployment validation** against the final
+4. run the complete release gate against the redesign;
+5. perform **final exact-production deployment validation** against the final
    release revision rather than reusing historical deployment evidence;
-5. refresh release-truth documentation and publish the `v1.0.0` tag/release.
+6. refresh release-truth documentation and publish the `v1.0.0` tag/release.
 
 No new microservice, Kubernetes, Redis, Kafka or separate backend topology is
 required for this release boundary.
