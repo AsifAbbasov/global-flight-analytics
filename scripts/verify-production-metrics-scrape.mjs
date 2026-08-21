@@ -18,7 +18,7 @@ const backendCI = read('.github/workflows/backend-ci.yml')
 const runbook = read('docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md')
 
 for (const literal of [
-  "cron: '17 */2 * * *'",
+  "cron: '20 */2 * * *'",
   'workflow_dispatch:',
   'contents: read',
   'group: production-metrics-scrape',
@@ -41,6 +41,9 @@ for (const literal of [
 }
 if (workflow.includes("cron: '7,22,37,52 * * * *'")) {
   fail('workflow still uses the 15-minute keep-awake cadence')
+}
+if (workflow.includes("cron: '17 */2 * * *'")) {
+  fail('workflow still collides with the primary ingestion wake minute')
 }
 if (workflow.includes('grafana/alloy:latest')) fail('workflow uses a mutable Alloy latest tag')
 if (workflow.includes('${{ github.sha }}')) fail('workflow substitutes source SHA for deployed revision')
