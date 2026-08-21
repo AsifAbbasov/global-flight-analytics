@@ -11,6 +11,10 @@ It is not air traffic control, navigation guidance, ticketing, a commercial flig
 status service or regulated aviation software. Every analytical surface keeps its data
 window, confidence, provenance and limitations visible.
 
+<!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
+<!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
+<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
+<!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->
 ## Current Engineering Status
 
 The heavy backend, PostgreSQL, analytical, API, OpenAPI and frontend-integration work is
@@ -43,9 +47,6 @@ The free-tier budget, incident evidence, wake-window policy and recovery criteri
 recorded in
 [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md).
 
-<!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
-<!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
-<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
 ## Portfolio Release Evidence
 
 Source implementation and exact-commit Continuous Integration were closed for the original
@@ -66,6 +67,19 @@ revision:
 The visual and interaction redesign remains a separate product phase. The current frontend
 is technically integrated and publicly deployed, but it is not presented as the final
 visual design.
+
+<!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1 -->
+## Production Observability
+
+Production observability remains repository-owned and historically verified. Protected
+Prometheus-compatible metrics are forwarded through Grafana Alloy to Grafana Cloud; the
+stack owns one production SLO dashboard and nine managed alert rules, with controlled
+notification delivery recorded as historical closure evidence.
+
+Exact resources, security boundaries and notification-delivery evidence are preserved in
+[`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md).
+The current free-tier metrics cadence is two hours, with a 180-minute missing-metrics
+window; that newer cadence does not rewrite the immutable historical closure evidence.
 
 ## Production Traffic and Free-Tier Boundary
 
@@ -147,6 +161,20 @@ The incident remains open until quota availability returns and live production e
 shows successful ingestion, PostgreSQL persistence, Grafana recovery and bounded sleep/
 compute behavior under the new cadence.
 
+## Recent Engineering Milestones — August 2026
+
+The current release boundary retains the latest durable portfolio milestones:
+
+- **PR #68 — Frontend dependency security.** Closed the production dependency security
+  baseline and permanent dependency-graph protection.
+- **PR #69 — Required-check recovery hardening.** Added exact-head, fail-closed CI recovery
+  rules and prohibited empty retrigger commits or reduced shadow workflows.
+- **PR #70 — Playwright product coverage.** Expanded browser verification to twenty
+  deterministic Chromium product journeys and preserved the visual-redesign boundary.
+- **PR #82 — ADSB.lol provider recovery.** Added the fail-closed open-data provider path.
+- **PR #85 — Free-tier infrastructure hardening.** Reworked monitoring, reconciliation and
+  scheduler cadence around the measured Neon compute budget.
+
 ## Architecture
 
 ```mermaid
@@ -205,8 +233,8 @@ renders evidence without recomputing server-owned analytics.
 
 ## Contract and Test Surface
 
-The repository exposes **38 source-backed OpenAPI operations**: 37 unauthenticated public
-read operations and one protected Route Intelligence mutation.
+The current repository contract exposes **38 source-backed OpenAPI paths**: 37
+unauthenticated public read operations and one protected Route Intelligence mutation.
 
 Browser verification contains **twenty deterministic Chromium product journeys** and
 **seven deterministic private mock scenarios** covering workspace navigation, aircraft,
@@ -265,8 +293,19 @@ Open `http://localhost:3000`.
 
 ## Verify a Release Candidate
 
+Run the complete source gate:
+
 ```bash
 pnpm verify:release
+```
+
+For an explicitly selected, deployed revision, the production smoke entry point remains:
+
+```bash
+FRONTEND_URL="https://global-flight-analytics-web.vercel.app" \
+API_BASE_URL="https://global-flight-analytics-api.onrender.com" \
+EXPECTED_API_REVISION='<full deployed API SHA>' \
+pnpm smoke:production
 ```
 
 The release gate covers the portfolio contract, recruiter quickstart, dependency graph,
@@ -279,6 +318,7 @@ audits, Docker configuration and repository integrity.
 - [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md) — production deployment and recovery path;
 - [`docs/164_RECRUITER_DEMO_SCRIPT.md`](docs/164_RECRUITER_DEMO_SCRIPT.md) — product and code walkthrough;
 - [`docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md`](docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md) — architecture, boundaries and trade-offs;
+- [`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md) — managed production observability evidence;
 - [`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md) — provider incident containment;
 - [`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md) — reconciliation incident evidence;
 - [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation;
@@ -294,12 +334,12 @@ the backend architecture.
 Remaining sequence:
 
 1. complete the Frontend Visual and Interaction Redesign;
-2. stabilize final Playwright visual baselines after the redesign;
+2. stabilize final pixel-golden Playwright screenshot baselines after the redesign;
 3. receive ADSB.lol production-use confirmation;
 4. after Neon quota availability returns, run controlled production ingestion and verify
    PostgreSQL write, freshness, Grafana evidence and scale-to-zero behavior;
-5. perform final exact-production validation against the release revision;
-6. refresh release-truth documentation and publish `v1.0.0`.
+5. perform final exact-production deployment validation against the release revision;
+6. refresh final release documentation and publish `v1.0.0`.
 
 ```text
 FRONTEND_PRODUCT_CLOSURE=NEXT
@@ -308,6 +348,7 @@ PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
 PRODUCTION_PROVIDER_RECOVERY=OPEN_EXTERNAL
 FREE_TIER_INFRASTRUCTURE_RECOVERY=OPEN_RUNTIME_VALIDATION
 FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
+FINAL_RELEASE_DOCUMENTATION=OPEN
 V1_RELEASE=OPEN
 ```
 
@@ -320,3 +361,5 @@ into zero; optional identity fields do not invalidate positional evidence.
 
 Machine learning, satellite fusion, billing, authentication, Kubernetes and microservices
 remain outside the current portfolio release boundary.
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
