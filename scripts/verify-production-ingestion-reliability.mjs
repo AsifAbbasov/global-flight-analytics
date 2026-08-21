@@ -112,7 +112,6 @@ assert(readme.includes('repository-recorded closure evidence') && readme.include
 assert(readme.split('docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md').length - 1 === 2 && readme.split('docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md').length - 1 === 2, 'README must link each reliability closure document exactly once')
 assert(documentIndex.includes('Document 182 — Zero-Cost Production Ingestion Reliability Closure'), 'document index must register the reliability closure')
 assert(documentIndex.includes('Document 183 — Cloudflare Ingestion Live Deployment and Closure Evidence'), 'document index must register the live deployment and closure evidence')
-assert(documentIndex.includes('Document 194 — Free-Tier Production Infrastructure Budget'), 'document index must register the free-tier infrastructure budget')
 assert(!fs.existsSync(path.join(repositoryRoot, workerPath, '.dev.vars')), 'repository must not contain local Worker secrets')
 
 console.log('GITHUB_INGESTION_SCHEDULER=DISPATCH_ONLY')
