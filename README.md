@@ -71,6 +71,21 @@ Visual and interaction redesign remains a separate product phase. The current fr
 technically integrated and publicly deployed, but it is not presented as the final visual
 design.
 
+<!-- STAGE-13-FRONTEND-ANALYTICS-CLOSURE-V1 -->
+## Frontend Analytics Integration
+
+Stage 13 frontend analytics integration is technically complete. Projection Intelligence,
+Weather Context and Stability/Explainability are wired through source-backed API/query
+contracts and rendered by the product workspace without moving server-owned analytical
+recomputation into the browser.
+
+Observed trajectory and estimated projection geometry remain separate MapLibre evidence
+sources, so measured history and estimated future geometry cannot be presented as the same
+kind of observation. The visual and interaction redesign remains a separate product phase.
+
+Formal completion evidence is preserved in
+[`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md).
+
 <!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1 -->
 ## Production Observability
 
@@ -318,6 +333,7 @@ audits, Docker configuration and repository integrity.
 - [`docs/164_RECRUITER_DEMO_SCRIPT.md`](docs/164_RECRUITER_DEMO_SCRIPT.md) — product and code walkthrough;
 - [`docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md`](docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md) — architecture, boundaries and trade-offs;
 - [`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md) — managed production observability evidence;
+- [`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md) — Stage 13 frontend analytics closure;
 - [`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md) — provider incident containment;
 - [`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md) — reconciliation incident evidence;
 - [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation;
