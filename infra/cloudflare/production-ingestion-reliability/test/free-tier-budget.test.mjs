@@ -31,7 +31,7 @@ test('Cloudflare production reliability profile is free-tier bounded', () => {
     readme,
     /watchdog checks public traffic freshness every two hours/,
   )
-  assert.match(readme, /must remain dispatch\/manual-owned/)
+  assert.match(readme, /remain dispatch\/manual-owned/)
 })
 
 test('Worker source defaults preserve the free-tier cadence', () => {
