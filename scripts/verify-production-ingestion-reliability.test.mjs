@@ -11,41 +11,28 @@ function read(relativePath) {
   return fs.readFileSync(path.join(repositoryRoot, relativePath), 'utf8')
 }
 
-function scheduledMinuteGaps(workflow) {
-  const match = workflow.match(/cron: '([^']+)'/)
-  assert.ok(match, 'production ingestion workflow must define a cron schedule')
-  const [minuteField, hourField, dayOfMonth, month, dayOfWeek] = match[1].split(/\s+/)
-  assert.equal(hourField, '*')
-  assert.equal(dayOfMonth, '*')
-  assert.equal(month, '*')
-  assert.equal(dayOfWeek, '*')
-  const minutes = [...new Set(minuteField.split(',').map(Number))].sort((a, b) => a - b)
-  assert.ok(minutes.length >= 2)
-  assert.ok(minutes.every((value) => Number.isInteger(value) && value >= 0 && value <= 59))
-  return minutes.map((minute, index) => {
-    const next = minutes[(index + 1) % minutes.length]
-    return index === minutes.length - 1 ? 60 - minute + next : next - minute
-  })
-}
-
 test('repository reliability verifier accepts the current checkout', () => {
   const result = spawnSync(process.execPath, ['scripts/verify-production-ingestion-reliability.mjs'], {
     cwd: repositoryRoot,
     encoding: 'utf8',
   })
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`)
+  assert.match(result.stdout, /GITHUB_INGESTION_SCHEDULER=DISPATCH_ONLY/)
+  assert.match(result.stdout, /CLOUDFLARE_SCHEDULER_OWNERSHIP=PASS/)
   assert.match(result.stdout, /CLOUDFLARE_FREE_TIER_SCHEDULER=PASS/)
   assert.match(result.stdout, /CLOUDFLARE_RELIABILITY_SOURCE_CONTRACT=PASS/)
-  assert.match(result.stdout, /MIN_GAP_MINUTES=15 MAX_GAP_MINUTES=15/)
 })
 
-test('free-tier cutover uses sparse Cloudflare schedules while preserving the temporary GitHub fallback', () => {
+test('free-tier cutover assigns scheduled ownership exclusively to Cloudflare', () => {
   const workflow = read('.github/workflows/production-traffic-ingestion.yml')
   const config = JSON.parse(read('infra/cloudflare/production-ingestion-reliability/wrangler.jsonc'))
-  const gaps = scheduledMinuteGaps(workflow)
-  assert.equal(Math.min(...gaps), 15)
-  assert.equal(Math.max(...gaps), 15)
-  assert.doesNotMatch(workflow, /cron: '\*\/10 \* \* \* \*'/)
+
+  assert.match(workflow, /workflow_dispatch:/)
+  assert.doesNotMatch(workflow, /\bschedule:/)
+  assert.doesNotMatch(workflow, /cron:/)
+  assert.doesNotMatch(workflow, /manual\|schedule\|cloudflare-primary\|cloudflare-watchdog/)
+  assert.match(workflow, /manual\|cloudflare-primary\|cloudflare-watchdog/)
+  assert.match(workflow, /SCHEDULER-OWNERSHIP-V1/)
   assert.deepEqual(config.triggers.crons, [
     '17,47 * * * *',
     '19 */2 * * *',
