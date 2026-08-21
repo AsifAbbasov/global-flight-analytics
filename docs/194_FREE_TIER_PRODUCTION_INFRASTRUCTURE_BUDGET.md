@@ -204,10 +204,34 @@ For the free v1 deployment:
 
 These console settings are operational prerequisites and are not encoded in this repository unless Neon infrastructure-as-code is introduced later.
 
-## 8. Current recovery state
+## 8. Live Neon evidence — 2026-08-21
+
+A live Neon account inspection after the incident recorded:
+
+```text
+project                         global-flight-analytics
+primary branch                  production
+PostgreSQL                      18
+region                          aws-eu-central-1
+compute range                   0.25–2 CU
+active time                     ~373.6 hours
+compute usage                   ~101.2 CU-hours
+average effective compute       ~0.27 CU
+quota reset                     2026-09-01 00:00 UTC
+endpoint state after inactivity idle / suspended
+```
+
+The endpoint was observed suspended roughly six minutes after its last recorded activity, confirming that scale-to-zero is functioning in practice. The average effective compute of approximately 0.27 CU is very close to the 0.25 CU minimum, which strongly supports the conclusion that excessive active time and repeated wake windows — rather than sustained high autoscaling — dominated the monthly compute exhaustion.
+
+This evidence does not prove that every Render 502/503/429 response was caused by Neon. It narrows the database-side incident mechanism to active-time budget exhaustion and validates the free-tier scheduling changes as the primary corrective action.
+
+## 9. Current recovery state
 
 ```text
 NEON_MONTHLY_COMPUTE_ALLOWANCE=EXHAUSTED
+NEON_SCALE_TO_ZERO=OBSERVED_WORKING
+NEON_AVERAGE_EFFECTIVE_COMPUTE≈0.27_CU
+NEON_QUOTA_RESET=2026-09-01T00:00:00Z
 PRODUCTION_RECONCILIATION_CRON=REMOVED
 PRODUCTION_METRICS_SCRAPE_CADENCE=2_HOURS
 PRODUCTION_METRICS_SCRAPE_MINUTE=20
