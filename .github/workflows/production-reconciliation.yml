@@ -1,8 +1,6 @@
 name: Production Reconciliation
 
 on:
-  schedule:
-    - cron: '4,14,24,34,44,54 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -63,3 +61,8 @@ jobs:
           set -euo pipefail
           go run ./cmd/reconcile
           printf '%s\n' 'PRODUCTION_RECONCILIATION_BATCH=PASS'
+
+# FREE-TIER-CADENCE-V1:
+# No independent cron while traffic ingestion is intentionally offline.
+# When production ingestion is restored, reconciliation should run in the same
+# wake window as ingestion instead of waking Neon on a separate schedule.
