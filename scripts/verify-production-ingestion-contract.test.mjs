@@ -13,12 +13,15 @@ function read(relativePath) {
   return fs.readFileSync(path.join(repositoryRoot, relativePath), 'utf8')
 }
 
-test('scheduled production ingestion remains bounded and serialized', () => {
+test('production ingestion remains bounded serialized and dispatch-owned', () => {
   const workflow = read('.github/workflows/production-traffic-ingestion.yml')
 
-  assert.match(workflow, /cron: '7,22,37,52 \* \* \* \*'/)
-  assert.doesNotMatch(workflow, /cron: '\*\/10 \* \* \* \*'/)
   assert.match(workflow, /workflow_dispatch:/)
+  assert.doesNotMatch(workflow, /\bschedule:/)
+  assert.doesNotMatch(workflow, /cron:/)
+  assert.match(workflow, /manual\|cloudflare-primary\|cloudflare-watchdog/)
+  assert.doesNotMatch(workflow, /manual\|schedule\|cloudflare-primary\|cloudflare-watchdog/)
+  assert.match(workflow, /SCHEDULER-OWNERSHIP-V1/)
   assert.match(workflow, /group: production-traffic-ingestion/)
   assert.match(workflow, /cancel-in-progress: false/)
   assert.match(workflow, /go run \.\/cmd\/ingest --once/)
@@ -27,14 +30,16 @@ test('scheduled production ingestion remains bounded and serialized', () => {
   assert.match(workflow, /node-version: '24\.9\.0'/)
 })
 
-test('scheduled fallback is frequent enough to protect the 1800 second SLO', () => {
+test('Cloudflare-owned ingestion keeps the 1800 second freshness budget in the dispatched run', () => {
   const workflow = read('.github/workflows/production-traffic-ingestion.yml')
 
-  assert.match(workflow, /cron: '7,22,37,52 \* \* \* \*'/)
+  assert.doesNotMatch(workflow, /cron:/)
   assert.match(workflow, /MAX_TRAFFIC_AGE_SECONDS: '1800'/)
+  assert.match(workflow, /cloudflare-primary/)
+  assert.match(workflow, /cloudflare-watchdog/)
 })
 
-test('scheduled production ingestion verifies public freshness', () => {
+test('dispatched production ingestion verifies public freshness', () => {
   const workflow = read('.github/workflows/production-traffic-ingestion.yml')
   const freshness = read(
     'scripts/verify-production-traffic-freshness.mjs'
