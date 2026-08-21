@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 
+import { loadConfig } from '../src/index.mjs'
+
 const wrangler = fs.readFileSync(
   'infra/cloudflare/production-ingestion-reliability/wrangler.jsonc',
   'utf8',
@@ -21,7 +23,23 @@ test('Cloudflare production reliability profile is free-tier bounded', () => {
   assert.doesNotMatch(wrangler, /3,13,23,33,43,53/)
   assert.doesNotMatch(wrangler, /"\*\/5 \* \* \* \*"/)
 
-  assert.match(readme, /primary Cron Trigger requests a GitHub workflow dispatch every 30 minutes/)
-  assert.match(readme, /watchdog checks public traffic freshness every two hours/)
+  assert.match(
+    readme,
+    /primary Cron Trigger requests a GitHub workflow dispatch every 30 minutes/,
+  )
+  assert.match(
+    readme,
+    /watchdog checks public traffic freshness every two hours/,
+  )
   assert.match(readme, /must remain dispatch\/manual-owned/)
+})
+
+test('Worker source defaults preserve the free-tier cadence', () => {
+  const config = loadConfig({
+    GITHUB_ACTIONS_TOKEN: 'test-token-never-log',
+  })
+
+  assert.equal(config.primaryCron, '17,47 * * * *')
+  assert.equal(config.watchdogCron, '19 */2 * * *')
+  assert.equal(config.dispatchEnabled, false)
 })
