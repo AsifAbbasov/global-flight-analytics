@@ -14,28 +14,6 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
-function parseScheduledMinutes(workflow) {
-  const match = workflow.match(/cron: '([^']+)'/)
-  assert(match, 'production ingestion workflow must define a cron schedule')
-  const cron = match[1]
-  const [minuteField, hourField, dayOfMonth, month, dayOfWeek] = cron.split(/\s+/)
-  assert(
-    hourField === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*',
-    'production ingestion GitHub fallback must remain an every-hour minute schedule',
-  )
-  const minutes = minuteField.split(',').map(Number)
-  assert(
-    minutes.length >= 2 && minutes.every((value) => Number.isInteger(value) && value >= 0 && value <= 59),
-    'production ingestion GitHub fallback must use explicit bounded minute offsets',
-  )
-  const sorted = [...new Set(minutes)].sort((a, b) => a - b)
-  const gaps = sorted.map((minute, index) => {
-    const next = sorted[(index + 1) % sorted.length]
-    return index === sorted.length - 1 ? 60 - minute + next : next - minute
-  })
-  return { cron, minGapMinutes: Math.min(...gaps), maxGapMinutes: Math.max(...gaps) }
-}
-
 const workerPath = 'infra/cloudflare/production-ingestion-reliability'
 const source = read(`${workerPath}/src/index.mjs`)
 const tests = read(`${workerPath}/test/index.test.mjs`)
@@ -44,7 +22,6 @@ const configRaw = read(`${workerPath}/wrangler.jsonc`)
 const config = JSON.parse(configRaw)
 const infraReadme = read(`${workerPath}/README.md`)
 const workflow = read('.github/workflows/production-traffic-ingestion.yml')
-const fallbackSchedule = parseScheduledMinutes(workflow)
 const packageJSON = JSON.parse(read('package.json'))
 const releaseVerifier = read('scripts/verify-release.sh')
 const backendCI = read('.github/workflows/backend-ci.yml')
@@ -84,11 +61,15 @@ assert(tests.includes('suppresses an active run'), 'Worker tests must cover acti
 assert(tests.includes('dispatch kill switch suppresses both Cron Triggers'), 'Worker tests must cover the fail-closed dispatch kill switch')
 assert(tests.includes('recent failed workflow run opens the circuit breaker'), 'Worker tests must cover recent-failure circuit breaking')
 assert(freeTierTests.includes('Worker source defaults preserve the free-tier cadence'), 'free-tier tests must protect source defaults')
-assert(fallbackSchedule.maxGapMinutes <= 15, 'temporary GitHub fallback must run at least every fifteen minutes until scheduler ownership cutover')
-assert(fallbackSchedule.minGapMinutes >= 15, 'temporary GitHub fallback must not run more frequently than every fifteen minutes')
-assert(!workflow.includes("cron: '*/10 * * * *'"), 'GitHub Actions must not retain the ten-minute primary')
+
+assert(workflow.includes('workflow_dispatch:'), 'production ingestion must remain dispatchable')
+assert(!/\bschedule:/.test(workflow), 'GitHub production ingestion must not own an independent schedule')
+assert(!/cron:/.test(workflow), 'GitHub production ingestion must not contain a cron expression')
 assert(workflow.includes('dispatch_source:'), 'workflow must declare dispatch provenance input')
 assert(workflow.includes('cloudflare-primary|cloudflare-watchdog'), 'workflow must validate Cloudflare dispatch sources')
+assert(!workflow.includes('manual|schedule|cloudflare-primary|cloudflare-watchdog'), 'legacy schedule provenance must be removed')
+assert(workflow.includes('SCHEDULER-OWNERSHIP-V1'), 'workflow must record single scheduler ownership')
+
 assert(packageJSON.scripts['test:production-ingestion-reliability'] === 'node --test infra/cloudflare/production-ingestion-reliability/test/*.test.mjs scripts/verify-production-ingestion-reliability.test.mjs', 'package scripts must expose reliability tests')
 assert(packageJSON.scripts['verify:production-ingestion-reliability'] === 'node scripts/verify-production-ingestion-reliability.mjs', 'package scripts must expose reliability verification')
 assert(releaseVerifier.includes('test:production-ingestion-reliability') && releaseVerifier.includes('verify:production-ingestion-reliability'), 'release verification must enforce the Worker foundation')
@@ -131,9 +112,11 @@ assert(readme.includes('repository-recorded closure evidence') && readme.include
 assert(readme.split('docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md').length - 1 === 2 && readme.split('docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md').length - 1 === 2, 'README must link each reliability closure document exactly once')
 assert(documentIndex.includes('Document 182 — Zero-Cost Production Ingestion Reliability Closure'), 'document index must register the reliability closure')
 assert(documentIndex.includes('Document 183 — Cloudflare Ingestion Live Deployment and Closure Evidence'), 'document index must register the live deployment and closure evidence')
+assert(documentIndex.includes('Document 194 — Free-Tier Production Infrastructure Budget'), 'document index must register the free-tier infrastructure budget')
 assert(!fs.existsSync(path.join(repositoryRoot, workerPath, '.dev.vars')), 'repository must not contain local Worker secrets')
 
-console.log(`GITHUB_FALLBACK_CRON=${fallbackSchedule.cron} MIN_GAP_MINUTES=${fallbackSchedule.minGapMinutes} MAX_GAP_MINUTES=${fallbackSchedule.maxGapMinutes}`)
+console.log('GITHUB_INGESTION_SCHEDULER=DISPATCH_ONLY')
+console.log('CLOUDFLARE_SCHEDULER_OWNERSHIP=PASS')
 console.log('CLOUDFLARE_FREE_TIER_SCHEDULER=PASS')
 console.log('CLOUDFLARE_RELIABILITY_SOURCE_CONTRACT=PASS')
 console.log('ZERO_COST_INGESTION_RELIABILITY_FOUNDATION=PASS')
