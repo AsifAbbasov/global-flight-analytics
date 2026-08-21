@@ -42,10 +42,10 @@ Any scheduled component that touches the Render API must be treated as a databas
 `Production Metrics Scrape` runs every two hours:
 
 ```text
-17 */2 * * *
+20 */2 * * *
 ```
 
-This allows both Render and Neon to return to zero/idle between monitoring windows.
+The `:20` minute is intentionally staggered after the future ingestion primary (`:17`) and watchdog (`:19`) windows. This avoids launching multiple cold-start requests simultaneously while still keeping all three operations inside one short infrastructure wake cluster.
 
 Grafana's explicit missing-metrics alert is rendered with a 180-minute lookback so the alert contract matches the sparse collection cadence.
 
@@ -76,9 +76,10 @@ The future enabled free-tier profile is:
 ```text
 primary dispatch:  17,47 * * * *
 watchdog:          19 */2 * * *
+metrics:           20 */2 * * *
 ```
 
-The primary therefore requests at most two scheduled ingestion windows per hour. The watchdog runs every two hours and is intentionally placed two minutes after the `:17` primary window, allowing a healthy system to reuse the same Render/Neon wake period rather than creating a separate high-frequency keep-alive cycle.
+The primary therefore requests at most two scheduled ingestion windows per hour. Every two hours the watchdog runs two minutes after the `:17` primary and metrics runs one minute after the watchdog. This deliberately forms one staggered wake cluster instead of three independent infrastructure wake events.
 
 While recovery remains open:
 
@@ -146,7 +147,7 @@ After traffic ingestion is restored, the target v1 cadence is intentionally low-
 The intended scheduler ownership is:
 
 ```text
-Cloudflare primary scheduler
+Cloudflare primary scheduler (:17 / :47)
         ↓
 GitHub production ingestion workflow
         ↓
@@ -154,7 +155,7 @@ ingestion write batch
         ↓
 reconciliation in the same wake window
         ↓
-optional freshness/metrics verification
+watchdog / metrics reuse the existing wake window where applicable
         ↓
 idle → Render/Neon sleep
 ```
@@ -163,7 +164,36 @@ There must not be a second independent high-frequency ingestion scheduler once t
 
 Any future increase in ingestion frequency requires a new CU-hour budget calculation before activation.
 
-## 6. Required Neon settings
+## 6. Deployment profiles
+
+The resource policy is a deployment concern, not a downgrade of domain architecture.
+
+### FREE_V1
+
+```text
+cold starts accepted
+30-minute ingestion target
+2-hour metrics/watchdog
+one daily release smoke
+scale-to-zero enabled
+no keep-alive traffic
+```
+
+### SCALE / PAID
+
+```text
+same API contracts
+same domain model
+same analytical modules
+same provider abstractions
+same database schema
+same observability model
+higher ingestion cadence / always-on capacity when justified
+```
+
+Moving from `FREE_V1` to a paid capacity profile must therefore be an operational configuration change, not a rewrite of the product architecture.
+
+## 7. Required Neon settings
 
 For the free v1 deployment:
 
@@ -174,15 +204,17 @@ For the free v1 deployment:
 
 These console settings are operational prerequisites and are not encoded in this repository unless Neon infrastructure-as-code is introduced later.
 
-## 7. Current recovery state
+## 8. Current recovery state
 
 ```text
 NEON_MONTHLY_COMPUTE_ALLOWANCE=EXHAUSTED
 PRODUCTION_RECONCILIATION_CRON=REMOVED
 PRODUCTION_METRICS_SCRAPE_CADENCE=2_HOURS
+PRODUCTION_METRICS_SCRAPE_MINUTE=20
 CLOUDFLARE_PRIMARY_TARGET_CADENCE=30_MINUTES
 CLOUDFLARE_WATCHDOG_TARGET_CADENCE=2_HOURS
 CLOUDFLARE_DISPATCH_KILL_SWITCH=ACTIVE
+PRODUCTION_WAKE_CLUSTER=STAGGERED
 GRAFANA_METRICS_MISSING_WINDOW=180_MINUTES
 RENDER_KEEP_ALIVE_POLICY=PROHIBITED
 PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
