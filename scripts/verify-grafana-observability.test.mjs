@@ -66,7 +66,7 @@ test('rendered production alert aligns ingestion freshness with the 1800 second 
   }
 })
 
-test('rendered reconciliation alert survives sparse metrics without hiding missing telemetry', () => {
+test('rendered sparse-metrics policy matches the two-hour free-tier scrape cadence', () => {
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'gfa-grafana-test-'))
   try {
     const output = execFileSync(
@@ -82,6 +82,7 @@ test('rendered reconciliation alert survives sparse metrics without hiding missi
     )
     assert.match(output, /reconciliation_lookback_minutes=45/)
     assert.match(output, /reconciliation_no_data=zero/)
+    assert.match(output, /metrics_missing_window_minutes=180/)
 
     const renderedAlerts = JSON.parse(
       fs.readFileSync(path.join(outputDirectory, 'alert-rules.json'), 'utf8'),
@@ -99,16 +100,21 @@ test('rendered reconciliation alert survives sparse metrics without hiding missi
       (rule) => rule.uid === 'gfa-metrics-missing',
     )
     const missingQuery = metricsMissing?.data.find((item) => item.refId === 'A')
-    assert.match(missingQuery?.model?.expr ?? '', /\[25m\]/)
+    assert.match(missingQuery?.model?.expr ?? '', /\[180m\]/)
+    assert.equal(missingQuery?.relativeTimeRange?.from, 10800)
+    assert.equal(metricsMissing?.title, 'External metrics missing for 180 minutes')
+    assert.match(metricsMissing?.annotations?.summary ?? '', /180 minutes/)
   } finally {
     fs.rmSync(outputDirectory, { recursive: true, force: true })
   }
 })
 
-test('production reconciliation has a bounded scheduled consumer', () => {
+test('production reconciliation is manual while traffic ingestion is intentionally offline', () => {
   assert.match(reconciliationWorkflow, /name: Production Reconciliation/)
-  assert.match(reconciliationWorkflow, /cron: '4,14,24,34,44,54 \* \* \* \*'/)
   assert.match(reconciliationWorkflow, /workflow_dispatch:/)
+  assert.doesNotMatch(reconciliationWorkflow, /\bschedule:/)
+  assert.doesNotMatch(reconciliationWorkflow, /cron:/)
+  assert.match(reconciliationWorkflow, /FREE-TIER-CADENCE-V1/)
   assert.match(reconciliationWorkflow, /group: production-reconciliation/)
   assert.match(reconciliationWorkflow, /cancel-in-progress: false/)
   assert.match(reconciliationWorkflow, /DATABASE_URL: \$\{\{ secrets\.PRODUCTION_INGESTION_DATABASE_URL \}\}/)
@@ -121,7 +127,6 @@ test('Grafana Cloud provisioning uses the stack namespace', () => {
   assert.match(workflow, /GRAFANA_STACK_ID: \$\{\{ vars\.GRAFANA_STACK_ID \}\}/)
   assert.match(provision, /GRAFANA_NAMESPACE="stacks-\$GRAFANA_STACK_ID"/)
   assert.match(provision, /namespaces\/\$GRAFANA_NAMESPACE\/folders/)
-  assert.match(provision, /namespaces\/\$GRAFANA_NAMESPACE\/dashboards/)
   assert.doesNotMatch(provision, /namespaces\/default/)
 })
 
