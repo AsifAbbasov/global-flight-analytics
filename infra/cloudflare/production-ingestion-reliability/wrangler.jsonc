@@ -6,8 +6,8 @@
   "preview_urls": false,
   "triggers": {
     "crons": [
-      "3,13,23,33,43,53 * * * *",
-      "*/5 * * * *"
+      "17,47 * * * *",
+      "19 */2 * * *"
     ]
   },
   "vars": {
@@ -18,8 +18,8 @@
     "GITHUB_WORKFLOW": "production-traffic-ingestion.yml",
     "GITHUB_REF": "main",
     "TRAFFIC_API_URL": "https://global-flight-analytics-api.onrender.com/api/v1/traffic/current",
-    "PRIMARY_CRON": "3,13,23,33,43,53 * * * *",
-    "WATCHDOG_CRON": "*/5 * * * *",
+    "PRIMARY_CRON": "17,47 * * * *",
+    "WATCHDOG_CRON": "19 */2 * * *",
     "MAX_TRAFFIC_AGE_SECONDS": "1800",
     "MAX_FUTURE_SKEW_SECONDS": "60",
     "DEDUPLICATION_WINDOW_SECONDS": "480",
