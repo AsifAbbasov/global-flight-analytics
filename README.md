@@ -44,6 +44,17 @@ is no second independent ingestion scheduler waking Render or Neon.
 The current free-tier budget and recovery criteria are recorded in
 [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md).
 
+<!-- ANALYTICAL-CORE-REVIEW-CLOSURE:README -->
+## Analytical Core Review Closure
+
+```text
+ANALYTICAL_CORE_REVIEW_STATUS=CLOSED
+Open required changes: 0
+```
+
+The Analytical Core closure remains immutable repository evidence; current recovery work
+does not reopen that completed technical review.
+
 ## Portfolio Release Evidence
 
 Source implementation and exact-commit Continuous Integration were closed for the original
