@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS = 1800
 const PRODUCTION_RECONCILIATION_LOOKBACK_MINUTES = 45
+const PRODUCTION_METRICS_MISSING_WINDOW_MINUTES = 180
 
 function fail(message) {
   console.error(`GRAFANA_OBSERVABILITY_RENDER=FAIL reason=${message}`)
@@ -53,6 +54,32 @@ function applyProductionSLOPolicy(name, parsed) {
   )
   reconciliationQuery.model.expr = `(${reconciliationQuery.model.expr}) or vector(0)`
 
+  const metricsMissingRule = parsed.rules?.find((candidate) => candidate.uid === 'gfa-metrics-missing')
+  if (!metricsMissingRule) fail('alert-rules.json is missing gfa-metrics-missing')
+
+  const metricsMissingQuery = metricsMissingRule.data?.find((item) => item.refId === 'A')
+  if (typeof metricsMissingQuery?.model?.expr !== 'string') {
+    fail('gfa-metrics-missing must expose a Prometheus query')
+  }
+
+  const metricsMissingPattern = /absent_over_time\((global_flight_analytics_build_info\{[^}]*\})\[(\d+)m\]\)/
+  if (!metricsMissingPattern.test(metricsMissingQuery.model.expr)) {
+    fail('gfa-metrics-missing must use a bounded minute lookback over build_info')
+  }
+
+  metricsMissingQuery.model.expr = metricsMissingQuery.model.expr.replace(
+    metricsMissingPattern,
+    (_match, selector) => `absent_over_time(${selector}[${PRODUCTION_METRICS_MISSING_WINDOW_MINUTES}m])`,
+  )
+  metricsMissingQuery.relativeTimeRange = {
+    from: PRODUCTION_METRICS_MISSING_WINDOW_MINUTES * 60,
+    to: 0,
+  }
+  metricsMissingRule.title = `External metrics missing for ${PRODUCTION_METRICS_MISSING_WINDOW_MINUTES} minutes`
+  metricsMissingRule.annotations ??= {}
+  metricsMissingRule.annotations.summary = `Grafana Cloud has not received production build metrics for ${PRODUCTION_METRICS_MISSING_WINDOW_MINUTES} minutes.`
+  metricsMissingRule.annotations.description = `Production free-tier observability alert for external metrics missing for ${PRODUCTION_METRICS_MISSING_WINDOW_MINUTES} minutes.`
+
   return parsed
 }
 
@@ -67,4 +94,4 @@ for (const name of ['folder.json', 'dashboard.json', 'alert-rules.json']) {
   const rendered = JSON.stringify(parsed, null, 2) + '\n'
   fs.writeFileSync(path.join(outputDirectory, name), rendered)
 }
-console.log(`GRAFANA_OBSERVABILITY_RENDER=PASS ingestion_freshness_budget_seconds=${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} reconciliation_lookback_minutes=${PRODUCTION_RECONCILIATION_LOOKBACK_MINUTES} reconciliation_no_data=zero`)
+console.log(`GRAFANA_OBSERVABILITY_RENDER=PASS ingestion_freshness_budget_seconds=${PRODUCTION_TRAFFIC_FRESHNESS_BUDGET_SECONDS} reconciliation_lookback_minutes=${PRODUCTION_RECONCILIATION_LOOKBACK_MINUTES} reconciliation_no_data=zero metrics_missing_window_minutes=${PRODUCTION_METRICS_MISSING_WINDOW_MINUTES}`)
