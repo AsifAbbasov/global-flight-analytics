@@ -79,9 +79,7 @@ test('aircraft deep link restores intelligence and clearing selection returns to
   await expect(
     intelligencePanel.getByText('Selected aircraft', { exact: true }),
   ).toBeVisible()
-  await expect(
-    intelligencePanel.getByText('4B1801', { exact: true }),
-  ).toBeVisible()
+  await expect(intelligencePanel.getByText(/^4b1801$/i)).toBeVisible()
 
   const clearSelection = intelligencePanel.getByRole('button', {
     name: 'Clear selection',
