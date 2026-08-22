@@ -2,6 +2,7 @@
 // FRONTEND_UNIFIED_AIRPORT_ANALYTICS_WORKSPACE_V1
 // FRONTEND_HISTORICAL_ANALYTICS_COMPARISON_V1
 // FRONTEND_PRODUCT_HARDENING_V1
+// FRONTEND_MAP_FIRST_PRODUCT_SHELL_V1
 'use client'
 
 import dynamic from 'next/dynamic'
@@ -187,19 +188,7 @@ export function RegionalTrafficExperience({
 
   return (
     <>
-      <div id='overview' className='scroll-mt-28'>
-        <AnalyticsOverview selectedRegion={selectedRegion} />
-      </div>
-
-      <div id='airport-intelligence' className='scroll-mt-28'>
-        <UnifiedAirportAnalyticsWorkspace />
-      </div>
-
-      <div id='historical-analytics' className='scroll-mt-28'>
-        <HistoricalAnalyticsComparisonWorkspace />
-      </div>
-
-      <div id='live-traffic' className='scroll-mt-28'>
+      <div id='live-traffic' className='scroll-mt-16'>
         <TrafficDashboard
           regions={regions}
           selectedRegion={selectedRegion}
@@ -212,6 +201,18 @@ export function RegionalTrafficExperience({
           initialError={initialError}
           regionsWarning={regionsWarning}
         />
+      </div>
+
+      <div id='overview' className='scroll-mt-20'>
+        <AnalyticsOverview selectedRegion={selectedRegion} />
+      </div>
+
+      <div id='airport-intelligence' className='scroll-mt-20'>
+        <UnifiedAirportAnalyticsWorkspace />
+      </div>
+
+      <div id='historical-analytics' className='scroll-mt-20'>
+        <HistoricalAnalyticsComparisonWorkspace />
       </div>
     </>
   )
