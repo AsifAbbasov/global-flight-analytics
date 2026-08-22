@@ -9,7 +9,7 @@ test.beforeEach(async ({ request }) => {
   await setScenario(request, 'healthy')
 })
 
-test('desktop analytical section order and width remain structurally stable', async ({
+test('desktop map-first section order and width remain structurally stable', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1100 })
@@ -18,24 +18,28 @@ test('desktop analytical section order and width remain structurally stable', as
     { waitUntil: 'domcontentloaded' },
   )
 
+  const liveHeading = page.getByRole('heading', {
+    name: 'Current Traffic — World',
+  })
+  const overview = page.locator('#overview')
   const airport = page.getByRole('region', { name: 'Airport Intelligence' })
   const historical = page.getByRole('region', {
     name: 'Compare persisted analytical evidence',
   })
-  const liveHeading = page.getByRole('heading', {
-    name: 'Current Traffic — World',
-  })
 
+  const liveBox = await liveHeading.boundingBox()
+  const overviewBox = await overview.boundingBox()
   const airportBox = await airport.boundingBox()
   const historicalBox = await historical.boundingBox()
-  const liveBox = await liveHeading.boundingBox()
+  expect(liveBox).not.toBeNull()
+  expect(overviewBox).not.toBeNull()
   expect(airportBox).not.toBeNull()
   expect(historicalBox).not.toBeNull()
-  expect(liveBox).not.toBeNull()
   expect(airportBox.width).toBeGreaterThan(900)
   expect(historicalBox.width).toBeGreaterThan(900)
+  expect(overviewBox.y).toBeGreaterThan(liveBox.y)
+  expect(airportBox.y).toBeGreaterThan(overviewBox.y)
   expect(historicalBox.y).toBeGreaterThan(airportBox.y)
-  expect(liveBox.y).toBeGreaterThan(historicalBox.y)
 
   await expectNoHorizontalOverflow(page)
 
