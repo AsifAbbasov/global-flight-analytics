@@ -1,8 +1,6 @@
 name: Production Traffic Ingestion
 
 on:
-  schedule:
-    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       dispatch_source:
@@ -67,7 +65,7 @@ jobs:
           set -euo pipefail
 
           case "$DISPATCH_SOURCE" in
-            manual|schedule|cloudflare-primary|cloudflare-watchdog)
+            manual|cloudflare-primary|cloudflare-watchdog)
               ;;
             *)
               printf '%s\n' "Unsupported production ingestion dispatch source: $DISPATCH_SOURCE" >&2
@@ -90,7 +88,6 @@ jobs:
           fi
 
           printf '%s\n' 'ADSBLOL_PRODUCTION_CONTACT_GATE=PASS'
-
 
       - name: Validate production ingestion secret
         shell: bash
@@ -115,3 +112,7 @@ jobs:
           API_BASE_URL: https://global-flight-analytics-api.onrender.com
           MAX_TRAFFIC_AGE_SECONDS: '1800'
         run: node ../../scripts/verify-production-traffic-freshness.mjs
+
+# SCHEDULER-OWNERSHIP-V1:
+# Cloudflare owns production cadence. GitHub remains dispatch/manual-only so there is
+# no second independent scheduler waking Render or Neon.
