@@ -19,7 +19,9 @@ test('traffic failure preserves the shell and recovers through Retry', async ({
   await page.goto('/', { waitUntil: 'domcontentloaded' })
 
   await expect(
-    page.getByText('Initial API snapshot unavailable', { exact: true }),
+    page
+      .getByRole('region', { name: 'Application status' })
+      .getByText('Initial API snapshot unavailable', { exact: true }),
   ).toBeVisible()
   await expect(
     page.getByRole('heading', { level: 1 }),

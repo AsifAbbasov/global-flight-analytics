@@ -72,6 +72,7 @@ body {
   left: 1rem;
   z-index: 100;
   min-height: 44px;
+  pointer-events: none;
   transform: translateY(-160%);
   border: 1px solid rgb(125 211 252 / 70%);
   border-radius: 0.5rem;
@@ -87,6 +88,7 @@ body {
 }
 
 .skip-link:focus-visible {
+  pointer-events: auto;
   transform: translateY(0);
 }
 
