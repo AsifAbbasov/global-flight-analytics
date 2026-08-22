@@ -32,8 +32,8 @@ do
   test -f "$required_file" || fail "required quickstart source is missing: $required_file"
 done
 
-require_literal "$README_FILE" '<!-- RECRUITER-QUICKSTART-V1 -->' \
-  'README quickstart marker is missing'
+require_literal "$README_FILE" '## Run the Local Demo' \
+  'README recruiter quickstart section is missing'
 require_literal "$README_FILE" 'docker compose config' \
   'README does not validate Docker Compose configuration'
 require_literal "$README_FILE" 'docker compose up --build --detach' \
