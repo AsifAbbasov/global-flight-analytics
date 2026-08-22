@@ -22,7 +22,9 @@ test('renders an OpenAPI-backed server snapshot', async ({ page }) => {
     'Observe aviation data.',
   )
   await expect(
-    page.getByText('Initial snapshot ready', { exact: true }),
+    page
+      .getByRole('region', { name: 'Application status' })
+      .getByText('Initial snapshot ready', { exact: true }),
   ).toBeVisible()
 
   const initialAircraftCard = page
