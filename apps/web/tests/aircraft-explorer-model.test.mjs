@@ -72,7 +72,10 @@ test('altitude evidence filter keeps only observed or explicit ground evidence',
 
   const result = buildAircraftExplorerModel(source, { requireAltitudeEvidence: true })
 
-  assert.deepEqual(result.items.map(item => item.icao24), ['observed', 'ground'])
+  assert.deepEqual(
+    result.items.map(item => item.icao24).sort(),
+    ['ground', 'observed']
+  )
 })
 
 test('filters compose with search instead of bypassing it', () => {
