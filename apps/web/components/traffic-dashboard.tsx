@@ -271,7 +271,10 @@ export function TrafficDashboard({
       >
         <div className='flex flex-wrap items-center gap-2 border-b border-white/10 bg-[#202225] px-3 py-2.5 sm:px-4'>
           <div className='mr-auto min-w-0'>
-            <h2 className='truncate text-sm font-bold text-white sm:text-base'>
+            <h2
+              aria-label={`Current Traffic — ${selectedRegion.name}`}
+              className='truncate text-sm font-bold text-white sm:text-base'
+            >
               Live Traffic · {selectedRegion.name}
             </h2>
             <p className='mt-0.5 text-[10px] uppercase tracking-[0.14em] text-slate-500'>
@@ -597,6 +600,7 @@ function SelectedAircraftContext({
         </button>
         <button
           type='button'
+          aria-label='Clear selection'
           onClick={onClear}
           className='rounded-md border border-rose-400/30 px-2.5 py-1.5 text-[11px] font-medium text-rose-100 hover:bg-rose-400/10'
         >
