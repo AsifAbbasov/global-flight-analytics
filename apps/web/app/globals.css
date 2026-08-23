@@ -136,6 +136,94 @@ body {
   font-size: 18px;
 }
 
+/* FRONTEND_AIRCRAFT_MARKERS_V1 */
+
+.maplibregl-marker > button[aria-label^='Open aircraft details for'] {
+  min-width: 30px !important;
+  min-height: 30px !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #facc15 !important;
+  transition:
+    transform 120ms ease,
+    filter 120ms ease;
+}
+
+.maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:first-child {
+  display: grid !important;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  color: #facc15 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 90%);
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 70%));
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:last-child {
+  position: absolute;
+  left: 34px;
+  max-width: 8.5rem;
+  overflow: hidden;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.35rem;
+  background: rgb(17 19 21 / 88%);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 34%);
+  color: #f8fafc;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateX(-4px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+  backdrop-filter: blur(8px);
+}
+
+.maplibregl-marker > button[aria-label^='Open aircraft details for']:hover,
+.maplibregl-marker > button[aria-label^='Open aircraft details for']:focus-visible,
+.maplibregl-marker > button[aria-label^='Open aircraft details for'][aria-pressed='true'] {
+  z-index: 2;
+  transform: scale(1.08);
+}
+
+.maplibregl-marker > button[aria-label^='Open aircraft details for']:hover > span:last-child,
+.maplibregl-marker > button[aria-label^='Open aircraft details for']:focus-visible > span:last-child,
+.maplibregl-marker > button[aria-label^='Open aircraft details for'][aria-pressed='true'] > span:last-child {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.maplibregl-marker > button[aria-label^='Open aircraft details for'][aria-pressed='true'] > span:first-child {
+  background: #facc15;
+  color: #111827 !important;
+  box-shadow:
+    0 0 0 2px rgb(15 23 42 / 88%),
+    0 0 0 5px rgb(250 204 21 / 28%),
+    0 8px 20px rgb(0 0 0 / 42%);
+  text-shadow: none;
+}
+
+.maplibregl-marker > button[aria-label^='Open aircraft details for']:focus-visible {
+  outline: 2px solid #f8fafc;
+  outline-offset: 4px;
+}
+
 /* FRONTEND_PRODUCT_HARDENING_V1 */
 
 .skip-link {
@@ -195,6 +283,21 @@ pre {
   input[type='text'] {
     min-height: 44px;
   }
+
+  .maplibregl-marker > button[aria-label^='Open aircraft details for'] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:first-child {
+    width: 36px;
+    height: 36px;
+    font-size: 22px !important;
+  }
+
+  .maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:last-child {
+    left: 42px;
+  }
 }
 
 @media (forced-colors: active) {
@@ -211,6 +314,12 @@ pre {
   .maplibregl-ctrl-group {
     border: 2px solid CanvasText;
     background: Canvas !important;
+  }
+
+  .maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:first-child {
+    border: 2px solid CanvasText;
+    background: Canvas !important;
+    color: CanvasText !important;
   }
 }
 
