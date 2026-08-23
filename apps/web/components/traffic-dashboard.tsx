@@ -1,4 +1,5 @@
 // FRONTEND_TRAFFIC_DATA_QUALITY_LENS_V1
+// FRONTEND_VISUAL_POLISH_V2
 'use client'
 
 import { useEffect, useState, type ChangeEvent } from 'react'
@@ -185,14 +186,14 @@ export function TrafficDashboard({
 
   return (
     <>
-      <section className='mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4'>
-        <div className='flex flex-wrap items-end justify-between gap-4'>
-          <div className='min-w-64 flex-1'>
+      <section className='mt-3 rounded-xl border border-slate-800 bg-[#17191c] p-3 sm:p-4'>
+        <div className='flex flex-wrap items-end justify-between gap-3'>
+          <div className='min-w-56 flex-1 sm:max-w-sm'>
             <label
-              className='block text-sm font-medium text-slate-300'
+              className='text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500'
               htmlFor='traffic-region'
             >
-              Region
+              Traffic region
             </label>
             <select
               id='traffic-region'
@@ -200,7 +201,7 @@ export function TrafficDashboard({
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 changeRegion(event.target.value)
               }}
-              className='mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white'
+              className='mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-white'
             >
               {regions.map(region => (
                 <option key={region.code} value={region.code}>
@@ -215,13 +216,13 @@ export function TrafficDashboard({
               onClick={() => {
                 void copyCurrentViewLink()
               }}
-              className='rounded-lg border border-sky-400/35 bg-sky-400/5 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/10'
+              className='rounded-lg border border-sky-400/35 bg-sky-400/5 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:bg-sky-400/10'
             >
               {shareViewStatus === 'copied'
-                ? 'View link copied'
+                ? 'Link copied'
                 : shareViewStatus === 'unavailable'
                   ? 'Clipboard unavailable'
-                  : 'Copy view link'}
+                  : 'Share view'}
             </button>
             <button
               type='button'
@@ -229,9 +230,9 @@ export function TrafficDashboard({
                 void trafficQuery.refetch()
               }}
               disabled={trafficQuery.isFetching}
-              className='rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-60'
+              className='rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-900 disabled:opacity-60'
             >
-              {trafficQuery.isFetching ? 'Refreshing traffic…' : 'Refresh traffic'}
+              {trafficQuery.isFetching ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -264,82 +265,68 @@ export function TrafficDashboard({
         />
       </section>
 
-      <div className='mt-4' aria-busy={trafficQuery.isFetching}>
-        <TrafficGlobe aircraft={traffic} region={selectedRegion} />
-      </div>
+      <section
+        className='mt-3 overflow-hidden rounded-xl border border-slate-700/80 bg-[#111315] shadow-2xl shadow-black/25'
+        data-visual-polish='tracker-workspace-v2'
+      >
+        <div className='flex flex-wrap items-center gap-2 border-b border-white/10 bg-[#202225] px-3 py-2.5 sm:px-4'>
+          <div className='mr-auto min-w-0'>
+            <h2 className='truncate text-sm font-bold text-white sm:text-base'>
+              Live Traffic · {selectedRegion.name}
+            </h2>
+            <p className='mt-0.5 text-[10px] uppercase tracking-[0.14em] text-slate-500'>
+              Map-first open-data tracker
+            </p>
+          </div>
 
-      <RegionalTrafficBrief
-        aircraft={traffic}
-        regionName={selectedRegion.name}
-        isFetching={trafficQuery.isFetching}
-      />
-
-      <TrafficDataQualityLens
-        aircraft={traffic}
-        regionName={selectedRegion.name}
-        snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
-        isFetching={trafficQuery.isFetching}
-      />
-
-      <section className='mt-8 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-6'>
-        <h2 className='text-xl font-semibold'>
-          Current Traffic — {selectedRegion.name}
-        </h2>
-        <p className='mt-2 text-sm leading-6 text-slate-400'>
-          The map remains visible while the workspace switches between aircraft
-          discovery and the selected aircraft intelligence record.
-        </p>
-
-        <div
-          className='mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 p-2'
-          role='group'
-          aria-label='Map evidence visibility'
-        >
-          <span className='px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500'>
-            Map evidence
-          </span>
-          <button
-            type='button'
-            aria-pressed={mapEvidenceVisibility.trajectory}
-            disabled={trajectoryFeatureCount === 0}
-            onClick={() => {
-              setMapEvidenceVisibility(current =>
-                toggleTrajectoryVisibility(current)
-              )
-            }}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-              mapEvidenceVisibility.trajectory
-                ? 'border-sky-400/45 bg-sky-400/10 text-sky-100'
-                : 'border-slate-700 text-slate-400 hover:bg-slate-900'
-            }`}
+          <div
+            className='flex flex-wrap items-center gap-1.5'
+            role='group'
+            aria-label='Map evidence visibility'
           >
-            Trail
-          </button>
-          <button
-            type='button'
-            aria-pressed={mapEvidenceVisibility.projection}
-            disabled={projectionPointCount === 0}
-            onClick={() => {
-              setMapEvidenceVisibility(current =>
-                toggleProjectionVisibility(current)
-              )
-            }}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-              mapEvidenceVisibility.projection
-                ? 'border-violet-300/45 bg-violet-400/10 text-violet-100'
-                : 'border-slate-700 text-slate-400 hover:bg-slate-900'
-            }`}
-          >
-            Projection
-          </button>
-          <span className='ml-auto px-2 text-xs text-slate-500' aria-live='polite'>
-            {trajectoryVisible ? 'Trail visible' : 'Trail hidden'} ·{' '}
-            {projectionVisible ? 'Projection visible' : 'Projection hidden'}
-          </span>
+            <button
+              type='button'
+              aria-pressed={mapEvidenceVisibility.trajectory}
+              disabled={trajectoryFeatureCount === 0}
+              onClick={() => {
+                setMapEvidenceVisibility(current =>
+                  toggleTrajectoryVisibility(current)
+                )
+              }}
+              className={`rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-35 ${
+                mapEvidenceVisibility.trajectory
+                  ? 'border-sky-400/45 bg-sky-400/10 text-sky-100'
+                  : 'border-slate-700 text-slate-400 hover:bg-slate-900'
+              }`}
+            >
+              Trail
+            </button>
+            <button
+              type='button'
+              aria-pressed={mapEvidenceVisibility.projection}
+              disabled={projectionPointCount === 0}
+              onClick={() => {
+                setMapEvidenceVisibility(current =>
+                  toggleProjectionVisibility(current)
+                )
+              }}
+              className={`rounded-full border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-35 ${
+                mapEvidenceVisibility.projection
+                  ? 'border-violet-300/45 bg-violet-400/10 text-violet-100'
+                  : 'border-slate-700 text-slate-400 hover:bg-slate-900'
+              }`}
+            >
+              Projection
+            </button>
+            <span className='hidden px-1 text-[10px] text-slate-500 sm:inline' aria-live='polite'>
+              {trajectoryVisible ? 'Trail on' : 'Trail off'} ·{' '}
+              {projectionVisible ? 'Projection on' : 'Projection off'}
+            </span>
+          </div>
         </div>
 
-        <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_480px]'>
-          <div aria-busy={trafficQuery.isFetching}>
+        <div className='grid xl:grid-cols-[minmax(0,1fr)_420px]'>
+          <div className='min-w-0 bg-slate-950' aria-busy={trafficQuery.isFetching}>
             <MapEvidenceWorkspace
               aircraft={traffic}
               region={selectedRegion}
@@ -352,7 +339,7 @@ export function TrafficDashboard({
           </div>
 
           <aside
-            className='min-w-0 rounded-xl border border-slate-700 bg-slate-950/60 p-3'
+            className='gfa-tracker-rail min-w-0 border-t border-white/10 bg-[#17191c] p-2.5 xl:max-h-[min(78vh,860px)] xl:overflow-y-auto xl:border-l xl:border-t-0'
             aria-label='Traffic workspace'
           >
             <WorkspaceTabs
@@ -365,7 +352,7 @@ export function TrafficDashboard({
               id='traffic-workspace-panel'
               role='tabpanel'
               aria-labelledby={`traffic-workspace-${workspacePanel}-tab`}
-              className='mt-3'
+              className='mt-2.5'
             >
               {workspacePanel === 'aircraft' ? (
                 <AircraftExplorer
@@ -379,7 +366,7 @@ export function TrafficDashboard({
                   onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
                 />
               ) : (
-                <div className='space-y-4'>
+                <div className='space-y-3'>
                   <SelectedAircraftContext
                     icao24={selectedAircraftICAO24}
                     onOpenAircraft={() => onWorkspacePanelChange('aircraft')}
@@ -456,11 +443,28 @@ export function TrafficDashboard({
         </div>
 
         {!trafficQuery.isFetching && !errorMessage && traffic.length === 0 ? (
-          <p className='mt-4 text-sm text-slate-400'>
+          <p className='border-t border-white/10 px-4 py-3 text-sm text-slate-400'>
             No aircraft were returned for the selected region.
           </p>
         ) : null}
       </section>
+
+      <div className='mt-6' aria-busy={trafficQuery.isFetching}>
+        <TrafficGlobe aircraft={traffic} region={selectedRegion} />
+      </div>
+
+      <RegionalTrafficBrief
+        aircraft={traffic}
+        regionName={selectedRegion.name}
+        isFetching={trafficQuery.isFetching}
+      />
+
+      <TrafficDataQualityLens
+        aircraft={traffic}
+        regionName={selectedRegion.name}
+        snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
+        isFetching={trafficQuery.isFetching}
+      />
     </>
   )
 }
@@ -478,7 +482,7 @@ function WorkspaceTabs({
     <div
       role='tablist'
       aria-label='Traffic workspace view'
-      className='grid grid-cols-2 gap-2 rounded-lg border border-slate-800 bg-slate-950 p-1'
+      className='grid grid-cols-2 gap-1 rounded-lg border border-slate-800 bg-slate-950 p-1'
     >
       <WorkspaceTab
         id='traffic-workspace-aircraft-tab'
@@ -530,8 +534,8 @@ function WorkspaceTab({
           : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
       }`}
     >
-      <span className='block text-sm font-semibold'>{label}</span>
-      <span className='mt-0.5 block truncate text-[11px] opacity-75'>
+      <span className='block text-xs font-semibold'>{label}</span>
+      <span className='mt-0.5 block truncate text-[10px] opacity-75'>
         {detail}
       </span>
     </button>
@@ -550,7 +554,8 @@ function IntelligenceSelectionPrompt({
       </p>
       <p className='mt-2 text-sm leading-6 text-slate-400'>
         Use the Aircraft tab or select a marker on the map. Route, trajectory,
-        projection, weather and stability evidence will open here.
+        projection, weather and stability evidence will open here only when the
+        corresponding GFA evidence exists.
       </p>
       <button
         type='button'
@@ -573,27 +578,29 @@ function SelectedAircraftContext({
   onClear: () => void
 }) {
   return (
-    <div className='flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-400/30 bg-sky-400/5 p-3'>
+    <div className='flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300/35 bg-amber-300/5 p-2.5'>
       <div>
-        <p className='text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-300'>
+        <p className='text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300'>
           Selected aircraft
         </p>
-        <p className='mt-1 font-mono text-sm uppercase text-white'>{icao24}</p>
+        <p className='mt-0.5 font-mono text-sm font-bold uppercase text-white'>
+          {icao24}
+        </p>
       </div>
-      <div className='flex flex-wrap gap-2'>
+      <div className='flex flex-wrap gap-1.5'>
         <button
           type='button'
           onClick={onOpenAircraft}
-          className='rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-900'
+          className='rounded-md border border-slate-700 px-2.5 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-slate-900'
         >
           Aircraft list
         </button>
         <button
           type='button'
           onClick={onClear}
-          className='rounded-md border border-rose-400/30 px-3 py-1.5 text-xs font-medium text-rose-100 hover:bg-rose-400/10'
+          className='rounded-md border border-rose-400/30 px-2.5 py-1.5 text-[11px] font-medium text-rose-100 hover:bg-rose-400/10'
         >
-          Clear selection
+          Clear
         </button>
       </div>
     </div>
