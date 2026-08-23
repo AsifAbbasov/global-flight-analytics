@@ -61,6 +61,17 @@ test('aircraft intelligence prioritizes real altitude speed heading and state te
   assert.match(display, /value \* 3\.6/)
 })
 
+test('selected aircraft panel separates observed telemetry from inferred probable route', () => {
+  const detail = source('components/aircraft/aircraft-detail-panel.tsx')
+
+  assert.match(detail, /Live telemetry/)
+  assert.match(detail, /Observed only/)
+  assert.match(detail, /Probable route/)
+  assert.match(detail, /Inferred from persisted trajectory evidence, not an airline schedule/)
+  assert.match(detail, /No supported candidate/)
+  assert.doesNotMatch(detail, />Unknown</)
+})
+
 test('visual polish keeps accessible map chrome and adds compact tracker popup styling', () => {
   const styles = source('app/globals.css')
 
