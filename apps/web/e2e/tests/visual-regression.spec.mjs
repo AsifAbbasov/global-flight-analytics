@@ -28,6 +28,9 @@ test('desktop map-first section order and width remain structurally stable', asy
   const historical = page.getByRole('region', {
     name: 'Compare persisted analytical evidence',
   })
+  const mapEvidenceControls = page.getByRole('group', {
+    name: 'Map evidence visibility',
+  })
 
   // The page is intentionally hydrated after the initial document response.
   // Wait for the semantic product surfaces before measuring geometry so the
@@ -36,6 +39,7 @@ test('desktop map-first section order and width remain structurally stable', asy
   await expect(overviewHeading).toBeVisible()
   await expect(airport).toBeVisible()
   await expect(historical).toBeVisible()
+  await expect(mapEvidenceControls).toBeVisible()
 
   const liveBox = await liveHeading.boundingBox()
   const overviewBox = await overviewHeading.boundingBox()
@@ -62,7 +66,7 @@ test('desktop map-first section order and width remain structurally stable', asy
   })
 })
 
-test('mobile workspace preserves vertical flow and records screenshot evidence', async ({
+test('mobile workspace preserves responsive map flow and records screenshot evidence', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -79,6 +83,22 @@ test('mobile workspace preserves vertical flow and records screenshot evidence',
       name: 'Projection and Estimated Arrival',
     }),
   ).toBeVisible()
+
+  const map = page.getByLabel('Current traffic map focused on Azerbaijan')
+  const mapEvidenceControls = page.getByRole('group', {
+    name: 'Map evidence visibility',
+  })
+  await expect(map).toBeVisible()
+  await expect(mapEvidenceControls).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Trail' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Projection' })).toBeVisible()
+
+  const mapBox = await map.boundingBox()
+  expect(mapBox).not.toBeNull()
+  expect(mapBox.height).toBeGreaterThanOrEqual(380)
+  expect(mapBox.height).toBeLessThan(600)
+  expect(mapBox.width).toBeLessThanOrEqual(390)
+
   await expectNoHorizontalOverflow(page)
 
   await testInfo.attach('mobile-selected-aircraft-workspace.png', {
