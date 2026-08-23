@@ -35,7 +35,7 @@ Production Reconciliation                 MANUAL-ONLY WHILE INGESTION OFFLINE
 Cloudflare DISPATCH_ENABLED               false
 Neon scale-to-zero                        OBSERVED WORKING
 Neon monthly quota reset                  2026-09-01T00:00:00Z
-Frontend product redesign source          IMPLEMENTED; CLOSURE CI CANDIDATE
+Frontend Product Closure                  CLOSED — EXACT-HEAD CI VERIFIED
 ```
 
 The free-tier deployment profile accepts Render/Neon cold starts instead of using
@@ -83,7 +83,9 @@ PRODUCTION_RELEASE_SMOKE=PASS
 The frontend product redesign source implementation is complete through the map-first,
 evidence-aware workspace. Structural desktop/mobile Playwright regression and retained
 screenshot evidence are repository-owned; reviewed pixel-golden baselines remain a
-separate open improvement and are not claimed as complete.
+separate open improvement and are not claimed as complete. Frontend Product Closure was
+verified on PR #98 exact head `b43b6a87eb6224efc2e3c899effe21655d58b996` across all five
+repository merge-evidence workflows before squash merge `c215e7ce5466577f149dc5669c5e0311daf6a56d`.
 
 <!-- STAGE-13-FRONTEND-ANALYTICS-CLOSURE-V1 -->
 ## Frontend Analytics Integration
@@ -203,6 +205,8 @@ compute behavior under the new cadence.
 - **PR #82 — ADSB.lol provider recovery.** Added the fail-closed open-data provider path.
 - **PR #85 — Free-tier infrastructure hardening.** Reworked monitoring, reconciliation and
   scheduler cadence around the measured Neon compute budget.
+- **PR #98 — Frontend Product Closure.** Closed the redesigned map-first product source and
+  structural visual-evidence phase after exact-head 5/5 CI and 20/20 clean Chromium journeys.
 
 ## Architecture
 
@@ -353,29 +357,28 @@ audits, Docker configuration and repository integrity.
 - [`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md) — reconciliation incident evidence;
 - [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation;
 - [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget and current recovery state;
-- [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — frontend redesign source closure candidate and visual-evidence boundary;
+- [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — final frontend product closure and visual-evidence boundary;
 - [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–195 still require index reconciliation.
 
 ## Remaining Portfolio v1.0.0 Work
 
-The frontend product redesign source implementation is complete. Frontend Product Closure
-remains a repository-evidence candidate until the exact pull-request head passes all required
-Continuous Integration gates. Provider and Neon recovery remain external/runtime verification
-tracks rather than reasons to extend the backend architecture.
+Frontend Product Closure is closed. Provider and Neon recovery remain external/runtime
+verification tracks rather than reasons to extend the backend architecture. Reviewed
+pixel-golden Playwright baselines remain an optional visual-regression improvement and do
+not reopen the closed frontend product phase.
 
 Remaining sequence:
 
-1. close Frontend Product Closure after exact-head Continuous Integration;
-2. optionally establish reviewed pixel-golden Playwright baselines as a separate visual-regression improvement;
-3. receive ADSB.lol production-use confirmation;
-4. after Neon quota availability returns, run controlled production ingestion and verify
+1. optionally establish reviewed pixel-golden Playwright baselines as a separate visual-regression improvement;
+2. receive ADSB.lol production-use confirmation;
+3. after Neon quota availability returns, run controlled production ingestion and verify
    PostgreSQL write, freshness, Grafana evidence and scale-to-zero behavior;
-5. perform final exact-production deployment validation against the release revision;
-6. reconcile final documentation, including the Document 194–195 index gap, and publish `v1.0.0`.
+4. perform final exact-production deployment validation against the release revision;
+5. reconcile final documentation, including the Document 194–195 index gap, and publish `v1.0.0`.
 
 ```text
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
-FRONTEND_PRODUCT_CLOSURE=CANDIDATE_EXACT_HEAD_CI
+FRONTEND_PRODUCT_CLOSURE=CLOSED
 FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED
 PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
 DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT
