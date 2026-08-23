@@ -41,6 +41,15 @@ test('global styles preserve focus reduced motion forced colors and coarse point
   assert.match(styles, /min-height: 44px/)
 })
 
+test('map chrome adapts to small viewports and reduced transparency preferences', () => {
+  const styles = source('app/globals.css')
+  assert.match(styles, /prefers-reduced-transparency: reduce/)
+  assert.match(styles, /backdrop-filter: none/)
+  assert.match(styles, /\[aria-label\^='Current traffic map focused on'\]/)
+  assert.match(styles, /height: min\(68vh, 540px\) !important/)
+  assert.match(styles, /max-width: min\(7rem, 34vw\)/)
+})
+
 test('segment and global error boundaries expose explicit recovery actions', () => {
   const segmentError = source('app/error.tsx')
   const globalError = source('app/global-error.tsx')
