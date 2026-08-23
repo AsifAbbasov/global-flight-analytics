@@ -86,6 +86,34 @@ test('labels evidence source for observed and profile-backed fields', () => {
   assert.equal(result.profileFields.every(field => field.evidence === 'profile'), true)
 })
 
+test('preserves observed altitude source and omits unsupported altitude evidence', () => {
+  const observed = buildAircraftIntelligenceDisplay('abc123', aircraft(), undefined)
+  assert.equal(
+    observed.observedFields.find(field => field.key === 'altitude')?.value,
+    '10,000 m (geometric)'
+  )
+
+  const ground = buildAircraftIntelligenceDisplay(
+    'abc123',
+    aircraft({ altitude_m: null, altitude_status: 'ground', altitude_source: 'ground' }),
+    undefined
+  )
+  assert.equal(
+    ground.observedFields.find(field => field.key === 'altitude')?.value,
+    'Ground (0 m)'
+  )
+
+  const unavailable = buildAircraftIntelligenceDisplay(
+    'abc123',
+    aircraft({ altitude_m: null, altitude_status: 'unavailable', altitude_source: 'none' }),
+    undefined
+  )
+  assert.equal(
+    unavailable.observedFields.some(field => field.key === 'altitude'),
+    false
+  )
+})
+
 test('omits invalid speed heading position and timestamp', () => {
   const result = buildAircraftIntelligenceDisplay(
     'abc123',
