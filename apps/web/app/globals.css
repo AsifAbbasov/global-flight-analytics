@@ -300,6 +300,25 @@ pre {
   }
 }
 
+@media (prefers-reduced-transparency: reduce) {
+  .maplibregl-ctrl-group,
+  .maplibregl-ctrl-attrib,
+  .maplibregl-popup-content,
+  .maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:last-child {
+    backdrop-filter: none;
+  }
+
+  .maplibregl-ctrl-group,
+  .maplibregl-popup-content {
+    background: #1c1f23 !important;
+  }
+
+  .maplibregl-ctrl-attrib,
+  .maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:last-child {
+    background: #111315 !important;
+  }
+}
+
 @media (forced-colors: active) {
   :focus-visible {
     outline: 3px solid CanvasText;
@@ -329,6 +348,11 @@ pre {
     top: 4.25rem;
   }
 
+  [aria-label^='Current traffic map focused on'] {
+    height: min(68vh, 540px) !important;
+    min-height: 380px;
+  }
+
   .maplibregl-ctrl-top-right {
     top: 0.5rem;
     right: 0.5rem;
@@ -337,5 +361,9 @@ pre {
   .maplibregl-ctrl-group button {
     width: 44px !important;
     height: 44px !important;
+  }
+
+  .maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:last-child {
+    max-width: min(7rem, 34vw);
   }
 }
