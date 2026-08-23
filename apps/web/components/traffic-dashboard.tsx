@@ -10,7 +10,7 @@ import { RouteIntelligencePanel } from '@/components/aircraft/route-intelligence
 import { StabilityIntelligencePanel } from '@/components/aircraft/stability-intelligence-panel'
 import { WeatherContextPanel } from '@/components/aircraft/weather-context-panel'
 import { TrafficGlobe } from '@/components/globe/traffic-globe'
-import { TrafficMap } from '@/components/map/traffic-map'
+import { MapEvidenceWorkspace } from '@/components/map/map-evidence-workspace'
 import { LiveTrafficControl } from '@/components/traffic/live-traffic-control'
 import { TrafficSnapshotExport } from '@/components/traffic/traffic-snapshot-export'
 import { TrafficDataQualityLens } from '@/components/traffic/traffic-data-quality-lens'
@@ -340,14 +340,13 @@ export function TrafficDashboard({
 
         <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_480px]'>
           <div aria-busy={trafficQuery.isFetching}>
-            <TrafficMap
+            <MapEvidenceWorkspace
               aircraft={traffic}
               region={selectedRegion}
               selectedAircraftICAO24={selectedAircraftICAO24}
-              trajectory={trajectoryVisible ? trajectoryQuery.data : undefined}
-              projection={
-                projectionVisible ? projectionQuery.data?.projection : undefined
-              }
+              trajectory={trajectoryQuery.data}
+              projection={projectionQuery.data?.projection}
+              visibility={mapEvidenceVisibility}
               onSelectAircraft={selectAircraft}
             />
           </div>
