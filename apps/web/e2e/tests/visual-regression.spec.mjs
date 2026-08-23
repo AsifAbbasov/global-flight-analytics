@@ -28,23 +28,19 @@ test('desktop map-first section order and width remain structurally stable', asy
   const historical = page.getByRole('region', {
     name: 'Compare persisted analytical evidence',
   })
+  const mapEvidenceControls = page.getByRole('group', {
+    name: 'Map evidence visibility',
+  })
 
   // The page is intentionally hydrated after the initial document response.
-  // Wait for the semantic product surfaces before measuring geometry so the
-  // visual contract validates layout rather than racing React hydration.
-  await expect(liveHeading).toBeVisible()
-  await expect(overviewHeading).toBeVisible()
-  await expect(airport).toBeVisible()
-  await expect(historical).toBeVisible()
+  // Dynamic workspaces may remount briefly, so poll the semantic locator until
+  // Playwright can produce a non-null box instead of relying on a whole-test retry.
+  const liveBox = await stableBoundingBox(liveHeading)
+  const overviewBox = await stableBoundingBox(overviewHeading)
+  const airportBox = await stableBoundingBox(airport)
+  const historicalBox = await stableBoundingBox(historical)
+  await expect(mapEvidenceControls).toBeVisible()
 
-  const liveBox = await liveHeading.boundingBox()
-  const overviewBox = await overviewHeading.boundingBox()
-  const airportBox = await airport.boundingBox()
-  const historicalBox = await historical.boundingBox()
-  expect(liveBox).not.toBeNull()
-  expect(overviewBox).not.toBeNull()
-  expect(airportBox).not.toBeNull()
-  expect(historicalBox).not.toBeNull()
   expect(airportBox.width).toBeGreaterThan(900)
   expect(historicalBox.width).toBeGreaterThan(900)
   expect(overviewBox.y).toBeGreaterThan(liveBox.y)
@@ -62,7 +58,7 @@ test('desktop map-first section order and width remain structurally stable', asy
   })
 })
 
-test('mobile workspace preserves vertical flow and records screenshot evidence', async ({
+test('mobile workspace preserves responsive map flow and records screenshot evidence', async ({
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -79,6 +75,20 @@ test('mobile workspace preserves vertical flow and records screenshot evidence',
       name: 'Projection and Estimated Arrival',
     }),
   ).toBeVisible()
+
+  const map = page.getByLabel('Current traffic map focused on Azerbaijan')
+  const mapEvidenceControls = page.getByRole('group', {
+    name: 'Map evidence visibility',
+  })
+  const mapBox = await stableBoundingBox(map)
+  await expect(mapEvidenceControls).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Trail' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Projection' })).toBeVisible()
+
+  expect(mapBox.height).toBeGreaterThanOrEqual(380)
+  expect(mapBox.height).toBeLessThan(600)
+  expect(mapBox.width).toBeLessThanOrEqual(390)
+
   await expectNoHorizontalOverflow(page)
 
   await testInfo.attach('mobile-selected-aircraft-workspace.png', {
@@ -89,3 +99,20 @@ test('mobile workspace preserves vertical flow and records screenshot evidence',
     contentType: 'image/png',
   })
 })
+
+async function stableBoundingBox(locator) {
+  await expect(locator).toBeVisible()
+  let box = null
+
+  await expect
+    .poll(async () => {
+      box = await locator.boundingBox()
+      return box === null ? 0 : box.width * box.height
+    })
+    .toBeGreaterThan(0)
+
+  if (box === null) {
+    throw new Error('Visible semantic surface did not expose layout geometry')
+  }
+  return box
+}

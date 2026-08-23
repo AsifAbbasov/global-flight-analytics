@@ -59,16 +59,24 @@ require_literal README.md 'https://global-flight-analytics-api.onrender.com' \
   'README verified API URL is missing'
 require_literal README.md 'PRODUCTION_RELEASE_SMOKE=PASS' \
   'README verified full production smoke marker is missing'
-require_literal README.md 'Visual and interaction redesign remains a separate product phase' \
-  'README remaining frontend redesign boundary is missing'
+require_literal README.md 'The frontend product redesign source implementation is complete' \
+  'README frontend redesign source implementation boundary is missing'
 require_literal README.md '<!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->' \
   'README current engineering status marker is missing'
 require_literal README.md 'OPENAPI_CONTRACT_PATHS=38' \
   'README current OpenAPI path count is missing'
 require_literal README.md 'PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20' \
   'README current Playwright browser scenario count is missing'
-require_literal README.md 'FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=OPEN' \
-  'README remaining visual redesign boundary is missing'
+require_literal README.md 'FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE' \
+  'README frontend product source implementation marker is missing'
+require_literal README.md 'FRONTEND_PRODUCT_CLOSURE=CANDIDATE_EXACT_HEAD_CI' \
+  'README frontend product closure candidate boundary is missing'
+require_literal README.md 'FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED' \
+  'README frontend visual redesign implementation marker is missing'
+require_literal README.md 'PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN' \
+  'README pixel-golden visual regression boundary is missing'
+require_literal README.md 'DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT' \
+  'README document index governance debt boundary is missing'
 require_literal README.md 'FINAL_EXACT_PRODUCTION_VALIDATION=OPEN' \
   'README final exact-production validation boundary is missing'
 require_literal README.md 'V1_RELEASE=OPEN' \

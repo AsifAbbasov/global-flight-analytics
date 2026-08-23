@@ -10,7 +10,7 @@ const read = path => readFileSync(resolve(root, path), 'utf8')
 const releaseSHA = '49e474e929dcca5b687464f0a47ce73fcd5a52a7'
 const productionSHA = '6bca02a8ed1487195b165ae9ced3ca687a373666'
 
-test('README records exact CI closure and verified public deployment', () => {
+test('README records exact CI closure verified public deployment and the current frontend boundary', () => {
   const source = read('README.md')
   assert.match(source, new RegExp(releaseSHA))
   assert.match(source, /Backend CI run `30715613342`/)
@@ -19,7 +19,11 @@ test('README records exact CI closure and verified public deployment', () => {
   const sourceLines = new Set(source.split('\n'))
   assert.equal(sourceLines.has('- Frontend: `https://global-flight-analytics-web.vercel.app`'), true)
   assert.equal(sourceLines.has('- API: `https://global-flight-analytics-api.onrender.com`'), true)
-  assert.match(source, /visual and interaction redesign remains a separate product phase/i)
+  assert.match(source, /FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE/)
+  assert.match(source, /FRONTEND_PRODUCT_CLOSURE=CANDIDATE_EXACT_HEAD_CI/)
+  assert.match(source, /FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED/)
+  assert.match(source, /PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN/)
+  assert.match(source, /FINAL_EXACT_PRODUCTION_VALIDATION=OPEN/)
 })
 
 test('root package publishes backend operations commands', () => {
