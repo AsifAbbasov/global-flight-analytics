@@ -16,6 +16,7 @@
     "lib/aircraft/aircraft-intelligence-display.ts",
     "lib/analytics/historical-analytics-comparison-model.ts",
     "lib/map/aircraft-visual.ts",
+    "lib/map/map-evidence-controls.ts",
     "lib/product/application-status.ts",
     "lib/product/runtime-resilience-model.ts",
     "lib/traffic/aircraft-explorer-model.ts",
