@@ -25,26 +25,111 @@ https://www.adsb.lol/docs/open-data/api/
 https://www.adsb.lol/privacy-license/
 ```
 
-## 3. Operator response
+## 3. Operator correspondence
 
-The production-use inquiry sent on 2026-08-21 received an operator reply on the
-same date. The reply did not promise a bespoke quota, SLA, dedicated support, API
-stability, accuracy, completeness or freshness. It supplied general application
-requirements applicable to the requested usage pattern:
+### 3.1 Initial production-use inquiry — 2026-08-18
+
+The project first contacted `info@adsb.lol` with the subject
+`Production API usage notice — Global Flight Analytics`.
+
+The message described Global Flight Analytics as a non-commercial open-data
+aviation analytics/research project and proposed:
+
+```text
+endpoint=/v2/point/{lat}/{lon}/{radius}
+initial_region=Baku / Azerbaijan
+maximum_radius=250 NM
+collector=one centralized backend collector
+initial_proposed_cadence≈1 request / 10 seconds
+safety_critical_use=NO
+provider_attribution=PRESERVED
+ODbL_terms=PRESERVED
+```
+
+The message also stated that the backend had its own request-budget,
+timeout/backoff and provider-cooldown controls and would not retry aggressively.
+It asked whether the usage was acceptable and whether ADSB.lol preferred a
+different cadence, identifiable User-Agent/contact, API key, feeding requirement
+or other production condition.
+
+The same inquiry was forwarded/resubmitted later on 2026-08-18. That was a
+duplicate delivery of the same request, not a separate production-policy proposal.
+
+### 3.2 ADSB.lol response — 2026-08-18
+
+Katia / ADSB.lol replied with general application requirements:
 
 - visible ODbL attribution in the application;
 - an identifiable User-Agent with contact information;
 - respect for HTTP errors and rate limits;
+- a 4xx response should cause correction or slower requests rather than more
+  aggressive retries;
 - respect for `Retry-After` when provided;
 - caching and deduplication where practical;
 - appropriately scoped geographic queries;
 - no rate-limit circumvention through multiple IP addresses;
 - design for future API/authentication/limit changes;
-- no safety-critical dependency on the volunteer-run service.
+- feeding the network is encouraged;
+- guaranteed-limit API keys were described as future work;
+- no guarantee of service availability, API stability, data accuracy,
+  completeness or freshness;
+- no bespoke infrastructure, SLA or dedicated support.
 
-The response did not object to the project description or bounded regional use,
-but it is intentionally recorded as provider guidance rather than a guaranteed
-quota or service commitment.
+The response did not explicitly approve the initially proposed one-request-per-
+10-seconds cadence and did not provide a guaranteed quota.
+
+### 3.3 Project acknowledgement — 2026-08-18
+
+The project replied to Katia confirming that Global Flight Analytics would adopt
+visible ODbL attribution, an identifiable User-Agent/contact, proper rate-limit
+and `Retry-After` handling, caching/deduplication, geographically scoped requests
+and an integration design able to accommodate future authentication/API-key
+changes.
+
+This acknowledgement is a project implementation commitment, not additional
+provider approval.
+
+### 3.4 Revised bounded production/demo inquiry — 2026-08-21
+
+After the initial ADSB.lol guidance and the externally confirmed Airplanes.live
+access-policy boundary, the project sent a stricter request to `info@adsb.lol`
+with the subject
+`Production API usage confirmation for open-source flight analytics project`.
+
+The revised request described:
+
+```text
+endpoint=/v2/point/{lat}/{lon}/{radius}
+maximum_radius=250 NM
+normal_production_schedule≈1 request / 30 minutes
+application_safety_cap<=1 request / minute
+usage=research / analytics visualization
+ODbL_attribution=PRESERVED
+operational_ATC_use=NO
+```
+
+The project explicitly asked whether this revised pattern was acceptable and
+whether additional identification, attribution, API-key or feeder setup was
+required.
+
+The 30-minute production cadence supersedes the earlier 2026-08-18
+one-request-per-10-seconds proposal for the current zero-cost production plan.
+
+### 3.5 ADSB.lol response to revised inquiry — 2026-08-21
+
+ADSB.lol replied the same day and repeated the same general application guidance:
+visible ODbL attribution, identifiable User-Agent/contact, correct 4xx/rate-limit
+handling, `Retry-After`, practical caching/deduplication, bounded geographic
+queries, no multi-IP circumvention, design for future API/authentication changes,
+and no availability/stability/accuracy/completeness/freshness guarantee or bespoke
+SLA/support.
+
+The response did not object to the project description or bounded regional-use
+request, but it did not provide a guaranteed quota or a sentence promising that
+the exact 30-minute pattern will always be accepted.
+
+The repository therefore records the exchange as provider contact evidence and
+usage guidance rather than a contractual service commitment.
 
 ## 4. Implementation
 
@@ -106,8 +191,8 @@ Production GitHub Actions refuses to execute unless:
 ADSBLOL_PRODUCTION_CONTACT_CONFIRMED=true
 ```
 
-The operator response provides the external evidence needed to satisfy that gate,
-but the repository does not treat receipt of the email as permission to bypass
+The operator responses provide the external evidence needed to satisfy that gate,
+but the repository does not treat receipt of email as permission to bypass
 compliance hardening or runtime availability checks. The gate must still be
 explicitly enabled for the controlled production run.
 
@@ -166,8 +251,8 @@ Runtime access eligibility is centralized on `TrafficProviderConfig` through
 policy instead of owning provider-specific agreement/access rules.
 
 The ADSB.lol and Airplanes.live public v2 adapters currently remain separate.
-This remains deliberate even after the operator response: the reply explicitly
-warns that API limits, authentication, endpoints and other details may change.
+This remains deliberate even after the operator responses: the replies explicitly
+warn that API limits, authentication, endpoints and other details may change.
 A cross-provider compatibility test can assert identical canonical semantics for
 the currently overlapping v2 fields while preserving distinct source identity,
 but the transport contracts should not be merged merely because their current
