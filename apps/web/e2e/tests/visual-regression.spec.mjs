@@ -21,14 +21,16 @@ test('desktop map-first section order and width remain structurally stable', asy
   const liveHeading = page.getByRole('heading', {
     name: 'Current Traffic — World',
   })
-  const overview = page.locator('#overview')
+  const overviewHeading = page.getByRole('heading', {
+    name: 'Live Analytics — World',
+  })
   const airport = page.getByRole('region', { name: 'Airport Intelligence' })
   const historical = page.getByRole('region', {
     name: 'Compare persisted analytical evidence',
   })
 
   const liveBox = await liveHeading.boundingBox()
-  const overviewBox = await overview.boundingBox()
+  const overviewBox = await overviewHeading.boundingBox()
   const airportBox = await airport.boundingBox()
   const historicalBox = await historical.boundingBox()
   expect(liveBox).not.toBeNull()
