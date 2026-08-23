@@ -236,33 +236,6 @@ export function TrafficDashboard({
             </button>
           </div>
         </div>
-
-        <LiveTrafficControl
-          regionName={selectedRegion.name}
-          aircraftCount={traffic.length}
-          selectedAircraftICAO24={selectedAircraftICAO24}
-          dataUpdatedAt={trafficQuery.dataUpdatedAt}
-          now={statusNow}
-          isInitialLoading={isInitialLoading}
-          isRefreshing={isRefreshing}
-          errorMessage={errorMessage}
-          regionsWarning={regionsWarning}
-          autoRefreshEnabled={autoRefreshEnabled}
-          refreshIntervalMilliseconds={refreshIntervalMilliseconds}
-          onAutoRefreshEnabledChange={setAutoRefreshEnabled}
-          onRefreshIntervalChange={setRefreshIntervalMilliseconds}
-          onRetry={() => {
-            void trafficQuery.refetch()
-          }}
-        />
-
-        <TrafficSnapshotExport
-          aircraft={traffic}
-          regionCode={selectedRegion.code}
-          regionName={selectedRegion.name}
-          snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
-          selectedAircraftICAO24={selectedAircraftICAO24}
-        />
       </section>
 
       <section
@@ -450,6 +423,35 @@ export function TrafficDashboard({
             No aircraft were returned for the selected region.
           </p>
         ) : null}
+      </section>
+
+      <section className='mt-3 space-y-3' aria-label='Live traffic evidence controls'>
+        <LiveTrafficControl
+          regionName={selectedRegion.name}
+          aircraftCount={traffic.length}
+          selectedAircraftICAO24={selectedAircraftICAO24}
+          dataUpdatedAt={trafficQuery.dataUpdatedAt}
+          now={statusNow}
+          isInitialLoading={isInitialLoading}
+          isRefreshing={isRefreshing}
+          errorMessage={errorMessage}
+          regionsWarning={regionsWarning}
+          autoRefreshEnabled={autoRefreshEnabled}
+          refreshIntervalMilliseconds={refreshIntervalMilliseconds}
+          onAutoRefreshEnabledChange={setAutoRefreshEnabled}
+          onRefreshIntervalChange={setRefreshIntervalMilliseconds}
+          onRetry={() => {
+            void trafficQuery.refetch()
+          }}
+        />
+
+        <TrafficSnapshotExport
+          aircraft={traffic}
+          regionCode={selectedRegion.code}
+          regionName={selectedRegion.name}
+          snapshotUpdatedAt={trafficQuery.dataUpdatedAt}
+          selectedAircraftICAO24={selectedAircraftICAO24}
+        />
       </section>
 
       <div className='mt-6' aria-busy={trafficQuery.isFetching}>
