@@ -54,6 +54,7 @@ body {
 }
 
 /* FRONTEND_AVIATION_MAP_CHROME_V1 */
+/* FRONTEND_VISUAL_POLISH_V2 */
 
 .maplibregl-map {
   background: #11161c;
@@ -134,6 +135,103 @@ body {
   min-height: 32px;
   color: #e5e7eb !important;
   font-size: 18px;
+}
+
+.gfa-aircraft-popup {
+  width: 270px;
+  max-width: 270px;
+  padding: 14px;
+  color: #e5e7eb;
+}
+
+.gfa-aircraft-popup__title {
+  max-width: 215px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gfa-aircraft-popup__subtitle {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gfa-aircraft-popup__telemetry {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 11px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 8%);
+}
+
+.gfa-aircraft-popup__metric {
+  min-width: 0;
+  padding: 8px;
+  background: #202328;
+}
+
+.gfa-aircraft-popup__details {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.gfa-aircraft-popup__detail {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gfa-aircraft-popup__label {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gfa-aircraft-popup__value {
+  min-width: 0;
+  overflow: hidden;
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gfa-aircraft-popup__metric .gfa-aircraft-popup__label,
+.gfa-aircraft-popup__metric .gfa-aircraft-popup__value {
+  display: block;
+  text-align: left;
+}
+
+.gfa-aircraft-popup__metric .gfa-aircraft-popup__value {
+  margin-top: 2px;
+  color: #f8fafc;
+  font-size: 13px;
+}
+
+.gfa-aircraft-popup__footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(148 163 184 / 20%);
+  color: #64748b;
+  font-size: 10px;
 }
 
 /* FRONTEND_AIRCRAFT_MARKERS_V1 */
@@ -222,6 +320,25 @@ body {
 .maplibregl-marker > button[aria-label^='Open aircraft details for']:focus-visible {
   outline: 2px solid #f8fafc;
   outline-offset: 4px;
+}
+
+.gfa-scrollbar,
+.gfa-tracker-rail {
+  scrollbar-color: rgb(71 85 105 / 80%) transparent;
+  scrollbar-width: thin;
+}
+
+.gfa-scrollbar::-webkit-scrollbar,
+.gfa-tracker-rail::-webkit-scrollbar {
+  width: 7px;
+}
+
+.gfa-scrollbar::-webkit-scrollbar-thumb,
+.gfa-tracker-rail::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgb(71 85 105 / 80%);
+  background-clip: padding-box;
 }
 
 /* FRONTEND_PRODUCT_HARDENING_V1 */
@@ -365,5 +482,10 @@ pre {
 
   .maplibregl-marker > button[aria-label^='Open aircraft details for'] > span:last-child {
     max-width: min(7rem, 34vw);
+  }
+
+  .gfa-aircraft-popup {
+    width: min(260px, 76vw);
+    max-width: min(260px, 76vw);
   }
 }

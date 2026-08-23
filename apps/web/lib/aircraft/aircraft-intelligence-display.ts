@@ -36,13 +36,18 @@ export function buildAircraftIntelligenceDisplay(
 
 function buildObservedFields(aircraft: TrafficAircraft): AircraftIntelligenceField[] {
   const fields: Array<AircraftIntelligenceField | null> = [
-    field('callsign', 'Callsign', clean(aircraft.callsign), 'observed'),
-    field('status', 'Status', aircraft.on_ground ? 'On ground' : 'In air', 'observed'),
     field('altitude', 'Altitude', formatAltitude(aircraft), 'observed'),
     field('speed', 'Speed', formatSpeed(aircraft.velocity_mps), 'observed'),
     field('heading', 'Heading', formatHeading(aircraft.heading_degrees), 'observed'),
+    field('status', 'Status', aircraft.on_ground ? 'On ground' : 'Airborne', 'observed'),
+    field('callsign', 'Callsign', clean(aircraft.callsign), 'observed'),
     field('country', 'Origin country', clean(aircraft.origin_country), 'observed'),
-    field('coordinates', 'Position', formatPosition(aircraft.latitude, aircraft.longitude), 'observed'),
+    field(
+      'coordinates',
+      'Position',
+      formatPosition(aircraft.latitude, aircraft.longitude),
+      'observed'
+    ),
     field('observed-at', 'Observed', formatTimestamp(aircraft.observed_at), 'observed'),
   ]
 
@@ -94,7 +99,8 @@ function formatAltitude(aircraft: TrafficAircraft): string {
 }
 
 function formatSpeed(value: number): string {
-  return Number.isFinite(value) && value >= 0 ? `${Math.round(value)} m/s` : ''
+  if (!Number.isFinite(value) || value < 0) return ''
+  return `${Math.round(value * 3.6).toLocaleString('en-US')} km/h`
 }
 
 function formatHeading(value: number): string {

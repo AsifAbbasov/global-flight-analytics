@@ -247,17 +247,29 @@ export function TrafficMap({
     }
   }, [aircraft, selectedAircraftICAO24])
 
+  const selectedLabel = selectedAircraftICAO24?.trim().toUpperCase() ?? null
+
   return (
     <div className='relative'>
       <div
-        className='h-[600px] w-full overflow-hidden rounded-xl border border-slate-700/70 bg-slate-950 shadow-2xl'
+        className='h-[min(78vh,860px)] min-h-[560px] w-full overflow-hidden rounded-xl border border-slate-700/70 bg-slate-950 shadow-2xl'
         ref={mapContainerRef}
         aria-label={`Current traffic map focused on ${region.name}`}
         data-region-code={region.code}
         data-basemap-provider={aviationBasemap.provider}
       />
-      <div className='pointer-events-none absolute left-3 top-3 rounded-full border border-slate-600/70 bg-slate-950/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300 shadow-xl backdrop-blur-md'>
-        {region.name} · {aviationBasemap.provider}
+      <div className='pointer-events-none absolute left-3 top-3 flex max-w-[calc(100%-5.5rem)] flex-wrap gap-2'>
+        <div className='rounded-full border border-slate-600/70 bg-slate-950/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300 shadow-xl backdrop-blur-md'>
+          {region.name} · {aviationBasemap.provider}
+        </div>
+        <div className='rounded-full border border-slate-600/70 bg-slate-950/90 px-3 py-1.5 text-[11px] font-semibold text-slate-300 shadow-xl backdrop-blur-md'>
+          {aircraft.length.toLocaleString()} aircraft
+        </div>
+        {selectedLabel ? (
+          <div className='rounded-full border border-amber-300/50 bg-amber-300/15 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-amber-100 shadow-xl backdrop-blur-md'>
+            Selected · {selectedLabel}
+          </div>
+        ) : null}
       </div>
       {projection?.points.length ? (
         <div className='pointer-events-none absolute bottom-3 left-3 rounded-lg border border-violet-300/30 bg-slate-950/90 px-3 py-2 text-xs text-slate-200 shadow-xl backdrop-blur-md'>
@@ -564,68 +576,101 @@ function updateMarkerRecord(
 
 function createPopupContent(item: TrafficAircraft): HTMLElement {
   const container = document.createElement('div')
-  container.style.width = '260px'
-  container.style.maxWidth = '260px'
-  container.style.padding = '14px'
-  container.style.border = '1px solid rgba(56, 189, 248, 0.45)'
-  container.style.borderRadius = '14px'
-  container.style.background = 'rgba(15, 23, 42, 0.98)'
-  container.style.color = '#e5e7eb'
-  container.style.fontFamily = 'Arial, Helvetica, sans-serif'
-  container.style.fontSize = '13px'
-  container.style.lineHeight = '1.55'
-  container.style.boxShadow = '0 18px 45px rgba(0, 0, 0, 0.55)'
+  container.className = 'gfa-aircraft-popup'
 
   const title = document.createElement('div')
-  title.textContent = item.callsign.trim() || 'Unknown callsign'
-  title.style.fontSize = '16px'
-  title.style.fontWeight = '700'
-  title.style.color = '#38bdf8'
+  title.className = 'gfa-aircraft-popup__title'
+  title.textContent = cleanText(item.callsign) || item.icao24.toUpperCase()
+
+  const subtitle = document.createElement('div')
+  subtitle.className = 'gfa-aircraft-popup__subtitle'
+  subtitle.textContent = `ICAO24 ${item.icao24.toUpperCase()}`
+
+  const telemetry = document.createElement('div')
+  telemetry.className = 'gfa-aircraft-popup__telemetry'
+
+  appendOptionalDetail(telemetry, 'Altitude', formatObservedAltitude(item), true)
+  appendOptionalDetail(telemetry, 'Speed', formatObservedSpeed(item.velocity_mps), true)
+  appendOptionalDetail(telemetry, 'Heading', formatObservedHeading(item.heading_degrees), true)
+  appendOptionalDetail(
+    telemetry,
+    'Status',
+    item.on_ground ? 'On ground' : 'Airborne',
+    true
+  )
 
   const details = document.createElement('div')
-  details.style.marginTop = '10px'
-  details.style.display = 'grid'
-  details.style.gap = '4px'
+  details.className = 'gfa-aircraft-popup__details'
+  appendOptionalDetail(details, 'Airline', cleanText(item.airline))
+  appendOptionalDetail(details, 'Aircraft', cleanText(item.aircraft_model))
+  appendOptionalDetail(details, 'Country', cleanText(item.origin_country))
 
-  appendDetail(details, 'ICAO24', item.icao24)
-  appendDetail(details, 'Airline', item.airline || 'Unknown')
-  appendDetail(details, 'Aircraft', item.aircraft_model || 'Unknown')
-  appendDetail(details, 'Altitude', formatTrafficAltitude(item))
-  appendDetail(details, 'Speed', `${item.velocity_mps} m/s`)
-  appendDetail(
-    details,
-    'Heading',
-    `${normalizeAircraftHeading(item.heading_degrees)}°`
-  )
-  appendDetail(
-    details,
-    'Status',
-    item.on_ground ? 'On ground' : 'In air'
-  )
-  appendDetail(details, 'Country', item.origin_country || 'Unknown')
+  const observedAt = formatObservedAt(item.observed_at)
+  const footer = observedAt ? document.createElement('div') : null
+  if (footer) {
+    footer.className = 'gfa-aircraft-popup__footer'
+    footer.textContent = `Observed ${observedAt}`
+  }
 
-  const observedAt = document.createElement('div')
-  observedAt.textContent = `Observed: ${formatObservedAt(item.observed_at)}`
-  observedAt.style.marginTop = '10px'
-  observedAt.style.borderTop = '1px solid rgba(148, 163, 184, 0.25)'
-  observedAt.style.paddingTop = '8px'
-  observedAt.style.color = '#94a3b8'
-
-  container.append(title, details, observedAt)
+  container.append(title, subtitle)
+  if (telemetry.childElementCount > 0) container.append(telemetry)
+  if (details.childElementCount > 0) container.append(details)
+  if (footer) container.append(footer)
   return container
 }
 
-function appendDetail(
+function appendOptionalDetail(
   container: HTMLElement,
   label: string,
-  value: string
+  value: string,
+  primary = false
 ) {
+  if (!value) return
+
   const row = document.createElement('div')
+  row.className = primary
+    ? 'gfa-aircraft-popup__metric'
+    : 'gfa-aircraft-popup__detail'
+
   const labelElement = document.createElement('span')
-  labelElement.textContent = `${label}: `
-  labelElement.style.color = '#94a3b8'
-  row.append(labelElement, document.createTextNode(value))
+  labelElement.className = 'gfa-aircraft-popup__label'
+  labelElement.textContent = label
+
+  const valueElement = document.createElement('strong')
+  valueElement.className = 'gfa-aircraft-popup__value'
+  valueElement.textContent = value
+
+  row.append(labelElement, valueElement)
   container.appendChild(row)
+}
+
+function cleanText(value: string): string {
+  return value.trim()
+}
+
+function formatObservedAltitude(item: TrafficAircraft): string {
+  if (item.altitude_status === 'ground') return formatTrafficAltitude(item)
+  if (
+    item.altitude_status !== 'observed' ||
+    item.altitude_m === null ||
+    !Number.isFinite(item.altitude_m)
+  ) {
+    return ''
+  }
+
+  return formatTrafficAltitude(item)
+}
+
+function formatObservedSpeed(value: number): string {
+  if (!Number.isFinite(value) || value < 0) return ''
+  return `${new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 0,
+  }).format(value * 3.6)} km/h`
+}
+
+function formatObservedHeading(value: number): string {
+  if (!Number.isFinite(value)) return ''
+  return `${normalizeAircraftHeading(value)}°`
 }
 
 function hasValidSegmentCoordinates(
@@ -652,6 +697,6 @@ function hasValidSegmentCoordinates(
 
 function formatObservedAt(observedAt: string): string {
   const date = new Date(observedAt)
-  if (Number.isNaN(date.getTime())) return 'Unknown'
+  if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString()
 }
