@@ -36,6 +36,7 @@ Cloudflare DISPATCH_ENABLED               false
 Neon scale-to-zero                        OBSERVED WORKING
 Neon monthly quota reset                  2026-09-01T00:00:00Z
 Frontend Product Closure                  CLOSED — EXACT-HEAD CI VERIFIED
+Frontend Visual Polish V2                 CLOSED — EXACT-HEAD CI VERIFIED
 ```
 
 The free-tier deployment profile accepts Render/Neon cold starts instead of using
@@ -81,11 +82,22 @@ PRODUCTION_RELEASE_SMOKE=PASS
 ```
 
 The frontend product redesign source implementation is complete through the map-first,
-evidence-aware workspace. Structural desktop/mobile Playwright regression and retained
-screenshot evidence are repository-owned; reviewed pixel-golden baselines remain a
-separate open improvement and are not claimed as complete. Frontend Product Closure was
-verified on PR #98 exact head `b43b6a87eb6224efc2e3c899effe21655d58b996` across all five
-repository merge-evidence workflows before squash merge `c215e7ce5466577f149dc5669c5e0311daf6a56d`.
+evidence-aware workspace. Frontend Product Closure was verified on PR #98 exact head
+`b43b6a87eb6224efc2e3c899effe21655d58b996` across all five repository merge-evidence
+workflows before squash merge `c215e7ce5466577f149dc5669c5e0311daf6a56d`.
+
+The later zero-budget Visual Polish V2 was independently verified on PR #102 exact head
+`f1d2ba16cec215b217955fbcd049dd8b728562c4`: Frontend CI, Backend CI, CodeQL, API Load
+Baseline and Playwright E2E all completed successfully, and the Chromium suite finished
+20/20 with zero flaky retries. PR #102 was then expected-head squash-merged as
+`ce7ee7ab0b95655fff7a1b546e277a4e1c0b842f`. GitHub subsequently recorded Vercel status
+`success` for that merge revision. This Vercel status is not a substitute for the still-open
+Render/Neon/provider runtime validation.
+
+Structural desktop/mobile Playwright regression and retained screenshot evidence are the
+repository-owned visual strategy. A full live-map pixel-golden baseline is deliberately not
+adopted as a completion requirement because it would couple CI to externally rendered
+OpenFreeMap/OSM pixels or require masking the map surface under test.
 
 <!-- STAGE-13-FRONTEND-ANALYTICS-CLOSURE-V1 -->
 ## Frontend Analytics Integration
@@ -97,8 +109,9 @@ recomputation into the browser.
 
 Observed trajectory and estimated projection geometry remain separate MapLibre evidence
 sources, so measured history and estimated future geometry cannot be presented as the same
-kind of observation. The later visual and interaction redesign source implementation is
-now complete; reviewed pixel-golden baselines remain separate.
+kind of observation. The later visual and interaction redesign and Visual Polish V2 are
+closed; pixel-golden comparison is deliberately nonblocking and not adopted for the live
+external-tile map surface.
 
 Formal completion evidence is preserved in
 [`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md).
@@ -214,6 +227,12 @@ compute behavior under the new cadence.
   repository-owned `CLOSED` state while preserving runtime and release boundaries.
 - **PR #100 — ADSB.lol provider-guidance compliance.** Added identifiable request contact,
   visible ODbL attribution and regression protection without enabling production ingestion.
+- **PR #101 — Provider recovery truth reconciliation.** Reconciled the received provider
+  response and merged compliance state without claiming live runtime recovery.
+- **PR #102 — Frontend Visual Polish V2.** Promoted the live two-dimensional map to the
+  primary tracker workspace, compacted the aircraft/intelligence rail, removed unsupported
+  placeholder values and closed the zero-budget visual polish after exact-head 5/5 CI and
+  20/20 clean Chromium journeys.
 
 ## Architecture
 
@@ -364,32 +383,35 @@ audits, Docker configuration and repository integrity.
 - [`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md) — reconciliation incident evidence;
 - [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation and runtime activation criteria;
 - [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget and current recovery state;
-- [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — final frontend product closure and visual-evidence boundary;
-- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–195 still require index reconciliation.
+- [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — frontend product closure and post-closure visual boundary;
+- [`docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`](docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md) — zero-budget Visual Polish V2 evidence and Flightradar24-reference boundary;
+- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–196 still require index reconciliation.
 
 ## Remaining Portfolio v1.0.0 Work
 
-Frontend Product Closure and ADSB.lol provider-compliance hardening are closed. Provider
-recovery itself remains open for live runtime validation, and Neon recovery remains an
-external/runtime verification track rather than a reason to extend the backend architecture.
-Reviewed pixel-golden Playwright baselines remain an optional visual-regression improvement
-and do not reopen the closed frontend product phase.
+Frontend Product Closure, Frontend Visual Polish V2 and ADSB.lol provider-compliance
+hardening are closed. Provider recovery itself remains open for live runtime validation,
+and Neon recovery remains an external/runtime verification track rather than a reason to
+extend the backend or frontend architecture. Pixel-golden comparison is deliberately not
+adopted as a release requirement for the externally rendered live-map surface.
 
 Remaining sequence:
 
-1. optionally establish reviewed pixel-golden Playwright baselines as a separate visual-regression improvement;
-2. after Neon quota availability returns, explicitly satisfy the ADSB.lol production-contact gate and run one controlled production ingestion;
-3. verify PostgreSQL write, traffic freshness, Grafana recovery and bounded scale-to-zero behavior under the new cadence;
-4. verify a subsequent scheduled run after controlled activation;
-5. perform final exact-production deployment validation against the release revision;
-6. reconcile final documentation, including the Document 194–195 index gap, and publish `v1.0.0`.
+1. after Neon quota availability returns, explicitly satisfy the ADSB.lol production-contact gate and run one controlled production ingestion;
+2. verify PostgreSQL write, traffic freshness, Grafana recovery and bounded scale-to-zero behavior under the new cadence;
+3. verify a subsequent scheduled run after controlled activation;
+4. perform final exact-production deployment validation against the release revision;
+5. reconcile final documentation, including the Document 194–196 index gap, and publish `v1.0.0`.
 
 ```text
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
 FRONTEND_PRODUCT_CLOSURE=CLOSED
 FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED
-PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
-DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT
+FRONTEND_VISUAL_POLISH_V2=CLOSED
+STRUCTURAL_VISUAL_REGRESSION=CLOSED
+RETAINED_SCREENSHOT_EVIDENCE=CLOSED
+PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING
+DOCUMENT_INDEX_194_196=OPEN_GOVERNANCE_DEBT
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
 ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
