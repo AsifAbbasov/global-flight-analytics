@@ -12,6 +12,11 @@ import {
   type ProjectionFeatureCollection,
 } from '@/lib/geo/projection-geometry'
 import { aviationBasemap, aviationMapView } from '@/lib/map/aviation-basemap'
+import {
+  buildAircraftVisualState,
+  normalizeAircraftHeading,
+  type AircraftVisualState,
+} from '@/lib/map/aircraft-visual'
 import { formatTrafficAltitude } from '@/lib/traffic/altitude'
 import type { ProjectionResult } from '@/types/projection-intelligence'
 import type { Region } from '@/types/region'
@@ -214,30 +219,25 @@ export function TrafficMap({
     const map = mapRef.current
     if (!map) return
 
-    const normalizedSelectedICAO24 =
-      selectedAircraftICAO24?.trim().toLowerCase() ?? null
     const nextAircraftKeys = new Set<string>()
 
     for (const item of aircraft) {
-      if (!hasValidCoordinates(item)) continue
+      const visualState = buildAircraftVisualState(item, selectedAircraftICAO24)
+      if (!visualState) continue
 
-      const key = item.icao24.trim().toLowerCase()
-      if (!key) continue
-
-      nextAircraftKeys.add(key)
-      const existingRecord = markersRef.current.get(key)
-      const isSelected = key === normalizedSelectedICAO24
+      nextAircraftKeys.add(visualState.key)
+      const existingRecord = markersRef.current.get(visualState.key)
 
       if (existingRecord) {
-        updateMarkerRecord(existingRecord, item, isSelected)
+        updateMarkerRecord(existingRecord, item, visualState)
         continue
       }
 
-      const nextRecord = createMarkerRecord(item, isSelected, icao24 => {
+      const nextRecord = createMarkerRecord(item, visualState, icao24 => {
         onSelectAircraftRef.current(icao24)
       })
       nextRecord.marker.addTo(map)
-      markersRef.current.set(key, nextRecord)
+      markersRef.current.set(visualState.key, nextRecord)
     }
 
     for (const [key, record] of markersRef.current.entries()) {
@@ -503,24 +503,20 @@ function focusTrajectory(
 
 function createMarkerRecord(
   item: TrafficAircraft,
-  isSelected: boolean,
+  visualState: AircraftVisualState,
   onSelectAircraft: (icao24: string) => void
 ): AircraftMarkerRecord {
   const root = document.createElement('button')
   root.type = 'button'
+  root.className = 'gfa-aircraft-marker'
   root.addEventListener('click', () => onSelectAircraft(item.icao24))
-  root.setAttribute(
-    'aria-label',
-    `Open aircraft details for ${displayAircraftName(item)}`
-  )
 
   const icon = document.createElement('span')
+  icon.className = 'gfa-aircraft-marker__icon'
   icon.textContent = '✈'
-  icon.style.display = 'inline-block'
-  icon.style.fontSize = '18px'
-  icon.style.lineHeight = '1'
 
   const label = document.createElement('span')
+  label.className = 'gfa-aircraft-marker__label'
   root.append(icon, label)
 
   const popup = new maplibregl.Popup({
@@ -531,7 +527,7 @@ function createMarkerRecord(
   })
 
   const marker = new maplibregl.Marker({ element: root })
-    .setLngLat([item.longitude, item.latitude])
+    .setLngLat([visualState.longitude, visualState.latitude])
     .setPopup(popup)
 
   const record: AircraftMarkerRecord = {
@@ -541,30 +537,28 @@ function createMarkerRecord(
     icon,
     label,
   }
-  updateMarkerRecord(record, item, isSelected)
+  updateMarkerRecord(record, item, visualState)
   return record
 }
 
 function updateMarkerRecord(
   record: AircraftMarkerRecord,
   item: TrafficAircraft,
-  isSelected: boolean
+  visualState: AircraftVisualState
 ) {
-  const name = displayAircraftName(item)
-
   record.root.setAttribute(
     'aria-label',
-    `Open aircraft details for ${name}`
+    `Open aircraft details for ${visualState.label}`
   )
-  record.root.setAttribute('aria-pressed', isSelected ? 'true' : 'false')
-  record.root.className = isSelected
-    ? 'flex items-center gap-2 rounded-full border border-amber-300 bg-amber-300 px-3 py-1 text-xs font-semibold text-slate-950 shadow-2xl ring-4 ring-amber-300/25'
-    : 'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
-  record.icon.style.color = isSelected ? '#0f172a' : '#38bdf8'
-  record.icon.style.transform =
-    `rotate(${normalizeHeading(item.heading_degrees)}deg)`
-  record.label.textContent = name
-  record.marker.setLngLat([item.longitude, item.latitude])
+  record.root.setAttribute(
+    'aria-pressed',
+    visualState.isSelected ? 'true' : 'false'
+  )
+  record.root.dataset.motionState = visualState.motionState
+  record.root.dataset.selected = visualState.isSelected ? 'true' : 'false'
+  record.icon.style.transform = `rotate(${visualState.headingDegrees}deg)`
+  record.label.textContent = visualState.label
+  record.marker.setLngLat([visualState.longitude, visualState.latitude])
   record.popup.setDOMContent(createPopupContent(item))
 }
 
@@ -601,7 +595,7 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
   appendDetail(
     details,
     'Heading',
-    `${normalizeHeading(item.heading_degrees)}°`
+    `${normalizeAircraftHeading(item.heading_degrees)}°`
   )
   appendDetail(
     details,
@@ -634,21 +628,6 @@ function appendDetail(
   container.appendChild(row)
 }
 
-function displayAircraftName(item: TrafficAircraft): string {
-  return item.callsign.trim() || item.icao24
-}
-
-function hasValidCoordinates(item: TrafficAircraft): boolean {
-  return (
-    Number.isFinite(item.latitude) &&
-    item.latitude >= -90 &&
-    item.latitude <= 90 &&
-    Number.isFinite(item.longitude) &&
-    item.longitude >= -180 &&
-    item.longitude <= 180
-  )
-}
-
 function hasValidSegmentCoordinates(
   startLatitude: number,
   startLongitude: number,
@@ -669,11 +648,6 @@ function hasValidSegmentCoordinates(
     endLongitude >= -180 &&
     endLongitude <= 180
   )
-}
-
-function normalizeHeading(headingDegrees: number): number {
-  if (!Number.isFinite(headingDegrees)) return 0
-  return ((headingDegrees % 360) + 360) % 360
 }
 
 function formatObservedAt(observedAt: string): string {
