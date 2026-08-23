@@ -1,4 +1,4 @@
-import type { TrafficAircraft } from '@/types/traffic'
+import type { TrafficAircraft } from '../../types/traffic'
 
 export type AircraftMotionState = 'airborne' | 'ground'
 
