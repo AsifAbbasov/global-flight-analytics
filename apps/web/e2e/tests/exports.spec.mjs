@@ -52,11 +52,14 @@ test('GeoJSON export preserves coordinates and provenance metadata', async ({
   const exportRegion = page.getByRole('region', {
     name: 'Research snapshot export',
   })
+  const downloadButton = exportRegion.getByRole('button', {
+    name: 'Download GeoJSON',
+  })
+  await expect(downloadButton).toBeEnabled()
+
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    exportRegion
-      .getByRole('button', { name: 'Download GeoJSON' })
-      .click(),
+    downloadButton.click(),
   ])
 
   expect(download.suggestedFilename()).toMatch(
