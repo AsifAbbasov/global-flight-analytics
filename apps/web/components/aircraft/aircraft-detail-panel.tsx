@@ -300,7 +300,11 @@ function RouteContextSection({
     >
       <div className='flex items-center justify-between gap-3'>
         <div>
-          <h4 id='route-context-title' className='text-xs font-semibold text-slate-100'>
+          <h4
+            id='route-context-title'
+            aria-label='Probable route and airport context'
+            className='text-xs font-semibold text-slate-100'
+          >
             Probable route
           </h4>
           <p className='mt-0.5 text-[10px] leading-4 text-slate-500'>
