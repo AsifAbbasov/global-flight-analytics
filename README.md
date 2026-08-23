@@ -385,7 +385,7 @@ audits, Docker configuration and repository integrity.
 - [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget and current recovery state;
 - [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — frontend product closure and post-closure visual boundary;
 - [`docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`](docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md) — zero-budget Visual Polish V2 evidence and Flightradar24-reference boundary;
-- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–196 still require index reconciliation.
+- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–196 are registered and reconciled.
 
 ## Remaining Portfolio v1.0.0 Work
 
@@ -401,7 +401,7 @@ Remaining sequence:
 2. verify PostgreSQL write, traffic freshness, Grafana recovery and bounded scale-to-zero behavior under the new cadence;
 3. verify a subsequent scheduled run after controlled activation;
 4. perform final exact-production deployment validation against the release revision;
-5. reconcile final documentation, including the Document 194–196 index gap, and publish `v1.0.0`.
+5. complete final release documentation and publish `v1.0.0`.
 
 ```text
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
@@ -411,7 +411,7 @@ FRONTEND_VISUAL_POLISH_V2=CLOSED
 STRUCTURAL_VISUAL_REGRESSION=CLOSED
 RETAINED_SCREENSHOT_EVIDENCE=CLOSED
 PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING
-DOCUMENT_INDEX_194_196=OPEN_GOVERNANCE_DEBT
+DOCUMENT_INDEX_194_196=CLOSED
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
 ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION

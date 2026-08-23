@@ -34,6 +34,7 @@ test('README presents the implemented product instead of an obsolete first slice
 
 test('README records current engineering closure and remaining v1 boundary', async () => {
   const readme = await text('README.md')
+  const index = await text('docs/DOCUMENT_INDEX.md')
 
   assert.match(readme, /CURRENT-ENGINEERING-STATUS-2026-08-V1/)
   assert.match(readme, /PR #68 — Frontend dependency security/)
@@ -53,7 +54,7 @@ test('README records current engineering closure and remaining v1 boundary', asy
   assert.match(readme, /STRUCTURAL_VISUAL_REGRESSION=CLOSED/)
   assert.match(readme, /RETAINED_SCREENSHOT_EVIDENCE=CLOSED/)
   assert.match(readme, /PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING/)
-  assert.match(readme, /DOCUMENT_INDEX_194_196=OPEN_GOVERNANCE_DEBT/)
+  assert.match(readme, /DOCUMENT_INDEX_194_196=CLOSED/)
   assert.match(readme, /FINAL_EXACT_PRODUCTION_VALIDATION=OPEN/)
   assert.match(readme, /FINAL_RELEASE_DOCUMENTATION=OPEN/)
   assert.match(readme, /V1_RELEASE=OPEN/)
@@ -61,6 +62,10 @@ test('README records current engineering closure and remaining v1 boundary', asy
   assert.match(readme, /final exact-production deployment validation/)
   assert.match(readme, /`v1\.0\.0`/)
   assert.doesNotMatch(readme, /GLOBAL_FLIGHT_ANALYTICS_V1=COMPLETE/)
+
+  assert.match(index, /## Document 194 — Free-Tier Production Infrastructure Budget/)
+  assert.match(index, /## Document 195 — Frontend Product Closure/)
+  assert.match(index, /## Document 196 — Frontend Visual Polish V2 Closure/)
 })
 
 test('frontend visual polish closure preserves zero-budget truth and exact-head evidence', async () => {
