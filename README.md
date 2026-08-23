@@ -21,12 +21,12 @@ confidence, provenance and limitations visible.
 The heavy backend, PostgreSQL, analytical, API, OpenAPI and frontend-integration work is
 closed for the current portfolio scope. **Stage 14 is closed** for the current repository
 scope. Production-provider recovery and free-tier runtime recovery remain intentionally
-fail-closed until external provider confirmation and live post-reset verification can be
-completed.
+fail-closed until controlled live runtime verification can be completed.
 
 ```text
 ADSB.lol adapter / provider policy        IMPLEMENTED
-ADSB.lol production contact               SENT; RESPONSE PENDING
+ADSB.lol production response              RECEIVED
+ADSB.lol compliance hardening             MERGED
 Production Traffic Ingestion              DISPATCH-ONLY / OFFLINE
 Cloudflare primary target cadence         30 MINUTES
 Cloudflare watchdog target cadence        2 HOURS
@@ -156,19 +156,22 @@ fallback selection.
 compatible access is explicitly approved. OpenSky remains fail-closed for operational use
 until the required agreement is explicitly confirmed.
 
-The production-use contact to ADSB.lol has been sent with the intended free-tier profile:
-approximately one request every 30 minutes, maximum 250 nautical miles, a project-side
-safety cap no greater than one request per minute, ODbL attribution and non-ATC use.
-Production activation still waits for the provider response.
+The production-use inquiry sent on 2026-08-21 received an operator response the same day.
+The response supplied production-use guidance rather than a bespoke SLA or fixed quota:
+visible ODbL attribution, an identifiable User-Agent with contact information, respect for
+HTTP errors, dynamic rate limits and `Retry-After`, practical caching/deduplication, scoped
+geographic queries, no multi-IP circumvention, and no safety-critical dependency. PR #100
+merged the corresponding compliance hardening while keeping production ingestion offline.
 
 ```text
 ADSBLOL_ADAPTER=IMPLEMENTED
 ADSBLOL_PROVIDER_POLICY=IMPLEMENTED
 ADSBLOL_PRODUCTION_CONTACT=SENT
-ADSBLOL_PRODUCTION_RESPONSE=PENDING
+ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_WORKFLOW_SOURCE_READY=YES
 PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
-PRODUCTION_PROVIDER_RECOVERY=OPEN
+PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
 ```
 
 Implementation details and activation criteria are recorded in
@@ -207,6 +210,10 @@ compute behavior under the new cadence.
   scheduler cadence around the measured Neon compute budget.
 - **PR #98 — Frontend Product Closure.** Closed the redesigned map-first product source and
   structural visual-evidence phase after exact-head 5/5 CI and 20/20 clean Chromium journeys.
+- **PR #99 — Frontend closure governance.** Promoted the verified frontend candidate to the
+  repository-owned `CLOSED` state while preserving runtime and release boundaries.
+- **PR #100 — ADSB.lol provider-guidance compliance.** Added identifiable request contact,
+  visible ODbL attribution and regression protection without enabling production ingestion.
 
 ## Architecture
 
@@ -355,26 +362,27 @@ audits, Docker configuration and repository integrity.
 - [`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md) — Stage 13 frontend analytics closure;
 - [`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md) — provider incident containment;
 - [`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md) — reconciliation incident evidence;
-- [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation;
+- [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation and runtime activation criteria;
 - [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget and current recovery state;
 - [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — final frontend product closure and visual-evidence boundary;
 - [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–195 still require index reconciliation.
 
 ## Remaining Portfolio v1.0.0 Work
 
-Frontend Product Closure is closed. Provider and Neon recovery remain external/runtime
-verification tracks rather than reasons to extend the backend architecture. Reviewed
-pixel-golden Playwright baselines remain an optional visual-regression improvement and do
-not reopen the closed frontend product phase.
+Frontend Product Closure and ADSB.lol provider-compliance hardening are closed. Provider
+recovery itself remains open for live runtime validation, and Neon recovery remains an
+external/runtime verification track rather than a reason to extend the backend architecture.
+Reviewed pixel-golden Playwright baselines remain an optional visual-regression improvement
+and do not reopen the closed frontend product phase.
 
 Remaining sequence:
 
 1. optionally establish reviewed pixel-golden Playwright baselines as a separate visual-regression improvement;
-2. receive ADSB.lol production-use confirmation;
-3. after Neon quota availability returns, run controlled production ingestion and verify
-   PostgreSQL write, freshness, Grafana evidence and scale-to-zero behavior;
-4. perform final exact-production deployment validation against the release revision;
-5. reconcile final documentation, including the Document 194–195 index gap, and publish `v1.0.0`.
+2. after Neon quota availability returns, explicitly satisfy the ADSB.lol production-contact gate and run one controlled production ingestion;
+3. verify PostgreSQL write, traffic freshness, Grafana recovery and bounded scale-to-zero behavior under the new cadence;
+4. verify a subsequent scheduled run after controlled activation;
+5. perform final exact-production deployment validation against the release revision;
+6. reconcile final documentation, including the Document 194–195 index gap, and publish `v1.0.0`.
 
 ```text
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
@@ -382,7 +390,9 @@ FRONTEND_PRODUCT_CLOSURE=CLOSED
 FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED
 PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
 DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT
-PRODUCTION_PROVIDER_RECOVERY=OPEN_EXTERNAL
+ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
+PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
 FREE_TIER_INFRASTRUCTURE_RECOVERY=OPEN_RUNTIME_VALIDATION
 FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
 FINAL_RELEASE_DOCUMENTATION=OPEN
