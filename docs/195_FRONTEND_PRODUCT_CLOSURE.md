@@ -98,12 +98,19 @@ Their absence does not reopen the structural product closure proven by PR #98.
 
 ## Production boundary
 
-Frontend source closure is independent from production-provider recovery. The following
-external/runtime items remain open and must not be implied closed by this document:
+Frontend source closure is independent from production-provider recovery. Since this
+frontend closure was recorded, PR #100 merged the repository-side ADSB.lol provider-guidance
+compliance hardening after the operator response was received. That later work does not
+change the frontend closure decision and does not constitute live production-recovery
+evidence.
+
+The following external/runtime items remain open and must not be implied closed by this
+document:
 
 ```text
-PRODUCTION_PROVIDER_RECOVERY=OPEN_EXTERNAL
-ADSBLOL_PRODUCTION_RESPONSE=PENDING
+ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
+PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
 PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
 FREE_TIER_INFRASTRUCTURE_RECOVERY=OPEN_RUNTIME_VALIDATION
 FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
@@ -131,5 +138,8 @@ FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED
 FRONTEND_PRODUCT_CLOSURE=CLOSED
 PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
 DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT
+ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
+PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
 V1_RELEASE=OPEN
 ```

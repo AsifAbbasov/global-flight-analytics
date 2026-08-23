@@ -1,6 +1,6 @@
 # Production Traffic Provider Recovery
 
-Status: Provider response received; compliance hardening in review; runtime activation still pending
+Status: Provider response received; compliance hardening merged; runtime activation still pending
 Date: 2026-08-23
 Scope: policy-aware recovery of production traffic ingestion after the Airplanes.live access incident
 
@@ -66,12 +66,20 @@ PUBLIC_CONTACT_URL=https://github.com/AsifAbbasov/global-flight-analytics
 VISIBLE_ADSBLOL_ODBL_ATTRIBUTION=REQUIRED
 STANDARD_RETRY_AFTER_COOLDOWN=IMPLEMENTED
 AGGRESSIVE_4XX_RETRY=PROHIBITED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
 ```
 
-The ADSB.lol HTTP client already forwards response headers to the provider
-response controller. The controller parses standard `Retry-After` values and
-applies provider cooldowns. The ADSB.lol client itself performs one HTTP request
-per call and does not contain an aggressive retry loop.
+The ADSB.lol HTTP client forwards response headers to the provider response
+controller. The controller parses standard `Retry-After` values and applies
+provider cooldowns. The ADSB.lol client itself performs one HTTP request per call
+and does not contain an aggressive retry loop.
+
+PR #100 carried the provider-guidance compliance increment. Its exact pull-request
+head `489e398c1d371c7613848fa9b39798edeef9806d` completed Frontend CI, Backend CI,
+CodeQL, API Load Baseline and Playwright E2E successfully before squash merge.
+The resulting `main` commit is `47769076376d7e4596610059cdb2505c23598237`.
+This evidence closes the repository-side compliance hardening only; it is not
+runtime provider-recovery evidence.
 
 ## 5. Budget policy
 
@@ -98,9 +106,10 @@ Production GitHub Actions refuses to execute unless:
 ADSBLOL_PRODUCTION_CONTACT_CONFIRMED=true
 ```
 
-The operator response now provides the external evidence needed for that gate,
+The operator response provides the external evidence needed to satisfy that gate,
 but the repository does not treat receipt of the email as permission to bypass
-compliance hardening or runtime availability checks.
+compliance hardening or runtime availability checks. The gate must still be
+explicitly enabled for the controlled production run.
 
 Airplanes.live additionally requires `AIRPLANES_LIVE_ACCESS_APPROVED=true`.
 OpenSky additionally requires `OPENSKY_OPERATIONAL_AGREEMENT_CONFIRMED=true`.
@@ -133,6 +142,7 @@ Until live runtime validation is possible:
 ADSBLOL_ADAPTER=IMPLEMENTED
 ADSBLOL_PROVIDER_POLICY=IMPLEMENTED
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_WORKFLOW_SOURCE_READY=YES
 PRODUCTION_WORKFLOW_CONTACT_GATE=ACTIVE
 PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
