@@ -48,6 +48,49 @@ test('search matches callsign, ICAO24, model, airline and country', () => {
   }
 })
 
+test('motion filter separates airborne and ground aircraft', () => {
+  const source = [
+    aircraft({ icao24: 'air-1' }),
+    aircraft({ icao24: 'ground-1', on_ground: true, altitude_m: null, altitude_status: 'ground', altitude_source: 'ground' }),
+    aircraft({ icao24: 'air-2' }),
+  ]
+
+  const airborne = buildAircraftExplorerModel(source, { motion: 'airborne' })
+  const ground = buildAircraftExplorerModel(source, { motion: 'ground' })
+
+  assert.deepEqual(airborne.items.map(item => item.icao24), ['air-1', 'air-2'])
+  assert.deepEqual(ground.items.map(item => item.icao24), ['ground-1'])
+})
+
+test('altitude evidence filter keeps only observed or explicit ground evidence', () => {
+  const source = [
+    aircraft({ icao24: 'observed' }),
+    aircraft({ icao24: 'unknown', altitude_m: null, altitude_status: 'unknown', altitude_source: 'none' }),
+    aircraft({ icao24: 'invalid', altitude_m: 9000, altitude_status: 'invalid', altitude_source: 'geometric' }),
+    aircraft({ icao24: 'ground', on_ground: true, altitude_m: null, altitude_status: 'ground', altitude_source: 'ground' }),
+  ]
+
+  const result = buildAircraftExplorerModel(source, { requireAltitudeEvidence: true })
+
+  assert.deepEqual(result.items.map(item => item.icao24), ['observed', 'ground'])
+})
+
+test('filters compose with search instead of bypassing it', () => {
+  const source = [
+    aircraft({ icao24: 'az-air', callsign: 'AZAL101' }),
+    aircraft({ icao24: 'az-ground', callsign: 'AZAL-GND', on_ground: true, altitude_m: null, altitude_status: 'ground', altitude_source: 'ground' }),
+    aircraft({ icao24: 'thy-air', callsign: 'THY7' }),
+  ]
+
+  const result = buildAircraftExplorerModel(source, {
+    query: 'azal',
+    motion: 'airborne',
+  })
+
+  assert.deepEqual(result.items.map(item => item.icao24), ['az-air'])
+  assert.equal(result.matchedCount, 1)
+})
+
 test('altitude sorting places highest observed altitude first and null last', () => {
   const result = buildAircraftExplorerModel(
     [
