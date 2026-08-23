@@ -339,6 +339,7 @@ function RouteContextSection({
                 score={routeContext.confidence.score}
               />
             </div>
+            <RouteConfidenceBar score={routeContext.confidence.score} />
           </div>
 
           {routeContext.limitations.length > 0 ? (
@@ -385,6 +386,28 @@ function RouteContextSection({
         </div>
       ) : null}
     </section>
+  )
+}
+
+function RouteConfidenceBar({ score }: { score: number }) {
+  if (!Number.isFinite(score)) return null
+  const normalized = Math.max(0, Math.min(1, score))
+  const percentage = Math.round(normalized * 100)
+
+  return (
+    <div
+      className='mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800'
+      role='progressbar'
+      aria-label='Probable route confidence score'
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percentage}
+    >
+      <div
+        className='h-full rounded-full bg-sky-400'
+        style={{ width: `${percentage}%` }}
+      />
+    </div>
   )
 }
 
