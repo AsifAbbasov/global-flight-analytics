@@ -33,22 +33,14 @@ test('desktop map-first section order and width remain structurally stable', asy
   })
 
   // The page is intentionally hydrated after the initial document response.
-  // Wait for the semantic product surfaces before measuring geometry so the
-  // visual contract validates layout rather than racing React hydration.
-  await expect(liveHeading).toBeVisible()
-  await expect(overviewHeading).toBeVisible()
-  await expect(airport).toBeVisible()
-  await expect(historical).toBeVisible()
+  // Resolve geometry from the current semantic element after visibility instead
+  // of retaining a nullable bounding-box snapshot across dynamic workspace remounts.
+  const liveBox = await visibleDocumentBox(liveHeading)
+  const overviewBox = await visibleDocumentBox(overviewHeading)
+  const airportBox = await visibleDocumentBox(airport)
+  const historicalBox = await visibleDocumentBox(historical)
   await expect(mapEvidenceControls).toBeVisible()
 
-  const liveBox = await liveHeading.boundingBox()
-  const overviewBox = await overviewHeading.boundingBox()
-  const airportBox = await airport.boundingBox()
-  const historicalBox = await historical.boundingBox()
-  expect(liveBox).not.toBeNull()
-  expect(overviewBox).not.toBeNull()
-  expect(airportBox).not.toBeNull()
-  expect(historicalBox).not.toBeNull()
   expect(airportBox.width).toBeGreaterThan(900)
   expect(historicalBox.width).toBeGreaterThan(900)
   expect(overviewBox.y).toBeGreaterThan(liveBox.y)
@@ -88,13 +80,11 @@ test('mobile workspace preserves responsive map flow and records screenshot evid
   const mapEvidenceControls = page.getByRole('group', {
     name: 'Map evidence visibility',
   })
-  await expect(map).toBeVisible()
+  const mapBox = await visibleDocumentBox(map)
   await expect(mapEvidenceControls).toBeVisible()
   await expect(page.getByRole('button', { name: 'Trail' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Projection' })).toBeVisible()
 
-  const mapBox = await map.boundingBox()
-  expect(mapBox).not.toBeNull()
   expect(mapBox.height).toBeGreaterThanOrEqual(380)
   expect(mapBox.height).toBeLessThan(600)
   expect(mapBox.width).toBeLessThanOrEqual(390)
@@ -109,3 +99,15 @@ test('mobile workspace preserves responsive map flow and records screenshot evid
     contentType: 'image/png',
   })
 })
+
+async function visibleDocumentBox(locator) {
+  await expect(locator).toBeVisible()
+  return locator.evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    return {
+      width: rect.width,
+      height: rect.height,
+      y: rect.top + window.scrollY,
+    }
+  })
+}
