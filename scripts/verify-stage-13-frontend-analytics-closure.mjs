@@ -116,8 +116,8 @@ export function validateRepository(root) {
       'README must preserve observed-versus-estimated geometry disclosure',
     ],
     [
-      'redesign remains a separate product phase',
-      'README must keep visual redesign separate from technical completion',
+      'later visual and interaction redesign source implementation is',
+      'README must record the later visual redesign without rewriting Stage 13 completion',
     ],
   ]) {
     requireText(errors, readme, needle, message)
