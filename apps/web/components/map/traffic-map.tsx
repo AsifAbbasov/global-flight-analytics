@@ -149,7 +149,9 @@ export function TrafficMap({
     }
 
     map.once('load', focusSelectedRegion)
-    return () => map.off('load', focusSelectedRegion)
+    return () => {
+      map.off('load', focusSelectedRegion)
+    }
   }, [region])
 
   useEffect(() => {
@@ -174,7 +176,9 @@ export function TrafficMap({
     }
 
     map.once('load', updateTrajectory)
-    return () => map.off('load', updateTrajectory)
+    return () => {
+      map.off('load', updateTrajectory)
+    }
   }, [trajectory])
 
   useEffect(() => {
@@ -201,7 +205,9 @@ export function TrafficMap({
     }
 
     map.once('load', updateProjection)
-    return () => map.off('load', updateProjection)
+    return () => {
+      map.off('load', updateProjection)
+    }
   }, [projection])
 
   useEffect(() => {
