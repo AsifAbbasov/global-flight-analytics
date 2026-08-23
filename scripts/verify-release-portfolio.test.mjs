@@ -45,7 +45,7 @@ test('README records current engineering closure and remaining v1 boundary', asy
   assert.match(readme, /OPENAPI_CONTRACT_PATHS=38/)
   assert.match(readme, /PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20/)
   assert.match(readme, /FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE/)
-  assert.match(readme, /FRONTEND_PRODUCT_CLOSURE=CANDIDATE_EXACT_HEAD_CI/)
+  assert.match(readme, /FRONTEND_PRODUCT_CLOSURE=CLOSED/)
   assert.match(readme, /FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED/)
   assert.match(readme, /PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN/)
   assert.match(readme, /DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT/)
@@ -132,7 +132,6 @@ test('architecture document records modular monolith boundaries and rejected com
   assert.match(architecture, /Why not microservices/i)
   assert.match(architecture, /Evidence boundary/)
 })
-
 
 test('release truth separates historical evidence from mutable deployment aliases', async () => {
   const readme = await text('README.md')
