@@ -69,8 +69,8 @@ require_literal README.md 'PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20' \
   'README current Playwright browser scenario count is missing'
 require_literal README.md 'FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE' \
   'README frontend product source implementation marker is missing'
-require_literal README.md 'FRONTEND_PRODUCT_CLOSURE=CANDIDATE_EXACT_HEAD_CI' \
-  'README frontend product closure candidate boundary is missing'
+require_literal README.md 'FRONTEND_PRODUCT_CLOSURE=CLOSED' \
+  'README frontend product closure marker is missing'
 require_literal README.md 'FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED' \
   'README frontend visual redesign implementation marker is missing'
 require_literal README.md 'PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN' \
@@ -197,7 +197,6 @@ require_literal docs/DOCUMENT_INDEX.md '## Document 165 — System Architecture 
   'Document 165 index entry is missing'
 require_literal docs/DOCUMENT_INDEX.md '## Document 169 — Release Truth and Deployment Revision Closure' \
   'Document 169 index entry is missing'
-
 require_literal docs/DOCUMENT_INDEX.md '## Document 170 — Production Observability and Alerting Closure' \
   'Document 170 index entry is missing'
 
@@ -213,7 +212,6 @@ require_literal docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md 'RELEA
   'release truth closure marker is missing'
 require_literal docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md 'EXPLICIT_DEPLOYMENT_REVISION_INPUT=REQUIRED' \
   'release truth closure does not require an explicit deployment revision'
-
 require_literal docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md 'PRODUCTION_METRICS_REMOTE_WRITE=CLOSED' \
   'production observability closure does not record remote-write completion'
 require_literal docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md 'GRAFANA_SLO_DASHBOARD=CLOSED' \
