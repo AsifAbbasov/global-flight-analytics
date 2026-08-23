@@ -1,6 +1,6 @@
 # Document 195 — Frontend Product Closure
 
-Status: CLOSED — exact-head CI verified and PR #98 merged
+Status: CLOSED — exact-head CI verified and PR #98 merged; post-closure Visual Polish V2 recorded separately
 Date: 2026-08-23
 Scope: `FRONTEND_PRODUCT_CLOSURE`
 
@@ -13,7 +13,7 @@ research interface with its own design system and evidence semantics.
 
 ## Closed frontend increments
 
-The closed scope includes the repository work merged through PRs #90–#98:
+The original closed scope includes the repository work merged through PRs #90–#98:
 
 - map-first application shell;
 - semantic Playwright contract repair;
@@ -83,18 +83,41 @@ The final Chromium run completed 20/20 scenarios successfully without a flaky re
 GeoJSON, desktop visual-regression and mobile visual-regression scenarios all passed on the
 same exact PR head.
 
-This is intentionally not represented as pixel-golden regression.
+At the time of the original PR #98 closure, pixel-golden baselines were deliberately left
+as a separate optional improvement because the repository did not own reviewed
+`toHaveScreenshot` golden files for the redesigned product. That historical decision did
+not reopen the structural product closure proven by PR #98.
+
+## Post-closure Visual Polish V2
+
+After the original closure, PR #102 applied a separate zero-budget visual-polish increment
+using the supplied Flightradar24 material only as a UX/information-hierarchy reference.
+That increment promoted the two-dimensional live map to the primary tracker workspace,
+compacted the aircraft/intelligence rail and popup hierarchy, prioritized supported live
+telemetry, strengthened selected-aircraft state, and removed unsupported per-aircraft
+placeholder values.
+
+PR #102 exact head `f1d2ba16cec215b217955fbcd049dd8b728562c4` completed all five repository
+merge-evidence workflows successfully, including a clean 20/20 Chromium run with zero
+flaky retries, before expected-head squash merge
+`ce7ee7ab0b95655fff7a1b546e277a4e1c0b842f`.
+
+The V2 evidence and final comparison boundary are recorded in
+[`196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`](196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md).
+
+The post-V2 test-strategy decision is:
 
 ```text
-STRUCTURAL_VISUAL_REGRESSION=IMPLEMENTED
-SCREENSHOT_EVIDENCE=IMPLEMENTED
-PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
-FRONTEND_PRODUCT_CLOSURE=CLOSED
+STRUCTURAL_VISUAL_REGRESSION=CLOSED
+RETAINED_SCREENSHOT_EVIDENCE=CLOSED
+PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING
+FRONTEND_VISUAL_POLISH_V2=CLOSED
 ```
 
-Pixel-golden baselines remain a separate optional future improvement because the repository
-does not currently own reviewed `toHaveScreenshot` golden files for the redesigned product.
-Their absence does not reopen the structural product closure proven by PR #98.
+A full live-map pixel golden would either couple CI to externally rendered OpenFreeMap/OSM
+pixels or mask the map surface itself. The repository therefore keeps deterministic
+semantic/layout regression plus retained screenshots instead of treating a noisy golden as
+a frontend completion requirement.
 
 ## Production boundary
 
@@ -119,16 +142,16 @@ V1_RELEASE_CLOSURE=OPEN
 
 ## Documentation index note
 
-`docs/DOCUMENT_INDEX.md` currently stops at Document 193 and therefore still needs a
-separate index reconciliation for Documents 194 and 195. This document does not hide that
-existing documentation debt.
+Document 196 is the post-closure visual-polish record. The documentation register must list
+Documents 194, 195 and 196 before the former index-governance debt can be considered closed.
 
 ## Closure decision
 
-The exact PR head containing the strengthened visual-regression contract completed every
-required repository merge-evidence workflow successfully before merge. PR #98 was then
-squash-merged using an expected-head guard, producing merge SHA
-`c215e7ce5466577f149dc5669c5e0311daf6a56d`.
+The exact PR head containing the strengthened original visual-regression contract completed
+every required repository merge-evidence workflow successfully before merge. PR #98 was
+then squash-merged using an expected-head guard. The later PR #102 visual-polish increment
+was independently exact-head verified and expected-head squash-merged without reopening the
+original closure.
 
 Therefore:
 
@@ -136,8 +159,10 @@ Therefore:
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
 FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED
 FRONTEND_PRODUCT_CLOSURE=CLOSED
-PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN
-DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT
+FRONTEND_VISUAL_POLISH_V2=CLOSED
+STRUCTURAL_VISUAL_REGRESSION=CLOSED
+RETAINED_SCREENSHOT_EVIDENCE=CLOSED
+PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
 ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION

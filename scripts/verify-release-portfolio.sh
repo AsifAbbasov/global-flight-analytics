@@ -38,7 +38,10 @@ for required_file in \
   docs/164_RECRUITER_DEMO_SCRIPT.md \
   docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md \
   docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md \
-  docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md
+  docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md \
+  docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md \
+  docs/195_FRONTEND_PRODUCT_CLOSURE.md \
+  docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md
 do
   require_file "$required_file"
 done
@@ -73,9 +76,15 @@ require_literal README.md 'FRONTEND_PRODUCT_CLOSURE=CLOSED' \
   'README frontend product closure marker is missing'
 require_literal README.md 'FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED' \
   'README frontend visual redesign implementation marker is missing'
-require_literal README.md 'PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN' \
-  'README pixel-golden visual regression boundary is missing'
-require_literal README.md 'DOCUMENT_INDEX_194_195=OPEN_GOVERNANCE_DEBT' \
+require_literal README.md 'FRONTEND_VISUAL_POLISH_V2=CLOSED' \
+  'README frontend visual polish v2 closure marker is missing'
+require_literal README.md 'STRUCTURAL_VISUAL_REGRESSION=CLOSED' \
+  'README structural visual regression closure marker is missing'
+require_literal README.md 'RETAINED_SCREENSHOT_EVIDENCE=CLOSED' \
+  'README retained screenshot evidence marker is missing'
+require_literal README.md 'PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING' \
+  'README pixel-golden decision boundary is missing'
+require_literal README.md 'DOCUMENT_INDEX_194_196=OPEN_GOVERNANCE_DEBT' \
   'README document index governance debt boundary is missing'
 require_literal README.md 'FINAL_EXACT_PRODUCTION_VALIDATION=OPEN' \
   'README final exact-production validation boundary is missing'
@@ -200,6 +209,17 @@ require_literal docs/DOCUMENT_INDEX.md '## Document 169 — Release Truth and De
 require_literal docs/DOCUMENT_INDEX.md '## Document 170 — Production Observability and Alerting Closure' \
   'Document 170 index entry is missing'
 
+require_literal docs/195_FRONTEND_PRODUCT_CLOSURE.md 'FRONTEND_VISUAL_POLISH_V2=CLOSED' \
+  'Document 195 does not reconcile the closed visual polish v2 increment'
+require_literal docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md 'PR_HEAD=f1d2ba16cec215b217955fbcd049dd8b728562c4' \
+  'Document 196 exact-head evidence is missing'
+require_literal docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md 'PLAYWRIGHT_BROWSER_RESULT=20_PASSED' \
+  'Document 196 Chromium evidence is missing'
+require_literal docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md 'PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING' \
+  'Document 196 pixel-golden strategy decision is missing'
+require_literal docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md 'PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION' \
+  'Document 196 runtime recovery boundary is missing'
+
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_API_DEPLOYMENT=CLOSED' \
   'release closure does not record verified public API deployment'
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_NEXTJS_DEPLOYMENT=CLOSED' \
@@ -229,7 +249,10 @@ for release_document in \
   docs/164_RECRUITER_DEMO_SCRIPT.md \
   docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md \
   docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md \
-  docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md
+  docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md \
+  docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md \
+  docs/195_FRONTEND_PRODUCT_CLOSURE.md \
+  docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md
 do
   grep -F 'REPLACE_WITH_' "$REPOSITORY_ROOT/$release_document" >/dev/null && \
     fail "unresolved release placeholder remains in $release_document"
