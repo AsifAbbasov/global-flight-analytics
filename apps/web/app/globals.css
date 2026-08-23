@@ -53,15 +53,87 @@ body {
   }
 }
 
+/* FRONTEND_AVIATION_MAP_CHROME_V1 */
+
+.maplibregl-map {
+  background: #11161c;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.maplibregl-canvas {
+  outline: none;
+}
+
+.maplibregl-ctrl-top-right {
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.75rem !important;
+  background: rgb(28 31 35 / 94%) !important;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 34%) !important;
+  backdrop-filter: blur(14px);
+}
+
+.maplibregl-ctrl-group button {
+  width: 40px !important;
+  height: 40px !important;
+  border-bottom-color: rgb(255 255 255 / 10%) !important;
+  background-color: transparent !important;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: rgb(255 255 255 / 10%) !important;
+}
+
+.maplibregl-ctrl-group button:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: -3px;
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(1) brightness(1.6);
+  opacity: 0.9;
+}
+
+.maplibregl-ctrl-attrib {
+  border-radius: 0.5rem 0 0 0 !important;
+  background: rgb(17 19 21 / 82%) !important;
+  color: #cbd5e1 !important;
+  font-size: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.maplibregl-ctrl-attrib a {
+  color: #e2e8f0 !important;
+}
+
 .maplibregl-popup-content {
   padding: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.75rem !important;
+  background: rgb(24 27 31 / 96%) !important;
+  box-shadow: 0 18px 45px rgb(0 0 0 / 48%) !important;
+  backdrop-filter: blur(18px);
+}
+
+.maplibregl-popup-tip {
+  border-top-color: rgb(24 27 31 / 96%) !important;
+  border-bottom-color: rgb(24 27 31 / 96%) !important;
 }
 
 .maplibregl-popup-close-button {
-  color: #e5e7eb !important;
   z-index: 10 !important;
+  min-width: 32px;
+  min-height: 32px;
+  color: #e5e7eb !important;
+  font-size: 18px;
 }
 
 /* FRONTEND_PRODUCT_HARDENING_V1 */
@@ -135,11 +207,26 @@ pre {
     background: Canvas;
     color: CanvasText;
   }
+
+  .maplibregl-ctrl-group {
+    border: 2px solid CanvasText;
+    background: Canvas !important;
+  }
 }
 
 @media (max-width: 639px) {
   .skip-link-secondary {
     left: 1rem;
     top: 4.25rem;
+  }
+
+  .maplibregl-ctrl-top-right {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .maplibregl-ctrl-group button {
+    width: 44px !important;
+    height: 44px !important;
   }
 }

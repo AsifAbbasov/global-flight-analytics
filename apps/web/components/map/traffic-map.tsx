@@ -6,14 +6,15 @@ import { useEffect, useRef } from 'react'
 import maplibregl from 'maplibre-gl'
 
 import { buildRegionView } from '@/lib/geo/region-view'
-import { formatTrafficAltitude } from '@/lib/traffic/altitude'
 import {
   buildProjectionFeatureCollection,
   emptyProjectionFeatureCollection,
   type ProjectionFeatureCollection,
 } from '@/lib/geo/projection-geometry'
-import type { Region } from '@/types/region'
+import { aviationBasemap, aviationMapView } from '@/lib/map/aviation-basemap'
+import { formatTrafficAltitude } from '@/lib/traffic/altitude'
 import type { ProjectionResult } from '@/types/projection-intelligence'
+import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
 import type {
   AircraftTrajectory,
@@ -79,9 +80,7 @@ export function TrafficMap({
 }: TrafficMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  const markersRef = useRef<Map<string, AircraftMarkerRecord>>(
-    new Map()
-  )
+  const markersRef = useRef<Map<string, AircraftMarkerRecord>>(new Map())
   const onSelectAircraftRef = useRef(onSelectAircraft)
 
   useEffect(() => {
@@ -89,30 +88,25 @@ export function TrafficMap({
   }, [onSelectAircraft])
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) {
-      return
-    }
+    if (!mapContainerRef.current || mapRef.current) return
 
     const markers = markersRef.current
-
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://demotiles.maplibre.org/style.json',
-      center: [0, 20],
-      zoom: 0.8,
+      style: aviationBasemap.styleURL,
+      center: aviationMapView.worldCenter,
+      zoom: aviationMapView.worldZoom,
     })
 
     map.addControl(
-      new maplibregl.NavigationControl(),
+      new maplibregl.NavigationControl({ showCompass: true }),
       'top-right'
     )
+    map.addControl(new maplibregl.FullscreenControl(), 'top-right')
     mapRef.current = map
 
     return () => {
-      for (const record of markers.values()) {
-        record.marker.remove()
-      }
-
+      for (const record of markers.values()) record.marker.remove()
       markers.clear()
       map.remove()
       mapRef.current = null
@@ -122,16 +116,13 @@ export function TrafficMap({
   useEffect(() => {
     const map = mapRef.current
     const view = buildRegionView(region)
-
-    if (!map || !view) {
-      return
-    }
+    if (!map || !view) return
 
     const focusSelectedRegion = () => {
       if (view.isWorld) {
         map.easeTo({
-          center: [0, 20],
-          zoom: 0.8,
+          center: aviationMapView.worldCenter,
+          zoom: aviationMapView.worldZoom,
           bearing: 0,
           pitch: 0,
           duration: 900,
@@ -145,14 +136,9 @@ export function TrafficMap({
           [view.bounds.east, view.bounds.north],
         ],
         {
-          padding: {
-            top: 56,
-            right: 56,
-            bottom: 56,
-            left: 56,
-          },
+          padding: { top: 56, right: 56, bottom: 56, left: 56 },
           duration: 900,
-          maxZoom: 7,
+          maxZoom: aviationMapView.maxRegionalZoom,
         }
       )
     }
@@ -163,7 +149,6 @@ export function TrafficMap({
     }
 
     map.once('load', focusSelectedRegion)
-
     return () => {
       map.off('load', focusSelectedRegion)
     }
@@ -171,22 +156,15 @@ export function TrafficMap({
 
   useEffect(() => {
     const map = mapRef.current
-
-    if (!map) {
-      return
-    }
+    if (!map) return
 
     const updateTrajectory = () => {
       ensureTrajectoryLayers(map)
-
-      const featureCollection =
-        buildTrajectoryFeatureCollection(trajectory)
+      const featureCollection = buildTrajectoryFeatureCollection(trajectory)
       const source = map.getSource(
         trajectorySourceID
       ) as maplibregl.GeoJSONSource | undefined
-
       source?.setData(featureCollection)
-
       if (featureCollection.features.length > 0) {
         focusTrajectory(map, featureCollection)
       }
@@ -198,7 +176,6 @@ export function TrafficMap({
     }
 
     map.once('load', updateTrajectory)
-
     return () => {
       map.off('load', updateTrajectory)
     }
@@ -210,10 +187,16 @@ export function TrafficMap({
 
     const updateProjection = () => {
       ensureProjectionLayers(map)
-      const featureCollection = buildProjectionFeatureCollection(projection?.points)
-      const source = map.getSource(projectionSourceID) as maplibregl.GeoJSONSource | undefined
+      const featureCollection = buildProjectionFeatureCollection(
+        projection?.points
+      )
+      const source = map.getSource(
+        projectionSourceID
+      ) as maplibregl.GeoJSONSource | undefined
       source?.setData(featureCollection)
-      if (featureCollection.features.length > 0) focusProjection(map, featureCollection)
+      if (featureCollection.features.length > 0) {
+        focusProjection(map, featureCollection)
+      }
     }
 
     if (map.loaded()) {
@@ -222,33 +205,26 @@ export function TrafficMap({
     }
 
     map.once('load', updateProjection)
-    return () => { map.off('load', updateProjection) }
+    return () => {
+      map.off('load', updateProjection)
+    }
   }, [projection])
 
   useEffect(() => {
     const map = mapRef.current
-
-    if (!map) {
-      return
-    }
+    if (!map) return
 
     const normalizedSelectedICAO24 =
       selectedAircraftICAO24?.trim().toLowerCase() ?? null
     const nextAircraftKeys = new Set<string>()
 
     for (const item of aircraft) {
-      if (!hasValidCoordinates(item)) {
-        continue
-      }
+      if (!hasValidCoordinates(item)) continue
 
       const key = item.icao24.trim().toLowerCase()
-
-      if (!key) {
-        continue
-      }
+      if (!key) continue
 
       nextAircraftKeys.add(key)
-
       const existingRecord = markersRef.current.get(key)
       const isSelected = key === normalizedSelectedICAO24
 
@@ -257,48 +233,137 @@ export function TrafficMap({
         continue
       }
 
-      const nextRecord = createMarkerRecord(
-        item,
-        isSelected,
-        icao24 => {
-          onSelectAircraftRef.current(icao24)
-        }
-      )
+      const nextRecord = createMarkerRecord(item, isSelected, icao24 => {
+        onSelectAircraftRef.current(icao24)
+      })
       nextRecord.marker.addTo(map)
       markersRef.current.set(key, nextRecord)
     }
 
     for (const [key, record] of markersRef.current.entries()) {
-      if (nextAircraftKeys.has(key)) {
-        continue
-      }
-
+      if (nextAircraftKeys.has(key)) continue
       record.marker.remove()
       markersRef.current.delete(key)
     }
   }, [aircraft, selectedAircraftICAO24])
 
-  return <div className='relative'>
-    <div className='h-[600px] w-full overflow-hidden rounded-xl' ref={mapContainerRef} aria-label={`Current traffic map focused on ${region.name}`} data-region-code={region.code}/>
-    {projection?.points.length?<div className='pointer-events-none absolute bottom-3 left-3 rounded-lg border border-violet-300/30 bg-slate-950/90 px-3 py-2 text-xs text-slate-200 shadow-xl'><p><span className='mr-2 inline-block h-0.5 w-5 border-t-2 border-dashed border-violet-300 align-middle'/>Projected path</p><p className='mt-1'><span className='mr-2 inline-block h-3 w-5 rounded border border-violet-300/50 bg-violet-400/20 align-middle'/>Horizontal uncertainty</p></div>:null}
-  </div>
+  return (
+    <div className='relative'>
+      <div
+        className='h-[600px] w-full overflow-hidden rounded-xl border border-slate-700/70 bg-slate-950 shadow-2xl'
+        ref={mapContainerRef}
+        aria-label={`Current traffic map focused on ${region.name}`}
+        data-region-code={region.code}
+        data-basemap-provider={aviationBasemap.provider}
+      />
+      <div className='pointer-events-none absolute left-3 top-3 rounded-full border border-slate-600/70 bg-slate-950/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300 shadow-xl backdrop-blur-md'>
+        {region.name} · {aviationBasemap.provider}
+      </div>
+      {projection?.points.length ? (
+        <div className='pointer-events-none absolute bottom-3 left-3 rounded-lg border border-violet-300/30 bg-slate-950/90 px-3 py-2 text-xs text-slate-200 shadow-xl backdrop-blur-md'>
+          <p>
+            <span className='mr-2 inline-block h-0.5 w-5 border-t-2 border-dashed border-violet-300 align-middle' />
+            Projected path
+          </p>
+          <p className='mt-1'>
+            <span className='mr-2 inline-block h-3 w-5 rounded border border-violet-300/50 bg-violet-400/20 align-middle' />
+            Horizontal uncertainty
+          </p>
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
-function ensureProjectionLayers(map:maplibregl.Map){
-  if(!map.getSource(projectionSourceID))map.addSource(projectionSourceID,{type:'geojson',data:emptyProjectionFeatureCollection()})
-  if(!map.getLayer(projectionLayerIDs.uncertainty))map.addLayer({id:projectionLayerIDs.uncertainty,type:'fill',source:projectionSourceID,filter:['==',['get','kind'],'uncertainty'],paint:{'fill-color':'#a78bfa','fill-opacity':['interpolate',['linear'],['get','confidence'],0,0.08,1,0.22],'fill-outline-color':'#c4b5fd'}})
-  if(!map.getLayer(projectionLayerIDs.line))map.addLayer({id:projectionLayerIDs.line,type:'line',source:projectionSourceID,filter:['==',['get','kind'],'projection-line'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#c4b5fd','line-width':4,'line-opacity':0.95,'line-dasharray':[1.5,1.5]}})
-  if(!map.getLayer(projectionLayerIDs.points))map.addLayer({id:projectionLayerIDs.points,type:'circle',source:projectionSourceID,filter:['==',['get','kind'],'projection-point'],paint:{'circle-radius':5,'circle-color':'#ddd6fe','circle-stroke-color':'#6d28d9','circle-stroke-width':2,'circle-opacity':0.95}})
-}
-
-function focusProjection(map:maplibregl.Map,featureCollection:ProjectionFeatureCollection){
-  const bounds=new maplibregl.LngLatBounds();let count=0
-  for(const feature of featureCollection.features){
-    if(feature.geometry.type==='Point'){bounds.extend(feature.geometry.coordinates);count++}
-    if(feature.geometry.type==='LineString')for(const coordinate of feature.geometry.coordinates){bounds.extend(coordinate);count++}
+function ensureProjectionLayers(map: maplibregl.Map) {
+  if (!map.getSource(projectionSourceID)) {
+    map.addSource(projectionSourceID, {
+      type: 'geojson',
+      data: emptyProjectionFeatureCollection(),
+    })
   }
-  if(count===0)return
-  map.fitBounds(bounds,{padding:{top:72,right:72,bottom:72,left:72},duration:700,maxZoom:9})
+
+  if (!map.getLayer(projectionLayerIDs.uncertainty)) {
+    map.addLayer({
+      id: projectionLayerIDs.uncertainty,
+      type: 'fill',
+      source: projectionSourceID,
+      filter: ['==', ['get', 'kind'], 'uncertainty'],
+      paint: {
+        'fill-color': '#a78bfa',
+        'fill-opacity': [
+          'interpolate',
+          ['linear'],
+          ['get', 'confidence'],
+          0,
+          0.08,
+          1,
+          0.22,
+        ],
+        'fill-outline-color': '#c4b5fd',
+      },
+    })
+  }
+
+  if (!map.getLayer(projectionLayerIDs.line)) {
+    map.addLayer({
+      id: projectionLayerIDs.line,
+      type: 'line',
+      source: projectionSourceID,
+      filter: ['==', ['get', 'kind'], 'projection-line'],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': '#c4b5fd',
+        'line-width': 4,
+        'line-opacity': 0.95,
+        'line-dasharray': [1.5, 1.5],
+      },
+    })
+  }
+
+  if (!map.getLayer(projectionLayerIDs.points)) {
+    map.addLayer({
+      id: projectionLayerIDs.points,
+      type: 'circle',
+      source: projectionSourceID,
+      filter: ['==', ['get', 'kind'], 'projection-point'],
+      paint: {
+        'circle-radius': 5,
+        'circle-color': '#ddd6fe',
+        'circle-stroke-color': '#6d28d9',
+        'circle-stroke-width': 2,
+        'circle-opacity': 0.95,
+      },
+    })
+  }
+}
+
+function focusProjection(
+  map: maplibregl.Map,
+  featureCollection: ProjectionFeatureCollection
+) {
+  const bounds = new maplibregl.LngLatBounds()
+  let count = 0
+
+  for (const feature of featureCollection.features) {
+    if (feature.geometry.type === 'Point') {
+      bounds.extend(feature.geometry.coordinates)
+      count++
+    }
+    if (feature.geometry.type === 'LineString') {
+      for (const coordinate of feature.geometry.coordinates) {
+        bounds.extend(coordinate)
+        count++
+      }
+    }
+  }
+
+  if (count === 0) return
+  map.fitBounds(bounds, {
+    padding: { top: 72, right: 72, bottom: 72, left: 72 },
+    duration: 700,
+    maxZoom: aviationMapView.maxEvidenceZoom,
+  })
 }
 
 function ensureTrajectoryLayers(map: maplibregl.Map) {
@@ -356,28 +421,19 @@ function addTrajectoryLayer(
   width: number,
   opacity: number
 ) {
-  if (map.getLayer(layerID)) {
-    return
-  }
+  if (map.getLayer(layerID)) return
 
   map.addLayer({
     id: layerID,
     type: 'line',
     source: trajectorySourceID,
     filter: ['==', ['get', 'status'], status],
-    layout: {
-      'line-cap': 'round',
-      'line-join': 'round',
-    },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
       'line-color': color,
       'line-width': width,
       'line-opacity': opacity,
-      ...(dashArray
-        ? {
-            'line-dasharray': dashArray,
-          }
-        : {}),
+      ...(dashArray ? { 'line-dasharray': dashArray } : {}),
     },
   })
 }
@@ -385,9 +441,7 @@ function addTrajectoryLayer(
 function buildTrajectoryFeatureCollection(
   trajectory: AircraftTrajectory | undefined
 ): TrajectoryFeatureCollection {
-  if (!trajectory) {
-    return emptyTrajectoryFeatureCollection()
-  }
+  if (!trajectory) return emptyTrajectoryFeatureCollection()
 
   const features = [...trajectory.segments]
     .sort(
@@ -412,26 +466,17 @@ function buildTrajectoryFeatureCollection(
       geometry: {
         type: 'LineString',
         coordinates: [
-          [
-            segment.start_longitude,
-            segment.start_latitude,
-          ],
+          [segment.start_longitude, segment.start_latitude],
           [segment.end_longitude, segment.end_latitude],
         ],
       },
     }))
 
-  return {
-    type: 'FeatureCollection',
-    features,
-  }
+  return { type: 'FeatureCollection', features }
 }
 
 function emptyTrajectoryFeatureCollection(): TrajectoryFeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: [],
-  }
+  return { type: 'FeatureCollection', features: [] }
 }
 
 function focusTrajectory(
@@ -448,19 +493,11 @@ function focusTrajectory(
     }
   }
 
-  if (coordinateCount === 0) {
-    return
-  }
-
+  if (coordinateCount === 0) return
   map.fitBounds(bounds, {
-    padding: {
-      top: 72,
-      right: 72,
-      bottom: 72,
-      left: 72,
-    },
+    padding: { top: 72, right: 72, bottom: 72, left: 72 },
     duration: 700,
-    maxZoom: 9,
+    maxZoom: aviationMapView.maxEvidenceZoom,
   })
 }
 
@@ -471,9 +508,7 @@ function createMarkerRecord(
 ): AircraftMarkerRecord {
   const root = document.createElement('button')
   root.type = 'button'
-  root.addEventListener('click', () => {
-    onSelectAircraft(item.icao24)
-  })
+  root.addEventListener('click', () => onSelectAircraft(item.icao24))
   root.setAttribute(
     'aria-label',
     `Open aircraft details for ${displayAircraftName(item)}`
@@ -486,7 +521,6 @@ function createMarkerRecord(
   icon.style.lineHeight = '1'
 
   const label = document.createElement('span')
-
   root.append(icon, label)
 
   const popup = new maplibregl.Popup({
@@ -496,9 +530,7 @@ function createMarkerRecord(
     offset: 28,
   })
 
-  const marker = new maplibregl.Marker({
-    element: root,
-  })
+  const marker = new maplibregl.Marker({ element: root })
     .setLngLat([item.longitude, item.latitude])
     .setPopup(popup)
 
@@ -509,9 +541,7 @@ function createMarkerRecord(
     icon,
     label,
   }
-
   updateMarkerRecord(record, item, isSelected)
-
   return record
 }
 
@@ -526,10 +556,7 @@ function updateMarkerRecord(
     'aria-label',
     `Open aircraft details for ${name}`
   )
-  record.root.setAttribute(
-    'aria-pressed',
-    isSelected ? 'true' : 'false'
-  )
+  record.root.setAttribute('aria-pressed', isSelected ? 'true' : 'false')
   record.root.className = isSelected
     ? 'flex items-center gap-2 rounded-full border border-amber-300 bg-amber-300 px-3 py-1 text-xs font-semibold text-slate-950 shadow-2xl ring-4 ring-amber-300/25'
     : 'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
@@ -546,20 +573,17 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
   container.style.width = '260px'
   container.style.maxWidth = '260px'
   container.style.padding = '14px'
-  container.style.border =
-    '1px solid rgba(56, 189, 248, 0.45)'
+  container.style.border = '1px solid rgba(56, 189, 248, 0.45)'
   container.style.borderRadius = '14px'
   container.style.background = 'rgba(15, 23, 42, 0.98)'
   container.style.color = '#e5e7eb'
   container.style.fontFamily = 'Arial, Helvetica, sans-serif'
   container.style.fontSize = '13px'
   container.style.lineHeight = '1.55'
-  container.style.boxShadow =
-    '0 18px 45px rgba(0, 0, 0, 0.55)'
+  container.style.boxShadow = '0 18px 45px rgba(0, 0, 0, 0.55)'
 
   const title = document.createElement('div')
-  title.textContent =
-    item.callsign.trim() || 'Unknown callsign'
+  title.textContent = item.callsign.trim() || 'Unknown callsign'
   title.style.fontSize = '16px'
   title.style.fontWeight = '700'
   title.style.color = '#38bdf8'
@@ -571,11 +595,7 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
 
   appendDetail(details, 'ICAO24', item.icao24)
   appendDetail(details, 'Airline', item.airline || 'Unknown')
-  appendDetail(
-    details,
-    'Aircraft',
-    item.aircraft_model || 'Unknown'
-  )
+  appendDetail(details, 'Aircraft', item.aircraft_model || 'Unknown')
   appendDetail(details, 'Altitude', formatTrafficAltitude(item))
   appendDetail(details, 'Speed', `${item.velocity_mps} m/s`)
   appendDetail(
@@ -588,24 +608,16 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
     'Status',
     item.on_ground ? 'On ground' : 'In air'
   )
-  appendDetail(
-    details,
-    'Country',
-    item.origin_country || 'Unknown'
-  )
+  appendDetail(details, 'Country', item.origin_country || 'Unknown')
 
   const observedAt = document.createElement('div')
-  observedAt.textContent = `Observed: ${formatObservedAt(
-    item.observed_at
-  )}`
+  observedAt.textContent = `Observed: ${formatObservedAt(item.observed_at)}`
   observedAt.style.marginTop = '10px'
-  observedAt.style.borderTop =
-    '1px solid rgba(148, 163, 184, 0.25)'
+  observedAt.style.borderTop = '1px solid rgba(148, 163, 184, 0.25)'
   observedAt.style.paddingTop = '8px'
   observedAt.style.color = '#94a3b8'
 
   container.append(title, details, observedAt)
-
   return container
 }
 
@@ -616,10 +628,8 @@ function appendDetail(
 ) {
   const row = document.createElement('div')
   const labelElement = document.createElement('span')
-
   labelElement.textContent = `${label}: `
   labelElement.style.color = '#94a3b8'
-
   row.append(labelElement, document.createTextNode(value))
   container.appendChild(row)
 }
@@ -662,19 +672,12 @@ function hasValidSegmentCoordinates(
 }
 
 function normalizeHeading(headingDegrees: number): number {
-  if (!Number.isFinite(headingDegrees)) {
-    return 0
-  }
-
+  if (!Number.isFinite(headingDegrees)) return 0
   return ((headingDegrees % 360) + 360) % 360
 }
 
 function formatObservedAt(observedAt: string): string {
   const date = new Date(observedAt)
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Unknown'
-  }
-
+  if (Number.isNaN(date.getTime())) return 'Unknown'
   return date.toLocaleString()
 }
