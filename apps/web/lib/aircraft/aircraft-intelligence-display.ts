@@ -38,6 +38,7 @@ function buildObservedFields(aircraft: TrafficAircraft): AircraftIntelligenceFie
   const fields: Array<AircraftIntelligenceField | null> = [
     field('callsign', 'Callsign', clean(aircraft.callsign), 'observed'),
     field('status', 'Status', aircraft.on_ground ? 'On ground' : 'In air', 'observed'),
+    field('altitude', 'Altitude', formatAltitude(aircraft), 'observed'),
     field('speed', 'Speed', formatSpeed(aircraft.velocity_mps), 'observed'),
     field('heading', 'Heading', formatHeading(aircraft.heading_degrees), 'observed'),
     field('country', 'Origin country', clean(aircraft.origin_country), 'observed'),
@@ -73,6 +74,23 @@ function field(
 
 function clean(value: string | undefined): string {
   return value?.trim() ?? ''
+}
+
+function formatAltitude(aircraft: TrafficAircraft): string {
+  if (aircraft.altitude_status === 'ground') return 'Ground (0 m)'
+
+  if (
+    aircraft.altitude_status !== 'observed' ||
+    aircraft.altitude_m === null ||
+    !Number.isFinite(aircraft.altitude_m)
+  ) {
+    return ''
+  }
+
+  const rounded = Math.round(aircraft.altitude_m).toLocaleString('en-US')
+  if (aircraft.altitude_source === 'geometric') return `${rounded} m (geometric)`
+  if (aircraft.altitude_source === 'barometric') return `${rounded} m (barometric)`
+  return `${rounded} m`
 }
 
 function formatSpeed(value: number): string {
