@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	integrationcommon "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/common"
 )
+
+const adsbLOLContactURL = "https://github.com/AsifAbbasov/global-flight-analytics"
 
 func (c *Client) newRequest(
 	ctx context.Context,
@@ -31,8 +34,17 @@ func (c *Client) newRequest(
 
 	request.Header.Set(
 		integrationcommon.HeaderUserAgent,
-		c.userAgent,
+		identifiedUserAgent(c.userAgent),
 	)
 
 	return request, nil
+}
+
+func identifiedUserAgent(userAgent string) string {
+	trimmed := strings.TrimSpace(userAgent)
+	if strings.Contains(trimmed, adsbLOLContactURL) {
+		return trimmed
+	}
+
+	return fmt.Sprintf("%s (+%s)", trimmed, adsbLOLContactURL)
 }
