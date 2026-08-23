@@ -84,8 +84,8 @@ require_literal README.md 'RETAINED_SCREENSHOT_EVIDENCE=CLOSED' \
   'README retained screenshot evidence marker is missing'
 require_literal README.md 'PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING' \
   'README pixel-golden decision boundary is missing'
-require_literal README.md 'DOCUMENT_INDEX_194_196=OPEN_GOVERNANCE_DEBT' \
-  'README document index governance debt boundary is missing'
+require_literal README.md 'DOCUMENT_INDEX_194_196=CLOSED' \
+  'README document index reconciliation closure marker is missing'
 require_literal README.md 'FINAL_EXACT_PRODUCTION_VALIDATION=OPEN' \
   'README final exact-production validation boundary is missing'
 require_literal README.md 'V1_RELEASE=OPEN' \
@@ -208,6 +208,12 @@ require_literal docs/DOCUMENT_INDEX.md '## Document 169 — Release Truth and De
   'Document 169 index entry is missing'
 require_literal docs/DOCUMENT_INDEX.md '## Document 170 — Production Observability and Alerting Closure' \
   'Document 170 index entry is missing'
+require_literal docs/DOCUMENT_INDEX.md '## Document 194 — Free-Tier Production Infrastructure Budget' \
+  'Document 194 index entry is missing'
+require_literal docs/DOCUMENT_INDEX.md '## Document 195 — Frontend Product Closure' \
+  'Document 195 index entry is missing'
+require_literal docs/DOCUMENT_INDEX.md '## Document 196 — Frontend Visual Polish V2 Closure' \
+  'Document 196 index entry is missing'
 
 require_literal docs/195_FRONTEND_PRODUCT_CLOSURE.md 'FRONTEND_VISUAL_POLISH_V2=CLOSED' \
   'Document 195 does not reconcile the closed visual polish v2 increment'
