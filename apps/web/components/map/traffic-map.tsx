@@ -88,9 +88,7 @@ export function TrafficMap({
   }, [onSelectAircraft])
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) {
-      return
-    }
+    if (!mapContainerRef.current || mapRef.current) return
 
     const markers = markersRef.current
     const map = new maplibregl.Map({
@@ -98,7 +96,6 @@ export function TrafficMap({
       style: aviationBasemap.styleURL,
       center: aviationMapView.worldCenter,
       zoom: aviationMapView.worldZoom,
-      attributionControl: true,
     })
 
     map.addControl(
@@ -109,10 +106,7 @@ export function TrafficMap({
     mapRef.current = map
 
     return () => {
-      for (const record of markers.values()) {
-        record.marker.remove()
-      }
-
+      for (const record of markers.values()) record.marker.remove()
       markers.clear()
       map.remove()
       mapRef.current = null
@@ -122,10 +116,7 @@ export function TrafficMap({
   useEffect(() => {
     const map = mapRef.current
     const view = buildRegionView(region)
-
-    if (!map || !view) {
-      return
-    }
+    if (!map || !view) return
 
     const focusSelectedRegion = () => {
       if (view.isWorld) {
@@ -145,12 +136,7 @@ export function TrafficMap({
           [view.bounds.east, view.bounds.north],
         ],
         {
-          padding: {
-            top: 56,
-            right: 56,
-            bottom: 56,
-            left: 56,
-          },
+          padding: { top: 56, right: 56, bottom: 56, left: 56 },
           duration: 900,
           maxZoom: aviationMapView.maxRegionalZoom,
         }
@@ -163,29 +149,20 @@ export function TrafficMap({
     }
 
     map.once('load', focusSelectedRegion)
-
-    return () => {
-      map.off('load', focusSelectedRegion)
-    }
+    return () => map.off('load', focusSelectedRegion)
   }, [region])
 
   useEffect(() => {
     const map = mapRef.current
-
-    if (!map) {
-      return
-    }
+    if (!map) return
 
     const updateTrajectory = () => {
       ensureTrajectoryLayers(map)
-
       const featureCollection = buildTrajectoryFeatureCollection(trajectory)
       const source = map.getSource(
         trajectorySourceID
       ) as maplibregl.GeoJSONSource | undefined
-
       source?.setData(featureCollection)
-
       if (featureCollection.features.length > 0) {
         focusTrajectory(map, featureCollection)
       }
@@ -197,18 +174,12 @@ export function TrafficMap({
     }
 
     map.once('load', updateTrajectory)
-
-    return () => {
-      map.off('load', updateTrajectory)
-    }
+    return () => map.off('load', updateTrajectory)
   }, [trajectory])
 
   useEffect(() => {
     const map = mapRef.current
-
-    if (!map) {
-      return
-    }
+    if (!map) return
 
     const updateProjection = () => {
       ensureProjectionLayers(map)
@@ -218,9 +189,7 @@ export function TrafficMap({
       const source = map.getSource(
         projectionSourceID
       ) as maplibregl.GeoJSONSource | undefined
-
       source?.setData(featureCollection)
-
       if (featureCollection.features.length > 0) {
         focusProjection(map, featureCollection)
       }
@@ -232,36 +201,24 @@ export function TrafficMap({
     }
 
     map.once('load', updateProjection)
-
-    return () => {
-      map.off('load', updateProjection)
-    }
+    return () => map.off('load', updateProjection)
   }, [projection])
 
   useEffect(() => {
     const map = mapRef.current
-
-    if (!map) {
-      return
-    }
+    if (!map) return
 
     const normalizedSelectedICAO24 =
       selectedAircraftICAO24?.trim().toLowerCase() ?? null
     const nextAircraftKeys = new Set<string>()
 
     for (const item of aircraft) {
-      if (!hasValidCoordinates(item)) {
-        continue
-      }
+      if (!hasValidCoordinates(item)) continue
 
       const key = item.icao24.trim().toLowerCase()
-
-      if (!key) {
-        continue
-      }
+      if (!key) continue
 
       nextAircraftKeys.add(key)
-
       const existingRecord = markersRef.current.get(key)
       const isSelected = key === normalizedSelectedICAO24
 
@@ -278,10 +235,7 @@ export function TrafficMap({
     }
 
     for (const [key, record] of markersRef.current.entries()) {
-      if (nextAircraftKeys.has(key)) {
-        continue
-      }
-
+      if (nextAircraftKeys.has(key)) continue
       record.marker.remove()
       markersRef.current.delete(key)
     }
@@ -351,10 +305,7 @@ function ensureProjectionLayers(map: maplibregl.Map) {
       type: 'line',
       source: projectionSourceID,
       filter: ['==', ['get', 'kind'], 'projection-line'],
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': '#c4b5fd',
         'line-width': 4,
@@ -393,7 +344,6 @@ function focusProjection(
       bounds.extend(feature.geometry.coordinates)
       count++
     }
-
     if (feature.geometry.type === 'LineString') {
       for (const coordinate of feature.geometry.coordinates) {
         bounds.extend(coordinate)
@@ -402,17 +352,9 @@ function focusProjection(
     }
   }
 
-  if (count === 0) {
-    return
-  }
-
+  if (count === 0) return
   map.fitBounds(bounds, {
-    padding: {
-      top: 72,
-      right: 72,
-      bottom: 72,
-      left: 72,
-    },
+    padding: { top: 72, right: 72, bottom: 72, left: 72 },
     duration: 700,
     maxZoom: aviationMapView.maxEvidenceZoom,
   })
@@ -473,28 +415,19 @@ function addTrajectoryLayer(
   width: number,
   opacity: number
 ) {
-  if (map.getLayer(layerID)) {
-    return
-  }
+  if (map.getLayer(layerID)) return
 
   map.addLayer({
     id: layerID,
     type: 'line',
     source: trajectorySourceID,
     filter: ['==', ['get', 'status'], status],
-    layout: {
-      'line-cap': 'round',
-      'line-join': 'round',
-    },
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
       'line-color': color,
       'line-width': width,
       'line-opacity': opacity,
-      ...(dashArray
-        ? {
-            'line-dasharray': dashArray,
-          }
-        : {}),
+      ...(dashArray ? { 'line-dasharray': dashArray } : {}),
     },
   })
 }
@@ -502,9 +435,7 @@ function addTrajectoryLayer(
 function buildTrajectoryFeatureCollection(
   trajectory: AircraftTrajectory | undefined
 ): TrajectoryFeatureCollection {
-  if (!trajectory) {
-    return emptyTrajectoryFeatureCollection()
-  }
+  if (!trajectory) return emptyTrajectoryFeatureCollection()
 
   const features = [...trajectory.segments]
     .sort(
@@ -535,17 +466,11 @@ function buildTrajectoryFeatureCollection(
       },
     }))
 
-  return {
-    type: 'FeatureCollection',
-    features,
-  }
+  return { type: 'FeatureCollection', features }
 }
 
 function emptyTrajectoryFeatureCollection(): TrajectoryFeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: [],
-  }
+  return { type: 'FeatureCollection', features: [] }
 }
 
 function focusTrajectory(
@@ -562,17 +487,9 @@ function focusTrajectory(
     }
   }
 
-  if (coordinateCount === 0) {
-    return
-  }
-
+  if (coordinateCount === 0) return
   map.fitBounds(bounds, {
-    padding: {
-      top: 72,
-      right: 72,
-      bottom: 72,
-      left: 72,
-    },
+    padding: { top: 72, right: 72, bottom: 72, left: 72 },
     duration: 700,
     maxZoom: aviationMapView.maxEvidenceZoom,
   })
@@ -585,9 +502,7 @@ function createMarkerRecord(
 ): AircraftMarkerRecord {
   const root = document.createElement('button')
   root.type = 'button'
-  root.addEventListener('click', () => {
-    onSelectAircraft(item.icao24)
-  })
+  root.addEventListener('click', () => onSelectAircraft(item.icao24))
   root.setAttribute(
     'aria-label',
     `Open aircraft details for ${displayAircraftName(item)}`
@@ -620,9 +535,7 @@ function createMarkerRecord(
     icon,
     label,
   }
-
   updateMarkerRecord(record, item, isSelected)
-
   return record
 }
 
@@ -637,10 +550,7 @@ function updateMarkerRecord(
     'aria-label',
     `Open aircraft details for ${name}`
   )
-  record.root.setAttribute(
-    'aria-pressed',
-    isSelected ? 'true' : 'false'
-  )
+  record.root.setAttribute('aria-pressed', isSelected ? 'true' : 'false')
   record.root.className = isSelected
     ? 'flex items-center gap-2 rounded-full border border-amber-300 bg-amber-300 px-3 py-1 text-xs font-semibold text-slate-950 shadow-2xl ring-4 ring-amber-300/25'
     : 'flex items-center gap-2 rounded-full border border-sky-400/40 bg-slate-950/95 px-3 py-1 text-xs font-semibold text-white shadow-xl'
@@ -702,7 +612,6 @@ function createPopupContent(item: TrafficAircraft): HTMLElement {
   observedAt.style.color = '#94a3b8'
 
   container.append(title, details, observedAt)
-
   return container
 }
 
@@ -713,10 +622,8 @@ function appendDetail(
 ) {
   const row = document.createElement('div')
   const labelElement = document.createElement('span')
-
   labelElement.textContent = `${label}: `
   labelElement.style.color = '#94a3b8'
-
   row.append(labelElement, document.createTextNode(value))
   container.appendChild(row)
 }
@@ -759,19 +666,12 @@ function hasValidSegmentCoordinates(
 }
 
 function normalizeHeading(headingDegrees: number): number {
-  if (!Number.isFinite(headingDegrees)) {
-    return 0
-  }
-
+  if (!Number.isFinite(headingDegrees)) return 0
   return ((headingDegrees % 360) + 360) % 360
 }
 
 function formatObservedAt(observedAt: string): string {
   const date = new Date(observedAt)
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Unknown'
-  }
-
+  if (Number.isNaN(date.getTime())) return 'Unknown'
   return date.toLocaleString()
 }
