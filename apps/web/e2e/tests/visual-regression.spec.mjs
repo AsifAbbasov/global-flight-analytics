@@ -29,6 +29,14 @@ test('desktop map-first section order and width remain structurally stable', asy
     name: 'Compare persisted analytical evidence',
   })
 
+  // The page is intentionally hydrated after the initial document response.
+  // Wait for the semantic product surfaces before measuring geometry so the
+  // visual contract validates layout rather than racing React hydration.
+  await expect(liveHeading).toBeVisible()
+  await expect(overviewHeading).toBeVisible()
+  await expect(airport).toBeVisible()
+  await expect(historical).toBeVisible()
+
   const liveBox = await liveHeading.boundingBox()
   const overviewBox = await overviewHeading.boundingBox()
   const airportBox = await airport.boundingBox()
