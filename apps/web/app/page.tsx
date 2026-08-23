@@ -56,6 +56,27 @@ export default async function Home() {
         initialError={initialError}
         regionsWarning={regionsWarning}
       />
+      <p className='mx-auto mt-6 max-w-7xl px-4 pb-6 text-xs text-slate-500 sm:px-6 lg:px-8'>
+        Traffic data may include{' '}
+        <a
+          className='underline decoration-slate-600 underline-offset-2 hover:text-slate-300'
+          href='https://adsb.lol/'
+          rel='noreferrer'
+          target='_blank'
+        >
+          ADSB.lol
+        </a>{' '}
+        data, licensed under the{' '}
+        <a
+          className='underline decoration-slate-600 underline-offset-2 hover:text-slate-300'
+          href='https://opendatacommons.org/licenses/odbl/'
+          rel='noreferrer'
+          target='_blank'
+        >
+          ODbL
+        </a>
+        .
+      </p>
     </ApplicationShell>
   )
 }
