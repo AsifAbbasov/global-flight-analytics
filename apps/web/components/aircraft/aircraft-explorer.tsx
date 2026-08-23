@@ -4,6 +4,7 @@ import { useMemo, useState, type ChangeEvent } from 'react'
 
 import {
   buildAircraftExplorerModel,
+  type AircraftExplorerMotionFilter,
   type AircraftExplorerSort,
 } from '@/lib/traffic/aircraft-explorer-model'
 import type { TrafficAircraft } from '@/types/traffic'
@@ -25,16 +26,29 @@ export function AircraftExplorer({
 }: AircraftExplorerProps) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<AircraftExplorerSort>('recent')
+  const [motion, setMotion] = useState<AircraftExplorerMotionFilter>('all')
+  const [requireAltitudeEvidence, setRequireAltitudeEvidence] = useState(false)
 
   const model = useMemo(
     () =>
       buildAircraftExplorerModel(aircraft, {
         query,
         sort,
+        motion,
+        requireAltitudeEvidence,
         limit: visibleAircraftLimit,
       }),
-    [aircraft, query, sort]
+    [aircraft, query, sort, motion, requireAltitudeEvidence]
   )
+
+  const hasActiveFilters =
+    query.trim().length > 0 || motion !== 'all' || requireAltitudeEvidence
+
+  const resetFilters = () => {
+    setQuery('')
+    setMotion('all')
+    setRequireAltitudeEvidence(false)
+  }
 
   return (
     <aside
@@ -54,8 +68,8 @@ export function AircraftExplorer({
             Aircraft Explorer
           </h3>
           <p className='mt-1 text-xs leading-5 text-slate-400'>
-            Search the active regional snapshot and select an aircraft to open
-            its full intelligence record.
+            Search and filter the active regional snapshot using fields the live
+            traffic contract actually provides.
           </p>
         </div>
         {isFetching ? (
@@ -106,6 +120,62 @@ export function AircraftExplorer({
         </div>
       </div>
 
+      <div className='mt-4 rounded-lg border border-slate-800 bg-slate-900/55 p-3'>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
+          <div>
+            <p className='text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500'>
+              Motion filter
+            </p>
+            <div className='mt-2 flex flex-wrap gap-2' role='group' aria-label='Aircraft motion filter'>
+              {(
+                [
+                  ['all', 'All'],
+                  ['airborne', 'Airborne'],
+                  ['ground', 'Ground'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type='button'
+                  onClick={() => setMotion(value)}
+                  aria-pressed={motion === value}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                    motion === value
+                      ? 'border-amber-300/70 bg-amber-300/15 text-amber-100'
+                      : 'border-slate-700 bg-slate-950/70 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className='flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2 text-xs text-slate-300'>
+            <input
+              type='checkbox'
+              checked={requireAltitudeEvidence}
+              onChange={event => setRequireAltitudeEvidence(event.target.checked)}
+              className='size-4 accent-amber-300'
+            />
+            Altitude evidence only
+          </label>
+        </div>
+
+        {hasActiveFilters ? (
+          <div className='mt-3 flex items-center justify-between gap-3 border-t border-slate-800 pt-3'>
+            <span className='text-xs text-slate-500'>Filters active</span>
+            <button
+              type='button'
+              onClick={resetFilters}
+              className='rounded-md border border-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:bg-slate-800'
+            >
+              Reset filters
+            </button>
+          </div>
+        ) : null}
+      </div>
+
       <dl className='mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 xl:grid-cols-2'>
         <Summary label='Matched' value={`${model.matchedCount}/${model.totalCount}`} />
         <Summary label='Airborne' value={String(model.airborneCount)} />
@@ -130,7 +200,7 @@ export function AircraftExplorer({
                   aria-pressed={selected}
                   className={`w-full rounded-lg border p-3 text-left transition ${
                     selected
-                      ? 'border-sky-400 bg-sky-400/10'
+                      ? 'border-amber-300/70 bg-amber-300/10'
                       : 'border-slate-800 bg-slate-900/70 hover:border-slate-600 hover:bg-slate-900'
                   }`}
                 >
@@ -172,14 +242,14 @@ export function AircraftExplorer({
         <p className='mt-4 rounded-lg border border-dashed border-slate-700 p-4 text-sm leading-6 text-slate-400'>
           {aircraft.length === 0
             ? 'No aircraft are available in the current regional snapshot.'
-            : 'No aircraft match the current search.'}
+            : 'No aircraft match the current search and filters.'}
         </p>
       )}
 
       {model.matchedCount > model.displayedCount ? (
         <p className='mt-3 text-xs leading-5 text-slate-500'>
           Showing the first {model.displayedCount} matching aircraft. Refine the
-          search to narrow the result set.
+          search or filters to narrow the result set.
         </p>
       ) : null}
     </aside>
@@ -223,6 +293,8 @@ function formatAltitude(item: TrafficAircraft): string {
 }
 
 function formatSpeed(value: number): string {
+  if (!Number.isFinite(value) || value < 0) return 'Unavailable'
+
   return `${new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 0,
   }).format(value * 3.6)} km/h`
@@ -230,7 +302,7 @@ function formatSpeed(value: number): string {
 
 function formatObservedAt(value: string): string {
   const timestamp = Date.parse(value)
-  if (!Number.isFinite(timestamp)) return 'Unknown'
+  if (!Number.isFinite(timestamp)) return 'Unavailable'
 
   return new Intl.DateTimeFormat(undefined, {
     hour: '2-digit',

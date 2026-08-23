@@ -6,9 +6,13 @@ export type AircraftExplorerSort =
   | 'altitude-descending'
   | 'speed-descending'
 
+export type AircraftExplorerMotionFilter = 'all' | 'airborne' | 'ground'
+
 export interface AircraftExplorerOptions {
   query?: string
   sort?: AircraftExplorerSort
+  motion?: AircraftExplorerMotionFilter
+  requireAltitudeEvidence?: boolean
   limit?: number
 }
 
@@ -30,9 +34,16 @@ export function buildAircraftExplorerModel(
 ): AircraftExplorerModel {
   const query = normalizeSearchValue(options.query ?? '')
   const sort = options.sort ?? 'recent'
+  const motion = options.motion ?? 'all'
+  const requireAltitudeEvidence = options.requireAltitudeEvidence ?? false
   const limit = normalizeLimit(options.limit)
 
-  const matched = aircraft.filter(item => matchesQuery(item, query))
+  const matched = aircraft.filter(
+    item =>
+      matchesQuery(item, query) &&
+      matchesMotion(item, motion) &&
+      matchesAltitudeEvidence(item, requireAltitudeEvidence)
+  )
   const sorted = [...matched].sort((left, right) =>
     compareAircraft(left, right, sort)
   )
@@ -68,6 +79,29 @@ function matchesQuery(item: TrafficAircraft, query: string): boolean {
     item.airline,
     item.origin_country,
   ].some(value => normalizeSearchValue(value).includes(query))
+}
+
+function matchesMotion(
+  item: TrafficAircraft,
+  motion: AircraftExplorerMotionFilter
+): boolean {
+  if (motion === 'airborne') return !item.on_ground
+  if (motion === 'ground') return item.on_ground
+  return true
+}
+
+function matchesAltitudeEvidence(
+  item: TrafficAircraft,
+  requireAltitudeEvidence: boolean
+): boolean {
+  if (!requireAltitudeEvidence) return true
+  if (item.on_ground) return item.altitude_status === 'ground'
+
+  return (
+    item.altitude_status === 'observed' &&
+    item.altitude_m !== null &&
+    Number.isFinite(item.altitude_m)
+  )
 }
 
 function compareAircraft(
