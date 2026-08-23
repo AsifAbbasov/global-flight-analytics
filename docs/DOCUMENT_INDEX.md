@@ -1777,3 +1777,30 @@ project-conservative request budget, Airplanes.live and OpenSky access gates,
 fail-closed production contact gate, Render ingestion/runtime boundary and the
 real production evidence required before `PRODUCTION_PROVIDER_RECOVERY` can be
 closed.
+
+<!-- FREE-TIER-PRODUCTION-INFRASTRUCTURE-BUDGET:DOCUMENT-INDEX -->
+
+## Document 194 — Free-Tier Production Infrastructure Budget
+
+`194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`
+
+Records the FREE_V1 compute budget, Neon quota incident, scale-to-zero evidence,
+bounded production cadence and post-reset runtime recovery boundary.
+
+<!-- FRONTEND-PRODUCT-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 195 — Frontend Product Closure
+
+`195_FRONTEND_PRODUCT_CLOSURE.md`
+
+Records the verified frontend product closure, desktop/mobile regression evidence,
+zero-budget data boundary and separation from provider/runtime recovery.
+
+<!-- FRONTEND-VISUAL-POLISH-V2-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 196 — Frontend Visual Polish V2 Closure
+
+`196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`
+
+Records the zero-budget map-first visual polish, Flightradar24 reference boundary,
+exact-head CI and Chromium evidence, and the nonblocking pixel-golden decision.
