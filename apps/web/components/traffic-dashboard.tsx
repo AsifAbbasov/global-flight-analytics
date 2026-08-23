@@ -16,6 +16,13 @@ import { TrafficSnapshotExport } from '@/components/traffic/traffic-snapshot-exp
 import { TrafficDataQualityLens } from '@/components/traffic/traffic-data-quality-lens'
 import { RegionalTrafficBrief } from '@/components/traffic/regional-traffic-brief'
 import { getRequestErrorMessage } from '@/lib/api/client'
+import {
+  defaultMapEvidenceVisibility,
+  shouldRenderProjection,
+  shouldRenderTrajectory,
+  toggleProjectionVisibility,
+  toggleTrajectoryVisibility,
+} from '@/lib/map/map-evidence-controls'
 import { useProjectionIntelligence } from '@/lib/queries/projection-intelligence'
 import { useAircraftRouteContext } from '@/lib/queries/route-context'
 import { useProcessedRouteIntelligence } from '@/lib/queries/route-intelligence'
@@ -72,6 +79,9 @@ export function TrafficDashboard({
     useState<LiveTrafficRefreshIntervalMilliseconds>(
       defaultLiveTrafficRefreshIntervalMilliseconds
     )
+  const [mapEvidenceVisibility, setMapEvidenceVisibility] = useState(
+    defaultMapEvidenceVisibility
+  )
   const [statusNow, setStatusNow] = useState(() => Date.now())
 
   useEffect(() => {
@@ -136,6 +146,16 @@ export function TrafficDashboard({
     : trafficQuery.isPending
       ? initialError
       : null
+  const trajectoryFeatureCount = trajectoryQuery.data?.segments.length ?? 0
+  const projectionPointCount = projectionQuery.data?.projection.points.length ?? 0
+  const trajectoryVisible = shouldRenderTrajectory(
+    mapEvidenceVisibility,
+    trajectoryFeatureCount
+  )
+  const projectionVisible = shouldRenderProjection(
+    mapEvidenceVisibility,
+    projectionPointCount
+  )
 
   const selectAircraft = (icao24: string | null) => {
     onWorkspaceSelectionChange(buildTrafficWorkspaceSelection(icao24))
@@ -270,14 +290,64 @@ export function TrafficDashboard({
           discovery and the selected aircraft intelligence record.
         </p>
 
+        <div
+          className='mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/70 p-2'
+          role='group'
+          aria-label='Map evidence visibility'
+        >
+          <span className='px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500'>
+            Map evidence
+          </span>
+          <button
+            type='button'
+            aria-pressed={mapEvidenceVisibility.trajectory}
+            disabled={trajectoryFeatureCount === 0}
+            onClick={() => {
+              setMapEvidenceVisibility(current =>
+                toggleTrajectoryVisibility(current)
+              )
+            }}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              mapEvidenceVisibility.trajectory
+                ? 'border-sky-400/45 bg-sky-400/10 text-sky-100'
+                : 'border-slate-700 text-slate-400 hover:bg-slate-900'
+            }`}
+          >
+            Trail
+          </button>
+          <button
+            type='button'
+            aria-pressed={mapEvidenceVisibility.projection}
+            disabled={projectionPointCount === 0}
+            onClick={() => {
+              setMapEvidenceVisibility(current =>
+                toggleProjectionVisibility(current)
+              )
+            }}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              mapEvidenceVisibility.projection
+                ? 'border-violet-300/45 bg-violet-400/10 text-violet-100'
+                : 'border-slate-700 text-slate-400 hover:bg-slate-900'
+            }`}
+          >
+            Projection
+          </button>
+          <span className='ml-auto px-2 text-xs text-slate-500' aria-live='polite'>
+            {trajectoryVisible ? 'Trail visible' : 'Trail hidden'} ·{' '}
+            {projectionVisible ? 'Projection visible' : 'Projection hidden'}
+          </span>
+        </div>
+
         <div className='mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_480px]'>
           <div aria-busy={trafficQuery.isFetching}>
             <TrafficMap
               aircraft={traffic}
               region={selectedRegion}
               selectedAircraftICAO24={selectedAircraftICAO24}
-              trajectory={trajectoryQuery.data}
-              projection={projectionQuery.data?.projection}
+              trajectory={trajectoryVisible ? trajectoryQuery.data : undefined}
+              projection={
+                projectionVisible ? projectionQuery.data?.projection : undefined
+              }
               onSelectAircraft={selectAircraft}
             />
           </div>
