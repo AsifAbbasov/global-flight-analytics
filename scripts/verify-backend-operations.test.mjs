@@ -22,7 +22,10 @@ test('README records exact CI closure verified public deployment and the current
   assert.match(source, /FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE/)
   assert.match(source, /FRONTEND_PRODUCT_CLOSURE=CLOSED/)
   assert.match(source, /FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED/)
-  assert.match(source, /PIXEL_GOLDEN_VISUAL_REGRESSION=OPEN/)
+  assert.match(source, /FRONTEND_VISUAL_POLISH_V2=CLOSED/)
+  assert.match(source, /STRUCTURAL_VISUAL_REGRESSION=CLOSED/)
+  assert.match(source, /RETAINED_SCREENSHOT_EVIDENCE=CLOSED/)
+  assert.match(source, /PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING/)
   assert.match(source, /FINAL_EXACT_PRODUCTION_VALIDATION=OPEN/)
 })
 
