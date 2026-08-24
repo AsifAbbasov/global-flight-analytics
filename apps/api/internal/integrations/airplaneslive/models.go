@@ -2,7 +2,12 @@ package airplaneslive
 
 import "github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/readsbcompat"
 
-type StateResponse = readsbcompat.StateResponse
+type StateResponse struct {
+	Now      float64        `json:"now"`
+	Messages int            `json:"messages"`
+	Total    int            `json:"total"`
+	Aircraft []AircraftItem `json:"ac"`
+}
 
 type BarometricAltitudeKind = readsbcompat.BarometricAltitudeKind
 
