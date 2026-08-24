@@ -7,13 +7,6 @@ import (
 	"strings"
 )
 
-type StateResponse struct {
-	Now      float64        `json:"now"`
-	Messages int            `json:"messages"`
-	Total    int            `json:"total"`
-	Aircraft []AircraftItem `json:"ac"`
-}
-
 type BarometricAltitudeKind string
 
 const (
