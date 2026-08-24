@@ -1,6 +1,6 @@
 # Document 60 — Stage 14.19 Data Quality Parent Integrity
 
-Status: Implementation Baseline v1.2
+Status: Remediation History v1.3
 Project: Global Flight Analytics
 Scope: eliminate accidental orphan Data Quality Reports without losing rejected-observation evidence
 
@@ -155,3 +155,166 @@ It does not close the remaining PostgreSQL debts concerning trajectory snapshot
 consistency, Ingestion Run transitions, trajectory relational constraints, shared
 migration filename parsing, altitude precision and status semantics, timestamp
 consistency, or repository decomposition.
+
+## 9. Finding history and root cause
+
+### Finding
+
+One nullable foreign-key shape represented two incompatible states: deliberately rejected
+observations with no canonical `flight_states` row and accidental loss or absence of the
+required canonical parent.
+
+### Root cause
+
+The persistence model overloaded `NULL` as both valid domain evidence and relational
+failure. That made the application responsible for remembering which meaning applied,
+while PostgreSQL could not enforce the distinction.
+
+### Failure scenario
+
+```text
+quality result is treated as belonging to a canonical Flight State
+↓
+parent persistence fails, is skipped, or parent is later removed
+↓
+data_quality_reports still accepts a null/missing relationship
+↓
+consumer sees a canonical quality record whose durable observation cannot be proven
+```
+
+The inverse case also mattered: intentionally rejected observations still required
+quality evidence even though they were never valid canonical Flight States.
+
+### Impact
+
+The ambiguity weakened auditability, provenance, reconciliation, deletion semantics, and
+data-quality trust. Downstream analytics could not reliably distinguish `rejected before
+persistence` from `canonical parent unexpectedly absent`.
+
+### Severity rationale
+
+Historical severity was not explicitly recorded. Retrospective classification: **P1 data
+integrity/provenance** because the defect allowed canonical evidence to exist without a
+provable canonical parent while also risking loss of valid rejected-observation evidence.
+
+### Existing guarantees violated
+
+```text
+canonical derived evidence has a durable canonical parent
+rejected observations remain representable without pretending they were persisted
+referential integrity is enforced by PostgreSQL, not caller discipline
+parent deletion has explicit deterministic semantics
+```
+
+## 10. Considered and rejected alternatives
+
+### Keep one nullable table and add an application-side discriminator
+
+Rejected because PostgreSQL would still accept ambiguous states and every writer/reader
+would need to preserve the convention correctly.
+
+### Create a synthetic/sentinel Flight State for rejected observations
+
+Rejected because it would manufacture a canonical entity that never passed admission and
+would contaminate trajectory, analytics, and provenance semantics.
+
+### Preserve canonical reports after parent deletion with `ON DELETE SET NULL`
+
+Rejected because the report would outlive the only canonical entity that gives the report
+its meaning, recreating the original ambiguity.
+
+### Chosen remediation
+
+Split persisted-state reports and rejected-observation evidence into separate tables,
+make canonical parent identity non-null and foreign-key enforced, and use cascade deletion
+for derived canonical evidence.
+
+## 11. Why this solution and trade-offs
+
+The model makes invalid states unrepresentable at the database boundary instead of
+requiring application convention.
+
+Trade-offs:
+
+```text
++ explicit canonical vs rejected semantics
++ PostgreSQL-enforced parent integrity
++ rejected evidence remains durable
++ deterministic deletion behavior
+- two persistence/query paths instead of one overloaded table
+- migration must classify and move legacy nullable rows safely
+- consumers needing both evidence types must intentionally query both models
+```
+
+The additional table is justified because it removes semantic ambiguity rather than
+adding abstraction for its own sake.
+
+## 12. Adversarial review and remediation iterations
+
+### Iteration 1 — association integrity foundation
+
+Earlier backend hardening introduced typed Data Quality associations and constrained
+identity equality, but nullable parent semantics still left two meanings encoded in one
+shape.
+
+### Iteration 2 — parent-integrity challenge
+
+Review asked whether a canonical report can still exist when no durable Flight State can
+be proven. The answer was yes because `flight_state_id` remained nullable.
+
+### Iteration 3 — explicit split
+
+Implementation commit `0d3d1d37a65423ca6263df0816360eabf3c66235`
+(`fix: enforce data quality parent integrity`) introduced the separate rejected-evidence
+model and canonical non-null parent rule.
+
+### Iteration 4 — migration adversarial case
+
+Migration logic deliberately refuses to silently discard rows with no usable `state_id`.
+That fail-closed repair boundary prevents the remediation itself from hiding unclassified
+legacy corruption.
+
+## 13. Residual risks and limitations
+
+The remediation does not prove that upstream validation logic is correct; it guarantees
+where evidence is stored and how it relates to canonical persistence. Manual database
+changes can still bypass application intent if constraints are deliberately disabled.
+
+Rejected-evidence retention policy and long-term archival volume are separate operational
+concerns.
+
+## 14. Operational and deployment consequences
+
+Migration 019 must complete before code relying on the split model is considered fully
+deployed. If the migration encounters an unclassifiable legacy row, deployment should
+stop for operator repair rather than continue with silent data loss.
+
+Canonical parent deletion now removes derived canonical quality evidence by design;
+rejected evidence remains independent.
+
+## 15. Exact evidence
+
+```text
+implementation commit:
+0d3d1d37a65423ca6263df0816360eabf3c66235
+
+migration:
+019_data_quality_parent_integrity.sql
+
+regression coverage:
+internal/repository/postgres/data_quality_parent_integrity_test.go
+internal/repository/postgres/data_quality_parent_integrity_integration_test.go
+internal/repository/postgres/data_quality_association_integration_test.go
+```
+
+A historical pull-request number is not asserted because it is not preserved in the
+currently searchable evidence. The implementation commit, migration, and regression tests
+are the canonical evidence.
+
+## 16. Final canonical status
+
+```text
+FINDING_GFA_DB_003_DATA_QUALITY_PARENT_INTEGRITY=CLOSED
+CANONICAL_FINDING_DOCUMENT=docs/60_STAGE_14_19_DATA_QUALITY_PARENT_INTEGRITY.md
+IMPLEMENTATION_COMMIT=0d3d1d37a65423ca6263df0816360eabf3c66235
+```
