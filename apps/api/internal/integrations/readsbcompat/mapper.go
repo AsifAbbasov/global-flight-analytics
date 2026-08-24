@@ -10,7 +10,7 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/providerbatch"
 )
 
-const int64BoundaryFloat64 = float64(1 << 63)
+const Int64BoundaryFloat64 = float64(1 << 63)
 
 var ErrSourceNameRequired = errors.New(
 	"readsb-compatible source name is required",
@@ -47,8 +47,8 @@ func SafeUnixMilliseconds(
 	value float64,
 ) (time.Time, bool) {
 	if math.IsNaN(value) || math.IsInf(value, 0) ||
-		value < -int64BoundaryFloat64 ||
-		value >= int64BoundaryFloat64 ||
+		value < -Int64BoundaryFloat64 ||
+		value >= Int64BoundaryFloat64 ||
 		math.Trunc(value) != value {
 		return time.Time{}, false
 	}
@@ -63,7 +63,7 @@ func SafeSeenDuration(
 	}
 	nanoseconds := value.Value * float64(time.Second)
 	if math.IsNaN(nanoseconds) || math.IsInf(nanoseconds, 0) ||
-		nanoseconds >= int64BoundaryFloat64 {
+		nanoseconds >= Int64BoundaryFloat64 {
 		return 0, false
 	}
 	return time.Duration(nanoseconds), true
