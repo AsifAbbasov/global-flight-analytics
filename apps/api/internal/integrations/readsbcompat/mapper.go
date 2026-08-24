@@ -55,6 +55,29 @@ func SafeUnixMilliseconds(
 	return time.UnixMilli(int64(value)).UTC(), true
 }
 
+func SafeUnixSeconds(
+	value float64,
+) (time.Time, bool) {
+	if math.IsNaN(value) || math.IsInf(value, 0) ||
+		value < -Int64BoundaryFloat64 ||
+		value >= Int64BoundaryFloat64 {
+		return time.Time{}, false
+	}
+
+	seconds, fraction := math.Modf(value)
+	nanoseconds := math.Round(fraction * float64(time.Second))
+	if math.IsNaN(nanoseconds) || math.IsInf(nanoseconds, 0) ||
+		nanoseconds <= -Int64BoundaryFloat64 ||
+		nanoseconds >= Int64BoundaryFloat64 {
+		return time.Time{}, false
+	}
+
+	return time.Unix(
+		int64(seconds),
+		int64(nanoseconds),
+	).UTC(), true
+}
+
 func SafeSeenDuration(
 	value OptionalFloat64,
 ) (time.Duration, bool) {
@@ -70,13 +93,13 @@ func SafeSeenDuration(
 }
 
 func ObservationTime(
-	responseTime float64,
+	snapshotAt time.Time,
 	seen OptionalFloat64,
 ) time.Time {
-	base, ok := SafeUnixMilliseconds(responseTime)
-	if !ok {
+	if snapshotAt.IsZero() {
 		return time.Time{}
 	}
+	base := snapshotAt.UTC()
 	age, ok := SafeSeenDuration(seen)
 	if !ok {
 		return base
@@ -87,7 +110,7 @@ func ObservationTime(
 func MapAircraft(
 	sourceName string,
 	item AircraftItem,
-	responseTime float64,
+	snapshotAt time.Time,
 ) flightstate.FlightState {
 	barometricAltitude := BarometricAltitudeReading(item.AltBaro)
 	geometricAltitude := GeometricAltitudeReading(item.AltGeom)
@@ -116,16 +139,16 @@ func MapAircraft(
 		OnGround:                   barometricAltitude.Status == flightstate.AltitudeStatusGround,
 		OnGroundAvailable:          onGroundAvailable,
 		TelemetryAvailabilityKnown: true,
-		ObservedAt:                 ObservationTime(responseTime, item.Seen),
+		ObservedAt:                 ObservationTime(snapshotAt, item.Seen),
 		SourceName:                 strings.TrimSpace(sourceName),
 	}
 }
 
 func AircraftItemRequiredFieldsValid(
 	item AircraftItem,
-	responseTime float64,
+	snapshotAt time.Time,
 ) bool {
-	if _, ok := SafeUnixMilliseconds(responseTime); !ok {
+	if snapshotAt.IsZero() {
 		return false
 	}
 	if strings.TrimSpace(item.Hex) == "" {
@@ -142,9 +165,10 @@ func AircraftItemRequiredFieldsValid(
 	return true
 }
 
-func MapStateResponseWithEvidence(
+func MapItemsWithEvidence(
 	sourceName string,
-	response *StateResponse,
+	snapshotAt time.Time,
+	items []AircraftItem,
 ) (
 	[]flightstate.FlightState,
 	providerbatch.Evidence,
@@ -154,26 +178,23 @@ func MapStateResponseWithEvidence(
 	if sourceName == "" {
 		return nil, providerbatch.Evidence{}, ErrSourceNameRequired
 	}
-	if response == nil {
-		return []flightstate.FlightState{}, providerbatch.Evidence{}, nil
-	}
 
 	evidence := providerbatch.Evidence{
-		Received: len(response.Aircraft),
+		Received: len(items),
 	}
 	result := make(
 		[]flightstate.FlightState,
 		0,
-		len(response.Aircraft),
+		len(items),
 	)
 
-	for _, item := range response.Aircraft {
-		if !AircraftItemRequiredFieldsValid(item, response.Now) {
+	for _, item := range items {
+		if !AircraftItemRequiredFieldsValid(item, snapshotAt) {
 			evidence.RejectedMalformed++
 			continue
 		}
 
-		result = append(result, MapAircraft(sourceName, item, response.Now))
+		result = append(result, MapAircraft(sourceName, item, snapshotAt))
 		evidence.Accepted++
 	}
 
@@ -187,12 +208,4 @@ func MapStateResponseWithEvidence(
 	}
 
 	return result, evidence, nil
-}
-
-func MapStateResponse(
-	sourceName string,
-	response *StateResponse,
-) []flightstate.FlightState {
-	states, _, _ := MapStateResponseWithEvidence(sourceName, response)
-	return states
 }
