@@ -4,7 +4,7 @@
 
 # Global Flight Analytics
 
-Version: 1.1
+Version: 1.2
 
 Status: Approved
 
@@ -296,3 +296,38 @@ Predictive Aviation Intelligence
 Long-term platform objective:
 
 Create the largest open platform for air-traffic analysis, research, and forecasting based on publicly available aviation data.
+
+---
+
+# 16. Optional Edge Receiver Mode
+
+A future release may add an optional self-hosted receiver profile without replacing the existing cloud/provider architecture.
+
+The intended flow is:
+
+```text
+user-owned antenna / SDR
+↓
+readsb-compatible decoder
+↓
+local aircraft.json-compatible endpoint
+↓
+GFA readsb adapter
+↓
+canonical flight state
+↓
+existing quality, provenance, trajectory and analytical layers
+```
+
+The edge profile must follow these rules:
+
+- it is additive; cloud provider adapters remain supported;
+- it reuses the canonical flight-state contract instead of creating a parallel analytics stack;
+- software components must remain compatible with the project's free/open-data objective;
+- receiving real RF ADS-B requires user-provided receiver hardware and is not a prerequisite for normal GFA operation;
+- a receiver operated by the project/user may be labelled first-party receiver evidence only when provenance identifies that receiver explicitly;
+- a readsb feed supplied by another party remains external observation evidence and must not be relabelled as project-owned sensing;
+- high-frequency edge ingestion must use bounded buffering/cache behavior, backpressure, timeouts and observable drop/failure semantics;
+- an edge container should target reproducible multi-architecture deployment, including `linux/amd64` and `linux/arm64`, only after the Version 1 production/runtime closure is complete.
+
+The edge profile must not introduce Redis, message brokers, microservices or additional distributed infrastructure unless measured load demonstrates that the simpler single-process path is insufficient.
