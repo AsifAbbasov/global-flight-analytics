@@ -8,22 +8,44 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 )
 
-func TestMapStateResponseWithEvidenceRequiresSourceName(
+func TestMapItemsWithEvidenceRequiresSourceName(
 	t *testing.T,
 ) {
-	_, _, err := MapStateResponseWithEvidence(
+	_, _, err := MapItemsWithEvidence(
 		"   ",
-		&StateResponse{},
+		time.Now().UTC(),
+		nil,
 	)
 	if !errors.Is(err, ErrSourceNameRequired) {
 		t.Fatalf("expected source-name error, got %v", err)
 	}
 }
 
-func TestMapStateResponseWithEvidencePreservesCanonicalSemantics(
+func TestSafeUnixSecondsPreservesFractionalReadsbTimestamp(
 	t *testing.T,
 ) {
-	responseTime := time.Date(
+	actual, ok := SafeUnixSeconds(1720526400.125)
+	if !ok {
+		t.Fatal("expected readsb unix-seconds timestamp to be accepted")
+	}
+	want := time.Unix(1720526400, 125_000_000).UTC()
+	if !actual.Equal(want) {
+		t.Fatalf("expected %s, got %s", want, actual)
+	}
+}
+
+func TestSafeUnixMillisecondsRejectsFractionalProviderTimestamp(
+	t *testing.T,
+) {
+	if _, ok := SafeUnixMilliseconds(1720526400000.5); ok {
+		t.Fatal("expected fractional millisecond timestamp to fail closed")
+	}
+}
+
+func TestMapItemsWithEvidencePreservesCanonicalSemantics(
+	t *testing.T,
+) {
+	snapshotAt := time.Date(
 		2026,
 		time.August,
 		24,
@@ -35,44 +57,42 @@ func TestMapStateResponseWithEvidencePreservesCanonicalSemantics(
 	)
 	geometricAltitudeFeet := float64(12000)
 
-	states, evidence, err := MapStateResponseWithEvidence(
+	states, evidence, err := MapItemsWithEvidence(
 		"local-readsb:test-receiver",
-		&StateResponse{
-			Now: float64(responseTime.UnixMilli()),
-			Aircraft: []AircraftItem{
-				{
-					Hex:       " abc123 ",
-					Flight:    " TEST123 ",
-					Latitude:  40.4093,
-					Longitude: 49.8671,
-					AltBaro: BarometricAltitude{
-						Feet: 10000,
-						Kind: BarometricAltitudeKindObserved,
-					},
-					AltGeom: &geometricAltitudeFeet,
-					GroundSpeed: OptionalFloat64{
-						Value:     250,
-						Available: true,
-					},
-					Track: OptionalFloat64{
-						Value:     90,
-						Available: true,
-					},
-					BaroRate: OptionalFloat64{
-						Value:     500,
-						Available: true,
-					},
-					Seen: OptionalFloat64{
-						Value:     2,
-						Available: true,
-					},
-					Squawk: " 1234 ",
+		snapshotAt,
+		[]AircraftItem{
+			{
+				Hex:       " abc123 ",
+				Flight:    " TEST123 ",
+				Latitude:  40.4093,
+				Longitude: 49.8671,
+				AltBaro: BarometricAltitude{
+					Feet: 10000,
+					Kind: BarometricAltitudeKindObserved,
 				},
+				AltGeom: &geometricAltitudeFeet,
+				GroundSpeed: OptionalFloat64{
+					Value:     250,
+					Available: true,
+				},
+				Track: OptionalFloat64{
+					Value:     90,
+					Available: true,
+				},
+				BaroRate: OptionalFloat64{
+					Value:     500,
+					Available: true,
+				},
+				Seen: OptionalFloat64{
+					Value:     2,
+					Available: true,
+				},
+				Squawk: " 1234 ",
 			},
 		},
 	)
 	if err != nil {
-		t.Fatalf("map response: %v", err)
+		t.Fatalf("map items: %v", err)
 	}
 	if evidence.Received != 1 || evidence.Accepted != 1 || evidence.RejectedMalformed != 0 {
 		t.Fatalf("unexpected evidence: %+v", evidence)
@@ -103,16 +123,16 @@ func TestMapStateResponseWithEvidencePreservesCanonicalSemantics(
 	if !state.VelocityAvailable || !state.HeadingAvailable || !state.VerticalRateAvailable {
 		t.Fatal("expected optional telemetry to remain available")
 	}
-	wantObservedAt := responseTime.Add(-2 * time.Second)
+	wantObservedAt := snapshotAt.Add(-2 * time.Second)
 	if !state.ObservedAt.Equal(wantObservedAt) {
 		t.Fatalf("expected observed_at %s, got %s", wantObservedAt, state.ObservedAt)
 	}
 }
 
-func TestMapStateResponseWithEvidenceRejectsMalformedItemsWithoutPoisoningBatch(
+func TestMapItemsWithEvidenceRejectsMalformedItemsWithoutPoisoningBatch(
 	t *testing.T,
 ) {
-	responseTime := time.Date(
+	snapshotAt := time.Date(
 		2026,
 		time.August,
 		24,
@@ -123,21 +143,19 @@ func TestMapStateResponseWithEvidenceRejectsMalformedItemsWithoutPoisoningBatch(
 		time.UTC,
 	)
 
-	states, evidence, err := MapStateResponseWithEvidence(
+	states, evidence, err := MapItemsWithEvidence(
 		"test-source",
-		&StateResponse{
-			Now: float64(responseTime.UnixMilli()),
-			Aircraft: []AircraftItem{
-				{
-					Hex:       "valid1",
-					Latitude:  40,
-					Longitude: 49,
-				},
-				{
-					Hex:       "",
-					Latitude:  40,
-					Longitude: 49,
-				},
+		snapshotAt,
+		[]AircraftItem{
+			{
+				Hex:       "valid1",
+				Latitude:  40,
+				Longitude: 49,
+			},
+			{
+				Hex:       "",
+				Latitude:  40,
+				Longitude: 49,
 			},
 		},
 	)
