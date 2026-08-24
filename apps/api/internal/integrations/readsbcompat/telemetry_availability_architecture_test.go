@@ -1,4 +1,4 @@
-package airplaneslive
+package readsbcompat
 
 import (
 	"os"
@@ -8,28 +8,31 @@ import (
 	"testing"
 )
 
-func TestAirplanesLiveMapperDelegatesSharedTelemetrySemantics(
+func TestSharedMapperDeclaresTelemetryAvailability(
 	t *testing.T,
 ) {
 	_, currentFile, _, ok := runtime.Caller(0)
 	if !ok {
-		t.Fatal("resolve mapper source path")
+		t.Fatal("resolve shared mapper source path")
 	}
 
 	content, err := os.ReadFile(
 		filepath.Join(filepath.Dir(currentFile), "mapper.go"),
 	)
 	if err != nil {
-		t.Fatalf("read mapper source: %v", err)
+		t.Fatalf("read shared mapper source: %v", err)
 	}
 
 	text := string(content)
 	for _, required := range []string{
-		"readsbcompat.MapAircraft(",
-		"readsbcompat.MapItemsWithEvidence(",
+		"TelemetryAvailabilityKnown:",
+		"VelocityAvailable:",
+		"HeadingAvailable:",
+		"VerticalRateAvailable:",
+		"OnGroundAvailable:",
 	} {
 		if !strings.Contains(text, required) {
-			t.Fatalf("airplanes.live mapper is missing shared mapping delegation %q", required)
+			t.Fatalf("shared readsb-compatible mapper is missing %q", required)
 		}
 	}
 }
