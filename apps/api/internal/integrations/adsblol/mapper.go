@@ -47,17 +47,22 @@ func observationTime(
 	responseTime float64,
 	seen OptionalFloat64,
 ) time.Time {
-	return readsbcompat.ObservationTime(responseTime, seen)
+	snapshotAt, ok := safeUnixMilliseconds(responseTime)
+	if !ok {
+		return time.Time{}
+	}
+	return readsbcompat.ObservationTime(snapshotAt, seen)
 }
 
 func mapAircraft(
 	item AircraftItem,
 	responseTime float64,
 ) flightstate.FlightState {
+	snapshotAt, _ := safeUnixMilliseconds(responseTime)
 	return readsbcompat.MapAircraft(
 		sourceName,
 		item,
-		responseTime,
+		snapshotAt,
 	)
 }
 
@@ -65,9 +70,13 @@ func aircraftItemRequiredFieldsValid(
 	item AircraftItem,
 	responseTime float64,
 ) bool {
+	snapshotAt, ok := safeUnixMilliseconds(responseTime)
+	if !ok {
+		return false
+	}
 	return readsbcompat.AircraftItemRequiredFieldsValid(
 		item,
-		responseTime,
+		snapshotAt,
 	)
 }
 
@@ -78,19 +87,25 @@ func MapStateResponseWithEvidence(
 	providerbatch.Evidence,
 	error,
 ) {
-	return readsbcompat.MapStateResponseWithEvidence(
+	if response == nil {
+		return []flightstate.FlightState{},
+			providerbatch.Evidence{},
+			nil
+	}
+
+	snapshotAt, _ := safeUnixMilliseconds(response.Now)
+	return readsbcompat.MapItemsWithEvidence(
 		sourceName,
-		response,
+		snapshotAt,
+		response.Aircraft,
 	)
 }
 
 func MapStateResponse(
 	response *StateResponse,
 ) []flightstate.FlightState {
-	return readsbcompat.MapStateResponse(
-		sourceName,
-		response,
-	)
+	states, _, _ := MapStateResponseWithEvidence(response)
+	return states
 }
 
 // OPEN-AVIATION-RESEARCH-EVIDENCE-V1-2
