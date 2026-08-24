@@ -1,6 +1,6 @@
 # Document 27 — Engineering Principles
 
-Status: Architecture Baseline v1.1  
+Status: Architecture Baseline v1.2  
 Project: Global Flight Analytics  
 Scope: Engineering principles for readable, simple, predictable, testable, and explainable implementation
 
@@ -434,3 +434,131 @@ External community observations must never be described as first-party sensor ob
 A convenient response timestamp must never erase field-specific timestamps. Before accepting provider position evidence, calculate its age against the provider snapshot and enforce the documented validity window. A value that is missing or stale remains missing or stale; interpolation may create a derived value only when explicitly labelled and must never be published as an observed provider position.
 
 Provider licence, attribution, usage-scope, and deployment-availability obligations are part of the engineering contract, not optional footer text.
+
+---
+
+## 18. Remove Work Before Adding Infrastructure
+
+Performance work must begin by removing unnecessary work, not by adding infrastructure.
+
+The mandatory decision order is:
+
+```text
+1. measure the actual slow or expensive path
+2. remove unnecessary calls, polling, scans, allocations or repeated calculations
+3. reduce the amount of data processed
+4. improve the query or existing algorithm
+5. add or correct a query-shaped index
+6. separate hot, warm and cold calculations where their freshness needs differ
+7. add bounded in-process caching or materialization only when evidence still shows a need
+8. add new infrastructure only when the simpler options are insufficient
+```
+
+A proposal for Redis, a queue, a new service, a background worker tier, or another distributed component must identify the measured bottleneck that cannot be solved by the preceding steps.
+
+---
+
+## 19. Measurement-First Performance and Data Temperature
+
+Performance claims must be backed by reproducible evidence appropriate to the path being changed.
+
+Data and calculations should be classified by how quickly they actually need to change:
+
+```text
+hot   = live observations and short freshness windows
+warm  = rolling or recent aggregates that may update less frequently
+cold  = historical, all-time or reference results that change slowly
+```
+
+The same refresh cadence must not be applied to all three classes merely for implementation convenience.
+
+Examples:
+
+```text
+current aircraft state       -> hot
+recent regional activity     -> hot/warm
+completed-day airport stats  -> warm
+historical/all-time totals   -> cold
+versioned reference data     -> cold
+```
+
+Long-window `COUNT(DISTINCT ...)`, repeated historical aggregation, or equivalent full-range scans must not be moved behind a cache automatically. First determine whether the query is actually expensive at representative data volume and whether the product requires that result at live cadence.
+
+---
+
+## 20. Query, Index, Cache and Materialization Gate
+
+Database performance changes must follow the observed access pattern.
+
+For a new or changed index, record:
+
+```text
+query shape
+filter columns
+ordering/grouping requirement
+representative plan or load evidence
+expected write/storage cost
+```
+
+Do not create speculative indexes "just in case". Unused or redundant indexes should be candidates for removal after evidence review.
+
+A cache or materialized result is acceptable only when all of the following are explicit:
+
+```text
+owner
+key
+maximum size or bounded cardinality
+freshness/TTL policy
+invalidation or replacement semantics
+failure fallback
+observability for hits/misses or refresh failures when operationally relevant
+```
+
+Unbounded maps and hidden process-lifetime caches are prohibited for production paths whose key cardinality can grow with observed aircraft, routes, airports or users.
+
+Reference datasets should prefer version/revision checks so unchanged upstream data is not repeatedly downloaded or rewritten.
+
+---
+
+## 21. Local Receiver and Edge Integration Rule
+
+A future local ADS-B/readsb integration must extend the existing provider boundary instead of creating a second analytical system.
+
+Required flow:
+
+```text
+receiver/decoder evidence
+↓
+readsb-compatible adapter
+↓
+canonical flight state
+↓
+existing validation, quality and provenance
+↓
+existing persistence and analytics
+```
+
+The cloud product must continue to function without receiver hardware.
+
+A user/project-owned SDR receiver may be represented as first-party receiver evidence only when the receiver identity and provenance are explicit. A readsb feed operated by somebody else remains an external source even if GFA consumes it directly.
+
+High-frequency edge ingestion must remain bounded and observable. It may use batching, bounded buffering and a bounded recent-aircraft cache when measurement demonstrates benefit, but it must preserve canonical timestamps, source identity and data-quality semantics.
+
+Edge support must not be used as justification for microservices, Redis, Kubernetes or a message broker without measured necessity.
+
+---
+
+## 22. Simplification Review
+
+Before accepting a performance or architecture increment, ask:
+
+```text
+Can we delete work instead of accelerating it?
+Can we perform it less often without violating freshness semantics?
+Can one existing query or process own the result instead of adding another layer?
+Can the current database/index design solve the problem before adding a cache?
+Can an in-process bounded solution solve it before adding distributed infrastructure?
+Does the proposed abstraction protect a real invariant or only make the system look more sophisticated?
+```
+
+A simplification that preserves correctness, provenance, observability and product behavior is preferred over a more elaborate design with the same outcome.
