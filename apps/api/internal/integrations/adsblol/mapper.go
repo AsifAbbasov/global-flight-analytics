@@ -8,7 +8,10 @@ import (
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/integrations/readsbcompat"
 )
 
-const sourceName = "adsb.lol"
+const (
+	sourceName           = "adsb.lol"
+	int64BoundaryFloat64 = readsbcompat.Int64BoundaryFloat64
+)
 
 func optionalGroundSpeed(
 	value OptionalFloat64,
