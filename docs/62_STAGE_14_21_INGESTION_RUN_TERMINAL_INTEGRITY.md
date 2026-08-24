@@ -1,6 +1,6 @@
 # Document 62 — Stage 14.21 Ingestion Run Terminal Integrity
 
-Status: Implementation Baseline v1.2
+Status: Remediation History v1.3
 Project: Global Flight Analytics
 Scope: make completed ingestion runs terminal and immutable
 
@@ -167,3 +167,154 @@ status constraints. Repository finalization now rejects impossible counters and 
 error evidence before SQL, while migration 020 enforces the same contract for direct
 PostgreSQL writes. `partial` and `failed` require a non-empty explanation; `running`
 and `success` require a null error message.
+
+## 12. Finding history, root cause, and failure scenario
+
+### Finding
+
+A completed ingestion run was still mutable operational state. Repository finalization
+updated by identifier rather than by an explicit `running -> terminal` lifecycle guard,
+and PostgreSQL did not independently protect terminal rows.
+
+### Root cause
+
+Status values existed, but the system had no canonical state-machine invariant at either
+the repository transition or database boundary. As a result, `success`, `failed`, and
+`partial` were labels rather than terminal evidence states.
+
+### Failure scenario
+
+```text
+run R is finalized success with counters/evidence A
+↓
+a retry, duplicate worker, or competing caller finalizes R again
+↓
+second update writes failed/partial with counters/evidence B
+↓
+historical ingestion evidence now describes the retry instead of the accepted completion
+```
+
+Direct SQL could produce the same class of mutation without going through the repository.
+
+### Impact
+
+The defect could corrupt operational history, freshness/accounting evidence, data-quality
+analysis, reconciliation reasoning, and any audit that trusts completed ingestion runs as
+immutable evidence.
+
+### Severity rationale
+
+Historical severity was not explicitly recorded. Retrospective classification: **P1
+evidence/data integrity** because accepted ingestion results could be rewritten after
+completion without an obvious failure.
+
+### Existing guarantees violated
+
+```text
+one ingestion run has one accepted terminal outcome
+completed evidence is immutable
+missing identifiers are distinguishable from rejected transitions
+direct SQL cannot bypass lifecycle integrity
+running and terminal timestamps match lifecycle state
+```
+
+## 13. Considered and rejected alternatives
+
+### Rely on idempotent callers
+
+Rejected because duplicate or competing completion is exactly the failure mode. A durable
+invariant cannot depend on every current and future caller behaving perfectly.
+
+### Add only `WHERE status = 'running'` in repository SQL
+
+Rejected as incomplete because direct SQL, maintenance code, or future repositories could
+still mutate a terminal row.
+
+### Make the whole table append-only
+
+Rejected because the legitimate `running -> terminal` transition requires one controlled
+update and would otherwise force a more complex event-store model not justified by the
+scope.
+
+### Chosen remediation
+
+Use a single-statement repository transition guard plus PostgreSQL lifecycle constraints
+and terminal-row immutability trigger.
+
+## 14. Why this solution and trade-offs
+
+The application provides typed transition outcomes while PostgreSQL protects the durable
+truth against all writers.
+
+Trade-offs:
+
+```text
++ deterministic first-writer-wins finalization
++ immutable terminal evidence
++ direct-SQL protection
++ explicit duplicate/conflict diagnostics
+- trigger and lifecycle constraints add schema complexity
+- fixture/direct-SQL writers must obey the lifecycle contract
+- corrective edits to terminal evidence require explicit repair tooling rather than ad hoc UPDATE
+```
+
+The stricter repair cost is intentional because silent mutation of historical evidence is
+more dangerous than requiring a reviewed repair.
+
+## 15. Adversarial review and remediation iterations
+
+### Iteration 1 — terminal lifecycle enforcement
+
+Implementation commit `b3603311d86f23c66bc945c8a61471142ccbec63`
+(`fix: enforce ingestion run terminal integrity`) introduced repository transition
+classification, lifecycle checks, and terminal immutability.
+
+### Iteration 2 — integration fixture challenge
+
+The unified Stage 14 integration run exposed a fixture that inserted `success` without a
+finish time. The fixture was corrected and source auditing was strengthened so tests
+cannot silently model an illegal terminal state.
+
+### Iteration 3 — deeper terminal evidence review
+
+Document 72 later found that terminal integrity also required processed-count and
+error-message/status relationships. The lifecycle finding remained valid but was
+strengthened rather than falsely treated as proof of every terminal-field invariant.
+
+## 16. Residual risks and limitations
+
+This remediation does not prove that the counters themselves reflect upstream reality;
+it guarantees lifecycle consistency and immutability once accepted. Administrator-level
+manual changes can still bypass constraints if database protections are intentionally
+disabled.
+
+A legitimate correction of bad historical terminal evidence requires an explicit repair
+procedure with its own audit trail.
+
+## 17. Operational/deployment consequences
+
+Migration 017 must precede code relying on terminal immutability. Legacy lifecycle
+violations stop migration for explicit operator repair. Monitoring/operations should
+interpret `ErrIngestionRunTransitionRejected` as duplicate/conflicting completion, not as
+a missing run.
+
+## 18. Exact evidence and canonical status
+
+```text
+implementation commit:
+b3603311d86f23c66bc945c8a61471142ccbec63
+
+migration:
+017_ingestion_run_terminal_integrity.sql
+
+regression coverage:
+internal/repository/postgres/ingestionrun_terminal_integrity_test.go
+internal/repository/postgres/ingestionrun_terminal_integrity_integration_test.go
+
+canonical status:
+FINDING_GFA_DB_005_INGESTION_RUN_TERMINAL_INTEGRITY=CLOSED
+CANONICAL_FINDING_DOCUMENT=docs/62_STAGE_14_21_INGESTION_RUN_TERMINAL_INTEGRITY.md
+```
+
+Historical pull-request/reviewer identifiers are not asserted when they are not present in
+the currently recoverable repository evidence.

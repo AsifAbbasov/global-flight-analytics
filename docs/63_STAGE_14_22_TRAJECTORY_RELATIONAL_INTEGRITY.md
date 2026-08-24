@@ -1,6 +1,6 @@
 # Document 63 — Stage 14.22 Trajectory Relational Integrity
 
-Status: Implementation Baseline v1.0
+Status: Remediation History v1.1
 Project: Global Flight Analytics
 Scope: enforce complete PostgreSQL integrity for FlightTrajectory aggregates
 
@@ -161,3 +161,169 @@ git status --short
 This increment closes the known FlightTrajectory relational-integrity debt for
 child ownership, segment ordering, same-trajectory gap references, child identity,
 and parent stored counters.
+
+## 11. Finding history, root cause, and failure scenario
+
+### Finding
+
+The relational schema allowed trajectory fragments that were individually valid rows but
+could not form one valid FlightTrajectory aggregate.
+
+### Root cause
+
+Domain-level aggregate invariants were partially represented as repository conventions and
+stored counters, but not fully encoded as relational constraints. Child ownership,
+sequence uniqueness, cross-reference ownership, and aggregate-count consistency were
+therefore separable from the parent identity.
+
+### Failure scenario
+
+```text
+trajectory T1 exists
+trajectory T2 exists
+↓
+a coverage gap for T1 references a segment owned by T2
+and/or
+segment sequence numbers for T1 are duplicated or non-contiguous
+and/or
+stored segment_count / point_count / gap_count no longer matches child rows
+↓
+queries successfully read rows that cannot describe one coherent trajectory
+```
+
+### Impact
+
+Malformed aggregates could corrupt trajectory reconstruction, route context, historical
+analytics, feature extraction, reconciliation, and projection inputs while remaining
+syntactically valid in PostgreSQL.
+
+### Severity rationale
+
+Historical severity was not explicitly recorded. Retrospective classification: **P1 data
+integrity** because the database could durably represent impossible trajectory aggregates
+that downstream analytics would treat as canonical evidence.
+
+### Existing guarantees violated
+
+```text
+every child belongs to exactly one parent trajectory
+segment order is positive, unique, and contiguous within a trajectory
+gap references cannot cross trajectory ownership
+stored aggregate counters match durable child rows
+child ICAO24 identity matches parent identity
+```
+
+## 12. Considered and rejected alternatives
+
+### Keep validation only in `SaveTrajectory`
+
+Rejected because direct SQL, migration code, future repositories, or bugs in alternate
+writers could bypass application validation.
+
+### Remove stored counters instead of validating them
+
+Rejected because counters are part of existing read/performance contracts and can remain
+useful if PostgreSQL verifies that they agree with the aggregate.
+
+### Normalize coverage-gap references into globally unique segment IDs only
+
+Rejected because global identifier existence does not prove same-trajectory ownership.
+Composite foreign keys express the actual domain relationship.
+
+### Rewrite legacy invalid rows automatically during migration
+
+Rejected because sequence, identity, or cross-trajectory repairs would require guessing
+historical intent. Migration 018 fails closed for explicit evidence-backed repair.
+
+### Chosen remediation
+
+Use fail-fast aggregate validation in the repository plus authoritative PostgreSQL
+constraints and deferred aggregate verification at transaction completion.
+
+## 13. Why this solution and trade-offs
+
+This duplicates selected checks intentionally at two boundaries: application validation
+improves diagnostics before work begins; PostgreSQL guarantees durable correctness for all
+writers.
+
+Trade-offs:
+
+```text
++ invalid aggregate states become unrepresentable after transaction commit
++ direct SQL/future writers receive the same protection
++ early repository errors remain understandable
+- migration 018 and deferred constraint triggers increase schema complexity
+- writes perform additional integrity work before commit
+- legacy inconsistent data blocks deployment until explicitly repaired
+```
+
+The extra validation cost is accepted because trajectory writes are correctness-sensitive
+and impossible aggregates are more expensive to diagnose later.
+
+## 14. Adversarial review and remediation iterations
+
+### Iteration 1 — repository aggregate validation
+
+Repository validation made known counter, ordering, and identity mismatches fail before
+transaction creation.
+
+### Iteration 2 — bypass challenge
+
+Review considered direct SQL and future writer paths. Application validation alone was
+not sufficient, so the durable constraints were added in migration 018.
+
+### Iteration 3 — ownership challenge
+
+A standalone segment foreign key was not enough for coverage gaps because it could point
+to a real segment belonging to another trajectory. Composite `(trajectory_id, segment_id)`
+keys were used instead.
+
+### Iteration 4 — legacy repair challenge
+
+Migration preflight deliberately aborts instead of guessing how to repair conflicting
+historical trajectory evidence.
+
+Implementation commit:
+`5bb4a6aab7b16bc13e8477ca31f11eaa27e808ff`
+(`fix: enforce trajectory relational integrity`).
+
+## 15. Residual risks and limitations
+
+Relational integrity does not prove that observed trajectory points are physically or
+semantically correct; it proves that persisted aggregate structure is internally
+consistent. Administrator-level constraint disabling can bypass the contract.
+
+Large aggregate validation also remains bounded by normal transaction/write performance
+considerations; profiling should guide future optimization rather than weakening the
+constraints.
+
+## 16. Operational/deployment consequences
+
+Migration 018 performs fail-closed preflight. Any legacy violation requires explicit
+operator repair before deployment proceeds. Constraint-trigger failures should be treated
+as integrity findings, not retried blindly as transient database errors.
+
+## 17. Exact evidence
+
+```text
+implementation commit:
+5bb4a6aab7b16bc13e8477ca31f11eaa27e808ff
+
+migration:
+018_trajectory_relational_integrity.sql
+
+regression coverage:
+internal/repository/postgres/trajectory_relational_integrity_test.go
+internal/repository/postgres/trajectory_relational_integrity_integration_test.go
+```
+
+## 18. Final canonical status
+
+```text
+FINDING_GFA_DB_006_TRAJECTORY_RELATIONAL_INTEGRITY=CLOSED
+CANONICAL_FINDING_DOCUMENT=docs/63_STAGE_14_22_TRAJECTORY_RELATIONAL_INTEGRITY.md
+IMPLEMENTATION_COMMIT=5bb4a6aab7b16bc13e8477ca31f11eaa27e808ff
+```
+
+Historical PR/reviewer identifiers are not invented where the searchable repository does
+not preserve them.

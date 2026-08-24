@@ -1,6 +1,6 @@
 # Document 65 — Stage 14.24 Explicit Altitude Integer Policy
 
-Status: Implementation Baseline v1.0
+Status: Remediation History v1.1
 Project: Global Flight Analytics
 Scope: make conversion from provider altitude precision to PostgreSQL whole-meter storage explicit, deterministic, and testable
 
@@ -146,3 +146,157 @@ This increment closes the hidden altitude precision and integer conversion
 debt. It does not change provider altitude measurement precision, analytical
 altitude semantics, or the separate Traffic handling of altitude availability
 status.
+
+## 10. Finding history, root cause, and failure scenario
+
+### Finding
+
+Observed provider altitude arrived as floating-point metres while PostgreSQL persisted
+whole-meter integers, but the application had no declared conversion rule.
+
+### Root cause
+
+The repository delegated an application-level semantic decision to an inline SQL cast.
+That made rounding, overflow, and non-finite handling implicit database behavior instead
+of an owned domain/persistence policy.
+
+### Failure scenario
+
+```text
+provider supplies floating-point observed altitude
+↓
+repository passes float64 directly into SQL CAST(... AS integer)
+↓
+rounding/overflow semantics are chosen implicitly by PostgreSQL
+↓
+Go validation/tests cannot prove the exact persisted whole-meter value
+```
+
+A non-finite or out-of-range observed value could also reach the SQL boundary before the
+application classified it.
+
+### Impact
+
+Implicit conversion could make persisted trajectory/traffic altitude differ from the
+application's intended value and make behavior difficult to reproduce across refactors.
+It also weakened failure diagnostics for invalid provider evidence.
+
+### Severity rationale
+
+Historical severity was not explicitly recorded. Retrospective classification: **P2 data
+semantics** because the issue could alter persisted measurement values but was bounded to
+whole-meter conversion rather than destroying identity or lifecycle state.
+
+### Existing guarantees violated
+
+```text
+persistence conversion policy is explicit and deterministic
+invalid observed evidence fails before durable write
+observed zero and negative altitude remain valid measurements
+non-value statuses do not fabricate numeric altitude
+batch persistence does not partially commit after conversion failure
+```
+
+## 11. Considered and rejected alternatives
+
+### Keep SQL casting and document PostgreSQL behavior
+
+Rejected because the application still would not own or test the conversion before the
+write boundary, and typed errors for non-finite/out-of-range values would remain weak.
+
+### Change PostgreSQL altitude columns to floating point
+
+Rejected because the existing storage contract intentionally uses whole meters and there
+was no product need for a destructive schema change merely to avoid defining conversion.
+
+### Truncate toward zero in Go
+
+Rejected because truncation creates a different error profile and was not the intended
+nearest-meter representation.
+
+### Clamp values into integer range
+
+Rejected because clamping would fabricate a valid-looking altitude from invalid evidence.
+Fail closed is safer.
+
+### Chosen remediation
+
+Define one Go-owned conversion helper using nearest whole meter, `math.Round` half-away-
+from-zero semantics, explicit finite/range validation, and typed integer output passed to
+SQL.
+
+## 12. Why this solution and trade-offs
+
+The persistence adapter owns the representation change because it knows both the domain
+input type and database storage type.
+
+Trade-offs:
+
+```text
++ deterministic/testable whole-meter semantics
++ invalid observed evidence rejected before SQL
++ SQL no longer chooses application rounding policy
+- sub-meter precision is intentionally discarded at persistence boundary
+- future storage-precision changes require an explicit migration/policy revision
+```
+
+The precision loss is not new; the remediation makes the already-existing integer storage
+choice explicit and reproducible.
+
+## 13. Adversarial review and remediation iterations
+
+### Iteration 1 — identify hidden SQL policy
+
+Review found that the SQL cast was silently deciding rounding and overflow semantics.
+
+### Iteration 2 — explicit conversion helper
+
+Implementation commit `467d6bf5f6e66febbb83944664735ce26e7054c3`
+(`fix: enforce explicit altitude integer policy`) moved the policy into typed Go code.
+
+### Iteration 3 — edge-value challenge
+
+Tests cover exact half values, negative altitude, integer boundaries, NaN/infinity,
+post-rounding overflow, observed zero, and batch rollback to ensure the helper is not only
+a happy-path refactor.
+
+### Iteration 4 — semantic separation challenge
+
+The remediation deliberately leaves altitude availability/status semantics to the
+separate Traffic and provider contracts rather than treating integer conversion as proof
+that an altitude value exists.
+
+## 14. Residual risks and limitations
+
+This policy does not improve provider measurement accuracy or recover sub-meter precision
+after persistence. It does not impose aviation-specific physical altitude limits; such a
+policy would require separate evidence and domain justification.
+
+## 15. Operational/deployment consequences
+
+No schema migration is required. Invalid observed altitude now fails earlier and may
+surface typed persistence errors where PostgreSQL previously performed an implicit cast.
+Operational handling should treat those as provider/data correctness findings rather than
+silently clamping or retrying unchanged input.
+
+## 16. Exact evidence
+
+```text
+implementation commit:
+467d6bf5f6e66febbb83944664735ce26e7054c3
+
+regression coverage:
+internal/repository/postgres/altitude_meter_policy_test.go
+internal/repository/postgres/altitude_meter_policy_ownership_test.go
+internal/repository/postgres/altitude_meter_policy_integration_test.go
+```
+
+## 17. Final canonical status
+
+```text
+FINDING_GFA_DB_008_EXPLICIT_ALTITUDE_INTEGER_POLICY=CLOSED
+CANONICAL_FINDING_DOCUMENT=docs/65_STAGE_14_24_EXPLICIT_ALTITUDE_INTEGER_POLICY.md
+IMPLEMENTATION_COMMIT=467d6bf5f6e66febbb83944664735ce26e7054c3
+```
+
+Historical PR/reviewer identifiers are not invented when unavailable.
