@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.23
+Status: Canonical Finding Registry v1.24
 
 ## Purpose
 
@@ -549,8 +549,9 @@ Documents 136–138 = Projection Baseline / Neighbors / Pattern Confidence revie
 Documents 139–145 = Projection Freshness / Route Frequency / Continuation / Arrival / Evaluation / Production / Read review chain enriched and merged through PR #130 (`5e649fc339aa5c127129135a95296ee6526b7a3f`)
 Document 146 = Projection Intelligence final cross-module reconciliation classified as closure-governance evidence and merged through PR #130 (`5e649fc339aa5c127129135a95296ee6526b7a3f`); no synthetic finding ID created
 Documents 147–148 = Backend Context Ownership / Frontend API cancellation review history enriched and merged through PR #131 (`7a0ceecfc1fe3f9c914e2529887a57f345fadde1`)
-Documents 149–151 = Frontend feature implementation / closure evidence reconciled in source; no synthetic finding IDs created
-Document 152 = Backend Startup Context remediation enriched to canonical standard in source
+Documents 149–151 = Frontend feature implementation / closure evidence reconciled and merged through PR #132 (`d2e066f768e9b9240db3ff38d1da2f1a8b1aa338`); no synthetic finding IDs created
+Document 152 = Backend Startup Context remediation enriched and merged through PR #132 (`d2e066f768e9b9240db3ff38d1da2f1a8b1aa338`); canonical finding `GFA-OPS-438`
+Documents 153–156 = Recruiter Quickstart / Regional Traffic Brief / Shareable Workspace State / Live Traffic Control feature and operability closure evidence reconciled in source; no synthetic finding IDs created
 Canonical finding register covers 438 findings (001–438 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
@@ -569,9 +570,10 @@ Projection Baseline/Neighbors/Pattern Confidence review reconciliation = CLOSED 
 Projection Freshness/Route Frequency/Continuation/Arrival/Evaluation/Production/Read review reconciliation = CLOSED AND MERGED
 Projection Intelligence final cross-module reconciliation = CLOSED AND MERGED; closure-governance evidence only
 Backend Context Ownership / Frontend API cancellation reconciliation = CLOSED AND MERGED
-Frontend feature closure Documents 149–151 = CLOSED IN SOURCE; feature/closure evidence only
-Backend Startup Context reconciliation = CLOSED IN SOURCE
+Frontend feature closure Documents 149–151 = CLOSED AND MERGED; feature/closure evidence only
+Backend Startup Context reconciliation = CLOSED AND MERGED
+Feature/operability closure Documents 153–156 = CLOSED IN SOURCE; no synthetic finding IDs
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 153 (Recruiter Quickstart)
+Next post-Stage-14 audit range begins at Document 157 (Frontend Research Snapshot Export)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
