@@ -1603,7 +1603,7 @@ observability audit gate, and deployment boundary.
 ## Document 172 — Repository Governance and Security Automation
 
 - File: `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md`
-- Status: `PATCH PREPARED; SETTINGS PENDING EXACT-COMMIT CI`
+- Status: `CANONICAL RECONCILIATION COMPLETE; EXTERNAL SECURITY-SETTINGS VERIFICATION IN_PROGRESS`
 - Purpose: establishes immutable Action pins, stable required CI gates, CodeQL, ownership and security policy files, reproducible GitHub settings automation, protected main-branch governance, and history-preserving stale-branch reconciliation.
 
 <!-- CORE-FLIGHT-DATA-INGESTION-PRODUCTION-CLOSURE-V1:DOCUMENT-INDEX -->
