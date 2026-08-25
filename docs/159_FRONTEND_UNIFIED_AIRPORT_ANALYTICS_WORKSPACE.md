@@ -2,12 +2,19 @@
 
 ## Status
 
-Implemented against exact baseline commit:
+CLOSED — feature implementation and exact-commit Continuous Integration evidence reconciled.
+
+Reviewed baseline:
 
 `dac83d14a6f54590089f69675cf6e24083bf2bc5`
 
-Formal closure still requires exact-commit Continuous Integration evidence after the
-increment is committed and pushed.
+Implementation commit:
+
+`52fb54a389016fb11d9d69bcb3a9b1437eeb3dd0`
+
+Frontend CI `30713764883` — SUCCESS  
+Backend CI `30713764888` — SUCCESS  
+Canonical reconciliation: 2026-08-25
 
 ## Product objective
 
@@ -108,7 +115,7 @@ Added:
 
 ## Verification contract
 
-Installation is accepted only after:
+Installation was accepted only after:
 
 - exact clean baseline validation;
 - Git 2.15 compatibility scan;
@@ -122,3 +129,51 @@ Installation is accepted only after:
 - production Next.js build;
 - `git diff --check`;
 - the same checks on the real repository.
+
+## Historical closure evidence
+
+The exact implementation owner is:
+
+```text
+52fb54a389016fb11d9d69bcb3a9b1437eeb3dd0
+feat: add unified airport analytics workspace
+```
+
+GitHub Actions evidence for that exact commit is:
+
+```text
+Frontend CI 30713764883 = SUCCESS
+Backend CI  30713764888 = SUCCESS
+```
+
+The recovered exact-commit runs close the document's original pending CI statement.
+They verify the frontend feature on the implementation SHA without requiring a later
+reconstruction to stand in for historical CI.
+
+## Canonical classification
+
+This document is **frontend feature integration / closure evidence**, not a remediation
+finding record.
+
+The increment intentionally unifies already-existing production Airport Intelligence
+capabilities into a coherent browser workflow. The earlier separation of ranking,
+passport, history and trends is product structure, not source-backed proof of a violated
+engineering guarantee. No synthetic `GFA-*` finding is therefore created.
+
+```text
+Canonical finding ID: none by design
+Classification: frontend feature integration / closure evidence
+Historical implementation: CLOSED
+Exact-commit Frontend CI: CLOSED
+Open remediation findings owned by this document: 0
+```
+
+## Residual boundaries and prevention
+
+Global ranking, completed-day evidence, confidence and limitations remain server-owned
+contracts. The browser must not infer unsupported regional rankings or operational
+airport status.
+
+Regression ownership remains with runtime API validation, deterministic workspace model
+tests, Frontend CI and later Playwright product journeys. Future UI integration defects
+should be classified independently when a concrete failure contract exists.
