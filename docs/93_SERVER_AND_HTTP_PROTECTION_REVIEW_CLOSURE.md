@@ -98,3 +98,33 @@ Open release blockers: 0
 Server review full closure: tracked by Document 94
 Release decision: ACCEPTABLE
 ```
+
+---
+
+## Canonical remediation history
+
+### Existing mutation-auth finding ownership
+
+The state-changing Route Intelligence authentication observation is **not** assigned a new canonical finding ID here. The runtime mutation authorization boundary was already introduced and registered as `GFA-SEC-039` in Document 45. Historical commit `1fc925c91117eebbb7c90c4bd6b3889548d55cb4` adds container-level regression evidence that the concrete Route Intelligence POST registration still returns `HTTP 401` without credentials; it does not introduce a second independent authorization remediation. This document therefore preserves later verification evidence without duplicating canonical ownership.
+
+### GFA-OPS-089 — process liveness was used as production readiness while PostgreSQL could be unavailable
+
+1. **Finding / symptom.** The container/service health contract used `/api/v1/health` to represent readiness even though that endpoint proved only that the HTTP process could answer requests.
+2. **Root cause.** Process liveness and dependency readiness were modeled as one operational signal; PostgreSQL availability was not part of the container health decision.
+3. **Failure scenario.** The API process is alive while PostgreSQL is missing, unavailable or not yet ready; container/platform health reports success even though database-backed routes cannot serve production work.
+4. **Impact.** Deployment orchestration and operators can route traffic to an unusable instance, mask startup/database failures and misclassify service availability.
+5. **Severity rationale.** **P1 retrospective.** This is a production availability correctness defect at the service admission boundary: the platform could advertise a non-functional API as ready.
+6. **Existing guarantees violated.** Liveness must answer only process survival; readiness must fail closed when required production dependencies are unavailable; public readiness failure must not expose internal database details.
+7. **Considered solutions.** Keep one `/health` endpoint; make `/health` database-aware; add a separate `/ready` dependency probe; rely on container startup delays instead of runtime probing.
+8. **Chosen remediation.** Preserve `/health` as liveness, add `/ready` with a bounded PostgreSQL ping, return `503 SERVICE_NOT_READY` on absent/failing database, and point the compiled container healthcheck plus Backend Container gate at `/ready`.
+9. **Why this solution was selected.** Separate probes preserve standard lifecycle semantics, keep liveness usable during dependency incidents and give deployment systems a fail-closed production-readiness signal.
+10. **Rejected alternatives.** Making liveness dependency-aware would cause process restarts for database incidents; fixed delays cannot prove current database availability; retaining one liveness-only probe preserves the false-ready state.
+11. **Trade-offs.** Readiness now performs a bounded database ping and can temporarily remove a live process from service during PostgreSQL outages; that is intentional because database-backed routes are part of the production contract.
+12. **Regression tests / protection.** Readiness handler tests cover ready, absent database and failed ping; server route tests preserve liveness/readiness separation; container CI starts PostgreSQL, applies the production catalog, verifies `/ready`, and uses `/ready` for Docker health.
+13. **Adversarial review findings.** A nil `*pgxpool.Pool` must be converted before crossing the function-interface boundary to avoid typed-nil behavior; database errors must map to stable public `SERVICE_NOT_READY` rather than exposing driver/network details.
+14. **Remediation iterations.** The first server blocker closure added dependency-aware readiness in `1fc925c9…`; later container-readiness work in Document 95 strengthened evidence around PostgreSQL's bootstrap-to-final-process handoff.
+15. **Residual risks and limitations.** Readiness proves a bounded PostgreSQL ping, not every downstream provider or external dependency. Those dependencies have their own health/evidence contracts and are not folded into this probe.
+16. **Operational or deployment consequences.** Container/platform health should target `/api/v1/ready`; `/api/v1/health` remains appropriate for pure process-liveness diagnosis.
+17. **Exact evidence.** Historical implementation commit `1fc925c91117eebbb7c90c4bd6b3889548d55cb4` (`fix: close server and http protection review`). Historical adversarial-review/PR evidence unavailable; reconstruction is limited to repository source, tests, commits and CI evidence.
+18. **Final canonical status.** `GFA-OPS-089=CLOSED`.
+19. **Prevention / future guard.** New required production dependencies must be evaluated explicitly against readiness semantics; liveness may not be silently reused as dependency readiness, and container tests must prove the selected health endpoint against real dependency setup.
