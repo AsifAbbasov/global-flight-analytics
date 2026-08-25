@@ -1,9 +1,13 @@
 # Frontend Shareable Workspace State
 
-Status: Implementation prepared; exact-commit Continuous Integration closure pending  
+Status: CLOSED — feature implementation and Continuous Integration evidence reconciled  
 Project: Global Flight Analytics  
 Reviewed baseline: `70716701d6e676b49670aa4f32b4608d52f58bd6`  
+Implementation commit: `8120101937da487757d9c00c84b7d988c21db760`  
+Frontend CI: `30710813766` — SUCCESS  
+Backend CI: `30710813764` — SUCCESS  
 Date: 2026-08-01
+Canonical reconciliation: 2026-08-25
 
 ## 1. Purpose
 
@@ -56,6 +60,52 @@ This increment does not add a routing dependency, backend endpoint, server sessi
 account, persisted preference, analytics tracker or cross-device synchronization. URL state
 contains only public workspace identifiers and never stores credentials or mutation keys.
 
-Formal closure requires all thirty-one frontend tests, dependency policy, ESLint, TypeScript
-validation, production build, rollback verification and exact-commit Frontend Continuous
-Integration evidence to pass.
+The historical closure requirements were all frontend tests, dependency policy, ESLint,
+TypeScript validation, production build, rollback verification and exact-commit Frontend
+Continuous Integration evidence.
+
+## 7. Historical closure evidence
+
+The exact implementation owner is:
+
+```text
+8120101937da487757d9c00c84b7d988c21db760
+feat: add shareable traffic workspace state
+```
+
+GitHub Actions evidence for that exact commit is:
+
+```text
+Frontend CI 30710813766 = SUCCESS
+Backend CI  30710813764 = SUCCESS
+```
+
+The frontend run completed dependency policy, ESLint, TypeScript validation, the
+workspace-state contract tests and the production build. Exact-commit CI therefore
+exists for the implementation, so the original pending status is historical drift rather
+than an open present-day item.
+
+## 8. Canonical classification
+
+This document is **frontend feature implementation / closure evidence**, not a
+remediation finding record.
+
+Component-local state being non-shareable was the prior product capability boundary.
+The source evidence does not establish data corruption, contract violation or reliability
+failure requiring a synthetic `GFA-*` remediation ID merely because URL-addressable state
+was added later.
+
+```text
+Canonical finding ID: none by design
+Classification: frontend feature implementation / closure evidence
+Historical implementation: CLOSED
+Exact-commit Frontend CI: CLOSED
+Open remediation findings owned by this document: 0
+```
+
+## 9. Residual boundaries and prevention
+
+URL state remains intentionally limited to public workspace identifiers; credentials,
+mutation keys and request-cadence preferences must not enter the share contract.
+Regression ownership remains with URL-state tests, frontend contract tests, Frontend CI
+and later browser navigation/Playwright coverage.
