@@ -89,3 +89,29 @@ The acceptance gate includes:
 After this increment, the remaining known Ingestion, Provider Adapters and
 Orchestration review boundary is the explicit malformed-item policy for an
 otherwise successful provider batch.
+
+---
+
+## Canonical remediation history
+
+### GFA-OPS-082 — provider health evidence was collected but ignored by automatic selection
+
+1. **Finding / symptom.** Automatic mode always attempted the configured primary first even when current health evidence classified it unavailable and a secondary provider healthy.
+2. **Root cause.** Health collection/printing and provider selection were separate subsystems with no explicit decision-policy connection.
+3. **Failure scenario.** The primary is already known unavailable; every cycle still spends an attempt/failure on it before reaching the healthy fallback.
+4. **Impact.** Avoidable latency, request waste, noisy failures and slower recovery during provider incidents.
+5. **Severity rationale.** **P2 retrospective.** It materially degrades ingestion reliability but does not by itself corrupt accepted source observations.
+6. **Existing guarantees violated.** Available health evidence should inform attempt order while configured provider order remains authoritative when evidence is equal, unknown or unavailable.
+7. **Considered solutions.** Keep static order; permanently disable unhealthy providers; introduce a circuit breaker service; stable health-aware ranking with bounded primary recovery probes.
+8. **Chosen remediation.** Rank healthy before degraded/unknown before unavailable, preserve configured order for equal priority, fail open on snapshot lookup failure, and periodically probe the configured primary.
+9. **Why this solution was selected.** It uses existing health evidence without adding infrastructure or allowing a transient status to permanently remove the configured primary.
+10. **Rejected alternatives.** Static order ignores evidence; permanent disable can starve recovery; a new circuit-breaker subsystem adds complexity beyond the measured need.
+11. **Trade-offs.** Health history remains process-local, so ordering is daemon-local operational evidence rather than a cross-instance global health truth.
+12. **Regression tests / protection.** Healthy-secondary preference, equal-evidence order preservation, recovery probing, fail-open lookup behavior, fallback compatibility, decision evidence and race/full backend tests.
+13. **Adversarial review findings.** An unavailable primary must eventually receive a recovery probe; equal/unknown evidence must not reorder configuration arbitrarily; snapshot-read failure must not block all providers.
+14. **Remediation iterations.** Bounded two-minute primary probing was added to avoid starvation introduced by naive always-healthiest-first ranking.
+15. **Residual risks and limitations.** Process-local health can differ between daemon instances and is not represented as a global provider availability claim.
+16. **Operational or deployment consequences.** Production `cmd/ingest` passes the existing health collector into selection; no new datastore or service is deployed.
+17. **Exact evidence.** Historical implementation commit `a9896ade17f6a36b80a5cef6abb8ffd9a5687cc1` (`fix: make traffic provider selection health aware`). Historical pull-request/reviewer evidence unavailable.
+18. **Final canonical status.** `GFA-OPS-082=CLOSED`.
+19. **Prevention / future guard.** Future provider-ordering policies must preserve configuration-order fallback, bounded recovery probing and explicit decision evidence whenever health can reorder attempts.
