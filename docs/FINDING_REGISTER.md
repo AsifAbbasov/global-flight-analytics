@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.8
+Status: Canonical Finding Registry v1.9
 
 ## Purpose
 
@@ -155,6 +155,25 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-GOV-096 | Application version endpoint lacked build-derived revision provenance | P2 retrospective | CLOSED | `95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md` | `cfb079b6f881b03b517f92b06210c3fdc9968893` |
 | GFA-TEST-097 | Container PostgreSQL readiness could pass during bootstrap handoff | P2 retrospective | CLOSED | `95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md` | `ae4d486d2341974a47173e2aedd78da530130cf6` |
 | GFA-GOV-098 | Permanent race-detector coverage omitted concurrency-sensitive ingestion ownership | P2 retrospective | CLOSED | `96_INGESTION_RACE_COVERAGE_CLOSURE.md` | `1ddb65c5e5471ce180314cc38a4b6d7baad80cd3` |
+| GFA-DATA-099 | Eligibility ran after aircraft-level deduplication | P1 retrospective | CLOSED | `97_ANALYTICAL_CONTRIBUTOR_SEMANTICS_HARDENING.md` | `c5fd1f32273af9215df9d83d1d40c227d3740646` |
+| GFA-DATA-100 | Materially future observations could contribute to analytics | P1 retrospective | CLOSED | `97_ANALYTICAL_CONTRIBUTOR_SEMANTICS_HARDENING.md` | `c5fd1f32273af9215df9d83d1d40c227d3740646` |
+| GFA-DATA-101 | Traffic Density accepted non-finite arithmetic inputs | P2 retrospective | CLOSED | `97_ANALYTICAL_CONTRIBUTOR_SEMANTICS_HARDENING.md` | `c5fd1f32273af9215df9d83d1d40c227d3740646` |
+| GFA-DATA-102 | Airport Activity was not owned by a concrete airport | P1 retrospective | CLOSED | `98_AIRPORT_AND_GEOGRAPHIC_METRIC_INTEGRITY.md` | `0ae85ccbff7584a993030c0adcdee3290dd4b7bd` |
+| GFA-DATA-103 | Traffic Density numerator and denominator used unrelated geographic scopes | P1 retrospective | CLOSED | `98_AIRPORT_AND_GEOGRAPHIC_METRIC_INTEGRITY.md` | `0ae85ccbff7584a993030c0adcdee3290dd4b7bd` |
+| GFA-DATA-104 | Published analytical provenance was incomplete or placeholder-based | P1 retrospective | CLOSED | `99_PROVENANCE_AND_ANALYTICAL_TRUST_HARDENING.md` | `a31fd8ce3fb6f42a9c90a5153f902c37e7b0f111` |
+| GFA-SEC-105 | Public analytical failures could expose raw operation error text | P1 retrospective | CLOSED | `99_PROVENANCE_AND_ANALYTICAL_TRUST_HARDENING.md` | `a31fd8ce3fb6f42a9c90a5153f902c37e7b0f111` |
+| GFA-DATA-106 | Analytical recent queries accepted a zero reference time | P2 retrospective | CLOSED | `100_QUERY_AND_ARCHITECTURE_CONSOLIDATION.md` | `b8ccbf590ef3b9ffc221d72e0274e1d78da6c650` |
+| GFA-DATA-107 | Accepted UUID identifiers were not canonicalized before deduplication | P2 retrospective | CLOSED | `100_QUERY_AND_ARCHITECTURE_CONSOLIDATION.md` | `b8ccbf590ef3b9ffc221d72e0274e1d78da6c650` |
+| GFA-CONTRACT-108 | Analytical Metric IDs were inconsistent across packages and clients | P2 retrospective | CLOSED | `100_QUERY_AND_ARCHITECTURE_CONSOLIDATION.md` | `b8ccbf590ef3b9ffc221d72e0274e1d78da6c650` |
+| GFA-ARCH-109 | Metric execution exposed concrete dependencies and retained legacy calculator state | P3 retrospective | CLOSED | `100_QUERY_AND_ARCHITECTURE_CONSOLIDATION.md` | `b8ccbf590ef3b9ffc221d72e0274e1d78da6c650` |
+| GFA-DATA-110 | Production Coverage Score and Data Freshness trusted caller-owned snapshot evidence | P1 retrospective | CLOSED | `101_SERVER_OWNED_QUALITY_METRICS.md` | `e48cb27655326fc6cc41d176a50120cdbf1ced6e` |
+| GFA-CONTRACT-111 | Rejected analytical parameters could produce a response and still continue query execution | P2 retrospective | CLOSED | `101_SERVER_OWNED_QUALITY_METRICS.md` | `e48cb27655326fc6cc41d176a50120cdbf1ced6e` |
+| GFA-TEST-112 | Temporary frontend verification used a non-hermetic external `node_modules` symlink | P2 retrospective | CLOSED | `101_SERVER_OWNED_QUALITY_METRICS.md` | `e48cb27655326fc6cc41d176a50120cdbf1ced6e` |
+| GFA-TEST-113 | Analytical remediation verification assumed existing working-tree dependencies were healthy | P2 retrospective | CLOSED | `101_SERVER_OWNED_QUALITY_METRICS.md` | `e48cb27655326fc6cc41d176a50120cdbf1ced6e` |
+| GFA-CONTRACT-114 | Public analytical numeric precision had no explicit contract | P2 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
+| GFA-PERF-115 | Source ordering used a manual quadratic sorting helper | P3 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
+| GFA-GOV-116 | Analytical Core closure lacked one permanent strict audit and complete CI path reachability | P2 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
+| GFA-TEST-117 | Permanent Analytical Core source audit was over-sensitive to legal formatter layout | P2 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
 
 ## Stage-level closure evidence
 
@@ -193,12 +212,15 @@ Document 70 = unique audit/closure blockers reconciled without duplicating later
 Document 78 = enriched as stage-level closure-governance evidence by design, not a synthetic finding
 Document 79 = enriched as post-closure remediation history
 Documents 83–92 = post-Stage-14 Ingestion / Provider remediation chain enriched and merged
-Documents 93–96 = post-Stage-14 Server / HTTP remediation chain enriched to canonical standard
-Canonical finding register covers 98 findings (001–098 with category prefixes)
+Documents 93–96 = post-Stage-14 Server / HTTP remediation chain enriched and merged through PR #117 (`ac478bfb0ab5796890e30ba99f5dae0a4a09589a`)
+Documents 97–102 = Analytical Core remediation and closure chain enriched to canonical standard in source
+Canonical finding register covers 117 findings (001–117 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
-Post-Stage-14 Server / HTTP finding extraction (Documents 93–96) = CLOSED IN SOURCE; exact-head pull-request CI/merge evidence pending
+Post-Stage-14 Server / HTTP finding extraction = CLOSED
+Analytical Core original review reconciliation = 14 FIXED findings mapped to canonical GFA owners; 3 deliberately retained and 2 rejected non-blocking observations preserved as non-defect dispositions
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range = Documents 97–102 (Analytical Core)
+Document 103 = dedicated owner of the post-Analytical-closure Next.js/PostCSS security remediation; canonical extraction pending
+Next post-Stage-14 audit range = Document 103 onward
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
