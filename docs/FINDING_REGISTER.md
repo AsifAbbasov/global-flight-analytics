@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.12
+Status: Canonical Finding Registry v1.13
 
 ## Purpose
 
@@ -217,6 +217,25 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-DATA-158 | Enrichment/cache modes were absent from deterministic processing identity | P1 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
 | GFA-ARCH-159 | Extractor composition exposed concrete implementation instead of behavior | P3 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
 | GFA-MAINT-160 | Extractor composition construction mixed validation/component assembly responsibilities | P3 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
+| GFA-CONC-161 | Cache acquire and in-flight registration were not one atomic decision | P1 retrospective | CLOSED | `116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` | `92691d993d7340112399a40bd9ecbc62ddb240ad` |
+| GFA-CONC-162 | Shared lookup lifetime was coupled to one caller cancellation | P1 retrospective | CLOSED | `116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` | `92691d993d7340112399a40bd9ecbc62ddb240ad` |
+| GFA-PERF-163 | Aircraft metadata cache lacked bounded lifecycle guarantees | P2 retrospective | CLOSED | `116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` | `92691d993d7340112399a40bd9ecbc62ddb240ad` |
+| GFA-ARCH-164 | Default provider not-found policy depended on PostgreSQL errors | P2 retrospective | CLOSED | `116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` | `92691d993d7340112399a40bd9ecbc62ddb240ad` |
+| GFA-DATA-165 | Successful aircraft lookup did not require a valid matching identity | P1 retrospective | CLOSED | `116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` | `92691d993d7340112399a40bd9ecbc62ddb240ad` |
+| GFA-OPS-166 | Aircraft provider silently substituted nil request context | P2 retrospective | CLOSED | `116_AIRCRAFT_PROVIDER_REVIEW_HARDENING.md` | `92691d993d7340112399a40bd9ecbc62ddb240ad` |
+| GFA-DATA-167 | Feature Store idempotency did not prove semantic output identity | P1 retrospective | CLOSED | `117_FEATURE_STORE_REVIEW_HARDENING.md` | `624fcf44d3260bd35ac32f67c0730689713198c0` |
+| GFA-CONTRACT-168 | Feature Store serialized the Go domain model directly | P2 retrospective | CLOSED | `117_FEATURE_STORE_REVIEW_HARDENING.md` | `624fcf44d3260bd35ac32f67c0730689713198c0` |
+| GFA-DATA-169 | Memory and PostgreSQL Stores enforced different write-validity contracts | P1 retrospective | CLOSED | `117_FEATURE_STORE_REVIEW_HARDENING.md` | `624fcf44d3260bd35ac32f67c0730689713198c0` |
+| GFA-DATA-170 | Feature Store writes did not require complete durable validation proof | P1 retrospective | CLOSED | `117_FEATURE_STORE_REVIEW_HARDENING.md` | `624fcf44d3260bd35ac32f67c0730689713198c0` |
+| GFA-PERF-171 | Memory Feature Store growth was unbounded | P2 retrospective | CLOSED | `117_FEATURE_STORE_REVIEW_HARDENING.md` | `624fcf44d3260bd35ac32f67c0730689713198c0` |
+| GFA-OPS-172 | Feature Store accepted nil caller contexts | P2 retrospective | CLOSED | `117_FEATURE_STORE_REVIEW_HARDENING.md` | `624fcf44d3260bd35ac32f67c0730689713198c0` |
+| GFA-DATA-173 | Versioned Flight Features schema omitted four produced geographical fields | P1 retrospective | CLOSED | `118_FLIGHT_FEATURES_SCHEMA_REVIEW_HARDENING.md` | `2eb2c49c11fc1894969ef62c0f9ea0e244a3103f` |
+| GFA-DATA-174 | Production Temporal evidence could be empty when raw points were intentionally absent | P2 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
+| GFA-DATA-175 | Zero duration overloaded valid zero and invalid/missing metadata | P2 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
+| GFA-CONTRACT-176 | Fractional-second duration policy was duplicated and implicit | P2 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
+| GFA-OPS-177 | Temporal Builder accepted nil context and lacked bounded cancellation checks | P2 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
+| GFA-DATA-178 | Temporal limitations omitted exact rejected-evidence counts | P3 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
+| GFA-DATA-179 | Materialized point-count metadata was not reconciled with actual point evidence | P2 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
 
 ## Stage-level closure evidence
 
@@ -259,15 +278,16 @@ Documents 93–96 = post-Stage-14 Server / HTTP remediation chain enriched and m
 Documents 97–102 = Analytical Core remediation and closure chain enriched and merged through PR #118 (`48b91fd87289c54c8492f90aa3c47ec0de61d4d6`)
 Document 103 = post-Analytical frontend security remediation enriched and merged through PR #119 (`3104b191e76d7257bcf965fb68537241405e5845`)
 Documents 104–108 = Feature Pipeline review and closure chain enriched and merged through PR #120 (`9c5cb4541d85787f4d85b6e7c44c55932de97635`)
-Documents 109–115 = Extractor processing/composition/correctness review chain enriched to canonical standard in source
-Canonical finding register covers 160 findings (001–160 with category prefixes)
+Documents 109–115 = Extractor processing/composition/correctness review chain enriched and merged through PR #121 (`b977e8929d637ee21ab6a938be3167b6deed0439`)
+Documents 116–119 = Aircraft Provider / Feature Store / Flight Features schema / Temporal Builder review chain enriched to canonical standard in source
+Canonical finding register covers 179 findings (001–179 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
 Analytical Core original review reconciliation = CLOSED
 Feature Pipeline review reconciliation = CLOSED AND MERGED
-Extractor review/composition reconciliation = CLOSED IN SOURCE; rejected cache-key/config-nesting/geographic-sentinel suggestions preserved as non-defect dispositions; exact-head pull-request CI/merge evidence pending
+Extractor review/composition reconciliation = CLOSED AND MERGED
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 116 (Aircraft Provider review chain)
+Next post-Stage-14 audit range begins at Document 120 (Geographical Builder review)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
