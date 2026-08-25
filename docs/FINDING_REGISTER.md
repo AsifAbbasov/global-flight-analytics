@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.17
+Status: Canonical Finding Registry v1.18
 
 ## Purpose
 
@@ -344,6 +344,24 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-OPS-285 | Historical Aggregate silently substituted nil caller contexts | P2 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
 | GFA-DATA-286 | Aggregate storage time could be zero or precede result generation | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
 | GFA-DB-287 | Historical Aggregate timestamp mirrors lacked database-level consistency constraints | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527`; migration 029 |
+| GFA-DATA-288 | Combined two-period reads allowed cross-period limit starvation | P1 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-DATA-289 | Materialization trusted unverified Historical Read snapshot identity | P1 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-DATA-290 | Combined read summary obscured period-specific evidence quality | P1 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-DATA-291 | Materialization returned a pre-persistence result instead of canonical persisted identity | P1 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-DATA-292 | Materialization duplicated comparison provenance and omitted GeneratedAt from repaired fingerprint identity | P1 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-OPS-293 | Materialization silently replaced nil caller context | P2 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-OPS-294 | Materialization errors did not identify the failed orchestration stage | P2 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-MAINT-295 | Exported DatasetLimitOr duplicated already-normalized request state | P3 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-TEST-296 | Materialization regression coverage omitted critical two-period and persistence invariants | P2 retrospective | CLOSED | `132_HISTORICAL_MATERIALIZATION_REVIEW_HARDENING.md` | `2bbbd2439580536ffe17f8827c654c245d9b6b1e` |
+| GFA-DATA-297 | Replay accepted unverified Materialization outcomes | P1 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-DATA-298 | Replay result status depended on a separate Go error instead of self-contained execution evidence | P1 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-OPS-299 | Production replay reporting discarded a successfully persisted completed prefix | P1 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-DATA-300 | Adjacent Replay Materializations could observe inconsistent shared-period evidence | P1 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-CONTRACT-301 | Global Replay request failures were validated after window execution began | P2 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-PERF-302 | Replay planning applied the smaller replay limit after larger allocation work | P2 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-OPS-303 | Replay and production command silently replaced nil caller context | P2 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-DATA-304 | Replay lacked canonical input identity and public result validation | P1 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-TEST-305 | Replay regression coverage omitted critical partial-progress and integrity invariants | P2 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
 
 ## Stage-level closure evidence
 
@@ -391,8 +409,9 @@ Documents 116–119 = Aircraft Provider / Feature Store / Flight Features schema
 Documents 120–123 = Geographical / Operational / Trajectory Builder / Validator review chain enriched and merged through PR #123 (`46cb38e022fd14094ce261dbeb243e25744fa8fb`)
 Documents 124–126 = Historical Contract / Window / Read review chain enriched and merged through PR #124 (`849c2f4b0e99a35cf3c75ca39d2aaeefc35c41b1`)
 Documents 127–129 = Historical Series / Route / Comparison review chain enriched and merged through PR #125 (`4f9b1d71177ad89fa43581ef6ed080ce5c1aa1ab`)
-Documents 130–131 = Historical Similarity / Aggregate review chain enriched to canonical standard in source
-Canonical finding register covers 287 findings (001–287 with category prefixes)
+Documents 130–131 = Historical Similarity / Aggregate review chain enriched and merged through PR #126 (`feaaba300df6e4273083da2bf13dbc4346fb4425`)
+Documents 132–133 = Historical Materialization / Replay review chain enriched to canonical standard in source
+Canonical finding register covers 305 findings (001–305 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -403,8 +422,9 @@ Provider/store/schema/temporal review reconciliation = CLOSED AND MERGED
 Builder/Validator review reconciliation = CLOSED AND MERGED
 Historical Contract/Window/Read review reconciliation = CLOSED AND MERGED
 Historical Series/Route/Comparison review reconciliation = CLOSED AND MERGED
-Historical Similarity/Aggregate review reconciliation = CLOSED IN SOURCE
+Historical Similarity/Aggregate review reconciliation = CLOSED AND MERGED
+Historical Materialization/Replay review reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 132 (Historical Materialization review)
+Next post-Stage-14 audit range begins at Document 134 (Projection Contract review)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
