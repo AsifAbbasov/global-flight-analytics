@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.11
+Status: Canonical Finding Registry v1.12
 
 ## Purpose
 
@@ -190,6 +190,33 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-DB-131 | Processing-aware PostgreSQL list query retained the old predicate/placeholder contract | P1 retrospective | CLOSED | `106_FEATURE_PROCESSING_IDENTITY_POSTGRES_LIST_FIX.md` | `f18d43689d53301db862bc10c0445c90dc6f277d` |
 | GFA-TEST-132 | Isolated PostgreSQL feature-store fixture omitted processing identity | P2 retrospective | CLOSED | `107_FEATURE_PROCESSING_IDENTITY_TEST_FIXTURE_ALIGNMENT.md` | `96751055657d75ee7800e40c8225ee114b0b52e4` |
 | GFA-DATA-133 | Complete Feature Pipeline validation evidence was transient and disappeared after persistence | P1 retrospective | CLOSED | `108_FEATURE_PIPELINE_VALIDATION_AUDIT_AND_FINAL_CLOSURE.md` | `abd038c10d1d382843dbaefb8b506efeff5fdeda` |
+| GFA-DATA-134 | Extractor fingerprint omitted effective composition policy and component identity | P1 retrospective | CLOSED | `109_EXTRACTOR_COMPOSITION_PROCESSING_IDENTITY.md` | `a4c563112abd459c90e23e33d191c5f059e5044f` |
+| GFA-DATA-135 | Resolved aircraft metadata was absent from deterministic extraction input identity | P1 retrospective | CLOSED | `109_EXTRACTOR_COMPOSITION_PROCESSING_IDENTITY.md` | `a4c563112abd459c90e23e33d191c5f059e5044f` |
+| GFA-CONTRACT-136 | Custom aircraft not-found classifier lacked stable policy identity | P2 retrospective | CLOSED | `109_EXTRACTOR_COMPOSITION_PROCESSING_IDENTITY.md` | `a4c563112abd459c90e23e33d191c5f059e5044f` |
+| GFA-ARCH-137 | Typed-nil aircraft lookup could pass extractor-composition validation | P2 retrospective | CLOSED | `109_EXTRACTOR_COMPOSITION_PROCESSING_IDENTITY.md` | `a4c563112abd459c90e23e33d191c5f059e5044f` |
+| GFA-DATA-138 | Current aircraft metadata could leak into historical feature materialization | P1 retrospective | CLOSED | `110_AIRCRAFT_METADATA_TEMPORAL_SAFETY.md` | `f574911a27b4bad10ddf137689b35286fdb485d3` |
+| GFA-CONTRACT-139 | Zero-valued extractor composition fields ambiguously meant omission/defaults | P2 retrospective | CLOSED | `111_EXTRACTOR_COMPOSITION_EXPLICIT_CONFIG.md` | `ff84eefdb8ab363e2bdd276f99e49df7235fb50f` |
+| GFA-DATA-140 | Nested trajectory evidence after `AsOfTime` could enter historical extraction | P1 retrospective | CLOSED | `112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` | `e853f5931c78f6ed7b0fbcd0dd85a53cfbaa22f3` |
+| GFA-OPS-141 | Extractor silently replaced a nil caller context | P2 retrospective | CLOSED | `112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` | `e853f5931c78f6ed7b0fbcd0dd85a53cfbaa22f3` |
+| GFA-ARCH-142 | Typed-nil extractor dependencies violated required/optional semantics | P2 retrospective | CLOSED | `112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` | `e853f5931c78f6ed7b0fbcd0dd85a53cfbaa22f3` |
+| GFA-OPS-143 | Cancellation during aircraft enrichment was not rechecked before hashing/publication | P2 retrospective | CLOSED | `112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` | `e853f5931c78f6ed7b0fbcd0dd85a53cfbaa22f3` |
+| GFA-DATA-144 | Invalid evidence counts could enter completeness calculation | P1 retrospective | CLOSED | `112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` | `e853f5931c78f6ed7b0fbcd0dd85a53cfbaa22f3` |
+| GFA-DATA-145 | Non-finite or out-of-range trajectory quality could be masked into ordinary scores | P1 retrospective | CLOSED | `112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` | `e853f5931c78f6ed7b0fbcd0dd85a53cfbaa22f3` |
+| GFA-DATA-146 | Semantically equivalent aircraft identity text produced different extraction fingerprints | P2 retrospective | CLOSED | `112_EXTRACTOR_INPUT_CORRECTNESS_HARDENING.md` | `e853f5931c78f6ed7b0fbcd0dd85a53cfbaa22f3` |
+| GFA-DATA-147 | Optional aircraft enrichment incorrectly reduced required-feature completeness | P1 retrospective | CLOSED | `113_EXTRACTOR_QUALITY_AND_PROVENANCE_SEMANTICS.md` | `3cdd9b1532609c872343d00626ba44a9c9855609` |
+| GFA-DATA-148 | Trajectory `EndTime` was fabricated as system record update provenance | P1 retrospective | CLOSED | `113_EXTRACTOR_QUALITY_AND_PROVENANCE_SEMANTICS.md` | `3cdd9b1532609c872343d00626ba44a9c9855609` |
+| GFA-DATA-149 | Aircraft enrichment lacked durable source/provider/retrieval provenance | P1 retrospective | CLOSED | `113_EXTRACTOR_QUALITY_AND_PROVENANCE_SEMANTICS.md` | `3cdd9b1532609c872343d00626ba44a9c9855609` |
+| GFA-MAINT-150 | ICAO24 normalization/validation ownership was duplicated | P3 retrospective | CLOSED | `114_EXTRACTOR_REVIEW_FINAL_CLOSURE.md` | `bcf7ff3e1a83024ee346c16638de0b389baf7e7a` |
+| GFA-MAINT-151 | Defensive trajectory cloning ownership was duplicated in extractor | P3 retrospective | CLOSED | `114_EXTRACTOR_REVIEW_FINAL_CLOSURE.md` | `bcf7ff3e1a83024ee346c16638de0b389baf7e7a` |
+| GFA-CONTRACT-152 | Aircraft feature field count was duplicated instead of schema-derived | P2 retrospective | CLOSED | `114_EXTRACTOR_REVIEW_FINAL_CLOSURE.md` | `bcf7ff3e1a83024ee346c16638de0b389baf7e7a` |
+| GFA-DATA-153 | Deterministic fingerprint mirrors lacked structural drift protection | P1 retrospective | CLOSED | `114_EXTRACTOR_REVIEW_FINAL_CLOSURE.md` | `bcf7ff3e1a83024ee346c16638de0b389baf7e7a` |
+| GFA-GOV-154 | Extractor review closure lacked one permanent CI-enforced reconciliation gate | P2 retrospective | CLOSED | `114_EXTRACTOR_REVIEW_FINAL_CLOSURE.md` | `bcf7ff3e1a83024ee346c16638de0b389baf7e7a` |
+| GFA-DATA-155 | Typed extractor processing manifest was not persisted as feature provenance | P2 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
+| GFA-CONTRACT-156 | Optional aircraft enrichment had no explicit disabled configuration mode | P2 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
+| GFA-CONTRACT-157 | Aircraft caching had no explicit disabled mode | P2 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
+| GFA-DATA-158 | Enrichment/cache modes were absent from deterministic processing identity | P1 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
+| GFA-ARCH-159 | Extractor composition exposed concrete implementation instead of behavior | P3 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
+| GFA-MAINT-160 | Extractor composition construction mixed validation/component assembly responsibilities | P3 retrospective | CLOSED | `115_EXTRACTOR_COMPOSITION_REVIEW_HARDENING.md` | `28ff8414388d2e81db4e74b83a2fd0c23880d56a` |
 
 ## Stage-level closure evidence
 
@@ -231,15 +258,16 @@ Documents 83–92 = post-Stage-14 Ingestion / Provider remediation chain enriche
 Documents 93–96 = post-Stage-14 Server / HTTP remediation chain enriched and merged through PR #117 (`ac478bfb0ab5796890e30ba99f5dae0a4a09589a`)
 Documents 97–102 = Analytical Core remediation and closure chain enriched and merged through PR #118 (`48b91fd87289c54c8492f90aa3c47ec0de61d4d6`)
 Document 103 = post-Analytical frontend security remediation enriched and merged through PR #119 (`3104b191e76d7257bcf965fb68537241405e5845`)
-Documents 104–108 = Feature Pipeline review and closure chain enriched to canonical standard in source
-Canonical finding register covers 133 findings (001–133 with category prefixes)
+Documents 104–108 = Feature Pipeline review and closure chain enriched and merged through PR #120 (`9c5cb4541d85787f4d85b6e7c44c55932de97635`)
+Documents 109–115 = Extractor processing/composition/correctness review chain enriched to canonical standard in source
+Canonical finding register covers 160 findings (001–160 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
-Analytical Core original review reconciliation = CLOSED; 14 FIXED findings mapped to canonical GFA owners, 3 deliberately retained and 2 rejected non-blocking observations preserved as non-defect dispositions
-Document 103 security extraction = CLOSED AND MERGED
-Feature Pipeline review reconciliation = CLOSED IN SOURCE; accepted FP findings mapped to canonical owners, FP-07/FP-09 retained non-blocking, stale/mechanical observations preserved as non-defect dispositions; exact-head pull-request CI/merge evidence pending
+Analytical Core original review reconciliation = CLOSED
+Feature Pipeline review reconciliation = CLOSED AND MERGED
+Extractor review/composition reconciliation = CLOSED IN SOURCE; rejected cache-key/config-nesting/geographic-sentinel suggestions preserved as non-defect dispositions; exact-head pull-request CI/merge evidence pending
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range = Documents 109–115 (Extractor composition/correctness review chain)
+Next post-Stage-14 audit range begins at Document 116 (Aircraft Provider review chain)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
