@@ -158,5 +158,5 @@ Document 78 = enriched as stage-level closure-governance evidence by design, not
 Document 79 = enriched as post-closure remediation history
 Canonical finding register covers 62 findings (001–062 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
-README / DOCUMENT_INDEX navigation reconciliation = final remaining documentation-governance step in this PR
+README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
