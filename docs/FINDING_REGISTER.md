@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.19
+Status: Canonical Finding Registry v1.20
 
 ## Purpose
 
@@ -384,6 +384,36 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-PERF-325 | Projection Horizon configuration lacked a package-wide allocation bound | P2 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
 | GFA-DATA-326 | Projection consumers trusted malformed alternative Horizon plans | P1 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
 | GFA-TEST-327 | Projection Horizon remediation lacked permanent regression and CI enforcement | P2 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-DATA-328 | Cutoff snapshots retained post-`as_of` aggregate quality evidence | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `0f2c1b2c6f91f104b8e0880e85dc8144fed6a910`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DB-329 | PostgreSQL Projection hydration returned cutoff-unsafe trajectory quality | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `0f2c1b2c6f91f104b8e0880e85dc8144fed6a910`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-TEST-330 | Future-evidence regression could not detect aggregate quality leakage | P2 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `0f2c1b2c6f91f104b8e0880e85dc8144fed6a910`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-331 | Unavailable Projection Baseline results lacked reproducible denial provenance | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `0f2c1b2c6f91f104b8e0880e85dc8144fed6a910`; collaboration `560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-332 | Projection Baseline fingerprint omitted output-affecting evidence and policy identity | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `af9c377193c21c048721e9cc28bf885d6ad276ec`; collaboration `560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-333 | Baseline confidence ignored latest-observation age | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `af9c377193c21c048721e9cc28bf885d6ad276ec`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-334 | Projection Baseline kinematics lacked conservative physical bounds | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `af9c377193c21c048721e9cc28bf885d6ad276ec`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-335 | Altitude and vertical-rate evidence lacked explicit reference semantics | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `af9c377193c21c048721e9cc28bf885d6ad276ec`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-336 | Conflicting latest observations at the same timestamp were selected lexically | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-337 | Allowed on-ground evidence reused the airborne propagation model | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-CONTRACT-338 | Default eligibility made the horizontal-only Projection branch unreachable | P2 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-339 | Projection Baseline trusted malformed custom eligibility output | P1 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `560e4ed15cabbf0042110e00363a3a7c4d0c0d2e`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-OPS-340 | Nil Projection Baseline returned an unrelated construction error | P2 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `af9c377193c21c048721e9cc28bf885d6ad276ec`; audit `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-GOV-341 | Projection Baseline remediation lacked permanent regression and CI enforcement | P2 retrospective | CLOSED | `136_PROJECTION_BASELINE_REVIEW_HARDENING.md` | `51476c427f77b5a7375cd30b6f9a81d446c1c3f2` |
+| GFA-DATA-342 | Candidate eligibility and duplicate checks occurred after the expensive evaluation budget | P1 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `e2a4a7dc76e43942ca9deb0d8d5f83a09a42deff`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-DATA-343 | Candidate-budget truncation was input-order sensitive rather than recency deterministic | P2 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `e2a4a7dc76e43942ca9deb0d8d5f83a09a42deff`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-CONTRACT-344 | Selection limit could exceed the maximum candidate evaluation budget | P2 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `e2a4a7dc76e43942ca9deb0d8d5f83a09a42deff`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-DATA-345 | Snapshot and selection fingerprints were not fully canonical under equivalent input ordering | P1 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `e2a4a7dc76e43942ca9deb0d8d5f83a09a42deff`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-OPS-346 | Systemic similarity failures were indistinguishable from ordinary candidate non-comparability | P1 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `e2a4a7dc76e43942ca9deb0d8d5f83a09a42deff`; pipeline `353d19bc97f561e1897ece1967e7304c0e10b5fb`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-DATA-347 | Neighbor continuation could bridge unobserved temporal gaps | P1 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `911a1b102c68af2746a13bfca48b008cf7225ff8`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-DATA-348 | Historical neighbors lacked source-attested route-scope ownership | P1 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `3eee05fb44484aa6e389af66520aba23d4ae277e`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-MAINT-349 | Neighbor selection mixed preparation, evaluation, ranking, assembly, and validation in one coordinator | P3 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `353d19bc97f561e1897ece1967e7304c0e10b5fb`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-CONTRACT-350 | One truncation flag conflated evaluation-budget truncation with qualified-result limiting | P2 retrospective | CLOSED | `137_PROJECTION_NEIGHBORS_REVIEW_HARDENING.md` | `353d19bc97f561e1897ece1967e7304c0e10b5fb`; audit `c409cc171507050625524af1a0b8b8a6f38b7a75` |
+| GFA-DATA-351 | Pattern Confidence fingerprint omitted decision-relevant selected-neighbor evidence | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `6e6ac17cfcfca688d57829adfe2468346db6db1a`; continuation `5873ae911b40197ee45eea30e7558aa04af78064`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
+| GFA-CONTRACT-352 | Pattern Confidence configuration admitted zero-information or internally incoherent policy states | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `6e6ac17cfcfca688d57829adfe2468346db6db1a`; distribution `f73534feb275c5e109fa12fcfd9df5b69c56c03a`; continuation `5873ae911b40197ee45eea30e7558aa04af78064`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
+| GFA-DATA-353 | Mean similarity alone hid weak neighbors and unstable similarity distributions | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `f73534feb275c5e109fa12fcfd9df5b69c56c03a`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
+| GFA-CONTRACT-354 | Pattern Confidence duplicated freshness ownership by scoring candidate age | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `f73534feb275c5e109fa12fcfd9df5b69c56c03a`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
+| GFA-DATA-355 | Pattern Confidence did not verify that selected neighbors agreed on future continuation | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `5873ae911b40197ee45eea30e7558aa04af78064`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
+| GFA-CONTRACT-356 | Production consumers could fall back to a continuation-unaware Pattern Confidence evaluator | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | optional `5873ae911b40197ee45eea30e7558aa04af78064`; mandatory `e31fcb5bbbb76093305e8b2c137c793a85dc6795`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
+| GFA-DATA-357 | Pattern Confidence validation did not independently reconstruct the published decision | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `6e6ac17cfcfca688d57829adfe2468346db6db1a`; distribution `f73534feb275c5e109fa12fcfd9df5b69c56c03a`; continuation `5873ae911b40197ee45eea30e7558aa04af78064`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
 
 ## Stage-level closure evidence
 
@@ -433,8 +463,9 @@ Documents 124–126 = Historical Contract / Window / Read review chain enriched 
 Documents 127–129 = Historical Series / Route / Comparison review chain enriched and merged through PR #125 (`4f9b1d71177ad89fa43581ef6ed080ce5c1aa1ab`)
 Documents 130–131 = Historical Similarity / Aggregate review chain enriched and merged through PR #126 (`feaaba300df6e4273083da2bf13dbc4346fb4425`)
 Documents 132–133 = Historical Materialization / Replay review chain enriched and merged through PR #127 (`5847b8b30b8be8900361d95422859bfc5f70044f`)
-Documents 134–135 = Projection Contract / Horizon review chain enriched to canonical standard in source
-Canonical finding register covers 327 findings (001–327 with category prefixes)
+Documents 134–135 = Projection Contract / Horizon review chain enriched and merged through PR #128 (`de9fcbcf43da759584c91b669bb42a70dfbb95ad`)
+Documents 136–138 = Projection Baseline / Neighbors / Pattern Confidence review chain enriched to canonical standard in source
+Canonical finding register covers 357 findings (001–357 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -447,8 +478,9 @@ Historical Contract/Window/Read review reconciliation = CLOSED AND MERGED
 Historical Series/Route/Comparison review reconciliation = CLOSED AND MERGED
 Historical Similarity/Aggregate review reconciliation = CLOSED AND MERGED
 Historical Materialization/Replay review reconciliation = CLOSED AND MERGED
-Projection Contract/Horizon review reconciliation = CLOSED IN SOURCE
+Projection Contract/Horizon review reconciliation = CLOSED AND MERGED
+Projection Baseline/Neighbors/Pattern Confidence review reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 136 (Projection Baseline review)
+Next post-Stage-14 audit range begins at Document 139 (Projection Freshness review)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
