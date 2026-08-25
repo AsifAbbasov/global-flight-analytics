@@ -6,9 +6,13 @@ Scope: preserve kinematic telemetry availability from provider to analytical rea
 
 ## 1. Correctness Problem
 
-Projection Intelligence already rejected PostgreSQL rows where required kinematic columns were `NULL`. That boundary was necessary but not sufficient.
+Projection Intelligence already rejected PostgreSQL rows where required
+kinematic columns were `NULL`.
 
-OpenSky mapping previously converted absent velocity, heading, and vertical rate values into numerical zero before persistence:
+That boundary was necessary but not sufficient.
+
+OpenSky mapping previously converted absent velocity, heading, and vertical
+rate values into numerical zero before persistence:
 
 ```text
 provider NULL
@@ -19,11 +23,16 @@ Projection IS NOT NULL
 false complete telemetry
 ```
 
-Once absence became zero, downstream code could not distinguish a real observed zero from an unavailable provider value.
+Once absence became zero, downstream code could not distinguish:
+
+```text
+a real observed zero
+an unavailable provider value
+```
 
 ## 2. Domain Contract
 
-`flightstate.FlightState` carries:
+`flightstate.FlightState` now carries:
 
 ```text
 TelemetryAvailabilityKnown
@@ -33,11 +42,27 @@ VerticalRateAvailable
 OnGroundAvailable
 ```
 
-Values remain ordinary Go values for compatibility; availability is an independent fact. `TelemetryAvailabilityKnown=false` preserves legacy fixtures/producers that predate the contract, while production providers and PostgreSQL readers set it to true.
+The values remain ordinary Go values for compatibility. Availability is an
+independent fact.
+
+Examples:
+
+```text
+VelocityMPS=0, VelocityAvailable=true
+means the provider observed zero velocity
+
+VelocityMPS=0, VelocityAvailable=false
+means velocity was unavailable
+```
+
+`TelemetryAvailabilityKnown=false` preserves compatibility with existing
+legacy fixtures and internal producers that predate the availability contract.
+
+Production providers and PostgreSQL readers set it to `true`.
 
 ## 3. Provider Mapping
 
-OpenSky finite optional mapping is:
+OpenSky uses a finite optional-number mapper:
 
 ```text
 nil        -> 0, false
@@ -47,39 +72,158 @@ zero       -> 0, true
 finite     -> value, true
 ```
 
-A fresh position can therefore be persisted even when movement telemetry is unavailable. Airplanes.live explicitly marks its mapped kinematics as available under its then-current response contract.
+A fresh OpenSky position remains usable even when kinematics are missing.
+The state is persisted as a position-only observation rather than discarded.
+
+Airplanes.live currently exposes these mapped fields through non-nullable
+provider response values. Its mapper explicitly marks the mapped kinematics
+as available so existing runtime behavior remains unchanged.
 
 ## 4. PostgreSQL Write Semantics
 
-`SaveFlightStates` writes PostgreSQL `NULL` when availability is false and the numerical value when availability is true. Real zero values remain valid stored values. No migration was required because the existing telemetry columns already allow `NULL`.
+`SaveFlightStates` now writes:
+
+```text
+PostgreSQL NULL when availability=false
+the numerical value when availability=true
+```
+
+Real zero values remain valid database values.
+
+No migration is required because the existing flight-state telemetry columns
+already accept `NULL`.
 
 ## 5. PostgreSQL Read Semantics
 
-General Flight State and reconciliation readers use nullable PostgreSQL types for movement telemetry and restore both value and availability. Latitude/longitude are not fabricated through zero fallbacks; rows without usable positions are excluded where required.
+General Flight State and reconciliation readers now use PostgreSQL nullable
+types for:
+
+```text
+velocity_mps
+heading_degrees
+vertical_rate_mps
+on_ground
+```
+
+They restore both the value and the availability flag.
+
+Latitude and longitude are no longer fabricated with zero fallbacks. Readers
+exclude historical rows without a usable position.
 
 ## 6. Traffic Read Boundary
 
-The current traffic map contract remains non-nullable, so Traffic selects only rows with the display telemetry it needs rather than fabricating missing values.
+The current traffic contract remains non-nullable for map rendering.
+
+Therefore Traffic does not fabricate fallback values. It selects only rows
+where the required display telemetry exists:
+
+```text
+latitude
+longitude
+velocity
+heading
+on_ground
+```
+
+This preserves the current HTTP contract while preventing unavailable
+kinematics from appearing as zero.
 
 ## 7. Airspace Intelligence Boundary
 
-Airspace calculations require complete motion telemetry. Missing velocity, heading, vertical rate or on-ground state is excluded from interaction/proximity/separation calculations rather than interpreted as a real zero.
+Airspace calculations require complete motion telemetry.
+
+The PostgreSQL observation reader now selects only observations where:
+
+```text
+velocity
+heading
+vertical rate
+on_ground
+```
+
+are present.
+
+Missing telemetry is excluded from proximity, interaction, and separation
+calculations instead of becoming a real numerical zero.
 
 ## 8. Data Quality Validation
 
-The traffic validator treats explicit unavailability as missing movement telemetry. Position-only observations receive a reduced completeness classification instead of a false complete state. Legacy states without explicit availability retain their compatibility behavior.
+The traffic validator now treats explicit unavailability as missing movement
+telemetry.
+
+Missing velocity, heading, vertical rate, or on-ground state produces a
+position-only completeness classification rather than a false complete
+observation.
+
+Legacy states without an explicit availability contract retain their previous
+validation behavior.
 
 ## 9. Final Correctness Audit Expansion
 
-`backendfinalaudit` verifies FlightState availability fields, provider mapping, nullable PostgreSQL writes/reads, reconciliation, Traffic/Airspace/Projection eligibility and validator awareness. Dangerous numerical `COALESCE` expressions are protected against reintroduction in the relevant readers.
+`backendfinalaudit` now verifies the complete chain:
+
+```text
+FlightState availability fields and methods
+OpenSky finite optional mapping
+Airplanes.live explicit availability
+PostgreSQL nullable writes
+Flight State nullable reads
+Reconciliation nullable reads
+Traffic complete-row selection
+Airspace complete-row selection
+Projection complete-row selection
+validator availability awareness
+```
+
+The audit fails if dangerous numerical `COALESCE` expressions return in the
+protected production readers.
 
 ## 10. Acceptance Scenarios
 
-Acceptance proves missing provider telemetry remains unavailable through persistence/readback, explicit zero remains available zero, and Traffic/Airspace/Projection/validation apply their documented eligibility semantics.
+The increment must prove:
+
+```text
+OpenSky nil velocity -> PostgreSQL NULL semantics
+OpenSky nil heading -> PostgreSQL NULL semantics
+OpenSky nil vertical rate -> PostgreSQL NULL semantics
+
+OpenSky velocity zero -> available zero
+OpenSky heading zero -> available zero
+OpenSky vertical rate zero -> available zero
+
+PostgreSQL NULL -> availability=false
+PostgreSQL zero -> availability=true
+
+Traffic excludes incomplete display telemetry
+Airspace excludes incomplete analytical telemetry
+validator reports explicit unavailability as missing
+Projection continues to require complete kinematics
+```
 
 ## 11. Verification
 
-Acceptance requires focused provider/domain/repository/validator/Traffic/Airspace/Projection tests, expanded backendfinalaudit, strict projectaudit, race detector, complete Go build/vet/tests, frontend dependency/lint/type/build checks, backend container build and diff validation.
+Acceptance requires:
+
+```text
+focused provider, domain, repository, validator, Traffic, Airspace, and
+Projection tests
+expanded backendfinalaudit
+strict projectaudit
+race detector
+complete Go build
+go vet
+complete Go tests
+frontend dependency security verification
+frontend lint
+frontend TypeScript validation
+frontend production build
+backend Docker image build
+git diff check
+```
+
+After this stage, the previously identified nullable telemetry correctness risk
+is closed end-to-end for the production provider, persistence, and analytical
+read path.
 
 ## 12. Canonical remediation history
 
