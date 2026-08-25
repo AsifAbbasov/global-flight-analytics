@@ -127,3 +127,37 @@ Final closure still requires a green Backend Continuous Integration run on the
 corrective commit, including migration application, PostgreSQL correctness tests,
 the PostgreSQL feature-pipeline verifier, race tests and the permanent contract
 audit.
+
+---
+
+## Canonical remediation history
+
+### GFA-DATA-133 — complete Feature Pipeline validation evidence was transient and disappeared after persistence
+
+1. **Finding / symptom.** A stored feature snapshot retained only validation status; validator version, validation time, counts and issue details existed only in the transient pipeline result.
+2. **Root cause.** Validation was modeled as a processing-time report rather than durable evidence owned by the feature snapshot that the report authorized.
+3. **Failure scenario.** A feature snapshot is persisted, later reloaded or replayed, and consumers can recover its accepted status but cannot determine which validator version made the decision, when validation occurred or which warnings/issues justified a limited result.
+4. **Impact.** Durable analytical features lose the audit evidence needed to reproduce, investigate and trust their validation decision; replay could return a newer transient report unrelated to the originally stored record.
+5. **Severity rationale.** **P1 retrospective.** Validation is the admission boundary for durable analytical features; losing its complete evidence after persistence materially weakens data provenance and can misrepresent replay history.
+6. **Existing guarantees violated.** Durable snapshots must preserve the evidence that authorized them, and idempotent replay must return the stored decision rather than newly generated audit metadata.
+7. **Considered solutions.** Keep only status; store report in a separate audit table; embed the complete normalized report in `FlightFeatures`; reconstruct missing legacy reports.
+8. **Chosen remediation.** Make `flightfeatures.FlightFeatures` own `ValidationReport`, alias validator report types to the durable model, normalize/validate it before storage, persist it in JSON, enforce status consistency, and return the stored report on successful/replayed results.
+9. **Why this solution was selected.** The validation decision is intrinsic to the stored feature payload; embedding the report keeps identity, replay and persistence atomic without a second lifecycle/table.
+10. **Rejected alternatives.** Status-only persistence remains insufficient; a separate audit table introduces synchronization/orphan risks; inventing historical validator/time/issues would fabricate evidence.
+11. **Trade-offs.** Snapshot payloads become larger and migrations/validators must maintain the durable report schema. Legacy rows carry explicit unavailable audit state rather than complete detail.
+12. **Regression tests / protection.** Pipeline tests prove persistence and idempotent replay return the original stored report; memory/PostgreSQL stores validate report consistency; migration `027` enforces JSON presence/status mirror; PostgreSQL verifier emits `Validation audit trail: PASS`; permanent contract audit protects the boundary.
+13. **Adversarial review findings.** Legacy compatibility must preserve known status without synthesizing unknown history, hence `AuditState=legacy_unavailable`; complete reports must be defensively cloned and normalized on both write and read paths.
+14. **Remediation iterations.** Transient report integrity was hardened in `312afe2b…`; processing identity/CI regressions were closed through Documents 105–107; the remaining durable-audit debt was closed in `abd038c1…` with migration `027` and final Feature Pipeline dispositions.
+15. **Residual risks and limitations.** Rows classified `legacy_unavailable` intentionally lack historical validator/time/issue detail; the repository cannot reconstruct evidence that was never persisted.
+16. **Operational or deployment consequences.** Migration `027_flight_feature_validation_audit.sql` changes durable feature snapshot JSON/constraints; new snapshots carry complete audit state while historical rows are explicitly backfilled as unavailable.
+17. **Exact evidence.** Implementation commit `abd038c10d1d382843dbaefb8b506efeff5fdeda` (`fix: persist feature validation audit trail`). The predecessor baseline `96751055657d75ee7800e40c8225ee114b0b52e4` already contained the processing-identity fixture fix. Historical adversarial-review/PR evidence unavailable; reconstruction is limited to repository source, tests, migrations, commits, documents and CI evidence.
+18. **Final canonical status.** `GFA-DATA-133=CLOSED`.
+19. **Prevention / future guard.** Any validation or quality decision that authorizes durable analytical data must define whether its evidence is durable; if yes, the persisted record, replay path, migrations and database constraints must preserve it without fabrication.
+
+### Non-finding closure dispositions
+
+`FP-07` and `FP-09` remain deliberately retained non-blocking for the reasons in
+Section 4. The old integration/BDUF observation is stale because the production
+materializer composes the pipeline. Mechanical naming/line-count/nil-return
+observations remain review preferences without demonstrated failure modes. None
+of these dispositions receives a canonical defect ID.
