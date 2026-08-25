@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.22
+Status: Canonical Finding Registry v1.23
 
 ## Purpose
 
@@ -494,6 +494,7 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-DATA-435 | Route-history aggregate mirrors were not independently reconciled with contributing evidence | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `9dda4b102497028b59280143b86bf84564afb136`; audit `e0557f6bc3115767ba124a9c94cbb008194c643b` |
 | GFA-OPS-436 | Backend-wide caller-context ownership was not enforced consistently | P2 retrospective | CLOSED | `147_BACKEND_CONTEXT_OWNERSHIP_AUDIT_CLOSURE.md` | `44d41d6ece32b8196a5613c8d4839d7ebe972cac`; Backend CI `30703281257` |
 | GFA-CONTRACT-437 | Frontend API client could overwrite caller-cancellation ownership with a later local timeout | P2 retrospective | CLOSED | `148_FRONTEND_API_CLIENT_ABORT_AND_TESTING_HARDENING.md` | `ee2bb13e60c29ae9ecdcb7736d4fe39561e3b28d`; Frontend CI `30705944365` |
+| GFA-OPS-438 | API PostgreSQL startup was detached from the signal-owned lifecycle context | P2 retrospective | CLOSED | `152_BACKEND_STARTUP_CONTEXT_HARDENING.md` | `fa222650ef5425dcf60a05fb949c17cafc36c1a8`; Backend CI `30708959553` |
 
 ## Stage-level closure evidence
 
@@ -547,8 +548,10 @@ Documents 134–135 = Projection Contract / Horizon review chain enriched and me
 Documents 136–138 = Projection Baseline / Neighbors / Pattern Confidence review chain enriched and merged through PR #129 (`df0eb98fcb9ef97a7cb663768f2885d3dbe5a884`)
 Documents 139–145 = Projection Freshness / Route Frequency / Continuation / Arrival / Evaluation / Production / Read review chain enriched and merged through PR #130 (`5e649fc339aa5c127129135a95296ee6526b7a3f`)
 Document 146 = Projection Intelligence final cross-module reconciliation classified as closure-governance evidence and merged through PR #130 (`5e649fc339aa5c127129135a95296ee6526b7a3f`); no synthetic finding ID created
-Documents 147–148 = Backend Context Ownership / Frontend API cancellation review history enriched to canonical standard in source
-Canonical finding register covers 437 findings (001–437 with category prefixes)
+Documents 147–148 = Backend Context Ownership / Frontend API cancellation review history enriched and merged through PR #131 (`7a0ceecfc1fe3f9c914e2529887a57f345fadde1`)
+Documents 149–151 = Frontend feature implementation / closure evidence reconciled in source; no synthetic finding IDs created
+Document 152 = Backend Startup Context remediation enriched to canonical standard in source
+Canonical finding register covers 438 findings (001–438 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -565,8 +568,10 @@ Projection Contract/Horizon review reconciliation = CLOSED AND MERGED
 Projection Baseline/Neighbors/Pattern Confidence review reconciliation = CLOSED AND MERGED
 Projection Freshness/Route Frequency/Continuation/Arrival/Evaluation/Production/Read review reconciliation = CLOSED AND MERGED
 Projection Intelligence final cross-module reconciliation = CLOSED AND MERGED; closure-governance evidence only
-Backend Context Ownership / Frontend API cancellation reconciliation = CLOSED IN SOURCE
+Backend Context Ownership / Frontend API cancellation reconciliation = CLOSED AND MERGED
+Frontend feature closure Documents 149–151 = CLOSED IN SOURCE; feature/closure evidence only
+Backend Startup Context reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 149 (Frontend Aircraft Explorer)
+Next post-Stage-14 audit range begins at Document 153 (Recruiter Quickstart)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
