@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.6
+Status: Canonical Finding Registry v1.7
 
 ## Purpose
 
@@ -119,6 +119,32 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-TEST-060 | Full FlightStateRepository integration fixture parity drift | P2 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
 | GFA-TEST-061 | Terminal ingestion-run fixture omitted `finished_at` | P2 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
 | GFA-GOV-062 | Over-broad PostgreSQL fixture-parity audit rule | P3 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
+| GFA-OPS-063 | Ingestion runs could remain permanently `running` | P2 retrospective | CLOSED | `83_INGESTION_RUN_LIFECYCLE_HARDENING.md` | `10eaeaff5f40ea7b0432da6a795b6d9a36ff9034` |
+| GFA-REL-064 | Auxiliary provider observation could replace the primary data-plane result | P1 retrospective | CLOSED | `84_PROVIDER_HTTP_RESILIENCE_HARDENING.md` | `57a67488e1717f1109eab3a850e09d4525ca444d` |
+| GFA-REL-065 | Provider response bodies were not explicitly bounded | P1 retrospective | CLOSED | `84_PROVIDER_HTTP_RESILIENCE_HARDENING.md` | `57a67488e1717f1109eab3a850e09d4525ca444d` |
+| GFA-OPS-066 | Provider retry evidence did not control ingestion scheduling | P2 retrospective | CLOSED | `85_INGESTION_RETRY_AND_FALLBACK_EVIDENCE_HARDENING.md` | `bd291eaa758a30329abb10ffb15542c70d05e82e` |
+| GFA-DATA-067 | Local policy denial could create false failed provider-run evidence | P2 retrospective | CLOSED | `85_INGESTION_RETRY_AND_FALLBACK_EVIDENCE_HARDENING.md` | `bd291eaa758a30329abb10ffb15542c70d05e82e` |
+| GFA-DATA-068 | Fallback history did not preserve the complete ordered attempt chain | P2 retrospective | CLOSED | `85_INGESTION_RETRY_AND_FALLBACK_EVIDENCE_HARDENING.md` | `bd291eaa758a30329abb10ffb15542c70d05e82e` |
+| GFA-REL-069 | OpenSky polling reservation and unauthorized-response lifecycle were incomplete | P2 retrospective | CLOSED | `85_INGESTION_RETRY_AND_FALLBACK_EVIDENCE_HARDENING.md` | `bd291eaa758a30329abb10ffb15542c70d05e82e` |
+| GFA-DB-070 | OurAirports publication processing lacked durable reservation/commit ownership | P1 retrospective | CLOSED | `86_OURAIRPORTS_PUBLICATION_LIFECYCLE_HARDENING.md` | `db73719ec134da627128038f9be413f38cf4e0e6` |
+| GFA-DATA-071 | HTTP validator ordering could hide a failed publication behind `304 Not Modified` | P1 retrospective | CLOSED | `86_OURAIRPORTS_PUBLICATION_LIFECYCLE_HARDENING.md` | `db73719ec134da627128038f9be413f38cf4e0e6` |
+| GFA-OPS-072 | Provider transport could start before durable ingestion-run evidence existed | P1 retrospective | CLOSED | `87_INGESTION_DURABILITY_REPLAY_PARTIAL_HARDENING.md` | `302158e4c9cbfb8532ee03147f6dcd31603b72fa` |
+| GFA-DATA-073 | Flight State replay had no provider-observation uniqueness contract | P1 retrospective | CLOSED | `87_INGESTION_DURABILITY_REPLAY_PARTIAL_HARDENING.md` | `302158e4c9cbfb8532ee03147f6dcd31603b72fa` |
+| GFA-DATA-074 | Durable observation writes followed by downstream failure were classified only as failed | P1 retrospective | CLOSED | `87_INGESTION_DURABILITY_REPLAY_PARTIAL_HARDENING.md` | `302158e4c9cbfb8532ee03147f6dcd31603b72fa` |
+| GFA-DB-075 | Post-closure duplicate migration version recurrence | P1 retrospective | CLOSED | `87_INGESTION_DURABILITY_REPLAY_PARTIAL_HARDENING.md` | `302158e4c9cbfb8532ee03147f6dcd31603b72fa` |
+| GFA-DATA-076 | Exact in-memory deduplication compared an incomplete observation identity | P1 retrospective | CLOSED | `88_EXACT_DEDUPLICATION_AND_AIRPLANESLIVE_TELEMETRY_HARDENING.md` | `eef7fdc056ebef71f95cfd17ce986dcf429f6c62` |
+| GFA-DATA-077 | Airplanes.live missing/null/invalid telemetry could collapse into observed zero | P1 retrospective | CLOSED | `88_EXACT_DEDUPLICATION_AND_AIRPLANESLIVE_TELEMETRY_HARDENING.md` | `eef7fdc056ebef71f95cfd17ce986dcf429f6c62` |
+| GFA-DATA-078 | Provider time conversion could overflow or perform unsafe subtraction | P2 retrospective | CLOSED | `88_EXACT_DEDUPLICATION_AND_AIRPLANESLIVE_TELEMETRY_HARDENING.md` | `eef7fdc056ebef71f95cfd17ce986dcf429f6c62` |
+| GFA-REL-079 | Airplanes.live provider could be constructed or called without a client | P2 retrospective | CLOSED | `88_EXACT_DEDUPLICATION_AND_AIRPLANESLIVE_TELEMETRY_HARDENING.md` | `eef7fdc056ebef71f95cfd17ce986dcf429f6c62` |
+| GFA-OPS-080 | Production provider budgets were process-local | P1 retrospective | CLOSED | `89_PROVIDER_BUDGET_DURABILITY_AND_RETRY_SCHEDULING.md` | `52a60d2b7136919e3a2ccf4850f6d542c6447461` |
+| GFA-OPS-081 | Exhausted provider-reported budget could deny without an actionable retry time | P2 retrospective | CLOSED | `89_PROVIDER_BUDGET_DURABILITY_AND_RETRY_SCHEDULING.md` | `52a60d2b7136919e3a2ccf4850f6d542c6447461` |
+| GFA-OPS-082 | Provider health evidence was collected but ignored by automatic selection | P2 retrospective | CLOSED | `90_HEALTH_AWARE_TRAFFIC_PROVIDER_SELECTION.md` | `a9896ade17f6a36b80a5cef6abb8ffd9a5687cc1` |
+| GFA-DATA-083 | Successful provider batches had no explicit malformed-item accounting policy | P1 retrospective | CLOSED | `91_MALFORMED_PROVIDER_BATCH_POLICY.md` | `b7bf2b762290e55a45fa8d40641435248d1aeddf`; closure extension `6b922cbd9df1bff3f880ad120dd883b37f658e53` |
+| GFA-DATA-084 | External retry/token durations could overflow Go duration arithmetic | P2 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53` |
+| GFA-DATA-085 | Open-Meteo missing metrics could be represented as observed zero end to end | P1 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53` |
+| GFA-CONTRACT-086 | OurAirports fail-whole publication behavior was not an explicit typed contract | P2 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53` |
+| GFA-TEST-087 | Isolated PostgreSQL fixtures drifted behind current repository migration dependencies | P2 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53` |
+| GFA-GOV-088 | Ingestion review closure could not be claimed from local/source evidence alone | P2 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53`; later race guard `1ddb65c5e5471ce180314cc38a4b6d7baad80cd3` |
 
 ## Stage-level closure evidence
 
@@ -156,7 +182,11 @@ Documents 41–77 = enriched to canonical remediation-history standard
 Document 70 = unique audit/closure blockers reconciled without duplicating later finding owners
 Document 78 = enriched as stage-level closure-governance evidence by design, not a synthetic finding
 Document 79 = enriched as post-closure remediation history
-Canonical finding register covers 62 findings (001–062 with category prefixes)
+Documents 83–92 = post-Stage-14 Ingestion / Provider remediation chain enriched to canonical standard
+Canonical finding register covers 88 findings (001–088 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
+Post-Stage-14 Ingestion / Provider finding extraction (Documents 83–92) = CLOSED IN SOURCE; exact-head pull-request CI/merge evidence pending
+Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created in this package
+Next post-Stage-14 audit range = Documents 93–102
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
