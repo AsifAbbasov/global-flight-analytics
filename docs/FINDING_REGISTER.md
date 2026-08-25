@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.26
+Status: Canonical Finding Registry v1.27
 
 ## Purpose
 
@@ -506,6 +506,8 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-OPS-447 | Production deployed the read API without a production ingestion execution owner | P1 retrospective | CLOSED | `173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` | PR #35 head `64e4d17d914371f789992065e0ececf9eaa25161`; merge `eea53a2ac7636c024903522047d03660e1db86dd`; later live closure `7dfc66685247a5a1aaea87b1391624d1014d7013` |
 | GFA-OPS-448 | Initial 100-NM production coverage returned no aircraft despite successful provider transport | P2 retrospective | CLOSED | `173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` | PR #36 head `f6ca94f40115a75c8fb4698b336265ef46890b94`; merge `f5f7e9cb4e4bb1075a61b284641788984f0a2a67` |
 | GFA-DB-449 | Live Data Quality persistence could not resolve a PostgreSQL-generated parent UUID | P1 retrospective | CLOSED | `173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` | PR #36 head `f6ca94f40115a75c8fb4698b336265ef46890b94`; merge `f5f7e9cb4e4bb1075a61b284641788984f0a2a67` |
+| GFA-CONTRACT-450 | Production conditional GET did not accept proxy-weakened equivalent ETag validators | P2 retrospective | CLOSED | `181_OPENAPI_DEVELOPER_EXPERIENCE.md` | PR #54 head `837a97b8696333fcbe8c7a50d76b3f76521a149b`; merge `855f82bf97cf0db47d1a3918f75ea70f7f2b06fe`; Backend CI `31059068320` |
+| GFA-OPS-451 | GitHub-hosted scheduled ingestion was the sole production timing/recovery authority and could leave current traffic silently stale for hours | P1 retrospective | CLOSED | `182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` | incident PR #55 `dc2f6f7042ea16d13cf25ce8700831df160b8158`; cutover `7dfc66685247a5a1aaea87b1391624d1014d7013`; final closure PR #59 `a983ebcb2920b7371fa8210f1cc1c8eb7cfa6cf6` |
 
 ## Stage-level closure evidence
 
@@ -569,9 +571,12 @@ Document 167 = Backend Timeout Consistency remediation enriched and merged throu
 Document 168 = Backend Observability and SLO closure evidence classified; no synthetic finding ID created
 Document 169 = Release Truth and Deployment Revision remediation enriched and merged through PR #135 (`df87de7ef0b5801bdefca5ed9e5b899fec9253c6`); canonical finding `GFA-GOV-441`
 Documents 170–171 = Dependency Maintenance / Dependabot follow-up reconciliation classified as maintenance and closure evidence; no synthetic finding IDs created
-Document 172 = Repository Governance and Security Automation enriched to canonical standard; findings `GFA-GOV-442` through `GFA-GOV-446` with `GFA-SEC-445=IN_PROGRESS` for independently unverified current external security settings
-Document 173 = Core Flight Data Ingestion Production Closure enriched to canonical standard; findings `GFA-OPS-447`, `GFA-OPS-448`, and `GFA-DB-449`
-Canonical finding register covers 449 findings (001–449 with category prefixes); one finding (`GFA-SEC-445`) remains IN_PROGRESS
+Document 172 = Repository Governance and Security Automation enriched and merged through PR #136 (`45a911a998070c78615dfbcf846ad29bd00cc0c7`); findings `GFA-GOV-442` through `GFA-GOV-446` with `GFA-SEC-445=IN_PROGRESS`
+Document 173 = Core Flight Data Ingestion Production Closure enriched and merged through PR #136 (`45a911a998070c78615dfbcf846ad29bd00cc0c7`); findings `GFA-OPS-447`, `GFA-OPS-448`, and `GFA-DB-449`
+Documents 174–180 = API Load Baseline / OpenAPI / Playwright contract and staged coverage foundation classified as performance, testing, contract, and closure evidence; no synthetic finding IDs created
+Document 181 = OpenAPI Developer Experience feature evidence reconciled; production weak-ETag conditional-request remediation enriched as `GFA-CONTRACT-450`
+Documents 182–183 = Zero-Cost Production Ingestion Reliability remediation and Cloudflare live closure evidence reconciled; canonical finding `GFA-OPS-451`; Document 183 receives no duplicate finding ID
+Canonical finding register covers 451 findings (001–451 with category prefixes); one finding (`GFA-SEC-445`) remains IN_PROGRESS
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -595,9 +600,12 @@ Feature/operability closure Documents 153–160 = CLOSED AND MERGED; no syntheti
 Documents 161–166 / 168 = closure, release, runbook, architecture, operations, or observability evidence; no synthetic finding IDs
 Backend Timeout Consistency / Release Truth reconciliation = CLOSED AND MERGED
 Dependency Maintenance Documents 170–171 = CLASSIFIED; no synthetic finding IDs
-Repository Governance and Security Automation = PARTIALLY CLOSED; `GFA-SEC-445` current external-settings verification remains IN_PROGRESS
-Core Flight Data Ingestion production historical findings = CLOSED IN SOURCE; later runtime/provider recovery is owned by later documents
+Repository Governance and Security Automation = PARTIALLY CLOSED AND MERGED; `GFA-SEC-445` current external-settings verification remains IN_PROGRESS
+Core Flight Data Ingestion production historical findings = CLOSED AND MERGED; later runtime/provider recovery is owned by later documents
+Documents 174–180 = CLASSIFIED; performance/testing/contract/closure evidence only; no synthetic finding IDs
+OpenAPI Developer Experience conditional-request remediation = CLOSED IN SOURCE
+Zero-Cost Production Ingestion Reliability historical scheduler finding = CLOSED IN SOURCE; current later provider/free-tier recovery remains separately owned
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 174 (API Load Baseline)
+Next post-Stage-14 audit range begins at Document 184 (Stage 13 Frontend Analytics Integration Completion)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```

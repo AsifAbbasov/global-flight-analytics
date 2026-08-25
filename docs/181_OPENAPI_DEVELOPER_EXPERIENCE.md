@@ -1,8 +1,12 @@
 # OpenAPI Developer Experience
 
-Status: implementation increment
-Baseline: `b1f2b23a4f4bb72153d0993417e1888d538cfa75`
-Scope: embedded API documentation, deterministic TypeScript client generation, drift prevention, and Continuous Integration enforcement
+Status: CANONICAL RECONCILIATION COMPLETE  
+Baseline: `b1f2b23a4f4bb72153d0993417e1888d538cfa75`  
+Initial Developer Experience merge: `64400024cddad5e856d4e72433457b4bd2eacb11`  
+Conditional-request remediation PR: #54  
+Remediation head: `837a97b8696333fcbe8c7a50d76b3f76521a149b`  
+Remediation merge: `855f82bf97cf0db47d1a3918f75ea70f7f2b06fe`  
+Scope: embedded API documentation, deterministic TypeScript client generation, drift prevention, Continuous Integration enforcement, and production conditional-request correctness
 
 ## Purpose
 
@@ -18,6 +22,8 @@ The implementation provides:
 - generated-client drift detection;
 - generated-client runtime tests for request construction, protected authentication, typed errors, and base-URL guards;
 - Go, Node, TypeScript, workflow, release, and documentation verification.
+
+The original Developer Experience implementation is feature/contract evidence and does not receive a synthetic finding ID. The later production-discovered weak-ETag behavior is a separate remediation finding owned by `GFA-CONTRACT-450` below.
 
 ## Route boundary
 
@@ -179,6 +185,16 @@ OPENAPI_GENERATED_CLIENT_DRIFT=PASS
 OPENAPI_DEVELOPER_EXPERIENCE=PASS
 ```
 
+PR #54 exact-head CI on `837a97b8696333fcbe8c7a50d76b3f76521a149b`:
+
+```text
+Backend CI        31059068320 = SUCCESS
+Frontend CI       31059067951 = SUCCESS
+CodeQL            31059068195 = SUCCESS
+OpenAPI Contract  31059068374 = SUCCESS
+API Load Baseline 31059068194 = SUCCESS
+```
+
 The OpenAPI workflow runs:
 
 - source route inventory verification;
@@ -204,14 +220,100 @@ This increment does not:
 - generate and commit compiled JavaScript output;
 - publish the API client to a public package registry.
 
-## Completion criteria
+---
 
-The increment is complete when:
+## Canonical remediation record — GFA-CONTRACT-450
 
-1. the embedded specification is byte-identical to the canonical specification;
-2. all 38 operations are represented in generated TypeScript metadata and types;
-3. the API client typechecks under the pinned workspace TypeScript version;
-4. the documentation application is compiled into and served by the Go API;
-5. the browser mutation execution boundary remains disabled;
-6. targeted tests and the full release verifier pass;
-7. the exact change set is committed only after installation validation.
+### 1. Finding / symptom
+
+Production conditional GET requests for embedded OpenAPI assets could return HTTP `200` instead of `304 Not Modified` when the client reused a semantically equivalent weak ETag produced by the Render delivery path.
+
+### 2. Root cause
+
+The origin emitted a strong SHA-256 ETag, while the production intermediary could legally rewrite it as a weak validator. The handler compared `If-None-Match` and the origin ETag byte-for-byte instead of using weak entity-tag comparison semantics appropriate to GET conditional requests.
+
+### 3. Failure scenario
+
+The origin emits `"<sha256>"`; Render exposes `W/"<sha256>"`; a browser sends that received value in `If-None-Match`; the application compares the two strings literally and returns the full asset with `200` although the opaque validator identifies the same representation.
+
+### 4. Impact
+
+Conditional caching was semantically incorrect in production, causing unnecessary response bodies and making live validation disagree with the intended HTTP cache contract. OpenAPI content, authentication, and data integrity were not corrupted.
+
+### 5. Severity rationale
+
+**P2 retrospective.** This was a real production HTTP contract defect with reproducible proxy-dependent behavior, but it did not expose credentials, mutate data, corrupt the OpenAPI specification, or disable the API.
+
+### 6. Existing guarantees violated
+
+- `If-None-Match` on GET must honor weak comparison semantics;
+- a delivery intermediary must not make an otherwise equivalent validator unusable;
+- production validation must observe `304` for a matching conditional request;
+- mismatched validators must continue to return `200`.
+
+### 7. Considered solutions
+
+- force the proxy to preserve the origin strong ETag;
+- disable ETag/conditional caching;
+- compare only exact strong strings;
+- implement standards-aligned weak ETag comparison, including validator lists and wildcard handling.
+
+### 8. Chosen remediation
+
+Introduce explicit conditional-request matching that strips the weak prefix for comparison, accepts strong and weak forms of the same opaque tag, supports comma-separated `If-None-Match` candidates and `*`, and preserves ordinary `200` behavior for non-matches.
+
+### 9. Why this solution was selected
+
+The application controls its HTTP semantics but not every production intermediary. Weak comparison makes the handler robust to legal proxy transformations without changing the deterministic origin SHA-256 identity or cache duration.
+
+### 10. Rejected alternatives
+
+- relying on Render to preserve strong validators was rejected because the observed production path did not do so;
+- disabling caching was rejected because the representation already has stable deterministic identity;
+- exact string comparison was the defective behavior and could not support a legal weak validator.
+
+### 11. Trade-offs
+
+The matching helper must correctly parse the limited ETag syntax it supports. Weak equivalence intentionally treats strong and weak forms of the same opaque value as matching for GET cache validation; it does not make weak tags suitable for strong precondition semantics such as `If-Match`.
+
+### 12. Regression tests / protection
+
+`apps/api/internal/http/apidocs` tests cover strong, weak, comma-separated, wildcard, and mismatched validators. OpenAPI Developer Experience verification and release validation include the embedded documentation surface.
+
+### 13. Adversarial review findings
+
+The review distinguished deterministic content identity from validator strength. The fix preserves the exact SHA-256 opaque value while accepting proxy weakening only in the conditional GET comparison path.
+
+### 14. Remediation iterations
+
+The Developer Experience feature merged through PR #52 as `64400024cddad5e856d4e72433457b4bd2eacb11`. Live production validation then exposed the weak-validator behavior. PR #54 fixed it with head `837a97b8696333fcbe8c7a50d76b3f76521a149b` and merge `855f82bf97cf0db47d1a3918f75ea70f7f2b06fe`.
+
+### 15. Residual risks and limitations
+
+Future proxy/cache layers can still introduce other HTTP transformations. The current guard is specific to GET `If-None-Match` semantics for the embedded API documentation assets and does not claim support for unrelated conditional-write semantics.
+
+### 16. Operational or deployment consequences
+
+Clients and intermediary caches can reuse either strong or proxy-weakened equivalent validators and receive `304` without retransferring unchanged documentation assets. No API operation, schema, security requirement, or cache lifetime changed.
+
+### 17. Exact evidence
+
+- Developer Experience baseline: `b1f2b23a4f4bb72153d0993417e1888d538cfa75`;
+- original feature merge: `64400024cddad5e856d4e72433457b4bd2eacb11`;
+- PR #54 base: `c106c003cdc77f948ee34ad895a9fbbbd616cea8`;
+- PR #54 head: `837a97b8696333fcbe8c7a50d76b3f76521a149b`;
+- PR #54 merge: `855f82bf97cf0db47d1a3918f75ea70f7f2b06fe`;
+- production evidence in PR #54: Render returned `W/"<sha256>"`; reuse previously returned `200` instead of `304`;
+- Backend CI `31059068320` — SUCCESS;
+- Frontend CI `31059067951` — SUCCESS;
+- CodeQL `31059068195` — SUCCESS;
+- OpenAPI Contract `31059068374` — SUCCESS;
+- API Load Baseline `31059068194` — SUCCESS.
+
+### 18. Final canonical status
+
+**CLOSED.**
+
+### 19. Prevention / future guard
+
+Retain the weak/list/wildcard/mismatch regression tests and keep production OpenAPI conditional-GET validation in the release/runtime evidence path so intermediary behavior cannot silently reintroduce literal-string ETag matching.
