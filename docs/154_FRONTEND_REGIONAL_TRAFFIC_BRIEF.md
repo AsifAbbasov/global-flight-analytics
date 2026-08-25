@@ -1,9 +1,13 @@
 # Frontend Regional Traffic Brief
 
-Status: Implementation prepared; exact-commit Continuous Integration closure pending
+Status: CLOSED — feature implementation and Continuous Integration evidence reconciled
 Project: Global Flight Analytics
 Reviewed baseline: `c34264a122913272e3083a4f64397b0e8470c4f3`
+Implementation commit: `70716701d6e676b49670aa4f32b4608d52f58bd6`
+Frontend CI: `30710357246` — SUCCESS
+Backend CI: `30710357226` — SUCCESS
 Date: 2026-08-01
+Canonical reconciliation: 2026-08-25
 
 ## 1. Purpose
 
@@ -65,6 +69,52 @@ client, application status, aircraft explorer and traffic workspace tests remain
 This increment does not add a chart library, backend endpoint, historical aggregation,
 server pagination, telemetry, new package, lockfile change or operational claim.
 
-Formal closure requires all twenty-five frontend contract tests, dependency policy,
-ESLint, TypeScript validation, production build, installer rollback verification and
-the exact post-commit Frontend Continuous Integration run to pass.
+The historical closure requirements were all frontend contract tests, dependency policy,
+ESLint, TypeScript validation, production build, installer rollback verification and the
+exact post-commit Frontend Continuous Integration run.
+
+## 6. Historical closure evidence
+
+The exact implementation owner is:
+
+```text
+70716701d6e676b49670aa4f32b4608d52f58bd6
+feat: add regional traffic brief
+```
+
+GitHub Actions evidence for that exact commit is:
+
+```text
+Frontend CI 30710357246 = SUCCESS
+Backend CI  30710357226 = SUCCESS
+```
+
+The frontend run completed the production dependency policy, ESLint, TypeScript
+validation, frontend contract tests and production build on the implementation SHA.
+The original `exact-commit Continuous Integration closure pending` wording is therefore
+stale historical state and is now reconciled.
+
+## 7. Canonical classification
+
+This document is **frontend feature implementation / closure evidence**, not a
+remediation finding record.
+
+The brief adds a deterministic explanatory product surface over an already-loaded
+snapshot. The fact that a reviewer previously needed to inspect individual markers is a
+product-usability motivation, not sufficient evidence of a correctness, reliability or
+contract defect with its own remediation lifecycle.
+
+```text
+Canonical finding ID: none by design
+Classification: frontend feature implementation / closure evidence
+Historical implementation: CLOSED
+Exact-commit Frontend CI: CLOSED
+Open remediation findings owned by this document: 0
+```
+
+## 8. Residual boundaries and prevention
+
+The browser-side brief remains a current-snapshot interpretation and must not drift into
+historical, safety or operational claims without a separate evidence contract.
+Regression ownership remains with its deterministic model tests, frontend contract
+tests, Frontend CI and later Playwright product coverage.
