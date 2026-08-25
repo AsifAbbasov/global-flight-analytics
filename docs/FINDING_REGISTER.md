@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.15
+Status: Canonical Finding Registry v1.16
 
 ## Purpose
 
@@ -298,6 +298,31 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-DATA-239 | Nullable identifiers could be erased into apparently present fallback values | P1 retrospective | CLOSED | `126_HISTORICAL_READ_REVIEW_HARDENING.md` | `b67546391984b4726e05d67a51471d401f921e29` |
 | GFA-DATA-240 | PostgreSQL numeric-to-float conversion had implicit rounding semantics | P2 retrospective | CLOSED | `126_HISTORICAL_READ_REVIEW_HARDENING.md` | `b67546391984b4726e05d67a51471d401f921e29` |
 | GFA-TEST-241 | Alternative Historical transaction executors could bypass production record invariants | P2 retrospective | CLOSED | `126_HISTORICAL_READ_REVIEW_HARDENING.md` | `98750a7eb5972cd770e6333f46cd0855eca8ad0e` |
+| GFA-DATA-242 | Global read coverage was copied into every Historical bucket | P1 retrospective | CLOSED | `127_HISTORICAL_SERIES_REVIEW_HARDENING.md` | `02bee5fd59d13927d0ffb995844c83d07327a2f9`; final `c863d03e5de711b78ab94027dbf951129665c110` |
+| GFA-DATA-243 | Missing source and generation timestamps were synthesized from the analytical window | P1 retrospective | CLOSED | `127_HISTORICAL_SERIES_REVIEW_HARDENING.md` | `02bee5fd59d13927d0ffb995844c83d07327a2f9`; final `c863d03e5de711b78ab94027dbf951129665c110` |
+| GFA-DATA-244 | Malformed Historical limitations were silently discarded | P1 retrospective | CLOSED | `127_HISTORICAL_SERIES_REVIEW_HARDENING.md` | `02bee5fd59d13927d0ffb995844c83d07327a2f9`; final `c863d03e5de711b78ab94027dbf951129665c110` |
+| GFA-DATA-245 | Distinct window exclusions could collapse when they shared one reason | P2 retrospective | CLOSED | `127_HISTORICAL_SERIES_REVIEW_HARDENING.md` | `02bee5fd59d13927d0ffb995844c83d07327a2f9` |
+| GFA-DATA-246 | Historical total sample accumulation could overflow integer arithmetic | P2 retrospective | CLOSED | `127_HISTORICAL_SERIES_REVIEW_HARDENING.md` | `02bee5fd59d13927d0ffb995844c83d07327a2f9` |
+| GFA-MAINT-247 | Historical Series construction concentrated unrelated responsibilities in one build path | P3 retrospective | CLOSED | `127_HISTORICAL_SERIES_REVIEW_HARDENING.md` | `02bee5fd59d13927d0ffb995844c83d07327a2f9` |
+| GFA-CONTRACT-248 | Route status-ratio metrics admitted an incompatible airport-pair scope | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-249 | Historical Route accepted compatibility-decoded payloads without full Route Contract validation | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-250 | Persisted Route metadata was not reconciled with the validated payload | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-251 | `StoredAt` affected Historical Route output but was absent from fingerprint identity | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-252 | Global route matched-count evidence could be reused as route-pair coverage | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-253 | Historical Route snapshot query evidence was not bound to the canonical plan | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-254 | Historical Route provenance was derived from unscoped rather than contributing evidence | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-255 | Historical Route trusted persisted distance instead of validated endpoint geometry | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-256 | Historical Route accumulation used ordinary floating-point summation | P2 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-CONTRACT-257 | Historical Route metric semantics were insufficiently explicit | P2 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-258 | Latest Route selection could substitute record identity for missing trajectory identity | P1 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-MAINT-259 | Historical Route metric calculation responsibilities were concentrated in one switch | P3 retrospective | CLOSED | `128_HISTORICAL_ROUTE_REVIEW_HARDENING.md` | `513fa1efc7f3b81b895cdc5f881e294d80362e2e` |
+| GFA-DATA-260 | Historical periods with incompatible coverage could be compared as ordinary growth | P1 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
+| GFA-DATA-261 | Direct Historical Comparison output had incomplete two-period provenance and fingerprint identity | P1 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
+| GFA-MAINT-262 | Historical Comparison `Attach` concentrated validation, arithmetic, selection, provenance and result construction | P3 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
+| GFA-CONTRACT-263 | Historical scope identity depended on structural reflection equality | P2 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
+| GFA-MAINT-264 | Historical Comparison exported an internal generic value-selection helper | P3 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
+| GFA-DATA-265 | Non-finite percentage arithmetic was detected late and misclassified as invalid source evidence | P2 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
+| GFA-TEST-266 | Historical Comparison regression coverage did not protect its critical invariants | P2 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
 
 ## Stage-level closure evidence
 
@@ -343,8 +368,9 @@ Documents 104–108 = Feature Pipeline review and closure chain enriched and mer
 Documents 109–115 = Extractor processing/composition/correctness review chain enriched and merged through PR #121 (`b977e8929d637ee21ab6a938be3167b6deed0439`)
 Documents 116–119 = Aircraft Provider / Feature Store / Flight Features schema / Temporal Builder review chain enriched and merged through PR #122 (`74b1b56858a62b633911d7047b7a12243b5acc04`)
 Documents 120–123 = Geographical / Operational / Trajectory Builder / Validator review chain enriched and merged through PR #123 (`46cb38e022fd14094ce261dbeb243e25744fa8fb`)
-Documents 124–126 = Historical Contract / Window / Read review chain enriched to canonical standard in source
-Canonical finding register covers 241 findings (001–241 with category prefixes)
+Documents 124–126 = Historical Contract / Window / Read review chain enriched and merged through PR #124 (`849c2f4b0e99a35cf3c75ca39d2aaeefc35c41b1`)
+Documents 127–129 = Historical Series / Route / Comparison review chain enriched to canonical standard in source
+Canonical finding register covers 266 findings (001–266 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -353,8 +379,9 @@ Feature Pipeline review reconciliation = CLOSED AND MERGED
 Extractor review/composition reconciliation = CLOSED AND MERGED
 Provider/store/schema/temporal review reconciliation = CLOSED AND MERGED
 Builder/Validator review reconciliation = CLOSED AND MERGED
-Historical Contract/Window/Read review reconciliation = CLOSED IN SOURCE
+Historical Contract/Window/Read review reconciliation = CLOSED AND MERGED
+Historical Series/Route/Comparison review reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 127 (Historical Series review)
+Next post-Stage-14 audit range begins at Document 130 (Historical Similarity review)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
