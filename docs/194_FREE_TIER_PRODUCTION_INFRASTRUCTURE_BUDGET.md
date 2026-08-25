@@ -246,3 +246,82 @@ FREE_TIER_INFRASTRUCTURE_RECOVERY=IN_PROGRESS
 ```
 
 The incident cannot be marked closed until the Neon allowance is available again (monthly reset or equivalent free recovery), production metrics are successfully collected at the new cadence, and observed compute usage demonstrates that the database is scaling to zero between production windows.
+
+---
+
+## Canonical remediation record — GFA-OPS-456
+
+### 1. Finding / symptom
+The FREE_V1 production automation schedule was incompatible with the intended scale-to-zero cost model: independent reconciliation and metrics jobs repeatedly woke Neon/Render often enough to consume the monthly Neon compute allowance and undermine free-tier availability.
+
+### 2. Root cause
+Production cadence was designed per subsystem rather than from one shared infrastructure wake budget. Reconciliation connected directly to PostgreSQL every ten minutes, metrics touched Render about every fifteen minutes, and the enabled watchdog profile could touch Render every five minutes. Those independent schedules were shorter than or near the platforms' autosuspend/idle windows.
+
+### 3. Failure scenario
+Low user traffic would otherwise allow Render and Neon to sleep, but independent scheduled maintenance/monitoring work repeatedly wakes them. Neon remains active for a large fraction of the month at approximately minimum compute, eventually exhausting the 100 CU-hour allowance. The database/API then becomes unavailable or degraded before Grafana remote write is reached.
+
+### 4. Impact
+The zero-cost production environment exhausted its monthly database compute budget, production metrics source requests degraded with timeouts/5xx responses, and runtime recovery became blocked until allowance reset/equivalent free recovery. The issue also threatened to recur after provider recovery if high-frequency watchdog scheduling returned.
+
+### 5. Severity rationale
+**P1 retrospective.** This was a real production resource-exhaustion incident that consumed the full monthly free database compute allowance and materially degraded the production runtime. The severity is reconstructed from the observed impact; the source incident did not record an original severity label.
+
+### 6. Existing guarantees violated
+- FREE_V1 must operate without artificial keep-alive traffic;
+- scheduled components must share an explicit monthly compute/wake budget;
+- monitoring and reconciliation must not prevent platform scale-to-zero by cadence alone;
+- production recovery must reserve compute for interactive and incident work;
+- cadence increases require resource-budget review before activation.
+
+### 7. Considered solutions
+- move to paid always-on infrastructure;
+- keep existing cadences and accept quota exhaustion;
+- disable all monitoring/reconciliation permanently;
+- reduce and stagger cadences, remove independent reconciliation cron while ingestion is offline, share future reconciliation with the ingestion wake window, and define an explicit CU-hour reserve.
+
+### 8. Chosen remediation
+Move metrics to `20 */2 * * *`, make reconciliation manual-only while ingestion is offline, target future Cloudflare primary at `:17/:47`, watchdog at `19 */2`, cluster wakes, prohibit keep-alive traffic, keep scale-to-zero enabled, and define `TARGET_MONTHLY_NEON_COMPUTE <= 60 CU-hours` with at least 40 CU-hours reserved for interactive/recovery demand.
+
+### 9. Why this solution was selected
+It preserves the same product/domain architecture on free infrastructure, accepts cold starts as a deliberate FREE_V1 trade-off, and addresses the observed active-time mechanism instead of attributing every Render error to Neon without evidence.
+
+### 10. Rejected alternatives
+A paid tier violates the current zero-cost constraint; retaining the former cadences repeats the wake pattern; disabling all production verification removes meaningful evidence; increasing timeouts does not reduce compute-active time.
+
+### 11. Trade-offs
+Metrics and watchdog evidence become less frequent and cold starts are expected. The configuration is appropriate for a non-real-time portfolio MVP, not a safety-critical or high-frequency flight-tracking SLA. Future higher cadence may require a paid capacity profile.
+
+### 12. Regression tests / protection
+Repository hardening changes the scheduled workflow contracts, removes the independent reconciliation cron while ingestion is offline, updates the Grafana missing-metrics window to match sparse collection, preserves the Cloudflare kill switch and documents a mandatory compute-budget review before any frequency increase.
+
+### 13. Adversarial review findings
+The incident evidence does not prove Neon exhaustion caused every Render 502/503/429, so the canonical finding is scoped to the internal wake-pattern/budget incompatibility rather than claiming a single-cause explanation for all upstream failures. Scale-to-zero was observed functioning after inactivity, strengthening the active-time diagnosis.
+
+### 14. Remediation iterations
+1. Neon reported 100% monthly compute allowance consumption.
+2. Production schedule inventory identified independent 10-minute/15-minute wake patterns and the potential 5-minute watchdog pattern.
+3. The FREE_V1 policy was redesigned around staggered wake windows and an explicit CU-hour budget.
+4. PR #85 applied the hardening on current `main` with branch-protection-compatible exact history.
+5. Final recovery remains intentionally open pending allowance availability and post-reset runtime evidence.
+
+### 15. Residual risks and limitations
+Autoscaling, retries, user traffic, cold-start duration and future provider cadence can raise compute above the model. Neon/Render console settings are operational prerequisites rather than repository-owned infrastructure-as-code. The 60-CU target is a project safety budget, not an upstream guarantee.
+
+### 16. Operational or deployment consequences
+Production ingestion remains intentionally offline and Cloudflare dispatch disabled. Reconciliation is manual-only. Metrics run every two hours. After recovery, ingestion/reconciliation/watchdog/metrics should reuse clustered wake windows and operators must observe real post-reset compute behavior before closing the finding.
+
+### 17. Exact evidence
+- PR #85 head `1a82b8eae63ff5e293830c630fed6a9102eb9480`, merge `4a95b7a0caae8e8581cf132945c2b1be3a7a3cca`;
+- Backend CI `32478940782` SUCCESS;
+- Frontend CI `32478940687` SUCCESS;
+- CodeQL `32478940737` SUCCESS;
+- API Load Baseline `32478940692` SUCCESS;
+- live Neon evidence: ~`373.6` active hours, ~`101.2` CU-hours, average effective compute ~`0.27` CU, endpoint observed suspended roughly six minutes after last activity;
+- monthly reset recorded as `2026-09-01T00:00:00Z`;
+- repository state: reconciliation cron removed, metrics cadence two hours, dispatch kill switch active, `FREE_TIER_INFRASTRUCTURE_RECOVERY=IN_PROGRESS`.
+
+### 18. Final canonical status
+**IN_PROGRESS.** Repository-side scheduling/budget hardening is merged, but production recovery cannot be closed until the monthly allowance is available again, the sparse production metrics path succeeds, and observed runtime evidence shows scale-to-zero between production windows.
+
+### 19. Prevention / future guard
+Treat every scheduled production action that touches Render or Neon as a budgeted wake. Require a written monthly CU-hour calculation and wake-cluster review before increasing ingestion, watchdog, reconciliation, smoke or metrics frequency; keep FREE_V1 and SCALE/PAID as explicit deployment profiles rather than silently changing product architecture.
