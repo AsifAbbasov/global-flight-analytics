@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.20
+Status: Canonical Finding Registry v1.21
 
 ## Purpose
 
@@ -414,6 +414,84 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-DATA-355 | Pattern Confidence did not verify that selected neighbors agreed on future continuation | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `5873ae911b40197ee45eea30e7558aa04af78064`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
 | GFA-CONTRACT-356 | Production consumers could fall back to a continuation-unaware Pattern Confidence evaluator | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | optional `5873ae911b40197ee45eea30e7558aa04af78064`; mandatory `e31fcb5bbbb76093305e8b2c137c793a85dc6795`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
 | GFA-DATA-357 | Pattern Confidence validation did not independently reconstruct the published decision | P1 retrospective | CLOSED | `138_PROJECTION_PATTERN_CONFIDENCE_REVIEW_HARDENING.md` | `6e6ac17cfcfca688d57829adfe2468346db6db1a`; distribution `f73534feb275c5e109fa12fcfd9df5b69c56c03a`; continuation `5873ae911b40197ee45eea30e7558aa04af78064`; audit `cd8f114bfef698c51cfc6008ecd2ed01f9c1cc42` |
+| GFA-DATA-358 | Freshness accepted Pattern Confidence without exact selection lineage and usability agreement | P1 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `0b47aa3231c93d573a6026651a4085d376a40583`; audit `619e24878a5025decf6fe21abddba537ce195560` |
+| GFA-DATA-359 | Freshness trusted duplicated candidate-age evidence instead of canonical timestamps | P1 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `0b47aa3231c93d573a6026651a4085d376a40583` |
+| GFA-DATA-360 | Mean selected-neighbor age accumulation could overflow signed 64-bit duration arithmetic | P2 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `0b47aa3231c93d573a6026651a4085d376a40583` |
+| GFA-CONTRACT-361 | Freshness configuration allowed zero or internally incoherent age, support, and score thresholds | P1 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `0b47aa3231c93d573a6026651a4085d376a40583`; policy `072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19` |
+| GFA-CONTRACT-362 | Zero component weights passed validation despite the strictly-positive Freshness component contract | P1 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `e3e99758d6f654db12ccce32ec55ad1339fb518f`; run `30527541240` |
+| GFA-DATA-363 | Freshness fingerprint omitted decision-relevant upstream state, age evidence, or policy identity | P1 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19`; audit `619e24878a5025decf6fe21abddba537ce195560` |
+| GFA-DATA-364 | Freshness reported only one blocking reason when multiple hard violations coexisted | P2 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19` |
+| GFA-DATA-365 | Freshness results lacked immutable policy and upstream-state snapshots | P1 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19`; audit `619e24878a5025decf6fe21abddba537ce195560` |
+| GFA-DATA-366 | Freshness validation did not independently reconstruct component and decision semantics | P1 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19`; audit `619e24878a5025decf6fe21abddba537ce195560` |
+| GFA-TEST-367 | Production Freshness fixtures bypassed the real evaluator contract | P2 retrospective | CLOSED | `139_PROJECTION_FRESHNESS_REVIEW_HARDENING.md` | `072d0eb349fcd0e42c1d3c0bcf54c51cefb08a19`; audit `619e24878a5025decf6fe21abddba537ce195560` |
+| GFA-DATA-368 | Current target trajectory and flight leaked into their own historical Route Frequency evidence | P1 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `c6fff15f8d0c770197db40a69d54f8856044d8d2` |
+| GFA-DATA-369 | Multiple trajectories from one logical flight inflated Route Frequency support | P1 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `c6fff15f8d0c770197db40a69d54f8856044d8d2` |
+| GFA-DATA-370 | Route Frequency support score and minimum guard were owned by raw observations instead of distinct flights | P1 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `c6fff15f8d0c770197db40a69d54f8856044d8d2`; policy `ee7c79bc8213dc030ce0d98f13d1065c9bb96275` |
+| GFA-DATA-371 | Route Frequency did not bind one exact full and recent exposure-window policy end to end | P1 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `ee7c79bc8213dc030ce0d98f13d1065c9bb96275` |
+| GFA-CONTRACT-372 | Route Frequency configuration admitted incoherent targets, zero thresholds, or disabled component weights | P1 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `ee7c79bc8213dc030ce0d98f13d1065c9bb96275` |
+| GFA-DATA-373 | Route Frequency reported only the first blocking reason instead of complete simultaneous denial evidence | P2 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `ee7c79bc8213dc030ce0d98f13d1065c9bb96275` |
+| GFA-DATA-374 | Route Frequency validation did not independently reconstruct the weighted score | P1 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `ee7c79bc8213dc030ce0d98f13d1065c9bb96275`; audit `6f039b33c96cdb67370158b0eda5d0fc87593de5` |
+| GFA-DATA-375 | Route Frequency fingerprint omitted decision-relevant route, history, exposure, or policy evidence | P1 retrospective | CLOSED | `140_PROJECTION_ROUTE_FREQUENCY_REVIEW_HARDENING.md` | `ee7c79bc8213dc030ce0d98f13d1065c9bb96275`; audit `6f039b33c96cdb67370158b0eda5d0fc87593de5` |
+| GFA-DATA-376 | Production authorization evidence could diverge from Continuation execution evidence | P1 retrospective | CLOSED | `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` | `23ecf72a0700b5a96459bc4a8618c72951a4e6aa`; closure `13838c4273a3be6bde63835e1d8f51af6f6daa21` |
+| GFA-DATA-377 | Selected neighbor metadata was not fully bound to the candidate trajectory consumed by interpolation | P1 retrospective | CLOSED | `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` | `23ecf72a0700b5a96459bc4a8618c72951a4e6aa`; closure `13838c4273a3be6bde63835e1d8f51af6f6daa21` |
+| GFA-DATA-378 | Historical interpolation lacked explicit physical plausibility bounds | P1 retrospective | CLOSED | `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` | `739073de31e4c1da2aa105d495bc789a294cb3c9`; closure `13838c4273a3be6bde63835e1d8f51af6f6daa21` |
+| GFA-DATA-379 | Neighbor disagreement did not coherently increase uncertainty and reduce confidence | P1 retrospective | CLOSED | `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` | `13838c4273a3be6bde63835e1d8f51af6f6daa21` |
+| GFA-DATA-380 | Raw sample count overstated support when neighbor weights were concentrated | P1 retrospective | CLOSED | `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` | `13838c4273a3be6bde63835e1d8f51af6f6daa21` |
+| GFA-DATA-381 | Near-antipodal spherical means could resolve to an arbitrary direction from floating-point residue | P2 retrospective | CLOSED | `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` | `13838c4273a3be6bde63835e1d8f51af6f6daa21` |
+| GFA-OPS-382 | Continuation fallback discarded the underlying projector error cause | P2 retrospective | CLOSED | `141_PROJECTION_CONTINUATION_REVIEW_HARDENING.md` | `13838c4273a3be6bde63835e1d8f51af6f6daa21` |
+| GFA-DATA-383 | Estimated Arrival extrapolation ignored the direction of motion | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-384 | Arrival profile lacked a maximum physical ground-speed bound | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-385 | Slow and receding arrival-profile samples were silently discarded | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-386 | Arrival interval expansion could escape the configured maximum-duration contract | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-387 | Radius-entry uncertainty used total ground speed instead of radial closing speed | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-388 | Estimated Arrival allowed an empty or inconsistent current trajectory identity | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-389 | Arrival provenance omitted the observed current endpoint used by the calculation | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-390 | Arrival fingerprint did not bind the exact sequence of position samples consumed | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-391 | Float-to-duration conversion could truncate ETA and overflow time.Duration | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-392 | Arrival confidence reasons did not reconstruct the published confidence score | P1 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-TEST-393 | Projection Arrival regression coverage did not protect the accepted correctness invariants | P2 retrospective | CLOSED | `142_PROJECTION_ARRIVAL_REVIEW_HARDENING.md` | `65311c066aebbc278b63e2d25558f79f57584ca3` |
+| GFA-DATA-394 | Replay truth could include evidence that was not yet available at the evaluation cutoff | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-395 | Equal-timestamp truth selection depended on input order or ambiguous content | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-396 | Evaluation identity did not bind the complete Projection output snapshot | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-397 | Truth interpolation lacked physical rate bounds | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-398 | Evaluation results omitted the effective policy required to interpret their denominators | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-399 | Evaluation omitted explicit endpoint accuracy metrics | P2 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-400 | Evaluation omitted lead-time-specific accuracy behavior | P2 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-401 | Evaluation lacked explicit confidence-versus-accuracy comparison metrics | P2 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-402 | Evaluation validation trusted derived metrics instead of recomputing their mathematics | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-403 | Evaluation aggregates could merge results with incompatible method, decision, horizon or policy identity | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-404 | Point micro-averages were the only visible weighting interpretation | P2 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-405 | Unavailable evaluations contaminated accuracy distributions | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-406 | Arrival evaluation could reward selective prediction and accepted weak actual-arrival identifiers | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-407 | Fields named Median used non-standard statistical semantics | P2 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-408 | Aggregate input identity was contaminated by result metadata and did not explicitly preserve multiplicity | P1 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-GOV-409 | Projection Evaluation documentation drifted from the implemented review contract | P2 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-TEST-410 | Projection Evaluation regressions did not cover the accepted integrity boundaries | P2 retrospective | CLOSED | `143_PROJECTION_EVALUATION_REVIEW_HARDENING.md` | `279d60543bbbb8c204fab60e442f00a56d1f3bbe` |
+| GFA-DATA-411 | Production projection strategies could build different horizon plans for one request | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-412 | Production dependencies could mutate caller-owned request evidence | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-413 | Route evidence was not fully bound to current trajectory identity and authorized time | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-414 | Independently valid historical contracts were not bound into one authorized production evidence graph | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-415 | Projector outputs lacked complete production postconditions | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | initial `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`; lineage correction `2f352821f7ef5d1a26bbb0899bad7fc431d6363c` |
+| GFA-CONTRACT-416 | Estimated Arrival dependency could replace the entire authorized position projection | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-417 | Production accepted unavailable Historical Continuation as a successful strategy result | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-418 | Authorized limited historical evidence was not disclosed explicitly in production output | P2 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-OPS-419 | Production dependency failures lost their underlying error cause | P2 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-420 | Production input and composed-output identity were conflated and incomplete | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c` |
+| GFA-DATA-421 | Historical projector output was not cryptographically/semantically bound to the already authorized evidence lineage | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | reopened baseline `0f1a31f56f4baf232e978d240216068a001a184e`; correction `2f352821f7ef5d1a26bbb0899bad7fc431d6363c` |
+| GFA-DATA-422 | Historical projection provenance could not be independently reconstructed against Continuation policy | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `2f352821f7ef5d1a26bbb0899bad7fc431d6363c` |
+| GFA-DATA-423 | Historical selected-neighbor provenance was not required to match the exact authorized neighbor set | P1 retrospective | CLOSED | `144_PROJECTION_PRODUCTION_REVIEW_HARDENING.md` | `2f352821f7ef5d1a26bbb0899bad7fc431d6363c` |
+| GFA-OPS-424 | Projection Read silently accepted a nil caller context | P2 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-DATA-425 | Snapshot identity and as-of postconditions were not independently enforced by Projection Read | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-DATA-426 | Composer output was not fully bound back to the Projection Read request | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-DATA-427 | Persisted Route row metadata and JSON payload could disagree before Projection use | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-DATA-428 | Projection `GeneratedAt` could precede completion of snapshot acquisition | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-DATA-429 | Stale trajectory `UpdatedAt` could exceed the authorized projection as-of boundary | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-CONTRACT-430 | Zero requested duration was not canonicalized consistently before Production composition | P2 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-DATA-431 | Projection Read source names were not consistently canonicalized | P2 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `4eeff2b9f5b5c17dd6b7ebe5d0be4a7bd836fb37` |
+| GFA-DATA-432 | Rejected historical candidate identifiers were lost from the Projection snapshot | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `9dda4b102497028b59280143b86bf84564afb136` |
+| GFA-DATA-433 | Historical candidate limit could be consumed before hydration determined which candidates were usable | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `9dda4b102497028b59280143b86bf84564afb136` |
+| GFA-DATA-434 | Route-history fingerprint was not bound to the exact contributing route records and their input fingerprints | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `9dda4b102497028b59280143b86bf84564afb136` |
+| GFA-DATA-435 | Route-history aggregate mirrors were not independently reconciled with contributing evidence | P1 retrospective | CLOSED | `145_PROJECTION_READ_REVIEW_HARDENING.md` | `9dda4b102497028b59280143b86bf84564afb136`; audit `e0557f6bc3115767ba124a9c94cbb008194c643b` |
 
 ## Stage-level closure evidence
 
@@ -464,8 +542,10 @@ Documents 127–129 = Historical Series / Route / Comparison review chain enrich
 Documents 130–131 = Historical Similarity / Aggregate review chain enriched and merged through PR #126 (`feaaba300df6e4273083da2bf13dbc4346fb4425`)
 Documents 132–133 = Historical Materialization / Replay review chain enriched and merged through PR #127 (`5847b8b30b8be8900361d95422859bfc5f70044f`)
 Documents 134–135 = Projection Contract / Horizon review chain enriched and merged through PR #128 (`de9fcbcf43da759584c91b669bb42a70dfbb95ad`)
-Documents 136–138 = Projection Baseline / Neighbors / Pattern Confidence review chain enriched to canonical standard in source
-Canonical finding register covers 357 findings (001–357 with category prefixes)
+Documents 136–138 = Projection Baseline / Neighbors / Pattern Confidence review chain enriched and merged through PR #129 (`df0eb98fcb9ef97a7cb663768f2885d3dbe5a884`)
+Documents 139–145 = Projection Freshness / Route Frequency / Continuation / Arrival / Evaluation / Production / Read review chain enriched to canonical standard in source
+Document 146 = Projection Intelligence final cross-module reconciliation classified as closure-governance evidence in source; no synthetic finding ID created
+Canonical finding register covers 435 findings (001–435 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -479,8 +559,10 @@ Historical Series/Route/Comparison review reconciliation = CLOSED AND MERGED
 Historical Similarity/Aggregate review reconciliation = CLOSED AND MERGED
 Historical Materialization/Replay review reconciliation = CLOSED AND MERGED
 Projection Contract/Horizon review reconciliation = CLOSED AND MERGED
-Projection Baseline/Neighbors/Pattern Confidence review reconciliation = CLOSED IN SOURCE
+Projection Baseline/Neighbors/Pattern Confidence review reconciliation = CLOSED AND MERGED
+Projection Freshness/Route Frequency/Continuation/Arrival/Evaluation/Production/Read review reconciliation = CLOSED IN SOURCE
+Projection Intelligence final cross-module reconciliation = CLOSED IN SOURCE; closure-governance evidence only
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 139 (Projection Freshness review)
+Next post-Stage-14 audit range begins at Document 147 (Backend Context Ownership Audit Closure)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
