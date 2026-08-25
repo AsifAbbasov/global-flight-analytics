@@ -1,6 +1,6 @@
 # Document 52 — Stage 14.12 Projection Read Snapshot Consistency
 
-Status: Implementation Baseline v1.0
+Status: Remediation History v1.1
 Project: Global Flight Analytics
 Scope: reproducible PostgreSQL input snapshot for one Projection Intelligence result
 
@@ -174,3 +174,102 @@ Next.js production build
 backend Docker image build
 git diff check
 ```
+
+## 10. Canonical finding record — GFA-DB-050
+
+### Finding / symptom
+
+One Projection Intelligence result read four related PostgreSQL input groups through independent operations. They shared an analytical `as_of_time` but not one database snapshot.
+
+### Root cause
+
+The service-level data-source contract exposed separate reads for current trajectory, route, historical candidates, and route history. Analytical time filtering was mistaken for sufficient consistency even though PostgreSQL visibility could advance between calls.
+
+### Failure scenario
+
+```text
+read current trajectory at committed DB state A
+↓
+concurrent ingestion/reconciliation/materialization commits state B
+↓
+read route/history/candidates at state B
+↓
+compose one projection from evidence that never coexisted in one committed snapshot
+```
+
+The projection can be temporally bounded yet internally inconsistent.
+
+### Impact
+
+Projection outputs, confidence, provenance, neighbor selection, route-frequency context, or ETA can be derived from mutually inconsistent evidence. The result remains syntactically valid, making the inconsistency difficult to detect downstream.
+
+### Severity rationale
+
+**P1 retrospective.** This is a production analytical consistency defect: one persisted/read result could combine different committed database states while appearing valid.
+
+### Existing guarantees violated
+
+- one projection result should be reproducible from one committed evidence snapshot;
+- analytical `as_of_time` and database visibility are distinct guarantees;
+- trajectory parent/segments/gaps/points and route/history evidence used together must share transactional visibility;
+- data acquisition atomicity belongs to the PostgreSQL adapter, not ad hoc service sequencing.
+
+### Considered solutions
+
+1. keep independent reads and rely on close timing;
+2. use explicit table/row locks across ingestion/materialization;
+3. load all inputs in one read-only `REPEATABLE READ` transaction through a single `LoadSnapshot` operation.
+
+### Chosen remediation
+
+The Projection data source exposes one `LoadSnapshot`. PostgreSQL starts a `REPEATABLE READ`, `READ ONLY` transaction and binds the Trajectory repository plus route/candidate/history reads to the same `pgx.Tx` before commit.
+
+### Why selected
+
+Repeatable-read provides a stable view without blocking writers or changing analytical formulas. A single adapter-owned operation prevents future service composition from accidentally splitting the snapshot again.
+
+### Rejected alternatives
+
+Close-in-time reads do not prove consistent visibility. Row/table locking was rejected because the operation is read-only and should not block ingestion/backfill just to obtain a stable snapshot. Moving transaction coordination into the service would leak persistence mechanics across the application boundary.
+
+### Trade-offs
+
+Each projection input load now holds a read-only transaction for the duration of all required queries. That consumes one transactional connection/snapshot slightly longer than separate calls, but avoids writer blocking and inconsistent evidence.
+
+### Regression tests / protection
+
+Tests require one `LoadSnapshot` service call, exact `REPEATABLE READ`/`READ ONLY` options, transaction-bound Trajectory reads, commit/rollback behavior, commit-failure cleanup, and clone isolation. Later Document 61 extends snapshot ownership into direct Trajectory aggregate reads.
+
+### Adversarial review findings
+
+The review distinguished analytical time from database snapshot time. It also required trajectory children/points to use the same transaction rather than starting a transaction only for route/history queries while leaving trajectory reads pool-backed.
+
+### Remediation iterations
+
+```text
+Stage 14.12: Projection workflow owns one repeatable-read snapshot
+↓
+Stage 14.20 / Document 61: core Trajectory aggregate repository gains its own snapshot guarantee for callers outside Projection
+```
+
+The later hardening supplements rather than invalidates this workflow-level boundary.
+
+### Residual risks / limitations
+
+Repeatable-read ensures database-state consistency, not semantic correctness of upstream observations or formulas. Long-running snapshots can retain MVCC state; production query duration still matters.
+
+### Operational / deployment consequences
+
+No migration/API change. Projection reads use one read-only transaction and one connection for the snapshot duration; PostgreSQL must support the configured isolation level (standard PostgreSQL behavior).
+
+### Exact evidence
+
+Implementation commit: `4f5920a25e6a5ba8e5a3f5db82fee8e7a90a5649` (`fix: enforce consistent projection read snapshot`). Historical PR/reviewer metadata is not invented where unavailable.
+
+### Final canonical status
+
+**CLOSED for Projection input snapshot consistency.** Direct Trajectory aggregate consistency outside this workflow is separately owned by GFA-DB-004 / Document 61.
+
+### Prevention / future guard
+
+Any analytical result composed from multiple related database reads must explicitly decide whether one committed snapshot is required. If yes, transaction ownership belongs in the persistence adapter and the application contract should expose one atomic load rather than several independently callable reads.
