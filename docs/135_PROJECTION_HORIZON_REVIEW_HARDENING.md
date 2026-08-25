@@ -140,3 +140,209 @@ PROJECTION_HORIZON_ADDITIONAL_CODE_FIXES_REQUIRED=NO
 FORMAL_CLOSURE_DOCUMENTATION_REQUIRED=NO
 PROJECTION_HORIZON_REVIEW_STATUS=CLOSED
 ```
+
+## Canonical remediation history
+
+The records below reconstruct finding-level ownership from repository evidence.
+Severity labels are retrospective classifications. The implementation owner is
+`7249aa7625dd306bbd769dade6ce3262edca01ab`; permanent audit owner is
+`d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`; exact audit Backend CI run
+`30402249129` completed successfully.
+
+### GFA-DATA-319 — Projection Horizon Step did not define one exact fixed grid
+
+1. **Finding / symptom:** `Step` could produce regular points and then append a separately aligned final endpoint, so it did not consistently define the full schedule.
+2. **Root cause:** schedule generation iterated offsets and repaired the endpoint after generation instead of defining all slots by indexed multiplication.
+3. **Failure scenario:** requested/effective duration is not exactly divisible by `Step`; most points follow the grid but the final point uses a different interval.
+4. **Impact:** projection point timing and horizon fingerprint semantics become internally inconsistent.
+5. **Severity rationale:** **P1 retrospective** because the horizon schedule is a primary temporal identity consumed by all projection strategies.
+6. **Existing guarantees violated:** fixed-step horizon, deterministic forecast slots, exact endpoint equality.
+7. **Considered solutions:** append final endpoint; round duration; reject off-grid durations and generate indexed slots.
+8. **Chosen remediation:** all configured/requested/effective durations must align exactly to `Step`; forecast times use `AsOfTime + (index+1)*Step` only.
+9. **Why selected:** the contract becomes mathematically exact rather than repairing an inconsistent schedule after construction.
+10. **Rejected alternatives:** rounding or endpoint append silently changes requested temporal semantics.
+11. **Trade-offs:** off-grid requests now fail rather than producing a best-effort schedule.
+12. **Regression tests / protection:** configured-grid and requested-duration tests; `projectionhorizonreviewaudit` forbids endpoint append behavior.
+13. **Adversarial review findings:** zero requested duration remains only an internal default-selection sentinel, not an off-grid public duration.
+14. **Remediation iterations:** engineering `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** configured fixed-step policy remains a product/model choice; this finding concerns consistency, not scientific horizon selection.
+16. **Operational/deployment consequences:** invalid off-grid configurations/requests fail before schedule construction.
+17. **Exact evidence:** review doc, implementation/audit commits, exact run `30402249129` SUCCESS, fixed-grid tests/audit.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** all horizon schedules must be generated from a single exact grid formula, never repaired with a special terminal point.
+
+### GFA-DATA-320 — Public Projection Horizon Plan lacked a canonical integrity boundary
+
+1. **Finding / symptom:** public `Plan` values could be manually assembled without complete invariant or fingerprint verification.
+2. **Root cause:** plan fields were public for compatibility, but no canonical finalization/validation API made derived state authoritative.
+3. **Failure scenario:** a collaborator constructs a plan with inconsistent version, UTC normalization, duration relations, truncation fields, point count, endpoint, or fingerprint and passes it downstream.
+4. **Impact:** consumers can operate on a structurally plausible but semantically invalid horizon.
+5. **Severity rationale:** **P1 retrospective** because malformed temporal plans can contaminate every downstream projection method.
+6. **Existing guarantees violated:** plan identity, defensive-copy semantics, deterministic derived state.
+7. **Considered solutions:** make all fields private; rely on Policy-only construction; add canonical `FinalizePlan` and `Plan.Validate` boundaries.
+8. **Chosen remediation:** `FinalizePlan` canonicalizes/validates and clones; `Plan.Validate` verifies complete plan invariants and fingerprint.
+9. **Why selected:** it preserves source compatibility while giving all producers/consumers an explicit fail-closed contract.
+10. **Rejected alternatives:** a broad private-field migration would not prevent malformed alternative planner implementations from crossing interfaces without validation.
+11. **Trade-offs:** public mutability remains, so validation is required at consumption boundaries.
+12. **Regression tests / protection:** manual invariant/fingerprint corruption tests and permanent audit.
+13. **Adversarial review findings:** public Plan structure is retained by design; integrity is enforced through canonical finalize/validate/consumer checks rather than constructor absolutism.
+14. **Remediation iterations:** `7249aa7625dd306bbd769dade6ce3262edca01ab`, audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** callers can mutate a valid plan after validation; production consumers therefore validate received plans again.
+16. **Operational/deployment consequences:** malformed plans now fail before projection computation.
+17. **Exact evidence:** implementation/audit commits, run `30402249129`, Plan hardening tests/audit.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** mutable versioned plan values require a canonical finalization method and consumer-side validation boundary.
+
+### GFA-REL-321 — Configured default Projection Horizon was unreachable through production HTTP
+
+1. **Finding / symptom:** the package defined a default horizon duration, but omitted `duration_seconds` was rejected/blocked before the default could be selected in the production read path.
+2. **Root cause:** HTTP/read validation treated zero as invalid instead of preserving it as the internal default-selection sentinel.
+3. **Failure scenario:** clients omit the optional duration expecting configured defaults, yet production cannot execute the documented/default projection path.
+4. **Impact:** a valid supported product path exists in configuration but is operationally unreachable.
+5. **Severity rationale:** **P2 retrospective** because this is a production reachability/contract defect rather than incorrect numerical output for accepted explicit durations.
+6. **Existing guarantees violated:** configured default behavior, HTTP/read-policy consistency, production feature reachability.
+7. **Considered solutions:** require clients to always send duration; assign default in HTTP handler; preserve zero to the policy's explicit default resolution.
+8. **Chosen remediation:** omitted HTTP duration maps to zero internal sentinel; read policy resolves it through canonical horizon config/default logic; invalid explicit values still fail.
+9. **Why selected:** one policy owner selects defaults while transport only distinguishes omitted from invalid supplied values.
+10. **Rejected alternatives:** duplicating the default in HTTP would create configuration drift.
+11. **Trade-offs:** zero has a narrowly documented internal sentinel meaning, while `BuildDefault` remains the explicit construction API.
+12. **Regression tests / protection:** handler/read-service default-duration tests; permanent audit checks both paths.
+13. **Adversarial review findings:** negative, below-minimum and off-grid explicit values remain errors; default support does not weaken request validation.
+14. **Remediation iterations:** `7249aa7625dd306bbd769dade6ce3262edca01ab`; permanent audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** clients cannot distinguish different default policies without configuration/version evidence; plan fingerprint binds effective policy identity.
+16. **Operational/deployment consequences:** omitted duration now executes configured default projection in production.
+17. **Exact evidence:** default-duration HTTP/read tests, implementation/audit commits, run `30402249129`.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** transport omission semantics must reach the single configuration owner instead of being rejected or re-defaulted independently.
+
+### GFA-DATA-322 — Projection strategy fingerprints duplicated incomplete horizon identity
+
+1. **Finding / symptom:** Baseline and historical continuation fingerprints hashed only part of horizon semantics and omitted requested duration/truncation evidence.
+2. **Root cause:** each strategy independently mirrored selected plan fields instead of consuming one canonical plan fingerprint.
+3. **Failure scenario:** two horizon plans differ in requested duration, truncation status/reason, or forecast slots but a strategy fingerprint does not distinguish them.
+4. **Impact:** projection reproducibility and cache/comparison identity can collapse semantically different horizon plans.
+5. **Severity rationale:** **P1 retrospective** because deterministic input identity is central to reproducible Projection Intelligence.
+6. **Existing guarantees violated:** complete horizon provenance, fingerprint uniqueness, single identity ownership.
+7. **Considered solutions:** extend every strategy fingerprint with more horizon fields; create canonical plan hash; duplicate full plan records in each producer.
+8. **Chosen remediation:** Horizon plan gets complete SHA-256 fingerprint; Baseline and Continuation consume `plan.Fingerprint` instead of local horizon mirrors.
+9. **Why selected:** one versioned horizon identity prevents drift across projection methods.
+10. **Rejected alternatives:** duplicated field lists require every strategy to evolve in lockstep whenever horizon semantics change.
+11. **Trade-offs:** strategy fingerprints intentionally depend on the versioned Horizon fingerprint contract.
+12. **Regression tests / protection:** plan fingerprint coverage test; audit forbids old partial Baseline/Continuation field hashing.
+13. **Adversarial review findings:** Horizon fields are not redundantly duplicated in strategy fingerprints because the canonical plan fingerprint already binds them.
+14. **Remediation iterations:** `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** deliberate Horizon fingerprint version changes propagate identity changes to dependent strategies by design.
+16. **Operational/deployment consequences:** newly generated strategy fingerprints distinguish truncation/requested-horizon semantics correctly.
+17. **Exact evidence:** implementation/audit commits, plan fingerprint tests, exact run `30402249129`.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** shared derived-plan semantics must expose one canonical fingerprint consumed by downstream producers rather than mirrored field-by-field.
+
+### GFA-OPS-323 — Nil Projection Horizon policy returned an unrelated configuration error
+
+1. **Finding / symptom:** using a nil policy returned a maximum-point-count error rather than a lifecycle/dependency error.
+2. **Root cause:** nil receiver handling fell through configuration validation instead of being classified before config semantics.
+3. **Failure scenario:** production composition has a missing policy dependency and reports an operator-facing configuration-range failure.
+4. **Impact:** diagnosis and automation misclassify a dependency lifecycle defect as bad analytical configuration.
+5. **Severity rationale:** **P2 retrospective** because failures remained visible but error ownership was materially misleading.
+6. **Existing guarantees violated:** typed lifecycle errors, diagnosable composition, fail-fast dependency semantics.
+7. **Considered solutions:** keep existing error; panic; return dedicated `ErrPolicyUnavailable`.
+8. **Chosen remediation:** nil policy operations return `ErrPolicyUnavailable` before configuration logic.
+9. **Why selected:** callers can distinguish unavailable dependency from invalid policy configuration using typed error semantics.
+10. **Rejected alternatives:** panic is inappropriate for a recoverable dependency state; unrelated range error obscures root cause.
+11. **Trade-offs:** callers/tests must recognize the dedicated lifecycle error.
+12. **Regression tests / protection:** `TestNilPolicyReturnsLifecycleError`; permanent audit checks the error path.
+13. **Adversarial review findings:** `Policy.Config` nil-receiver zero value remains intentionally retained because no caller depends on typed errors from that read-only accessor.
+14. **Remediation iterations:** `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** other collaborators require their own lifecycle classification reviews.
+16. **Operational/deployment consequences:** missing Horizon policy fails with actionable typed evidence.
+17. **Exact evidence:** implementation/audit commits, nil-policy test, run `30402249129`.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** collaborator absence must be classified before domain configuration validation so lifecycle and semantic errors cannot be conflated.
+
+### GFA-CONTRACT-324 — Projection Horizon policy identity was not required to be canonical
+
+1. **Finding / symptom:** policy names could be empty, padded, or otherwise non-normalized.
+2. **Root cause:** configuration validation focused on durations/point counts and treated name as descriptive text rather than versioned identity.
+3. **Failure scenario:** semantically equivalent policies use different whitespace/name forms or a blank name enters the plan fingerprint and provenance.
+4. **Impact:** deterministic policy identity and fingerprints can drift for configuration-text reasons unrelated to analytical semantics.
+5. **Severity rationale:** **P2 retrospective** because policy identity affects provenance/reproducibility but does not independently change kinematic formulas.
+6. **Existing guarantees violated:** normalized policy identity, deterministic plan fingerprint, provenance clarity.
+7. **Considered solutions:** trim automatically; ignore names in fingerprint; require non-empty normalized identity.
+8. **Chosen remediation:** configuration requires `Name` to be trimmed, normalized, and non-empty; canonical name remains fingerprint input.
+9. **Why selected:** fail-closed validation avoids hidden mutation of versioned identity.
+10. **Rejected alternatives:** silent trimming can conceal caller configuration drift; omitting name weakens policy provenance.
+11. **Trade-offs:** configuration authors must supply canonical names explicitly.
+12. **Regression tests / protection:** `TestNewRejectsNonNormalizedPolicyName`; permanent audit.
+13. **Adversarial review findings:** this is policy identity, not a demand for one global naming registry across unrelated projection methods.
+14. **Remediation iterations:** `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** normalized name uniqueness across deployments remains configuration governance, not package-level enforcement.
+16. **Operational/deployment consequences:** malformed policy identity fails construction.
+17. **Exact evidence:** implementation/audit commits, policy-name test, run `30402249129`.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** names that enter deterministic fingerprints/provenance must be validated as canonical identity, not treated as cosmetic labels.
+
+### GFA-PERF-325 — Projection Horizon configuration lacked a package-wide allocation bound
+
+1. **Finding / symptom:** configuration could imply excessive schedule allocation or unsafe duration-to-point-count conversion without one supported maximum.
+2. **Root cause:** maximum duration and step were validated independently without bounding their quotient before allocation/conversion.
+3. **Failure scenario:** extreme duration/small step yields a huge point count, excessive memory allocation, or unsafe integer conversion.
+4. **Impact:** one request/configuration can violate bounded-work/free-tier resource guarantees.
+5. **Severity rationale:** **P2 retrospective** because the primary risk is resource exhaustion/availability rather than wrong values for normal bounded inputs.
+6. **Existing guarantees violated:** bounded allocation, safe point-count arithmetic, free-tier operational discipline.
+7. **Considered solutions:** rely on host memory; clamp point count after allocation; validate a package-wide supported maximum before allocation.
+8. **Chosen remediation:** validate exact point count and enforce `MaximumSupportedPointCount = 10000` before schedule allocation.
+9. **Why selected:** resource limits are explicit, deterministic, and enforced before expensive work.
+10. **Rejected alternatives:** post-allocation checks cannot prevent the resource spike they are meant to control.
+11. **Trade-offs:** larger horizons require a deliberate future version/config policy change rather than implicit scaling.
+12. **Regression tests / protection:** unsafe/extreme configuration tests and permanent audit checks.
+13. **Adversarial review findings:** the 10,000 limit is an operator/package support bound, not a claim about aviation prediction validity.
+14. **Remediation iterations:** `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** work below 10,000 points can still be expensive depending on downstream methods; those modules own additional limits.
+16. **Operational/deployment consequences:** extreme configurations fail before memory growth.
+17. **Exact evidence:** implementation/audit commits, allocation tests, exact run `30402249129`.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** derived allocation cardinality must be bounded and safely representable before allocating schedules or buffers.
+
+### GFA-DATA-326 — Projection consumers trusted malformed alternative Horizon plans
+
+1. **Finding / symptom:** Baseline, historical continuation, and production composition could accept malformed plans returned by alternative planner implementations.
+2. **Root cause:** consumers trusted interface success instead of revalidating mutable public `Plan` output at the collaborator boundary.
+3. **Failure scenario:** a custom planner returns nil error but a plan with bad grid/fingerprint/truncation identity, and downstream projection publishes results from it.
+4. **Impact:** collaborator substitution bypasses canonical Horizon guarantees.
+5. **Severity rationale:** **P1 retrospective** because invalid plans can directly alter all downstream projection timing and identity.
+6. **Existing guarantees violated:** collaborator output validation, fail-closed composition, canonical horizon semantics.
+7. **Considered solutions:** trust only default planner; restrict interface implementations; require each consumer to call `Plan.Validate`.
+8. **Chosen remediation:** Baseline, Continuation and Production composer validate every received plan and return `ErrHorizonPlanInvalid` on malformed collaborator output.
+9. **Why selected:** dependency inversion remains usable without turning interfaces into a trust bypass.
+10. **Rejected alternatives:** concrete-only dependencies would reduce testability/extensibility without eliminating future malformed internal results.
+11. **Trade-offs:** validation is repeated at consumption boundaries intentionally because public plans remain mutable.
+12. **Regression tests / protection:** invalid alternative planner tests in Baseline/Continuation/Production; permanent audit.
+13. **Adversarial review findings:** validating default Policy construction alone is insufficient once interfaces allow alternate implementations.
+14. **Remediation iterations:** `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** custom consumers outside audited production paths remain responsible for invoking validation.
+16. **Operational/deployment consequences:** malformed custom planner output fails before projection computation/publication.
+17. **Exact evidence:** consumer validation tests, implementation/audit commits, run `30402249129`.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** interface success never replaces validation of mutable versioned collaborator output at analytical trust boundaries.
+
+### GFA-TEST-327 — Projection Horizon remediation lacked permanent regression and CI enforcement
+
+1. **Finding / symptom:** exact-grid, plan-integrity, default-duration, allocation, fingerprint, lifecycle and consumer-validation contracts lacked one permanent regression/audit gate.
+2. **Root cause:** engineering fixes were distributed across Horizon, HTTP/read, Baseline, Continuation and Production without one closure mechanism proving continued reachability.
+3. **Failure scenario:** a later refactor removes one consumer check or reintroduces endpoint append/default rejection while local happy-path tests remain green.
+4. **Impact:** previously closed Horizon integrity defects can recur without required CI failure.
+5. **Severity rationale:** **P2 retrospective** because missing prevention weakens closure of multiple P1/P2 defects.
+6. **Existing guarantees violated:** durable remediation evidence, CI truth, cross-module regression protection.
+7. **Considered solutions:** rely on package tests only; document closure manually; add targeted tests plus permanent strict audit wired to Backend CI.
+8. **Chosen remediation:** add review audit covering Horizon code, consumers, tests, documentation/index and CI wiring; verify through exact run `30402249129`.
+9. **Why selected:** it protects both behavior and the cross-module wiring that makes the hardened policy reachable in production.
+10. **Rejected alternatives:** prose or isolated tests cannot prove all production consumers still enforce plan validation/default paths.
+11. **Trade-offs:** intentional contract changes require coordinated test/audit updates.
+12. **Regression tests / protection:** the named Horizon/HTTP/read/consumer tests plus `projectionhorizonreviewaudit` are the permanent guard.
+13. **Adversarial review findings:** the audit itself was separated into permanent audit commit `d2bc87b0...`, providing explicit closure evidence rather than retroactively claiming the engineering commit alone proved permanence.
+14. **Remediation iterations:** implementation `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b`.
+15. **Residual risks / limitations:** no finite audit covers future modules that may consume Horizon plans until those paths are intentionally added.
+16. **Operational/deployment consequences:** stronger Backend CI gate; no runtime feature from the audit itself.
+17. **Exact evidence:** permanent audit source, audit commit, exact Backend CI run `30402249129` SUCCESS and listed successful jobs.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** cross-module analytical policy hardening must remain protected by dedicated behavior tests and a permanent CI-enforced reconciliation audit.
