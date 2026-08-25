@@ -1,6 +1,6 @@
 # Zero-Cost Production Ingestion Reliability Closure
 
-Status: CANONICAL RECONCILIATION COMPLETE  
+Status: production ingestion reliability closed.
 Incident-definition PR: #55, head `dc2f6f7042ea16d13cf25ce8700831df160b8158`, merge `22a220d6ec9776637fd15f01cac9556c6e96a51e`  
 Reliability-foundation PR: #56, head `f847e54599efc5076495c758fac7436cc36bc312`, merge `463436371978d970b72d2ed3c2a6190ba9048b37`  
 Cloudflare-cutover PR: #58, head `2ef88bf6524f95bfa00b7363fc40d4e54f5265d0`, merge `7dfc66685247a5a1aaea87b1391624d1014d7013`  
