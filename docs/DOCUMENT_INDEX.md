@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v2.0
+Status: Documentation Index v2.1
 Project: Global Flight Analytics
 
 ---
@@ -15,6 +15,13 @@ The project documentation is divided into two groups:
 Documents 01–21: existing product, system, data, architecture foundation, and engineering amendments
 Documents 22–35: research audit, analytical architecture, roadmap, engineering rules, decision method, container operations, implementation alignment, and completion evidence
 ```
+
+## Documentation Governance
+
+- `FINDING_REGISTER.md` — canonical finding-level status, remediation ownership, severity and implementation-evidence index. It is the single source of truth for engineering finding status.
+- `DOCUMENTATION_POLICY.md` — normative nineteen-field remediation-history standard, evidence-honesty rules, README scope and closure requirements.
+
+README remains the high-level product/status surface. Detailed finding history belongs in the canonical stage documents linked from `FINDING_REGISTER.md`.
 
 ---
 
@@ -675,7 +682,16 @@ validation, preserved behavior, permanent regression gates, and remaining reopen
 Defines repository-derived migration repair planning, concrete nullable database arguments,
 required source provenance, native UUID array membership, PostgreSQL integration evidence,
 permanent regression gates, and the remaining profiling and closure scope.
-77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md
+
+<!-- STAGE-14-35-TRAJECTORY-QUERY-CONSOLIDATION:DOCUMENT-INDEX -->
+
+## Document 77
+
+`77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md`
+
+Defines canonical Trajectory query and row-mapping ownership, caller-context consistency,
+migration 021 index alignment and duplicate-index removal, permanent `EXPLAIN ANALYZE`
+profiling evidence, regression gates, and the final technical closure-candidate boundary.
 
 <!-- STAGE-14-36-FINAL-CLOSURE:DOCUMENT-INDEX -->
 
