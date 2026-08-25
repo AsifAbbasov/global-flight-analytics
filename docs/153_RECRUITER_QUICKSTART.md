@@ -1,9 +1,12 @@
 # Recruiter Quickstart Contract
 
-Status: Implementation prepared; exact-commit Continuous Integration closure pending  
+Status: CLOSED — operability implementation and Continuous Integration evidence reconciled  
 Project: Global Flight Analytics  
 Reviewed baseline: `fa222650ef5425dcf60a05fb949c17cafc36c1a8`  
+Implementation commit: `c34264a122913272e3083a4f64397b0e8470c4f3`  
+Backend CI: `30709750384` — SUCCESS  
 Date: 2026-08-01
+Canonical reconciliation: 2026-08-25
 
 ## 1. Purpose
 
@@ -59,3 +62,57 @@ image and performs the real PostgreSQL-backed smoke test.
 This increment does not add production deployment, publish credentials, expose a raw
 mutation key, replace the existing Compose topology, add frontend containers, change
 runtime ports or weaken any existing Continuous Integration gate.
+
+## 6. Historical closure evidence
+
+The exact implementation owner is:
+
+```text
+c34264a122913272e3083a4f64397b0e8470c4f3
+docs: add verified recruiter quickstart
+```
+
+The implementation adds the README reviewer path, overridable local-only mutation-key
+digest, permanent quickstart verifier and Backend CI reachability for README changes.
+
+GitHub Actions evidence for that exact commit is:
+
+```text
+Backend CI 30709750384 = SUCCESS
+```
+
+The run completed Backend Quality, Backend Race Safety, PostgreSQL 16 Integration and
+Backend Container successfully. Backend Container explicitly executed `Verify recruiter
+quickstart contract`, validated Docker Compose, built the backend image, verified the
+non-root runtime user and completed the PostgreSQL-backed container health smoke test.
+
+The original `exact-commit Continuous Integration closure pending` status is therefore
+historical drift and is closed by recovered repository evidence.
+
+## 7. Canonical classification
+
+This document is **operability / reviewer-workflow implementation and closure evidence**,
+not a remediation finding record.
+
+The increment made the repository easier and safer to evaluate reproducibly. Source
+evidence does not establish a separate pre-existing engineering defect with a distinct
+root-cause/remediation lifecycle that should receive a synthetic `GFA-*` finding ID.
+
+```text
+Canonical finding ID: none by design
+Classification: operability / reviewer-workflow implementation and closure evidence
+Historical implementation: CLOSED
+Exact-commit Backend CI: CLOSED
+Open remediation findings owned by this document: 0
+```
+
+## 8. Residual boundaries and prevention
+
+This historical closure does not turn the local Compose digest into production secret
+management and does not claim public-deployment availability. Those remain governed by
+later deployment and release evidence.
+
+Regression ownership remains with `scripts/verify-recruiter-quickstart.sh`, Backend CI,
+Compose validation and the container smoke test. Future quickstart failures should be
+registered as findings only when source-backed correctness or operability evidence
+establishes a real defect rather than ordinary documentation evolution.
