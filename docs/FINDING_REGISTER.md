@@ -61,7 +61,7 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-DB-002 | Unsafe migration baseline | P1 retrospective | CLOSED | `59_STAGE_14_18_POSTGRES_BASELINE_REMOVAL.md` | `3dafcf8ad08a8a4b270456cc2a023e8f4d0ffd53` |
 | GFA-DB-003 | Data Quality parent integrity | P1 retrospective | CLOSED | `60_STAGE_14_19_DATA_QUALITY_PARENT_INTEGRITY.md` | `0d3d1d37a65423ca6263df0816360eabf3c66235` |
 | GFA-DB-004 | FlightTrajectory read snapshot consistency | P1 retrospective | CLOSED | `61_STAGE_14_20_TRAJECTORY_READ_SNAPSHOT_CONSISTENCY.md` | `fcc601db509d8fb71d2f2db273548fec3832d3bd` |
-| GFA-DB-005 | Ingestion Run terminal integrity | P1 retrospective | CLOSED | `62_STAGE_14_21_INGESTION_RUN_TERMINAL_INTEGRITY.md` | `b3603311d86f23c66bc945c8a61471142ccbec63` |
+| GFA-DB-005 | Ingestion Run terminal integrity | P1 retrospective | CLOSED | `62_STAGE_14_18_POSTGRES_MIGRATION_ATOMICITY.md` | `b3603311d86f23c66bc945c8a61471142ccbec63` |
 | GFA-DB-006 | FlightTrajectory relational integrity | P1 retrospective | CLOSED | `63_STAGE_14_22_TRAJECTORY_RELATIONAL_INTEGRITY.md` | `5bb4a6aab7b16bc13e8477ca31f11eaa27e808ff` |
 | GFA-DB-007 | Canonical migration filename contract | P2 retrospective | CLOSED | `64_STAGE_14_23_CANONICAL_MIGRATION_FILENAME_CONTRACT.md` | `4c41b8588e9119f59c090c976cef494c55683e18` |
 | GFA-DB-008 | Explicit altitude integer persistence policy | P2 retrospective | CLOSED | `65_STAGE_14_24_EXPLICIT_ALTITUDE_INTEGER_POLICY.md` | `467d6bf5f6e66febbb83944664735ce26e7054c3` |
@@ -182,7 +182,7 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-ARCH-123 | Core Feature Pipeline depended on the full feature-store contract | P3 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-DB-124 | PostgreSQL feature composition allowed ambiguous Pool and Executor ownership | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-OPS-125 | Feature processing silently substituted a nil caller context | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
-| GFA-ARCH-126 | Typed-nil Feature Pipeline dependencies violated required/optional semantics | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-ARCH-126 | Typed-nil Feature Pipeline dependencies passed construction checks | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-GOV-127 | PostgreSQL Feature Pipeline verifier was absent from required CI | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-DATA-128 | Feature composition version was absent from the processing version manifest | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-TEST-129 | Materializer/verifier consumers still validated the obsolete duplicate Result feature value | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
