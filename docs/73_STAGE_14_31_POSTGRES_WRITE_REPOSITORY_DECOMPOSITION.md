@@ -164,3 +164,75 @@ The shadow preflight runs both the Backend Final Correctness Audit tests and its
 repository audit before any real working-tree file is changed. This prevents a source
 ownership refactor from passing the new Stage 14 audit while failing an older permanent
 correctness gate later in the installation.
+
+## 9. Canonical finding record — GFA-MAINT-018
+
+### Finding / symptom
+
+Airport Import and Flight State write coordinators mixed transaction orchestration, domain-value preparation, SQL ownership, mapping, and persistence steps inside large methods.
+
+### Root cause
+
+The repositories grew incrementally as correctness features were added. Each addition was locally reasonable, but ownership boundaries were not re-cut after the methods accumulated several independent responsibilities.
+
+### Failure scenario
+
+A future change to one concern—such as altitude conversion, staging reconciliation, or transaction cleanup—would require editing a coordinator that also owned unrelated SQL and lifecycle logic. The risk is not a known historical data-corruption event; it is increased review surface and a higher chance of accidental behavioral coupling.
+
+### Impact
+
+Changes become harder to reason about, code review becomes less local, architecture tests have weaker ownership targets, and future correctness fixes are more likely to touch unrelated behavior.
+
+### Severity rationale
+
+**P3 retrospective.** The historical document explicitly states that behavior was already correct. This is a maintainability/cohesion finding, not a production correctness incident.
+
+### Existing guarantees violated
+
+The issue violated the project's maintainability goal that transaction coordinators should express workflow while dedicated helpers own SQL, mapping, and domain preparation. It did not violate an external API or persisted-data guarantee.
+
+### Considered solutions
+
+1. leave the methods intact and rely on comments;
+2. introduce new public repository interfaces/services;
+3. split implementation ownership into package-private responsibility files while preserving public contracts.
+
+### Chosen remediation and why
+
+The implementation keeps the existing public repositories and signatures, but moves staging, merge steps, row preparation, and SQL into dedicated owners. This reduces review surface without introducing new architectural layers.
+
+### Rejected alternatives
+
+Comments were rejected because they do not reduce coupled change surface. New public interfaces/services were rejected as overengineering: callers did not need new abstractions, only clearer internal ownership.
+
+### Trade-offs
+
+The package contains more files and requires navigation between coordinator and owner files. The trade is accepted because each file has a smaller, testable responsibility and public composition remains unchanged.
+
+### Regression tests
+
+Parser-backed architecture tests cap coordinator responsibility, forbid delegated SQL from returning to coordinator files, and require transaction ordering plus dedicated owner functions.
+
+### Adversarial review and remediation iterations
+
+The decomposition was deliberately behavior-preserving. Later Stage 14 audits and the Backend Final Correctness Audit were run against the new ownership to catch a failure mode where a refactor could satisfy new structural rules while breaking older correctness gates.
+
+### Residual risk / limitations
+
+File decomposition does not automatically guarantee conceptual simplicity. Future contributors can still create indirect coupling across helpers, so architecture tests and ordinary review remain necessary.
+
+### Operational / deployment consequences
+
+None. No schema migration, API change, or deployment configuration change is required.
+
+### Exact evidence
+
+Implementation commit: `520779faef05b88fdeba4d9d244feb09f569010c` (`refactor: decompose postgres write repositories`). Historical PR/reviewer metadata is not asserted where it cannot be recovered reliably.
+
+### Final canonical status
+
+**CLOSED.** The documented monolithic write ownership was decomposed while preserving behavior.
+
+## 10. Prevention / future guard
+
+Future repository growth should trigger responsibility review before a coordinator becomes the owner of SQL text, normalization, mapping, transaction lifecycle, and workflow policy simultaneously. Structural tests should defend meaningful responsibilities rather than line counts alone.
