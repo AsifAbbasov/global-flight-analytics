@@ -1,6 +1,6 @@
 # Document 54 — Stage 14.14 Composite Historical Pagination Cursor
 
-Status: Implementation Baseline v2.0
+Status: Remediation History v2.1
 Project: Global Flight Analytics
 Scope: lossless store and HTTP keyset pagination for Historical Intelligence
 
@@ -223,3 +223,122 @@ Next.js production build
 backend Docker image build
 git diff check
 ```
+
+## 11. Canonical remediation history
+
+### Finding / symptom
+
+Historical Intelligence exposed a pagination cursor that represented only `window_end` while the actual stable result order used four fields. Pages could therefore lose records when multiple results shared the visible timestamp boundary.
+
+### Root cause
+
+The transport/store cursor contract did not model the complete PostgreSQL ordering tuple. Pagination semantics were designed around a convenient timestamp rather than the full deterministic sort key.
+
+### Failure scenario
+
+```text
+more than page-size records share window_end
+↓
+first page ends inside that equal-window_end group
+↓
+client receives only before_window_end
+↓
+next predicate jumps to rows with an earlier window_end
+↓
+remaining same-window_end records are never returned
+```
+
+### Impact
+
+The API could silently omit valid historical analytical results across page boundaries. Because the response still looked well-formed and pagination continued, the loss could remain unnoticed by clients and downstream analysis.
+
+### Severity rationale
+
+Historical severity was not explicitly recorded. Retrospective classification: **P1 data retrieval correctness** because valid persisted records could become permanently unreachable through the public paginated contract without an error.
+
+### Existing guarantees violated
+
+```text
+pagination must be lossless across every stable-order tie
+cursor semantics must match the complete database ordering
+next_cursor must start strictly after the last visible record
+client transport must not rely on constructing internal ordering state
+```
+
+### Considered solutions
+
+1. Keep a single timestamp cursor and increase page size.
+2. Use offset pagination.
+3. Add ad-hoc secondary timestamp parameters.
+4. Encode the complete ordering tuple as one opaque, versioned cursor.
+
+### Chosen remediation
+
+Option 4: use `(WindowEnd, WindowStart, AsOfTime, ID)` throughout the store cursor and keyset predicate, expose a versioned opaque HTTP token, and generate the next cursor from the last visible record only when a sentinel row proves more data exists.
+
+### Why this solution was selected
+
+It directly mirrors the canonical ordering, remains deterministic under ties, avoids offset drift, and hides storage-order details from public clients while retaining an evolvable token version.
+
+### Rejected alternatives
+
+Increasing limits was rejected because it only moves the failure threshold. Offset pagination was rejected because concurrent changes and large offsets make it less stable and potentially more expensive. Multiple public cursor query parameters were rejected because they expose internal ordering details and make partial/malformed cursor states easier to construct.
+
+### Trade-offs
+
+```text
++ pagination becomes lossless under complete ordering ties
++ clients handle one opaque token
++ keyset semantics remain index-friendly and deterministic
+- cursor tokens are more complex to encode/debug manually
+- ordering changes require cursor-version compatibility decisions
+- legacy single-field clients must migrate
+```
+
+### Regression tests / protection
+
+Protection covers the complete four-field predicate, next-cursor derivation, partial cursor rejection, strict codec decoding, malformed/oversized token rejection, runtime pagination verification, absence of legacy cursor names, and ownership-safe page cloning.
+
+### Adversarial review findings
+
+Review exposed two non-obvious requirements: the final `id` term must use ascending comparison because the canonical order is mixed-direction, and a cursor must be generated from the last **visible** record rather than the sentinel record. The failed v1 installer also required bounded recovery that touched only known Stage 14.14 paths.
+
+Historical PR/reviewer evidence for the original July remediation is unavailable; reconstruction is limited to repository source, tests, commits, and this stage document.
+
+### Remediation iterations
+
+A first Stage 14.14 installation attempt failed and left a known partial state based on HEAD `1f30bae...`. The v2 remediation added guarded recovery and landed the final lossless implementation in commit `6a78070499ec0cbe9f905fa94d4b0995d41f2a40` (`fix: make historical pagination lossless`).
+
+### Residual risks and limitations
+
+The cursor is valid only for the ordering/version contract it encodes. A future ordering change must either preserve version-1 semantics for in-flight tokens or introduce a new cursor version. Pagination correctness does not by itself guarantee completeness of the underlying materialized historical dataset.
+
+### Operational or deployment consequences
+
+No schema migration is required. API consumers must treat cursor tokens as opaque and return them unchanged. Deployments that change cursor order/version must include backward-compatibility or explicit invalidation policy.
+
+### Exact evidence
+
+```text
+implementation commit:
+6a78070499ec0cbe9f905fa94d4b0995d41f2a40
+
+permanent evidence:
+Historical Aggregate Contract tests
+PostgreSQL keyset/store tests
+HTTP cursor codec and handler tests
+runtime pagination verifier
+backend final correctness audit
+```
+
+### Final canonical status
+
+```text
+FINDING_GFA_DATA_052_HISTORICAL_PAGINATION_LOSS=CLOSED
+CANONICAL_FINDING_DOCUMENT=docs/54_STAGE_14_14_COMPOSITE_HISTORICAL_PAGINATION_CURSOR.md
+IMPLEMENTATION_COMMIT=6a78070499ec0cbe9f905fa94d4b0995d41f2a40
+```
+
+### Prevention / future guard
+
+Any paginated query must derive its cursor from the complete stable ordering tuple. Architecture/review checks must reject a cursor that omits a sort term or reverses a mixed-direction comparison. Public clients must never be required to synthesize cursor internals.
