@@ -423,3 +423,293 @@ before the external final closure verdict is issued.
 
 No statement in this document closes `projectionread` or the final end-to-end project
 reconciliation.
+
+## Canonical remediation history
+
+The following thirteen records reconcile the accepted Production review and its later formal re-open/re-close without erasing earlier valid evidence. The stale repeated-selection claim remains rejected. The later lineage correction is recorded as a real reopened defect with its own corrective evidence. Severity is retrospective.
+
+### GFA-DATA-411 — Production projection strategies could build different horizon plans for one request
+
+1. **Finding / symptom.** Baseline and Historical Continuation could independently rebuild forecast grids for the same production request.
+2. **Root cause.** Horizon planning was owned by individual strategies instead of the production orchestration snapshot.
+3. **Failure scenario.** Equivalent request policy produces two different effective/truncated plan snapshots across strategy or fallback paths.
+4. **Impact.** Strategy choice can change the authorized forecast grid independently of request evidence.
+5. **Severity rationale.** P1 retrospective because the horizon is a core identity and output boundary.
+6. **Existing guarantees violated.** Single-snapshot orchestration and deterministic forecast identity.
+7. **Considered solutions.** Let strategies rebuild and compare; cache planner output; build one validated plan and inject it everywhere.
+8. **Chosen remediation.** Production creates one `projectionhorizon.Plan`, validates it, publishes it, and passes it through `ProjectWithPlan` / `ProjectApprovedWithPlan` including fallback.
+9. **Why selected.** One immutable owner removes plan drift rather than detecting it after execution.
+10. **Rejected alternatives.** Independent recomputation retains duplicate semantic ownership.
+11. **Trade-offs.** Projector integration APIs become explicitly plan-aware.
+12. **Regression tests / protection.** `TestComposeUsesOneAuthorizedHorizonPlan` and strict Production review audit.
+13. **Adversarial review findings.** The previously reviewed Baseline/Continuation algorithms are not reopened by adding plan-aware entrypoints.
+14. **Remediation iterations.** Closed in the initial Production engineering wave.
+15. **Residual risks / limitations.** Correctness depends on the Horizon Plan validator remaining authoritative.
+16. **Operational/deployment consequences.** No migration; all production branches share one exact grid.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`, run `30624533886`; prior closure `0f1a31f56f4baf232e978d240216068a001a184e`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** `projectionproductionreviewaudit` protects single-plan entrypoints and wiring.
+
+### GFA-DATA-412 — Production dependencies could mutate caller-owned request evidence
+
+1. **Finding / symptom.** Current trajectory, historical candidates, route scope, Route evidence or history slices could be shared by reference across dependency calls.
+2. **Root cause.** The orchestration boundary lacked one complete defensive-clone policy.
+3. **Failure scenario.** A dependency mutates candidate points or route evidence and a later stage observes altered input.
+4. **Impact.** Output becomes dependency-order-sensitive and provenance no longer represents the original request.
+5. **Severity rationale.** P1 retrospective because mutable aliasing can silently alter production analytical evidence.
+6. **Existing guarantees violated.** Immutable request snapshot and deterministic dependency isolation.
+7. **Considered solutions.** Trust interfaces; shallow clone; deep clone each dependency input.
+8. **Chosen remediation.** `Request.Clone()` deep-clones nested trajectory points/segments/gaps, candidates, route scope/result and route history; each dependency receives a fresh clone.
+9. **Why selected.** It makes mutation safety local to the orchestration boundary.
+10. **Rejected alternatives.** Interface trust cannot enforce immutability; shallow copies retain nested aliasing.
+11. **Trade-offs.** Additional allocation/copy cost is accepted for bounded production requests.
+12. **Regression tests / protection.** `TestComposeDefensivelyClonesDependencyInputs` and argument-recording fakes.
+13. **Adversarial review findings.** The fix protects against both accidental and adversarial interface implementations.
+14. **Remediation iterations.** Closed in the initial Production hardening.
+15. **Residual risks / limitations.** Newly added mutable fields must be included in future clone updates.
+16. **Operational/deployment consequences.** Small memory/CPU overhead; no persistence change.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`, run `30624533886`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Permanent audit and defensive-clone regressions protect snapshot ownership.
+
+### GFA-DATA-413 — Route evidence was not fully bound to current trajectory identity and authorized time
+
+1. **Finding / symptom.** A generally valid Route Intelligence result could belong to another trajectory or future analytical boundary and still reach Production.
+2. **Root cause.** Production trusted isolated Route validity without workflow-specific postconditions.
+3. **Failure scenario.** A route for a different flight/aircraft or route evidence updated after Projection `AsOfTime` authorizes historical continuation or ETA.
+4. **Impact.** Projection strategy and arrival can be driven by foreign/future route evidence.
+5. **Severity rationale.** P1 retrospective because route evidence directly authorizes downstream behavior.
+6. **Existing guarantees violated.** Entity ownership and temporal lineage.
+7. **Considered solutions.** Trust Route validator; compare only trajectory ID; bind complete identity and time tuple.
+8. **Chosen remediation.** Require route trajectory/flight/aircraft/ICAO24/callsign equality and bound Route as-of/generated/provenance update times to the authorized plan/production time.
+9. **Why selected.** It validates workflow ownership, not only standalone structural correctness.
+10. **Rejected alternatives.** Trajectory-only checks miss identity mirrors and future evidence.
+11. **Trade-offs.** Previously reusable but weakly owned Route objects may be rejected.
+12. **Regression tests / protection.** Another-trajectory and future-route-evidence tests.
+13. **Adversarial review findings.** A valid contract can still be invalid for a specific production workflow.
+14. **Remediation iterations.** Closed in initial Production hardening.
+15. **Residual risks / limitations.** Upstream route provenance must expose truthful update times.
+16. **Operational/deployment consequences.** Foreign/future routes fail closed or select configured fallback.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Audit protects route identity/time postconditions.
+
+### GFA-DATA-414 — Independently valid historical contracts were not bound into one authorized production evidence graph
+
+1. **Finding / symptom.** Selection, Pattern Confidence, Freshness, Route History and Route Frequency could each validate independently while belonging to different requests or plans.
+2. **Root cause.** Cross-contract lineage was implicit rather than represented by one `AuthorizedHistoricalEvidence` snapshot.
+3. **Failure scenario.** Freshness from one selection or Route Frequency from another history object authorizes the current workflow.
+4. **Impact.** Historical continuation can be approved from semantically mixed evidence.
+5. **Severity rationale.** P1 retrospective because authorization integrity depends on the complete evidence graph.
+6. **Existing guarantees violated.** Cross-contract lineage and single-snapshot authorization.
+7. **Considered solutions.** Trust individual validators; compare selected IDs ad hoc; validate one typed evidence aggregate.
+8. **Chosen remediation.** Publish/validate `AuthorizedHistoricalEvidence` binding Plan, Route, RouteHistory, RouteScope, Selection, Pattern, Freshness and RouteFrequency fingerprints/status/times/IDs.
+9. **Why selected.** One typed aggregate centralizes the exact production relationship.
+10. **Rejected alternatives.** Ad hoc pairwise checks are easier to omit and harder to audit.
+11. **Trade-offs.** Production composition has a stronger, larger validation contract.
+12. **Regression tests / protection.** Selection/Pattern/Freshness and RouteHistory/Frequency binding tests.
+13. **Adversarial review findings.** The stale claim that Selection/Pattern were rerun was rejected; the real defect was production-level binding.
+14. **Remediation iterations.** Closed in the initial Production evidence-integrity wave.
+15. **Residual risks / limitations.** New authorization dependencies must be added explicitly to the evidence graph.
+16. **Operational/deployment consequences.** Mixed evidence fails closed or falls back according to policy.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`, run `30624533886`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Permanent audit protects the typed evidence graph and focused regressions.
+
+### GFA-DATA-415 — Projector outputs lacked complete production postconditions
+
+1. **Finding / symptom.** A dependency could return a structurally valid projection with drifted identity, horizon, generation time, method or decision class.
+2. **Root cause.** Production treated projector success as sufficient without validating the result against the authorized request.
+3. **Failure scenario.** A substituted projector returns a result for the right type but wrong trajectory/grid/method and Production publishes it.
+4. **Impact.** Dependency boundaries become a path around orchestration authorization.
+5. **Severity rationale.** P1 retrospective because the final published projection can be foreign to the request.
+6. **Existing guarantees violated.** Trust-boundary postconditions and result ownership.
+7. **Considered solutions.** Trust concrete implementations; validate only `Result.Validate()`; enforce production-specific result postconditions.
+8. **Chosen remediation.** Require exact identities, horizon, production `GeneratedAt`, method/version and DecisionClass; Historical strategy also rejects unavailable status.
+9. **Why selected.** It separates standalone result validity from workflow authorization.
+10. **Rejected alternatives.** General validation cannot prove request ownership.
+11. **Trade-offs.** Custom projectors must satisfy stricter postconditions.
+12. **Regression tests / protection.** Historical projection postcondition-drift and unavailable-result tests.
+13. **Adversarial review findings.** Failure policy explicitly decides controlled fallback versus typed error.
+14. **Remediation iterations.** Initial postconditions were later strengthened by the lineage receipt correction.
+15. **Residual risks / limitations.** Generic fields cannot prove internal derivation; that residual gap became the reopened lineage finding below.
+16. **Operational/deployment consequences.** Drifted results fail closed/fallback.
+17. **Exact evidence.** Initial `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`; later lineage correction `2f352821f7ef5d1a26bbb0899bad7fc431d6363c`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Audit protects both generic postconditions and the stronger lineage receipt.
+
+### GFA-CONTRACT-416 — Estimated Arrival dependency could replace the entire authorized position projection
+
+1. **Finding / symptom.** The arrival interface accepted/returned a complete projection object even though it should only contribute the Arrival delta.
+2. **Root cause.** Dependency capability exceeded its semantic responsibility.
+3. **Failure scenario.** Arrival code mutates coordinates, uncertainty, confidence, method, horizon or provenance while attaching ETA.
+4. **Impact.** A downstream enrichment dependency can overwrite an already authorized projection.
+5. **Severity rationale.** P1 retrospective because the interface permits silent corruption of core projection output.
+6. **Existing guarantees violated.** Least-capability interfaces and projection immutability.
+7. **Considered solutions.** Trust arrival implementation; compare before/after full projection; expose an arrival-only outcome contract and verify no mutation.
+8. **Chosen remediation.** `ArrivalAdapter` validates that every non-Arrival field is unchanged and returns only `ArrivalOutcome`; composer attaches the cloned estimate.
+9. **Why selected.** The interface now matches the only output Arrival is authorized to change.
+10. **Rejected alternatives.** Trust-only behavior leaves an over-broad mutation surface.
+11. **Trade-offs.** Adapter code performs an explicit projection comparison.
+12. **Regression tests / protection.** `TestArrivalAdapterRejectsPositionProjectionMutation`.
+13. **Adversarial review findings.** Optional Arrival presence remains a valid shared-contract state and was not treated as a defect.
+14. **Remediation iterations.** Closed in initial Production hardening.
+15. **Residual risks / limitations.** Future permitted deltas require explicit contract expansion rather than mutation-by-convention.
+16. **Operational/deployment consequences.** Unauthorized arrival mutations now fail with `ErrArrivalProjectionMutation`.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Permanent audit protects arrival-only adapter semantics.
+
+### GFA-DATA-417 — Production accepted unavailable Historical Continuation as a successful strategy result
+
+1. **Finding / symptom.** Historical projector success could still carry `ResultStatusUnavailable` and be treated as an ordinary production result.
+2. **Root cause.** Transport-level success and analytical availability were conflated.
+3. **Failure scenario.** Historical strategy returns a validated but unavailable domain result and Production publishes it instead of applying configured fallback/error policy.
+4. **Impact.** Strategy authorization semantics are violated and consumers receive a result that should not have been selected.
+5. **Severity rationale.** P1 retrospective because final strategy selection is wrong despite typed domain evidence.
+6. **Existing guarantees violated.** Availability-aware orchestration.
+7. **Considered solutions.** Publish unavailable; convert to error universally; reject at production postcondition and follow configured failure policy.
+8. **Chosen remediation.** Historical strategy postconditions reject unavailable status and trigger controlled fallback or typed error.
+9. **Why selected.** It preserves domain availability while keeping policy ownership in Production.
+10. **Rejected alternatives.** Universal error loses configured fallback semantics; publishing unavailable misstates strategy success.
+11. **Trade-offs.** Some dependency-success calls now result in fallback.
+12. **Regression tests / protection.** `TestComposeRejectsUnavailableHistoricalProjection`.
+13. **Adversarial review findings.** Limited historical evidence remains separately configurable and is not treated as unavailable.
+14. **Remediation iterations.** Closed in initial Production hardening.
+15. **Residual risks / limitations.** Strategy-specific statuses must remain explicit as future methods are added.
+16. **Operational/deployment consequences.** More predictable fallback behavior.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Audit protects unavailable rejection and failure-policy paths.
+
+### GFA-DATA-418 — Authorized limited historical evidence was not disclosed explicitly in production output
+
+1. **Finding / symptom.** Production could allow limited Freshness or Route Frequency evidence while publishing only a general historical authorization notice.
+2. **Root cause.** Authorization status did not expose which supporting evidence remained limited.
+3. **Failure scenario.** Consumer sees historical strategy selected but cannot tell that freshness or route-frequency support was degraded.
+4. **Impact.** Evidence quality is hidden even though policy intentionally accepted it.
+5. **Severity rationale.** P2 retrospective because output remains valid under policy but provenance/explanation is incomplete.
+6. **Existing guarantees violated.** Limitation disclosure and explainability.
+7. **Considered solutions.** General notice only; reject all limited evidence; publish specific limited-evidence notices.
+8. **Chosen remediation.** Add dedicated notices for limited Freshness and limited Route Frequency while retaining general authorization notice.
+9. **Why selected.** It preserves configured capability without hiding degraded support.
+10. **Rejected alternatives.** Blanket rejection removes a supported policy mode; generic notice is insufficiently specific.
+11. **Trade-offs.** More notices are published for limited-but-authorized results.
+12. **Regression tests / protection.** `TestComposePublishesLimitedEvidenceNotice`.
+13. **Adversarial review findings.** Limited and unavailable remain distinct domain states.
+14. **Remediation iterations.** Closed in initial Production hardening.
+15. **Residual risks / limitations.** Consumers must interpret notice codes in addition to top-level strategy.
+16. **Operational/deployment consequences.** Metadata becomes more explicit.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Audit protects limited-evidence notice codes and tests.
+
+### GFA-OPS-419 — Production dependency failures lost their underlying error cause
+
+1. **Finding / symptom.** Dependency errors could be reclassified at Production while losing machine-inspectable original causality.
+2. **Root cause.** Error wrapping did not preserve both production sentinel and dependency cause.
+3. **Failure scenario.** Caller can detect a production-stage failure but cannot match the original dependency error with `errors.Is`.
+4. **Impact.** Diagnosis and typed recovery are weakened.
+5. **Severity rationale.** P2 retrospective because failures remain fail-closed but causality is operationally important.
+6. **Existing guarantees violated.** Error-chain integrity and diagnosability.
+7. **Considered solutions.** Concatenate text; expose raw cause only; multi-wrap production sentinel and cause.
+8. **Chosen remediation.** Use `fmt.Errorf("%w: %w", productionSentinel, dependencyCause)`.
+9. **Why selected.** Both orchestration stage and root cause remain machine-matchable.
+10. **Rejected alternatives.** Text flattening is fragile; cause-only errors lose stage ownership.
+11. **Trade-offs.** Callers should use Go error-chain semantics instead of string matching.
+12. **Regression tests / protection.** `TestComposePreservesUnderlyingDependencyError`.
+13. **Adversarial review findings.** This applies to dependency failure, not ordinary domain limitation notices.
+14. **Remediation iterations.** Closed in initial Production hardening.
+15. **Residual risks / limitations.** External logging layers must preserve, not flatten, the chain.
+16. **Operational/deployment consequences.** Improved incident diagnostics only.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Strict audit protects multi-wrap semantics and regression coverage.
+
+### GFA-DATA-420 — Production input and composed-output identity were conflated and incomplete
+
+1. **Finding / symptom.** One `InputFingerprint` mixed request evidence with output decisions while omitting major inputs such as the full candidate pool.
+2. **Root cause.** Semantic request identity and final composition identity were owned by one under-specified fingerprint.
+3. **Failure scenario.** Different failing candidate pools collapse to one identity, or output mutations are not reflected distinctly from request identity.
+4. **Impact.** Production replay, comparison and provenance cannot distinguish materially different inputs/results.
+5. **Severity rationale.** P1 retrospective because deterministic identity is foundational to the research result.
+6. **Existing guarantees violated.** Input/output identity separation and reproducibility.
+7. **Considered solutions.** Expand one mixed fingerprint; hash result only; separate canonical request fingerprint from composition fingerprint.
+8. **Chosen remediation.** Version Two defines `InputFingerprint` over request/plan/policy and `CompositionFingerprint` over input identity, trace, strategy/fallback, full projection, Arrival, notices and time.
+9. **Why selected.** It assigns one clear semantic purpose to each identity.
+10. **Rejected alternatives.** One mixed hash obscures whether input or output changed.
+11. **Trade-offs.** Two versioned fingerprints must be maintained.
+12. **Regression tests / protection.** Candidate-pool-on-fallback and published-projection mutation tests; validator recomputes composition fingerprint.
+13. **Adversarial review findings.** Full candidate pool is included even when Neighbor Selection fails.
+14. **Remediation iterations.** Closed in initial Production fingerprint hardening.
+15. **Residual risks / limitations.** Newly decision-relevant request/output fields require coordinated version updates.
+16. **Operational/deployment consequences.** Production fingerprints change by design.
+17. **Exact evidence.** `c01b6ee0affff185adeda8e7fb0e1c39681cbe8c`, run `30624533886`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Audit protects both fingerprint versions and mutation tests.
+
+### GFA-DATA-421 — Historical projector output was not cryptographically/semantically bound to the already authorized evidence lineage
+
+1. **Finding / symptom.** After the first formal closure, Production still accepted a Historical projector result that satisfied generic postconditions without a typed receipt proving derivation from the authorized Plan, Selection, Pattern and selected neighbors.
+2. **Root cause.** Output postconditions validated surface result fields but not the projector's internal approved evidence lineage.
+3. **Failure scenario.** A substituted projector returns correct identity/horizon/method/status with a foreign continuation fingerprint and Production accepts it.
+4. **Impact.** Final historical projection can be generated from evidence different from the authorization chain while appearing valid.
+5. **Severity rationale.** P1 retrospective because this reopened the formal Production closure on a core lineage guarantee.
+6. **Existing guarantees violated.** End-to-end authorization-to-output lineage and evidence provenance.
+7. **Considered solutions.** Trust concrete projector; compare generic result fields; independently reconstruct source lineage and return a typed receipt.
+8. **Chosen remediation.** Introduce `HistoricalProjectionAdapter` and `ApprovedProjectionLineage` receipt with exact Plan/Selection/Pattern/selected IDs/validated projection-input fingerprint.
+9. **Why selected.** Production receives independently validated proof tied to the same evidence it already authorized.
+10. **Rejected alternatives.** Generic postconditions cannot prove derivation; concrete-type trust is not an interface guarantee.
+11. **Trade-offs.** Historical projector integration becomes more explicit and concrete-source validation is required.
+12. **Regression tests / protection.** Foreign-fingerprint and compose-lineage-drift malicious tests.
+13. **Adversarial review findings.** Earlier closure evidence remains valid for earlier findings; only this unresolved guarantee reopened the verdict.
+14. **Remediation iterations.** First formal closure `0f1a31f...` was reopened; corrective engineering `2f352821...` sealed the lineage boundary.
+15. **Residual risks / limitations.** Future historical projector implementations must provide equivalent independently validated lineage receipts.
+16. **Operational/deployment consequences.** Foreign-lineage results now fallback or error according to dependency policy.
+17. **Exact evidence.** Reopened baseline `0f1a31f56f4baf232e978d240216068a001a184e`; correction `2f352821f7ef5d1a26bbb0899bad7fc431d6363c`, run `30629428359`, jobs `91152099577`, `91152099674`, `91152099675`, `91152326899`.
+18. **Final canonical status.** CLOSED after formal reclosure.
+19. **Prevention / future guard.** Production review audit requires adapter, receipt, independent validator and malicious lineage tests.
+
+### GFA-DATA-422 — Historical projection provenance could not be independently reconstructed against Continuation policy
+
+1. **Finding / symptom.** Production could inspect published provenance but lacked a source-owned reconstruction proving it matched canonical Continuation inputs and policy.
+2. **Root cause.** Provenance was consumed as output metadata rather than re-derived from the concrete historical projector's immutable semantics.
+3. **Failure scenario.** A projector supplies plausible provenance labels while its input fingerprint reflects a different current endpoint or Selection/Pattern chain.
+4. **Impact.** Provenance text can disagree with the actual semantic continuation identity.
+5. **Severity rationale.** P1 retrospective because source provenance is part of research reproducibility.
+6. **Existing guarantees violated.** Independently verifiable provenance and input identity.
+7. **Considered solutions.** Trust result provenance; re-hash at Production using duplicated policy; ask Continuation source to reconstruct its own canonical fingerprint/provenance.
+8. **Chosen remediation.** Concrete Continuation validator reconstructs continuation input fingerprint, current endpoint, Selection/Pattern provenance and latest observation boundary from immutable policy.
+9. **Why selected.** Semantic policy remains owned by the source module instead of being duplicated in Production.
+10. **Rejected alternatives.** Production-side duplicate fingerprint logic would drift from Continuation semantics.
+11. **Trade-offs.** Adapter depends on a source-specific lineage validation capability.
+12. **Regression tests / protection.** `TestValidateApprovedProjectionLineageReconstructsFingerprintAndInputs` and foreign fingerprint tests.
+13. **Adversarial review findings.** This is a distinct sub-boundary of the reopened lineage defect, not a rewrite of prior generic postconditions.
+14. **Remediation iterations.** Added in corrective engineering `2f352821...`.
+15. **Residual risks / limitations.** Source validator must advance with future Continuation fingerprint versions.
+16. **Operational/deployment consequences.** Invalid provenance lineage is rejected before publication.
+17. **Exact evidence.** `2f352821f7ef5d1a26bbb0899bad7fc431d6363c`, run `30629428359`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Permanent audit protects independent reconstruction and version wiring.
+
+### GFA-DATA-423 — Historical selected-neighbor provenance was not required to match the exact authorized neighbor set
+
+1. **Finding / symptom.** A historical projection could expose generic Selection/Pattern provenance without proving exact `historical_neighbor:<selected-id>` inputs for the authorized selected set.
+2. **Root cause.** Selected-neighbor membership was validated upstream but not independently required in final projector provenance.
+3. **Failure scenario.** Projection uses or claims a different historical neighbor set while generic lineage fingerprints remain superficially plausible.
+4. **Impact.** Consumers cannot prove which observed historical trajectories actually supported the final continuation.
+5. **Severity rationale.** P1 retrospective because neighbor evidence directly determines historical geometry.
+6. **Existing guarantees violated.** Exact contributing-evidence provenance.
+7. **Considered solutions.** Trust Selection IDs; publish count only; require exact sorted selected IDs in receipt and exact per-neighbor provenance names.
+8. **Chosen remediation.** Receipt contains sorted selected trajectory IDs and composer requires exactly the current endpoint, Selection, Pattern and each selected historical-neighbor provenance input.
+9. **Why selected.** It binds final published evidence to the exact authorized contributing set.
+10. **Rejected alternatives.** Counts/fingerprints alone do not expose missing/substituted neighbor provenance.
+11. **Trade-offs.** Provenance validation is stricter and grows linearly with the bounded selected set.
+12. **Regression tests / protection.** Foreign-neighbor provenance and compose-lineage-drift tests.
+13. **Adversarial review findings.** The full candidate pool remains an input-fingerprint concern; final provenance requires only the selected contributing set.
+14. **Remediation iterations.** Closed in corrective lineage engineering.
+15. **Residual risks / limitations.** Accuracy of provenance still depends on canonical neighbor IDs upstream.
+16. **Operational/deployment consequences.** Missing/substituted selected-neighbor provenance triggers fallback/error.
+17. **Exact evidence.** `2f352821f7ef5d1a26bbb0899bad7fc431d6363c`, run `30629428359`.
+18. **Final canonical status.** CLOSED.
+19. **Prevention / future guard.** Production audit protects selected-neighbor receipt/provenance equality and malicious regressions.
