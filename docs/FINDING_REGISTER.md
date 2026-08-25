@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.13
+Status: Canonical Finding Registry v1.14
 
 ## Purpose
 
@@ -236,6 +236,40 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-OPS-177 | Temporal Builder accepted nil context and lacked bounded cancellation checks | P2 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
 | GFA-DATA-178 | Temporal limitations omitted exact rejected-evidence counts | P3 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
 | GFA-DATA-179 | Materialized point-count metadata was not reconciled with actual point evidence | P2 retrospective | CLOSED | `119_TEMPORAL_BUILDER_REVIEW_HARDENING.md` | `c0e3323328f81af8bf0b8841b1bf6756d3085d21` |
+| GFA-DATA-180 | Geographical point evidence lacked one deterministic temporal eligibility and ordering contract | P1 retrospective | CLOSED | `120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` | `1bbfd0147092baf2615f5bb0838ca12768b54846` |
+| GFA-DATA-181 | Segment fallback bridged unobserved discontinuities into path distance | P1 retrospective | CLOSED | `120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` | `1bbfd0147092baf2615f5bb0838ca12768b54846` |
+| GFA-DATA-182 | Segment fallback supporting-point count used endpoint-coordinate cardinality instead of authoritative evidence | P2 retrospective | CLOSED | `120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` | `1bbfd0147092baf2615f5bb0838ca12768b54846` |
+| GFA-DATA-183 | Circular longitude envelope semantics were conflated with chronological antimeridian crossing | P1 retrospective | CLOSED | `120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` | `1bbfd0147092baf2615f5bb0838ca12768b54846` |
+| GFA-CONTRACT-184 | Geographical numeric policies were implicit and accumulation was less stable than necessary | P2 retrospective | CLOSED | `120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` | `1bbfd0147092baf2615f5bb0838ca12768b54846` |
+| GFA-OPS-185 | Geographical Builder accepted nil context and long geometry passes lacked a complete cancellation/diagnostic contract | P2 retrospective | CLOSED | `120_GEOGRAPHICAL_BUILDER_REVIEW_HARDENING.md` | `1bbfd0147092baf2615f5bb0838ca12768b54846` |
+| GFA-DB-186 | Production feature materialization did not hydrate operational point evidence | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-187 | `FlightState` telemetry availability was lost when converted to `TrackPoint4D` | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-188 | Operational points lacked trajectory-window filtering and deterministic ordering | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-189 | Out-of-range finite headings were normalized into apparently valid evidence | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-190 | Ground/airborne share denominator treated unavailable booleans as observed false | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-191 | Ground altitude status could erase conflicting non-zero altitude evidence | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-192 | Barometric and geometric altitude observations could be mixed into one mean | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-193 | Heading change bridged unavailable or invalid observations | P1 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-194 | Operational `SupportingPointCount` counted raw records instead of usable contributing observations | P2 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-OPS-195 | Operational aggregation substituted nil contexts and lacked complete cancellation/finite-aggregation guards | P2 retrospective | CLOSED | `121_OPERATIONAL_BUILDER_REVIEW_HARDENING.md` | `0b5ec52b503f1ef65c2ca5eeaba485e381710649` |
+| GFA-DATA-196 | Trajectory point-count and quality support had competing ownership rules | P1 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-197 | Sampling and path calculations did not share one canonical eligible point sequence | P1 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-198 | Duplicate observation timestamps created artificial zero sampling intervals | P2 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-199 | Trajectory path logic bridged declared discontinuities and could suppress better segment fallback | P1 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-200 | Coverage could claim complete observation without actual point or segment evidence | P1 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-201 | Coverage-gap clipping, overlap, zero-duration and duration-mirror semantics were inconsistent | P1 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-202 | Empty Trajectory evidence inflated field availability and allowed unsupported zero quality | P1 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-203 | Path-efficiency ratio was unconditionally clamped instead of distinguishing numerical noise from semantic contradiction | P1 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-OPS-204 | Trajectory Builder accepted nil context and large scans lacked bounded cancellation checks | P2 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-MAINT-205 | Unknown segment statuses produced unbounded duplicate limitation records | P3 retrospective | CLOSED | `122_TRAJECTORY_BUILDER_REVIEW_HARDENING.md` | `2872eb31e87500bdae1ae58fe2b75fb76c4b11d2` |
+| GFA-DATA-206 | Partial availability downgraded mathematical integrity failures to warnings | P1 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
+| GFA-DATA-207 | Partial or unavailable evidence could lack an explanatory domain limitation | P1 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
+| GFA-DATA-208 | Unavailable required groups could retain stale or non-finite residual payload values | P1 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
+| GFA-DATA-209 | Available observation-derived groups could claim zero supporting observations | P1 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
+| GFA-DATA-210 | Ground/airborne share reconciliation ignored whether on-ground evidence was actually available | P2 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
+| GFA-DATA-211 | Revalidation retained stale Validator and group-derived quality limitations | P1 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
+| GFA-DATA-212 | Numeric tolerance was treated as an absolute quantity across incompatible units | P1 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
+| GFA-OPS-213 | Validator silently accepted a nil caller context | P2 retrospective | CLOSED | `123_VALIDATOR_REVIEW_HARDENING.md` | `39549504bbeff1a6c272153bf3dcde469b766202` |
 
 ## Stage-level closure evidence
 
@@ -279,15 +313,18 @@ Documents 97–102 = Analytical Core remediation and closure chain enriched and 
 Document 103 = post-Analytical frontend security remediation enriched and merged through PR #119 (`3104b191e76d7257bcf965fb68537241405e5845`)
 Documents 104–108 = Feature Pipeline review and closure chain enriched and merged through PR #120 (`9c5cb4541d85787f4d85b6e7c44c55932de97635`)
 Documents 109–115 = Extractor processing/composition/correctness review chain enriched and merged through PR #121 (`b977e8929d637ee21ab6a938be3167b6deed0439`)
-Documents 116–119 = Aircraft Provider / Feature Store / Flight Features schema / Temporal Builder review chain enriched to canonical standard in source
-Canonical finding register covers 179 findings (001–179 with category prefixes)
+Documents 116–119 = Aircraft Provider / Feature Store / Flight Features schema / Temporal Builder review chain enriched and merged through PR #122 (`74b1b56858a62b633911d7047b7a12243b5acc04`)
+Documents 120–123 = Geographical / Operational / Trajectory Builder / Validator review chain enriched to canonical standard in source
+Canonical finding register covers 213 findings (001–213 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
 Analytical Core original review reconciliation = CLOSED
 Feature Pipeline review reconciliation = CLOSED AND MERGED
 Extractor review/composition reconciliation = CLOSED AND MERGED
+Provider/store/schema/temporal review reconciliation = CLOSED AND MERGED
+Builder/Validator review reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 120 (Geographical Builder review)
+Next post-Stage-14 audit range begins at Document 124
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
