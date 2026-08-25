@@ -1378,8 +1378,8 @@ regression tests, Frontend Continuous Integration enforcement, implementation co
 `149_FRONTEND_AIRCRAFT_EXPLORER.md` records the searchable and sortable regional
 aircraft index, shared map and detail-panel selection, bounded result rendering,
 deterministic filtering and sorting semantics, five dependency-free model tests,
-exact baseline and scope boundaries, and the requirement for exact-commit
-Continuous Integration evidence before formal closure.
+implementation commit `12da70d42d1279d074e681afcba14a62991bdf08`, successful Frontend CI run
+`30706334527`, formal feature/closure-evidence reconciliation, and no synthetic finding ID by design.
 
 <!-- FRONTEND-TRAFFIC-WORKSPACE:DOCUMENT-INDEX -->
 
@@ -1388,8 +1388,8 @@ Continuous Integration evidence before formal closure.
 `150_FRONTEND_TRAFFIC_WORKSPACE.md` records the accessible Aircraft and Intelligence
 workspace tabs, permanently visible map context, shared map and explorer selection,
 deterministic ICAO24 normalization and panel transitions, four dependency-free state
-model tests, exact baseline and scope boundaries, and the requirement for exact-commit
-Continuous Integration evidence before formal closure.
+model tests, implementation commit `9e9a10e93fecec21d07e395df486a4f76d48c9db`, successful Frontend CI run
+`30707015705`, formal feature/closure-evidence reconciliation, and no synthetic finding ID by design.
 
 <!-- FRONTEND-APPLICATION-SHELL:DOCUMENT-INDEX -->
 
@@ -1398,18 +1398,19 @@ Continuous Integration evidence before formal closure.
 `151_FRONTEND_APPLICATION_SHELL.md` records the product-level application header,
 hero, startup snapshot status semantics, stable page navigation, research-scope
 communication, deterministic global styling, five status-model regression tests,
-exact baseline and the requirement for exact-commit Continuous Integration evidence
-before formal closure.
+implementation commit `cd99532aa40fe7a61fb19580455ac2d1ba5f650c`, successful Frontend CI run
+`30707691429`, formal feature/closure-evidence reconciliation, and no synthetic finding ID by design.
 
 <!-- BACKEND-STARTUP-CONTEXT-HARDENING:DOCUMENT-INDEX -->
 
 ## Document 152 — Backend Startup Context Hardening
 
-`152_BACKEND_STARTUP_CONTEXT_HARDENING.md` records caller-owned PostgreSQL startup
-cancellation, the compatibility-preserving context-aware pool constructor, server
-lifecycle propagation, focused cancellation and classification regression tests,
-permanent context-ownership enforcement, exact baseline and the requirement for
-exact-commit Continuous Integration evidence before formal closure.
+`152_BACKEND_STARTUP_CONTEXT_HARDENING.md` records the API PostgreSQL startup
+lifecycle defect, caller-owned signal cancellation, the compatibility-preserving
+context-aware pool constructor, server lifecycle propagation, focused cancellation and
+classification regression tests, the distinction from the direct-assignment context
+audit, implementation commit `fa222650ef5425dcf60a05fb949c17cafc36c1a8`, successful Backend CI run
+`30708959553`, formal closure, and canonical finding `GFA-OPS-438`.
 
 <!-- RECRUITER-QUICKSTART:DOCUMENT-INDEX -->
 
