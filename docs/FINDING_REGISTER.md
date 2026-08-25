@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.16
+Status: Canonical Finding Registry v1.17
 
 ## Purpose
 
@@ -182,7 +182,7 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-ARCH-123 | Core Feature Pipeline depended on the full feature-store contract | P3 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-DB-124 | PostgreSQL feature composition allowed ambiguous Pool and Executor ownership | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-OPS-125 | Feature processing silently substituted a nil caller context | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
-| GFA-ARCH-126 | Typed-nil Feature Pipeline dependencies passed construction checks | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-ARCH-126 | Typed-nil Feature Pipeline dependencies violated required/optional semantics | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-GOV-127 | PostgreSQL Feature Pipeline verifier was absent from required CI | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-DATA-128 | Feature composition version was absent from the processing version manifest | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
 | GFA-TEST-129 | Materializer/verifier consumers still validated the obsolete duplicate Result feature value | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
@@ -323,6 +323,27 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-MAINT-264 | Historical Comparison exported an internal generic value-selection helper | P3 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
 | GFA-DATA-265 | Non-finite percentage arithmetic was detected late and misclassified as invalid source evidence | P2 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
 | GFA-TEST-266 | Historical Comparison regression coverage did not protect its critical invariants | P2 retrospective | CLOSED | `129_HISTORICAL_COMPARISON_REVIEW_HARDENING.md` | `21734b85b9f50ae717dca031c798866161895989` |
+| GFA-DATA-267 | Similarity score was not separated from evidence confidence | P1 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DATA-268 | Historical Similarity ignored authoritative trajectory-quality evidence | P1 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-PERF-269 | Historical Similarity accepted unbounded sample and input-point sizes | P2 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-ARCH-270 | Public Similarity `Rank` duplicated the production candidate-selection workflow | P2 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DATA-271 | Similarity fingerprint did not bind the exact prepared scoring representation | P1 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DATA-272 | Equal-timestamp trajectory points depended on caller order | P1 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DATA-273 | Similarity result validation did not recompute analytical mathematics | P1 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DATA-274 | Endpoint similarity averaged endpoints instead of using the worse endpoint | P1 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DATA-275 | Relative-difference scoring used an undocumented one-kilometre floor | P2 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DATA-276 | Resampling linearly interpolated latitude/longitude instead of spherical geometry | P1 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-MAINT-277 | Similarity preparation, scoring, quality, fingerprinting and validation were overly concentrated | P3 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-REL-278 | `NewDefault` could panic for package-owned constant configuration | P2 retrospective | CLOSED | `130_HISTORICAL_SIMILARITY_REVIEW_HARDENING.md` | `6dbae4e6fe00295af0f7ba5303855736b76e8bde` |
+| GFA-DB-279 | Historical Aggregate region persistence required uppercase while the canonical contract required lowercase | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527`; migration 029 |
+| GFA-DATA-280 | Stored Historical JSON was not reconciled with denormalized row metadata | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
+| GFA-DATA-281 | Stored aggregate record identifiers were not recomputed from canonical result identity | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
+| GFA-DATA-282 | Aggregate idempotency accepted same fingerprint with different canonical payload | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
+| GFA-ARCH-283 | Historical Materialization depended on the full Aggregate Store although it only writes | P3 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
+| GFA-DATA-284 | Aggregate Put canonicalized caller input before validating the original domain value | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
+| GFA-OPS-285 | Historical Aggregate silently substituted nil caller contexts | P2 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
+| GFA-DATA-286 | Aggregate storage time could be zero or precede result generation | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527` |
+| GFA-DB-287 | Historical Aggregate timestamp mirrors lacked database-level consistency constraints | P1 retrospective | CLOSED | `131_HISTORICAL_AGGREGATE_REVIEW_HARDENING.md` | `18dde73b2d122d00476ea21accb256b33fc23527`; migration 029 |
 
 ## Stage-level closure evidence
 
@@ -369,8 +390,9 @@ Documents 109–115 = Extractor processing/composition/correctness review chain 
 Documents 116–119 = Aircraft Provider / Feature Store / Flight Features schema / Temporal Builder review chain enriched and merged through PR #122 (`74b1b56858a62b633911d7047b7a12243b5acc04`)
 Documents 120–123 = Geographical / Operational / Trajectory Builder / Validator review chain enriched and merged through PR #123 (`46cb38e022fd14094ce261dbeb243e25744fa8fb`)
 Documents 124–126 = Historical Contract / Window / Read review chain enriched and merged through PR #124 (`849c2f4b0e99a35cf3c75ca39d2aaeefc35c41b1`)
-Documents 127–129 = Historical Series / Route / Comparison review chain enriched to canonical standard in source
-Canonical finding register covers 266 findings (001–266 with category prefixes)
+Documents 127–129 = Historical Series / Route / Comparison review chain enriched and merged through PR #125 (`4f9b1d71177ad89fa43581ef6ed080ce5c1aa1ab`)
+Documents 130–131 = Historical Similarity / Aggregate review chain enriched to canonical standard in source
+Canonical finding register covers 287 findings (001–287 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -380,8 +402,9 @@ Extractor review/composition reconciliation = CLOSED AND MERGED
 Provider/store/schema/temporal review reconciliation = CLOSED AND MERGED
 Builder/Validator review reconciliation = CLOSED AND MERGED
 Historical Contract/Window/Read review reconciliation = CLOSED AND MERGED
-Historical Series/Route/Comparison review reconciliation = CLOSED IN SOURCE
+Historical Series/Route/Comparison review reconciliation = CLOSED AND MERGED
+Historical Similarity/Aggregate review reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 130 (Historical Similarity review)
+Next post-Stage-14 audit range begins at Document 132 (Historical Materialization review)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
