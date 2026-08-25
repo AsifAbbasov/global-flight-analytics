@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.24
+Status: Canonical Finding Registry v1.25
 
 ## Purpose
 
@@ -495,6 +495,9 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-OPS-436 | Backend-wide caller-context ownership was not enforced consistently | P2 retrospective | CLOSED | `147_BACKEND_CONTEXT_OWNERSHIP_AUDIT_CLOSURE.md` | `44d41d6ece32b8196a5613c8d4839d7ebe972cac`; Backend CI `30703281257` |
 | GFA-CONTRACT-437 | Frontend API client could overwrite caller-cancellation ownership with a later local timeout | P2 retrospective | CLOSED | `148_FRONTEND_API_CLIENT_ABORT_AND_TESTING_HARDENING.md` | `ee2bb13e60c29ae9ecdcb7736d4fe39561e3b28d`; Frontend CI `30705944365` |
 | GFA-OPS-438 | API PostgreSQL startup was detached from the signal-owned lifecycle context | P2 retrospective | CLOSED | `152_BACKEND_STARTUP_CONTEXT_HARDENING.md` | `fa222650ef5425dcf60a05fb949c17cafc36c1a8`; Backend CI `30708959553` |
+| GFA-OPS-439 | Public HTTP service work had no application-owned request deadline | P2 retrospective | CLOSED | `167_BACKEND_TIMEOUT_CONSISTENCY_AUDIT_CLOSURE.md` | `76e8744513bc1ad7d185692ea9ad3222bc961e0c`; Backend CI `30724291596` |
+| GFA-REL-440 | Custom provider HTTP clients could remain unbounded or have their validated timeout contract changed by caller mutation | P2 retrospective | CLOSED | `167_BACKEND_TIMEOUT_CONSISTENCY_AUDIT_CLOSURE.md` | `76e8744513bc1ad7d185692ea9ad3222bc961e0c`; Backend CI `30724291596` |
+| GFA-GOV-441 | Release documentation and smoke examples could treat local repository HEAD as the deployment revision | P2 retrospective | CLOSED | `169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md` | `cabcaddd3467cbc37d9b8e335191fc278d138106`; Backend CI `30766520751`; Frontend CI `30766520758` |
 
 ## Stage-level closure evidence
 
@@ -551,8 +554,13 @@ Document 146 = Projection Intelligence final cross-module reconciliation classif
 Documents 147–148 = Backend Context Ownership / Frontend API cancellation review history enriched and merged through PR #131 (`7a0ceecfc1fe3f9c914e2529887a57f345fadde1`)
 Documents 149–151 = Frontend feature implementation / closure evidence reconciled and merged through PR #132 (`d2e066f768e9b9240db3ff38d1da2f1a8b1aa338`); no synthetic finding IDs created
 Document 152 = Backend Startup Context remediation enriched and merged through PR #132 (`d2e066f768e9b9240db3ff38d1da2f1a8b1aa338`); canonical finding `GFA-OPS-438`
-Documents 153–156 = Recruiter Quickstart / Regional Traffic Brief / Shareable Workspace State / Live Traffic Control feature and operability closure evidence reconciled in source; no synthetic finding IDs created
-Canonical finding register covers 438 findings (001–438 with category prefixes)
+Documents 153–156 = Recruiter Quickstart / Regional Traffic Brief / Shareable Workspace State / Live Traffic Control feature and operability closure evidence reconciled and merged through PR #133 (`6c79800925dae250ed1f1b60c66323f8dc17f915`); no synthetic finding IDs created
+Documents 157–160 = Frontend Research Snapshot Export / Traffic Data Quality Lens / Unified Airport Analytics Workspace / Historical Analytics Comparison feature closure evidence reconciled and merged through PR #134 (`b1a3015e2a6fcf7323b1b682d304bfc135a750bd`); no synthetic finding IDs created
+Documents 161–166 = Frontend Product Hardening / Release and Portfolio / Deployment Runbook / Recruiter Demo / System Architecture / Backend Operations closure evidence classified; no synthetic finding IDs created
+Document 167 = Backend Timeout Consistency remediation enriched in source; canonical findings `GFA-OPS-439` and `GFA-REL-440`
+Document 168 = Backend Observability and SLO closure evidence classified; no synthetic finding ID created
+Document 169 = Release Truth and Deployment Revision remediation enriched in source; canonical finding `GFA-GOV-441`
+Canonical finding register covers 441 findings (001–441 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -572,8 +580,10 @@ Projection Intelligence final cross-module reconciliation = CLOSED AND MERGED; c
 Backend Context Ownership / Frontend API cancellation reconciliation = CLOSED AND MERGED
 Frontend feature closure Documents 149–151 = CLOSED AND MERGED; feature/closure evidence only
 Backend Startup Context reconciliation = CLOSED AND MERGED
-Feature/operability closure Documents 153–156 = CLOSED IN SOURCE; no synthetic finding IDs
+Feature/operability closure Documents 153–160 = CLOSED AND MERGED; no synthetic finding IDs
+Documents 161–166 / 168 = closure, release, runbook, architecture, operations, or observability evidence; no synthetic finding IDs
+Backend Timeout Consistency / Release Truth reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 157 (Frontend Research Snapshot Export)
+Next post-Stage-14 audit range begins at Document 170 (Dependency Maintenance Closure)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
