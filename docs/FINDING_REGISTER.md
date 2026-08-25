@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.25
+Status: Canonical Finding Registry v1.26
 
 ## Purpose
 
@@ -498,6 +498,14 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-OPS-439 | Public HTTP service work had no application-owned request deadline | P2 retrospective | CLOSED | `167_BACKEND_TIMEOUT_CONSISTENCY_AUDIT_CLOSURE.md` | `76e8744513bc1ad7d185692ea9ad3222bc961e0c`; Backend CI `30724291596` |
 | GFA-REL-440 | Custom provider HTTP clients could remain unbounded or have their validated timeout contract changed by caller mutation | P2 retrospective | CLOSED | `167_BACKEND_TIMEOUT_CONSISTENCY_AUDIT_CLOSURE.md` | `76e8744513bc1ad7d185692ea9ad3222bc961e0c`; Backend CI `30724291596` |
 | GFA-GOV-441 | Release documentation and smoke examples could treat local repository HEAD as the deployment revision | P2 retrospective | CLOSED | `169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md` | `cabcaddd3467cbc37d9b8e335191fc278d138106`; Backend CI `30766520751`; Frontend CI `30766520758` |
+| GFA-GOV-442 | Default branch had no active server-enforced protection or required integration path | P1 retrospective | CLOSED | `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md` | `5c1c0862581842a78c323f5581c1425641b2b363`; active ruleset `20286514` |
+| GFA-SEC-443 | External GitHub Actions used mutable major-version references | P1 retrospective | CLOSED | `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md` | `5c1c0862581842a78c323f5581c1425641b2b363`; Backend CI `30799569901`; Frontend CI `30799569378`; CodeQL `30799569096` |
+| GFA-GOV-444 | Pull-request path filters made stable required CI contexts non-deterministic | P1 retrospective | CLOSED | `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md` | `5c1c0862581842a78c323f5581c1425641b2b363`; active ruleset `20286514` |
+| GFA-SEC-445 | Repository security automation and hosting-side security settings were not comprehensively enforced | P1 retrospective | IN_PROGRESS | `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md` | source patch `5c1c0862581842a78c323f5581c1425641b2b363`; CodeQL `30799569096`; active ruleset `20286514`; external settings current-state verification pending |
+| GFA-GOV-446 | Repository lacked explicit CODEOWNERS and SECURITY reporting policy | P2 retrospective | CLOSED | `172_REPOSITORY_GOVERNANCE_AND_SECURITY_AUTOMATION.md` | `5c1c0862581842a78c323f5581c1425641b2b363` |
+| GFA-OPS-447 | Production deployed the read API without a production ingestion execution owner | P1 retrospective | CLOSED | `173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` | PR #35 head `64e4d17d914371f789992065e0ececf9eaa25161`; merge `eea53a2ac7636c024903522047d03660e1db86dd`; later live closure `7dfc66685247a5a1aaea87b1391624d1014d7013` |
+| GFA-OPS-448 | Initial 100-NM production coverage returned no aircraft despite successful provider transport | P2 retrospective | CLOSED | `173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` | PR #36 head `f6ca94f40115a75c8fb4698b336265ef46890b94`; merge `f5f7e9cb4e4bb1075a61b284641788984f0a2a67` |
+| GFA-DB-449 | Live Data Quality persistence could not resolve a PostgreSQL-generated parent UUID | P1 retrospective | CLOSED | `173_CORE_FLIGHT_DATA_INGESTION_PRODUCTION_CLOSURE.md` | PR #36 head `f6ca94f40115a75c8fb4698b336265ef46890b94`; merge `f5f7e9cb4e4bb1075a61b284641788984f0a2a67` |
 
 ## Stage-level closure evidence
 
@@ -557,10 +565,13 @@ Document 152 = Backend Startup Context remediation enriched and merged through P
 Documents 153–156 = Recruiter Quickstart / Regional Traffic Brief / Shareable Workspace State / Live Traffic Control feature and operability closure evidence reconciled and merged through PR #133 (`6c79800925dae250ed1f1b60c66323f8dc17f915`); no synthetic finding IDs created
 Documents 157–160 = Frontend Research Snapshot Export / Traffic Data Quality Lens / Unified Airport Analytics Workspace / Historical Analytics Comparison feature closure evidence reconciled and merged through PR #134 (`b1a3015e2a6fcf7323b1b682d304bfc135a750bd`); no synthetic finding IDs created
 Documents 161–166 = Frontend Product Hardening / Release and Portfolio / Deployment Runbook / Recruiter Demo / System Architecture / Backend Operations closure evidence classified; no synthetic finding IDs created
-Document 167 = Backend Timeout Consistency remediation enriched in source; canonical findings `GFA-OPS-439` and `GFA-REL-440`
+Document 167 = Backend Timeout Consistency remediation enriched and merged through PR #135 (`df87de7ef0b5801bdefca5ed9e5b899fec9253c6`); canonical findings `GFA-OPS-439` and `GFA-REL-440`
 Document 168 = Backend Observability and SLO closure evidence classified; no synthetic finding ID created
-Document 169 = Release Truth and Deployment Revision remediation enriched in source; canonical finding `GFA-GOV-441`
-Canonical finding register covers 441 findings (001–441 with category prefixes)
+Document 169 = Release Truth and Deployment Revision remediation enriched and merged through PR #135 (`df87de7ef0b5801bdefca5ed9e5b899fec9253c6`); canonical finding `GFA-GOV-441`
+Documents 170–171 = Dependency Maintenance / Dependabot follow-up reconciliation classified as maintenance and closure evidence; no synthetic finding IDs created
+Document 172 = Repository Governance and Security Automation enriched to canonical standard; findings `GFA-GOV-442` through `GFA-GOV-446` with `GFA-SEC-445=IN_PROGRESS` for independently unverified current external security settings
+Document 173 = Core Flight Data Ingestion Production Closure enriched to canonical standard; findings `GFA-OPS-447`, `GFA-OPS-448`, and `GFA-DB-449`
+Canonical finding register covers 449 findings (001–449 with category prefixes); one finding (`GFA-SEC-445`) remains IN_PROGRESS
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -582,8 +593,11 @@ Frontend feature closure Documents 149–151 = CLOSED AND MERGED; feature/closur
 Backend Startup Context reconciliation = CLOSED AND MERGED
 Feature/operability closure Documents 153–160 = CLOSED AND MERGED; no synthetic finding IDs
 Documents 161–166 / 168 = closure, release, runbook, architecture, operations, or observability evidence; no synthetic finding IDs
-Backend Timeout Consistency / Release Truth reconciliation = CLOSED IN SOURCE
+Backend Timeout Consistency / Release Truth reconciliation = CLOSED AND MERGED
+Dependency Maintenance Documents 170–171 = CLASSIFIED; no synthetic finding IDs
+Repository Governance and Security Automation = PARTIALLY CLOSED; `GFA-SEC-445` current external-settings verification remains IN_PROGRESS
+Core Flight Data Ingestion production historical findings = CLOSED IN SOURCE; later runtime/provider recovery is owned by later documents
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 170 (Dependency Maintenance Closure)
+Next post-Stage-14 audit range begins at Document 174 (API Load Baseline)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
