@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.9
+Status: Canonical Finding Registry v1.10
 
 ## Purpose
 
@@ -174,6 +174,8 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-PERF-115 | Source ordering used a manual quadratic sorting helper | P3 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
 | GFA-GOV-116 | Analytical Core closure lacked one permanent strict audit and complete CI path reachability | P2 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
 | GFA-TEST-117 | Permanent Analytical Core source audit was over-sensitive to legal formatter layout | P2 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
+| GFA-SEC-118 | Production Next.js baseline remained on 16.2.9 after the July 21, 2026 advisory set | P2 retrospective | CLOSED | `103_NEXT_16_2_11_SECURITY_CLOSURE.md` | `48f274754fa0fbdbe4ed0a2b8f95985f38183629` |
+| GFA-SEC-119 | PostCSS releases through 8.5.17 remained accepted after a high-severity path traversal advisory | P1 retrospective | CLOSED | `103_NEXT_16_2_11_SECURITY_CLOSURE.md` | `48f274754fa0fbdbe4ed0a2b8f95985f38183629` |
 
 ## Stage-level closure evidence
 
@@ -213,14 +215,15 @@ Document 78 = enriched as stage-level closure-governance evidence by design, not
 Document 79 = enriched as post-closure remediation history
 Documents 83–92 = post-Stage-14 Ingestion / Provider remediation chain enriched and merged
 Documents 93–96 = post-Stage-14 Server / HTTP remediation chain enriched and merged through PR #117 (`ac478bfb0ab5796890e30ba99f5dae0a4a09589a`)
-Documents 97–102 = Analytical Core remediation and closure chain enriched to canonical standard in source
-Canonical finding register covers 117 findings (001–117 with category prefixes)
+Documents 97–102 = Analytical Core remediation and closure chain enriched and merged through PR #118 (`48b91fd87289c54c8492f90aa3c47ec0de61d4d6`)
+Document 103 = post-Analytical frontend security remediation enriched to canonical standard in source
+Canonical finding register covers 119 findings (001–119 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
-Analytical Core original review reconciliation = 14 FIXED findings mapped to canonical GFA owners; 3 deliberately retained and 2 rejected non-blocking observations preserved as non-defect dispositions
+Analytical Core original review reconciliation = CLOSED; 14 FIXED findings mapped to canonical GFA owners, 3 deliberately retained and 2 rejected non-blocking observations preserved as non-defect dispositions
+Document 103 security extraction = CLOSED IN SOURCE; exact-head pull-request CI/merge evidence pending
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Document 103 = dedicated owner of the post-Analytical-closure Next.js/PostCSS security remediation; canonical extraction pending
-Next post-Stage-14 audit range = Document 103 onward
+Next post-Stage-14 audit range = Documents 104–108 (Feature Pipeline review and closure chain)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
