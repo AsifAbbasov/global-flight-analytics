@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.3
+Status: Canonical Finding Registry v1.4
 
 ## Purpose
 
@@ -87,6 +87,20 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-DB-028 | Trajectory read caller-context substitution | P2 retrospective | CLOSED | `77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md` | `f414f6638f8ba5fbe61321e55a21ff3ac91a4986` |
 | GFA-PERF-029 | Trajectory query/index ordering mismatch and missing plan evidence | P2 retrospective | CLOSED | `77_STAGE_14_35_TRAJECTORY_QUERY_CONSOLIDATION_AND_PROFILING.md` | `f414f6638f8ba5fbe61321e55a21ff3ac91a4986` |
 | GFA-DB-030 | Residual post-closure migrator caller-context substitution | P2 retrospective | CLOSED | `79_POST_CLOSURE_MIGRATOR_CONTEXT_HARDENING.md` | `1c4a7bb992056e6b2c1d1394424643f913d31b00`; guard `384f526474282a8ae63250fa36d8182eb342f772` |
+| GFA-ARCH-031 | Duplicated cross-domain confidence vocabulary | P3 retrospective | CLOSED | `41_STAGE_14_1_ARCHITECTURE_CONSOLIDATION_FOUNDATION.md` | `fc6c3dbafa302d061653587163457d72f08c7a77` |
+| GFA-CONTRACT-032 | Go/TypeScript/runtime Trajectory contract drift | P2 retrospective | CLOSED | `41_STAGE_14_1_ARCHITECTURE_CONSOLIDATION_FOUNDATION.md` | `fc6c3dbafa302d061653587163457d72f08c7a77` |
+| GFA-REL-033 | Production reachability evidence gap | P2 retrospective | CLOSED | `41_STAGE_14_1_ARCHITECTURE_CONSOLIDATION_FOUNDATION.md` | `fc6c3dbafa302d061653587163457d72f08c7a77` |
+| GFA-OPS-034 | Frontend package-manager execution instability | P3 retrospective | CLOSED | `41_STAGE_14_1_ARCHITECTURE_CONSOLIDATION_FOUNDATION.md` | Stage 14.1 follow-up; foundation `fc6c3dba...` |
+| GFA-REL-035 | Unowned non-runtime / confirmed dead analytical package lifecycle | P2 retrospective | CLOSED | `42_STAGE_14_2_DEAD_CODE_CLASSIFICATION_AND_REMOVAL.md` | `8bcc73ad1281d468fc17dc9f0628d54f79d7e2b0` |
+| GFA-REL-036 | Airport Intelligence implemented but production-unreachable | P2 retrospective | CLOSED | `43_STAGE_14_3_AIRPORT_INTELLIGENCE_PRODUCTION_INTEGRATION.md` | `bb9f3510fd9fead1a80edb688c1ab125b8fbdb1b` |
+| GFA-REL-037 | Feature Pipeline implemented without operational materialization root | P2 retrospective | CLOSED | `44_STAGE_14_4_FEATURE_MATERIALIZATION_AND_PROFILER_REMOVAL.md` | `a1689dc71baa9b2c2b4d66febb30b86436b893c1` |
+| GFA-MAINT-038 | Isolated `datasetprofiler` facade | P3 retrospective | CLOSED | `44_STAGE_14_4_FEATURE_MATERIALIZATION_AND_PROFILER_REMOVAL.md` | `a1689dc71baa9b2c2b4d66febb30b86436b893c1` |
+| GFA-SEC-039 | Unprotected mutation/computation-triggering HTTP boundary | P1 retrospective | CLOSED | `45_STAGE_14_5_MUTATION_ENDPOINT_PROTECTION.md` | `50831ae06cb1a38c321ec8c7766bc1f28ddb5757` |
+| GFA-GOV-040 | Projection benchmark and calibration governance gap | P2 retrospective | CLOSED | `46_STAGE_14_6_FORMULA_BENCHMARK_AND_CALIBRATION_GATE.md` | `f817bad2d6d12fe1619bb5c3bba3238d94d4c620` |
+| GFA-SEC-041 | Vulnerable production PostCSS resolution and permissive audit threshold | P2 retrospective | CLOSED | `47_STAGE_14_7_FRONTEND_DEPENDENCY_SECURITY_REMEDIATION.md` | `4c2e5f5d534721a0c6a0a168d5f196deb590e212` |
+| GFA-MAINT-042 | Server composition-root responsibility concentration | P3 retrospective | CLOSED | `48_STAGE_14_8_SERVER_COMPOSITION_ROOT_DECOMPOSITION.md` | `e9e9e658958db3ddced2f74d06ab50d0b8034853` |
+| GFA-MAINT-043 | Boolean mode argument obscuring Historical query intent | P3 retrospective | CLOSED | `49_STAGE_14_9_HTTP_QUERY_AND_CONTRACT_BOUNDARY_HARDENING.md` | `2842d09fc2eb0dcc746a28dd126611fba0f2d1a8` |
+| GFA-ARCH-044 | Historical HTTP/DTO dependency on PostgreSQL implementation and pgx errors | P2 retrospective | CLOSED | `49_STAGE_14_9_HTTP_QUERY_AND_CONTRACT_BOUNDARY_HARDENING.md` | `2842d09fc2eb0dcc746a28dd126611fba0f2d1a8` |
 
 ## Stage-level closure evidence
 
@@ -120,12 +134,13 @@ A later post-closure finding does not automatically rewrite an earlier stage-lev
 ## Retroactive enrichment progress
 
 ```text
+Documents 41–49 = enriched to canonical remediation-history standard
 Documents 58–69 = enriched to canonical remediation-history standard
 Documents 71–77 = enriched to canonical remediation-history standard
 Document 78 = enriched as stage-level closure-governance evidence
 Document 79 = enriched as post-closure remediation history
-Canonical finding register currently covers GFA-DB-001 through GFA-DB-030 (with DATA/PERF/MAINT categories interleaved)
-Earlier Stage 14 Documents 41–57 = still require retroactive finding-level audit/enrichment
+Canonical finding register currently covers 44 findings (001–044 with category prefixes)
+Documents 50–57 = next retroactive remediation package
 Document 70 = still requires extraction/registration of concrete audit-discovered blockers where they are not already owned by later canonical documents
-Final README / DOCUMENT_INDEX / finding-status reconciliation = pending until the earlier-document pass is complete
+Final README / DOCUMENT_INDEX / finding-status reconciliation = pending until the remaining remediation passes are complete
 ```
