@@ -229,3 +229,21 @@ IMPLEMENTATION_COMMIT=4ef16aaa53e5b749e841a4b3226516c65da1bd06
 The finding is closed. The historical reopening remains canonical evidence that the first
 Stage 14 closure attempt was not accepted once stronger production evidence contradicted
 it.
+
+## 13. Prevention / future guard
+
+Migration-catalog correctness must be tested through the same discovery and application path used by production, not only by executing individual SQL fixtures.
+
+Future migration work must preserve these guards:
+
+```text
+one canonical parser for migration identity
+unique committed version ownership across the real repository directory
+production Runner.ListMigrations coverage over the real catalog
+clean PostgreSQL application through cmd/migrate
+second idempotent migrator run
+schema_migrations row-count reconciliation with repository SQL files
+closure/release gates that fail before declaring deployability when any catalog rule fails
+```
+
+A new migration is not considered validated merely because its SQL passes in isolation. It must coexist with and deploy through the complete canonical catalog.
