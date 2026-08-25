@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.10
+Status: Canonical Finding Registry v1.11
 
 ## Purpose
 
@@ -176,6 +176,20 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-TEST-117 | Permanent Analytical Core source audit was over-sensitive to legal formatter layout | P2 retrospective | CLOSED | `102_ANALYTICAL_CORE_REVIEW_CLOSURE.md` | `8aa8dfa9f0cb0f5eae94497939633f100a863ef8` |
 | GFA-SEC-118 | Production Next.js baseline remained on 16.2.9 after the July 21, 2026 advisory set | P2 retrospective | CLOSED | `103_NEXT_16_2_11_SECURITY_CLOSURE.md` | `48f274754fa0fbdbe4ed0a2b8f95985f38183629` |
 | GFA-SEC-119 | PostCSS releases through 8.5.17 remained accepted after a high-severity path traversal advisory | P1 retrospective | CLOSED | `103_NEXT_16_2_11_SECURITY_CLOSURE.md` | `48f274754fa0fbdbe4ed0a2b8f95985f38183629` |
+| GFA-DATA-120 | Feature Pipeline successful result exposed two independent `FlightFeatures` sources | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-DATA-121 | Validation status mirrors were not an enforced cross-object invariant | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1`; durable extension `abd038c10d1d382843dbaefb8b506efeff5fdeda` |
+| GFA-DATA-122 | Incomplete or contradictory validation reports could be accepted | P1 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1`; durable extension `abd038c10d1d382843dbaefb8b506efeff5fdeda` |
+| GFA-ARCH-123 | Core Feature Pipeline depended on the full feature-store contract | P3 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-DB-124 | PostgreSQL feature composition allowed ambiguous Pool and Executor ownership | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-OPS-125 | Feature processing silently substituted a nil caller context | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-ARCH-126 | Typed-nil Feature Pipeline dependencies passed construction checks | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-GOV-127 | PostgreSQL Feature Pipeline verifier was absent from required CI | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-DATA-128 | Feature composition version was absent from the processing version manifest | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-TEST-129 | Materializer/verifier consumers still validated the obsolete duplicate Result feature value | P2 retrospective | CLOSED | `104_FEATURE_PIPELINE_REVIEW_TRIAGE_AND_CONTRACT_INTEGRITY.md` | `312afe2b9ddcc05da0c2068e50c05e0741a7a1c1` |
+| GFA-DATA-130 | Durable feature snapshot identity omitted processing version | P1 retrospective | CLOSED | `105_FEATURE_SNAPSHOT_PROCESSING_IDENTITY.md` | `ab452c0cd039619e842c1991ec1bed10a42e5665`; corrections `f18d43689d53301db862bc10c0445c90dc6f277d`, `96751055657d75ee7800e40c8225ee114b0b52e4` |
+| GFA-DB-131 | Processing-aware PostgreSQL list query retained the old predicate/placeholder contract | P1 retrospective | CLOSED | `106_FEATURE_PROCESSING_IDENTITY_POSTGRES_LIST_FIX.md` | `f18d43689d53301db862bc10c0445c90dc6f277d` |
+| GFA-TEST-132 | Isolated PostgreSQL feature-store fixture omitted processing identity | P2 retrospective | CLOSED | `107_FEATURE_PROCESSING_IDENTITY_TEST_FIXTURE_ALIGNMENT.md` | `96751055657d75ee7800e40c8225ee114b0b52e4` |
+| GFA-DATA-133 | Complete Feature Pipeline validation evidence was transient and disappeared after persistence | P1 retrospective | CLOSED | `108_FEATURE_PIPELINE_VALIDATION_AUDIT_AND_FINAL_CLOSURE.md` | `abd038c10d1d382843dbaefb8b506efeff5fdeda` |
 
 ## Stage-level closure evidence
 
@@ -216,14 +230,16 @@ Document 79 = enriched as post-closure remediation history
 Documents 83–92 = post-Stage-14 Ingestion / Provider remediation chain enriched and merged
 Documents 93–96 = post-Stage-14 Server / HTTP remediation chain enriched and merged through PR #117 (`ac478bfb0ab5796890e30ba99f5dae0a4a09589a`)
 Documents 97–102 = Analytical Core remediation and closure chain enriched and merged through PR #118 (`48b91fd87289c54c8492f90aa3c47ec0de61d4d6`)
-Document 103 = post-Analytical frontend security remediation enriched to canonical standard in source
-Canonical finding register covers 119 findings (001–119 with category prefixes)
+Document 103 = post-Analytical frontend security remediation enriched and merged through PR #119 (`3104b191e76d7257bcf965fb68537241405e5845`)
+Documents 104–108 = Feature Pipeline review and closure chain enriched to canonical standard in source
+Canonical finding register covers 133 findings (001–133 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
 Analytical Core original review reconciliation = CLOSED; 14 FIXED findings mapped to canonical GFA owners, 3 deliberately retained and 2 rejected non-blocking observations preserved as non-defect dispositions
-Document 103 security extraction = CLOSED IN SOURCE; exact-head pull-request CI/merge evidence pending
+Document 103 security extraction = CLOSED AND MERGED
+Feature Pipeline review reconciliation = CLOSED IN SOURCE; accepted FP findings mapped to canonical owners, FP-07/FP-09 retained non-blocking, stale/mechanical observations preserved as non-defect dispositions; exact-head pull-request CI/merge evidence pending
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range = Documents 104–108 (Feature Pipeline review and closure chain)
+Next post-Stage-14 audit range = Documents 109–115 (Extractor composition/correctness review chain)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
