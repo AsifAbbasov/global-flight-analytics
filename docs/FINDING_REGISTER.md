@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.5
+Status: Canonical Finding Registry v1.6
 
 ## Purpose
 
@@ -112,6 +112,13 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-MAINT-053 | Weather composition responsibility concentration | P3 retrospective | CLOSED | `55_STAGE_14_15_WEATHER_COMPOSITION_BOUNDARY.md` | `cd5e3540cd4f849f606c50433f4e033548b59002` |
 | GFA-GOV-054 | High-risk backend remediations lacked one permanent consolidated correctness gate | P2 retrospective | CLOSED | `56_BACKEND_FINAL_CORRECTNESS_AUDIT.md` | `483815bdd60251e16960ec480cadd3bb93ee7f28` |
 | GFA-DATA-055 | Provider telemetry availability was lost before persistence | P1 retrospective | CLOSED | `57_STAGE_14_16_END_TO_END_TELEMETRY_AVAILABILITY.md` | `9cfa9005baf9467ed94621602efd48e8b108bb44` |
+| GFA-GOV-056 | Missing unified cross-stack Stage 14 acceptance gate | P2 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
+| GFA-GOV-057 | Flight Feature timestamp PostgreSQL CI coverage gap | P2 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
+| GFA-SEC-058 | Reachable Go standard-library vulnerabilities and toolchain drift | P1 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
+| GFA-DB-059 | Migration 018 ambiguous aggregate blocked clean PostgreSQL migration | P1 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
+| GFA-TEST-060 | Full FlightStateRepository integration fixture parity drift | P2 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
+| GFA-TEST-061 | Terminal ingestion-run fixture omitted `finished_at` | P2 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
+| GFA-GOV-062 | Over-broad PostgreSQL fixture-parity audit rule | P3 retrospective | CLOSED | `70_STAGE_14_FINAL_COMPLETION_AUDIT.md` | `eb37e03c6793314e446cdb048ae9584e38f2567c` |
 
 ## Stage-level closure evidence
 
@@ -145,12 +152,11 @@ A later post-closure finding does not automatically rewrite an earlier stage-lev
 ## Retroactive enrichment progress
 
 ```text
-Documents 41–57 = enriched to canonical remediation-history standard
-Documents 58–69 = enriched to canonical remediation-history standard
-Documents 71–77 = enriched to canonical remediation-history standard
-Document 78 = enriched as stage-level closure-governance evidence
+Documents 41–77 = enriched to canonical remediation-history standard
+Document 70 = unique audit/closure blockers reconciled without duplicating later finding owners
+Document 78 = enriched as stage-level closure-governance evidence by design, not a synthetic finding
 Document 79 = enriched as post-closure remediation history
-Canonical finding register currently covers 55 findings (001–055 with category prefixes)
-Document 70 = remaining audit-summary reconciliation: extract/register only concrete blockers not already owned by canonical finding documents
-Final README / DOCUMENT_INDEX / finding-status reconciliation = pending after Document 70
+Canonical finding register covers 62 findings (001–062 with category prefixes)
+Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
+README / DOCUMENT_INDEX navigation reconciliation = final remaining documentation-governance step in this PR
 ```
