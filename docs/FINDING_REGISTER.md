@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.4
+Status: Canonical Finding Registry v1.5
 
 ## Purpose
 
@@ -101,6 +101,17 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-MAINT-042 | Server composition-root responsibility concentration | P3 retrospective | CLOSED | `48_STAGE_14_8_SERVER_COMPOSITION_ROOT_DECOMPOSITION.md` | `e9e9e658958db3ddced2f74d06ab50d0b8034853` |
 | GFA-MAINT-043 | Boolean mode argument obscuring Historical query intent | P3 retrospective | CLOSED | `49_STAGE_14_9_HTTP_QUERY_AND_CONTRACT_BOUNDARY_HARDENING.md` | `2842d09fc2eb0dcc746a28dd126611fba0f2d1a8` |
 | GFA-ARCH-044 | Historical HTTP/DTO dependency on PostgreSQL implementation and pgx errors | P2 retrospective | CLOSED | `49_STAGE_14_9_HTTP_QUERY_AND_CONTRACT_BOUNDARY_HARDENING.md` | `2842d09fc2eb0dcc746a28dd126611fba0f2d1a8` |
+| GFA-REL-045 | Transponder Evidence implemented but production-unreachable / claim boundary unresolved | P2 retrospective | CLOSED | `50_STAGE_14_10_TRANSPONDER_EVIDENCE_PRODUCTION_INTEGRATION.md` | `19b187d848e993d13a72b0c3c4f212db8c7577fb` |
+| GFA-MAINT-046 | Historical Intelligence validation responsibility concentration | P3 retrospective | CLOSED | `51_STAGE_14_11_TARGETED_LARGE_MODULE_HARDENING.md` | `d1fc34b6f25b5d7e8c18ac287709241e42617000` |
+| GFA-MAINT-047 | Route Intelligence validation responsibility concentration | P3 retrospective | CLOSED | `51_STAGE_14_11_TARGETED_LARGE_MODULE_HARDENING.md` | `d1fc34b6f25b5d7e8c18ac287709241e42617000` |
+| GFA-MAINT-048 | Historical-neighbor Projection orchestration concentration | P3 retrospective | CLOSED | `51_STAGE_14_11_TARGETED_LARGE_MODULE_HARDENING.md` | `d1fc34b6f25b5d7e8c18ac287709241e42617000` |
+| GFA-MAINT-049 | Estimated-arrival orchestration and computation concentration | P3 retrospective | CLOSED | `51_STAGE_14_11_TARGETED_LARGE_MODULE_HARDENING.md` | `d1fc34b6f25b5d7e8c18ac287709241e42617000` |
+| GFA-DB-050 | Projection input reads lacked one PostgreSQL snapshot | P1 retrospective | CLOSED | `52_STAGE_14_12_PROJECTION_READ_SNAPSHOT_CONSISTENCY.md` | `4f5920a25e6a5ba8e5a3f5db82fee8e7a90a5649` |
+| GFA-DATA-051 | Nullable telemetry fabricated into valid zero/false values on Projection reads | P1 retrospective | CLOSED | `53_STAGE_14_13_NULLABLE_TELEMETRY_INTEGRITY.md` | `1f30bae8bb8a9e4e27d634b44362dcf7547e54ff` |
+| GFA-DATA-052 | Historical pagination cursor omitted stable-order terms and could skip records | P1 retrospective | CLOSED | `54_STAGE_14_14_COMPOSITE_HISTORICAL_PAGINATION_CURSOR.md` | `6a78070499ec0cbe9f905fa94d4b0995d41f2a40` |
+| GFA-MAINT-053 | Weather composition responsibility concentration | P3 retrospective | CLOSED | `55_STAGE_14_15_WEATHER_COMPOSITION_BOUNDARY.md` | `cd5e3540cd4f849f606c50433f4e033548b59002` |
+| GFA-GOV-054 | High-risk backend remediations lacked one permanent consolidated correctness gate | P2 retrospective | CLOSED | `56_BACKEND_FINAL_CORRECTNESS_AUDIT.md` | `483815bdd60251e16960ec480cadd3bb93ee7f28` |
+| GFA-DATA-055 | Provider telemetry availability was lost before persistence | P1 retrospective | CLOSED | `57_STAGE_14_16_END_TO_END_TELEMETRY_AVAILABILITY.md` | `9cfa9005baf9467ed94621602efd48e8b108bb44` |
 
 ## Stage-level closure evidence
 
@@ -134,13 +145,12 @@ A later post-closure finding does not automatically rewrite an earlier stage-lev
 ## Retroactive enrichment progress
 
 ```text
-Documents 41–49 = enriched to canonical remediation-history standard
+Documents 41–57 = enriched to canonical remediation-history standard
 Documents 58–69 = enriched to canonical remediation-history standard
 Documents 71–77 = enriched to canonical remediation-history standard
 Document 78 = enriched as stage-level closure-governance evidence
 Document 79 = enriched as post-closure remediation history
-Canonical finding register currently covers 44 findings (001–044 with category prefixes)
-Documents 50–57 = next retroactive remediation package
-Document 70 = still requires extraction/registration of concrete audit-discovered blockers where they are not already owned by later canonical documents
-Final README / DOCUMENT_INDEX / finding-status reconciliation = pending until the remaining remediation passes are complete
+Canonical finding register currently covers 55 findings (001–055 with category prefixes)
+Document 70 = remaining audit-summary reconciliation: extract/register only concrete blockers not already owned by canonical finding documents
+Final README / DOCUMENT_INDEX / finding-status reconciliation = pending after Document 70
 ```
