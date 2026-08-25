@@ -1,9 +1,13 @@
 # Frontend Live Traffic Control
 
-Status: Implementation prepared; exact-commit Continuous Integration closure pending  
+Status: CLOSED — feature implementation and Continuous Integration evidence reconciled  
 Project: Global Flight Analytics  
 Reviewed baseline: `8120101937da487757d9c00c84b7d988c21db760`  
+Implementation commit: `fc7d0cb307b9c1a3c326908df4c1dcf2755042b9`  
+Frontend CI: `30711429689` — SUCCESS  
+Backend CI: `30711429698` — SUCCESS  
 Date: 2026-08-01
+Canonical reconciliation: 2026-08-25
 
 ## 1. Purpose
 
@@ -79,3 +83,52 @@ Next.js production build remain mandatory gates.
 This increment does not change backend ingestion cadence, add WebSockets, introduce
 server-sent events, poll hidden browser tabs, persist refresh preferences, add a routing
 parameter, change analytical freshness contracts or add a dependency.
+
+## 8. Historical closure evidence
+
+The exact implementation owner is:
+
+```text
+fc7d0cb307b9c1a3c326908df4c1dcf2755042b9
+feat: add live traffic refresh controls
+```
+
+GitHub Actions evidence for that exact commit is:
+
+```text
+Frontend CI 30711429689 = SUCCESS
+Backend CI  30711429698 = SUCCESS
+```
+
+The frontend run completed dependency policy, ESLint, TypeScript validation, the live
+traffic model tests and the production build. The exact implementation therefore has
+successful CI evidence and the old pending header is reconciled as historical drift.
+
+## 9. Canonical classification
+
+This document is **frontend feature / interaction-policy implementation and closure
+evidence**, not a remediation finding record.
+
+The earlier interface exposed less refresh-state control, but the source evidence does
+not establish a separate correctness defect merely because stale/current status, pause
+and bounded interval controls were added later. The implementation is product evolution
+with explicit evidence semantics and tests.
+
+```text
+Canonical finding ID: none by design
+Classification: frontend feature / interaction-policy implementation and closure evidence
+Historical implementation: CLOSED
+Exact-commit Frontend CI: CLOSED
+Open remediation findings owned by this document: 0
+```
+
+## 10. Residual boundaries and prevention
+
+Browser freshness remains presentation evidence derived from the last successful client
+response. It must not be conflated with server-owned observation freshness, ingestion
+health or analytical freshness metrics.
+
+Regression ownership remains with the live-traffic status model tests, frontend contract
+tests, Frontend CI and later Playwright product coverage. Future failures of retained
+snapshot, freshness or pause semantics should be classified on their own evidence if a
+real contract defect is established.
