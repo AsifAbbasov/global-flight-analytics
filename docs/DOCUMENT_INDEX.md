@@ -1418,9 +1418,10 @@ audit, implementation commit `fa222650ef5425dcf60a05fb949c17cafc36c1a8`, success
 
 `153_RECRUITER_QUICKSTART.md` records the reproducible reviewer startup path, the
 local-only mutation authorization startup default, exact health, readiness and version
-checks, frozen pnpm frontend setup, permanent quickstart verification, Backend
-Continuous Integration reachability, exact baseline and the requirement for
-exact-commit Continuous Integration evidence before formal closure.
+checks, frozen pnpm frontend setup, permanent quickstart verification, implementation
+commit `c34264a122913272e3083a4f64397b0e8470c4f3`, successful Backend CI run
+`30709750384`, formal operability/reviewer-workflow closure evidence, and no synthetic
+finding ID by design.
 
 <!-- FRONTEND-REGIONAL-TRAFFIC-BRIEF:DOCUMENT-INDEX -->
 
@@ -1428,9 +1429,10 @@ exact-commit Continuous Integration evidence before formal closure.
 
 `154_FRONTEND_REGIONAL_TRAFFIC_BRIEF.md` records the deterministic current-snapshot
 composition brief, airborne altitude bands, leading attributed airlines and origin
-countries, explicit evidence boundaries, five dependency-free model tests, exact
-baseline and the requirement for exact-commit Continuous Integration evidence before
-formal closure.
+countries, explicit evidence boundaries, five dependency-free model tests,
+implementation commit `70716701d6e676b49670aa4f32b4608d52f58bd6`, successful Frontend CI run
+`30710357246` and Backend CI run `30710357226`, formal feature/closure-evidence
+reconciliation, and no synthetic finding ID by design.
 
 <!-- FRONTEND-SHAREABLE-WORKSPACE-STATE:DOCUMENT-INDEX -->
 
@@ -1438,8 +1440,10 @@ formal closure.
 
 `155_FRONTEND_SHAREABLE_WORKSPACE_STATE.md` records URL-addressable region, aircraft and
 workspace-panel state, browser Back and Forward restoration, canonical query serialization,
-the explicit copy-link action, six dependency-free model tests, exact baseline and the
-requirement for exact-commit Continuous Integration evidence before formal closure.
+the explicit copy-link action, six dependency-free model tests, implementation commit
+`8120101937da487757d9c00c84b7d988c21db760`, successful Frontend CI run `30710813766`
+and Backend CI run `30710813764`, formal feature/closure-evidence reconciliation, and no
+synthetic finding ID by design.
 
 <!-- FRONTEND-LIVE-TRAFFIC-CONTROL:DOCUMENT-INDEX -->
 
@@ -1448,8 +1452,9 @@ requirement for exact-commit Continuous Integration evidence before formal closu
 `156_FRONTEND_LIVE_TRAFFIC_CONTROL.md` records explicit current, aging and stale
 snapshot semantics, bounded automatic refresh choices, pause and resume controls,
 countdown and retained-snapshot failure presentation, six dependency-free model tests,
-exact baseline and the requirement for exact-commit Continuous Integration evidence
-before formal closure.
+implementation commit `fc7d0cb307b9c1a3c326908df4c1dcf2755042b9`, successful Frontend CI run
+`30711429689` and Backend CI run `30711429698`, formal feature/interaction-policy
+closure evidence, and no synthetic finding ID by design.
 
 <!-- FRONTEND-RESEARCH-SNAPSHOT-EXPORT:DOCUMENT-INDEX -->
 
