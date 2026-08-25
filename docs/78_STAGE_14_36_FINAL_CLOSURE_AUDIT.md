@@ -205,3 +205,118 @@ Stage 14 is closed only after the complete authoritative command succeeds on the
 Stage 14.35 baseline with the closure declaration installed. Any failed source, test, race,
 security, PostgreSQL, frontend, profiling, build, or container gate prevents the final markers
 from being emitted and therefore prevents closure.
+
+## 11. Closure-governance history
+
+Document 78 is a closure/audit record, not one engineering finding. The individual defects are owned by their canonical remediation documents and the Finding Register. This document records how the project decides whether a *group* of findings may be called closed.
+
+### Prior closure failure
+
+An earlier Stage 14 completion attempt passed the then-current source/backend evidence but did not execute the production migrator against the complete repository catalog. A duplicate migration version `016` remained, so the repository was not actually clean-bootstrap deployable. Document 71 records the blocker and the reopening decision.
+
+### Root cause of the invalid closure claim
+
+The earlier closure evidence was incomplete rather than fabricated: several useful gates existed, but the acceptance boundary did not prove the exact production migration-discovery/application path. A local set of passing package tests was treated as broader evidence than it actually provided.
+
+### Failure scenario
+
+A stage can be declared complete while a production-only path that no existing gate exercises remains broken. The code may compile and unit/integration packages may pass, yet a clean environment cannot deploy the full migration catalog.
+
+### Impact
+
+A false closure marker damages engineering trust because later stages may rely on a baseline that has not actually satisfied its declared deployability/correctness boundary.
+
+### Severity rationale
+
+The closure-process gap is not assigned a standalone Finding Register severity in this document because the concrete defect is registered as GFA-DB-013 in Document 71. The governance lesson applies across severities: closure strength cannot exceed the evidence actually executed.
+
+## 12. Considered closure strategies
+
+The project could have:
+
+1. kept the original completion marker and documented the duplicate migration as a post-closure defect;
+2. declared Stage 14 closed once every known source-level finding had a code fix;
+3. reopen the stage, finish the remaining backlog, then execute one independent repository-owned cross-stack gate from a committed baseline.
+
+The third strategy was selected.
+
+## 13. Why the independent final audit was selected
+
+A final audit after Stage 14.35 separates implementation from acceptance. The closure increment itself changes no product behavior; it asks whether the already committed baseline survives the complete source, backend, race, security, PostgreSQL, frontend, profiling, build, and container boundary.
+
+This avoids self-certification where the same patch both changes a risky subsystem and declares the entire stage complete without an independent baseline run.
+
+## 14. Rejected alternatives
+
+Keeping the earlier closure marker was rejected because it would make historical status inaccurate. Closing based on source audits or unit tests alone was rejected because the duplicate migration incident proved those gates were insufficient for deployability. Creating a separate external certification service was rejected as unnecessary infrastructure; the repository-owned command already provides a reproducible boundary.
+
+## 15. Trade-offs
+
+The authoritative closure command is heavier than ordinary package CI. It needs PostgreSQL, frontend build tooling, vulnerability scanners, Docker/container checks, and profiling. That cost is accepted for stage closure rather than imposed on every tiny local edit.
+
+The command still cannot prove external production uptime or real-world scale. Keeping those non-claims explicit prevents the heavy gate from becoming a false universal certification.
+
+## 16. Adversarial review and remediation iterations
+
+The closure chronology visible in repository evidence is:
+
+```text
+earlier completion audit candidate
+↓
+production migration-catalog review discovers duplicate version 016
+↓
+Stage 14 is reopened; prior completion evidence is narrowed
+↓
+Documents 71–77 close remaining correctness, maintainability and query-profile backlog
+↓
+Stage 14.35 committed at f414f6638f8ba5fbe61321e55a21ff3ac91a4986
+↓
+independent Stage 14.36 cross-stack closure audit
+↓
+final closure commit 202c00cabb352b50a6d3a2a6002ad3401c1ad23e
+```
+
+Historical review comments or reviewer identities are not invented where GitHub evidence is unavailable. The chronology above is derived from committed documents and commits.
+
+## 17. Residual risk / limitations
+
+Stage 14 closure proves only its declared repository-owned gates. It does not prove:
+
+- external Render/Neon availability;
+- sustained production traffic performance;
+- correctness of future providers;
+- browser E2E beyond the recorded frontend gates;
+- absence of future findings in already closed code.
+
+Document 79 is an explicit example of the last point: a later global review found a residual migrator context defect. That finding did not falsify Document 78 because the closure boundary was scoped and the new defect was fixed as post-closure hardening rather than erased from history.
+
+## 18. Operational / deployment consequences
+
+Stage closure itself introduces no runtime/schema change. Its operational consequence is governance: future claims that Stage 14 is closed must preserve the authoritative markers and the command that earns them. A failed required gate prevents closure evidence from being emitted.
+
+## 19. Exact evidence
+
+Committed implementation baseline before closure: `f414f6638f8ba5fbe61321e55a21ff3ac91a4986`.
+
+Final closure commit: `202c00cabb352b50a6d3a2a6002ad3401c1ad23e` (`chore: close Stage 14 after final audit`).
+
+The earlier invalid closure/reopening history remains preserved in Documents 70 and 71 rather than being rewritten.
+
+## 20. Final canonical status
+
+```text
+STAGE_14_OVERALL_STATUS=CLOSED
+```
+
+This is the canonical stage-level status. Individual post-closure findings have their own Finding Register status and do not silently rewrite the historical closure decision.
+
+## 21. Prevention / future guard
+
+Future stage/release closure must:
+
+- identify the exact production paths whose deployability/correctness is being claimed;
+- execute those paths rather than substitute nearby tests;
+- run from a committed baseline after the technical backlog is complete;
+- distinguish repository evidence from external production claims;
+- preserve reopening history when stronger evidence invalidates an earlier conclusion;
+- register later findings separately instead of retroactively pretending the earlier audit had universal scope.
