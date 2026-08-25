@@ -127,3 +127,29 @@ OPEN_CONFIRMED_FINDINGS=0
 UNCLASSIFIED_FINDINGS=0
 DEFERRED_FINDINGS=0
 ```
+
+## Canonical remediation history
+
+Historical adversarial-review evidence unavailable; reconstruction is limited to repository source, tests, commits, and Continuous Integration evidence. Severity is retrospective.
+
+### GFA-DATA-173 — Versioned Flight Features schema omitted four produced geographical fields
+
+1. **Finding / symptom:** the geographical builder and data model produced minimum/maximum latitude and longitude, but schema version one did not register those four analytical fields.
+2. **Root cause:** versioned schema metadata drifted behind the actual model/builder contract.
+3. **Failure scenario:** completeness and schema-driven validation count only eleven geographical fields while the runtime analytical aggregate actually owns fifteen required fields.
+4. **Impact:** quality/completeness evidence can be overstated or interpreted against the wrong denominator, and schema introspection misrepresents the durable model.
+5. **Severity rationale:** **P1 retrospective** because schema-driven completeness is analytical evidence used to judge whether a snapshot is trustworthy.
+6. **Existing guarantees violated:** schema-model alignment, exact group-count ownership, and processing-generation isolation when semantics change.
+7. **Considered solutions:** remove the four model fields, treat them as optional/unregistered, introduce a new payload schema version, or repair version-one registry metadata and advance processing semantics.
+8. **Chosen remediation:** register all four bounds as required geographical definitions, centralize exact group counts, add explicit schema-version lookup/compatibility APIs, and advance processing to generation seven.
+9. **Why this solution was selected:** the persisted payload already contained the fields, so the defect was registry metadata rather than a new wire shape; processing version correctly isolates the changed completeness semantics.
+10. **Rejected alternatives:** inventing a schema-v2 payload migration, treating geographic precision as a feature field, and introducing generic per-field wrappers unrelated to the confirmed drift.
+11. **Trade-offs:** version one now more accurately describes data already stored, while consumers relying on the old incorrect denominator must adopt generation-seven semantics.
+12. **Regression tests / protection:** exact definition/count tests, schema version lookup/compatibility tests, enum validity tests, and `flightfeaturesreviewaudit` in Backend Quality.
+13. **Adversarial review findings:** stale provenance/output-fingerprint/direct-serialization findings were not re-opened; wrapper, per-field metric, closed-enum and limitation-registry proposals were explicitly rejected as non-blocking.
+14. **Remediation iterations:** implemented in `2eb2c49c11fc1894969ef62c0f9ea0e244a3103f` after Feature Store hardening `624fcf44d3260bd35ac32f67c0730689713198c0`.
+15. **Residual risks and limitations:** schema metadata still requires intentional maintenance whenever future feature fields are introduced; the permanent audit guards the current contract.
+16. **Operational or deployment consequences:** no PostgreSQL migration; processing generation changes from six to seven so new outputs cannot collide with earlier snapshots.
+17. **Exact evidence:** commit `2eb2c49c11fc1894969ef62c0f9ea0e244a3103f`, schema/count regression tests, `flightfeaturesreviewaudit`.
+18. **Final canonical status:** **CLOSED**.
+19. **Prevention / future guard:** every feature-field addition/removal must update schema definitions, canonical group counts, processing identity when semantics change, and executable exact-count tests in the same change.
