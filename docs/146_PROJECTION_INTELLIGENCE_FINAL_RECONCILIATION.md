@@ -110,3 +110,22 @@ REVIEW_STATUS=CLOSED
 Reconciliation implementation commit `fb7fecd759a26c8d65d979ab8f541284ed82ed36` passed exact push-triggered Backend Continuous Integration run `30658968264`. Backend Quality job `91250318289` included and passed the permanent Projection Intelligence final reconciliation audit; Backend Race Safety job `91250318290`, PostgreSQL 16 Integration job `91250318295`, and Backend Container job `91250598564` also completed successfully.
 
 The formal-closure commit containing this record must pass the same four jobs before the external final Projection Intelligence closure verdict is issued.
+
+---
+
+## 6. Canonical reconciliation classification
+
+Document 146 is final cross-module closure and audit evidence. It is deliberately **not** registered as a new synthetic finding.
+
+The stale seven-P0 review statements are already owned by the concrete module histories whose permanent gates are enumerated above. Creating new IDs here would duplicate closed root causes rather than record new engineering defects. The reconciliation therefore owns only the final acceptance boundary:
+
+```text
+MODULE_REVIEW_AUDITS=12
+MODULE_FORMAL_CLOSURES=12
+OPEN_CONFIRMED_CROSS_MODULE_FINDINGS=0
+UNCLASSIFIED_CROSS_MODULE_FINDINGS=0
+DEFERRED_CROSS_MODULE_FINDINGS=0
+FINAL_RECONCILIATION=COMPLETE
+```
+
+For retrospective registry purposes, Documents 134–145 own the granular Projection Intelligence findings. Document 146 remains closure-governance evidence, parallel to the repository's earlier stage-level closure records. A future concrete cross-module regression must receive its own new finding ID and evidence boundary; this reconciliation must not be retroactively repurposed into a catch-all synthetic defect.
