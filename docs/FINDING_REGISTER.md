@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.7
+Status: Canonical Finding Registry v1.8
 
 ## Purpose
 
@@ -95,7 +95,7 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-REL-036 | Airport Intelligence implemented but production-unreachable | P2 retrospective | CLOSED | `43_STAGE_14_3_AIRPORT_INTELLIGENCE_PRODUCTION_INTEGRATION.md` | `bb9f3510fd9fead1a80edb688c1ab125b8fbdb1b` |
 | GFA-REL-037 | Feature Pipeline implemented without operational materialization root | P2 retrospective | CLOSED | `44_STAGE_14_4_FEATURE_MATERIALIZATION_AND_PROFILER_REMOVAL.md` | `a1689dc71baa9b2c2b4d66febb30b86436b893c1` |
 | GFA-MAINT-038 | Isolated `datasetprofiler` facade | P3 retrospective | CLOSED | `44_STAGE_14_4_FEATURE_MATERIALIZATION_AND_PROFILER_REMOVAL.md` | `a1689dc71baa9b2c2b4d66febb30b86436b893c1` |
-| GFA-SEC-039 | Unprotected mutation/computation-triggering HTTP boundary | P1 retrospective | CLOSED | `45_STAGE_14_5_MUTATION_ENDPOINT_PROTECTION.md` | `50831ae06cb1a38c321ec8c7766bc1f28ddb5757` |
+| GFA-SEC-039 | Unprotected mutation/computation-triggering HTTP boundary | P1 retrospective | CLOSED | `45_STAGE_14_5_MUTATION_ENDPOINT_PROTECTION.md` | `50831ae06cb1a38c321ec8c7766bc1f28ddb5757`; preserved by Server container evidence `1fc925c91117eebbb7c90c4bd6b3889548d55cb4` |
 | GFA-GOV-040 | Projection benchmark and calibration governance gap | P2 retrospective | CLOSED | `46_STAGE_14_6_FORMULA_BENCHMARK_AND_CALIBRATION_GATE.md` | `f817bad2d6d12fe1619bb5c3bba3238d94d4c620` |
 | GFA-SEC-041 | Vulnerable production PostCSS resolution and permissive audit threshold | P2 retrospective | CLOSED | `47_STAGE_14_7_FRONTEND_DEPENDENCY_SECURITY_REMEDIATION.md` | `4c2e5f5d534721a0c6a0a168d5f196deb590e212` |
 | GFA-MAINT-042 | Server composition-root responsibility concentration | P3 retrospective | CLOSED | `48_STAGE_14_8_SERVER_COMPOSITION_ROOT_DECOMPOSITION.md` | `e9e9e658958db3ddced2f74d06ab50d0b8034853` |
@@ -145,6 +145,16 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-CONTRACT-086 | OurAirports fail-whole publication behavior was not an explicit typed contract | P2 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53` |
 | GFA-TEST-087 | Isolated PostgreSQL fixtures drifted behind current repository migration dependencies | P2 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53` |
 | GFA-GOV-088 | Ingestion review closure could not be claimed from local/source evidence alone | P2 retrospective | CLOSED | `92_INGESTION_REVIEW_CLOSURE_REPAIR.md` | `6b922cbd9df1bff3f880ad120dd883b37f658e53`; later race guard `1ddb65c5e5471ce180314cc38a4b6d7baad80cd3` |
+| GFA-OPS-089 | Process liveness was used as production readiness while PostgreSQL could be unavailable | P1 retrospective | CLOSED | `93_SERVER_AND_HTTP_PROTECTION_REVIEW_CLOSURE.md` | `1fc925c91117eebbb7c90c4bd6b3889548d55cb4` |
+| GFA-OPS-090 | Server process lifecycle lacked one controlled shutdown/error-propagation path | P2 retrospective | CLOSED | `94_SERVER_REVIEW_FULL_CLOSURE.md` | `2573892ad7684f3d2646378e2021638a53173bc3` |
+| GFA-OBS-091 | Request logging could capture a provisional status before centralized error handling | P2 retrospective | CLOSED | `94_SERVER_REVIEW_FULL_CLOSURE.md` | `2573892ad7684f3d2646378e2021638a53173bc3` |
+| GFA-SEC-092 | Raw internal error messages could be written to server logs | P1 retrospective | CLOSED | `94_SERVER_REVIEW_FULL_CLOSURE.md` | `2573892ad7684f3d2646378e2021638a53173bc3` |
+| GFA-ARCH-093 | Read-only Historical HTTP registration depended on a read/write store contract | P3 retrospective | CLOSED | `94_SERVER_REVIEW_FULL_CLOSURE.md` | `2573892ad7684f3d2646378e2021638a53173bc3` |
+| GFA-OPS-094 | Application rate limiting could throttle the readiness probe | P1 retrospective | CLOSED | `94_SERVER_REVIEW_FULL_CLOSURE.md` | `2573892ad7684f3d2646378e2021638a53173bc3` |
+| GFA-SEC-095 | Client identity behind reverse proxies lacked an explicit trust contract | P1 retrospective | CLOSED | `95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md` | `cfb079b6f881b03b517f92b06210c3fdc9968893` |
+| GFA-GOV-096 | Application version endpoint lacked build-derived revision provenance | P2 retrospective | CLOSED | `95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md` | `cfb079b6f881b03b517f92b06210c3fdc9968893` |
+| GFA-TEST-097 | Container PostgreSQL readiness could pass during bootstrap handoff | P2 retrospective | CLOSED | `95_TRUSTED_PROXY_AND_BUILD_METADATA_CLOSURE.md` | `ae4d486d2341974a47173e2aedd78da530130cf6` |
+| GFA-GOV-098 | Permanent race-detector coverage omitted concurrency-sensitive ingestion ownership | P2 retrospective | CLOSED | `96_INGESTION_RACE_COVERAGE_CLOSURE.md` | `1ddb65c5e5471ce180314cc38a4b6d7baad80cd3` |
 
 ## Stage-level closure evidence
 
@@ -182,11 +192,13 @@ Documents 41–77 = enriched to canonical remediation-history standard
 Document 70 = unique audit/closure blockers reconciled without duplicating later finding owners
 Document 78 = enriched as stage-level closure-governance evidence by design, not a synthetic finding
 Document 79 = enriched as post-closure remediation history
-Documents 83–92 = post-Stage-14 Ingestion / Provider remediation chain enriched to canonical standard
-Canonical finding register covers 88 findings (001–088 with category prefixes)
+Documents 83–92 = post-Stage-14 Ingestion / Provider remediation chain enriched and merged
+Documents 93–96 = post-Stage-14 Server / HTTP remediation chain enriched to canonical standard
+Canonical finding register covers 98 findings (001–098 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
-Post-Stage-14 Ingestion / Provider finding extraction (Documents 83–92) = CLOSED IN SOURCE; exact-head pull-request CI/merge evidence pending
-Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created in this package
-Next post-Stage-14 audit range = Documents 93–102
+Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
+Post-Stage-14 Server / HTTP finding extraction (Documents 93–96) = CLOSED IN SOURCE; exact-head pull-request CI/merge evidence pending
+Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
+Next post-Stage-14 audit range = Documents 97–102 (Analytical Core)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
