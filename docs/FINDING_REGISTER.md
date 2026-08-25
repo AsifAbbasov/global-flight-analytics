@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.18
+Status: Canonical Finding Registry v1.19
 
 ## Purpose
 
@@ -362,6 +362,28 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-OPS-303 | Replay and production command silently replaced nil caller context | P2 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
 | GFA-DATA-304 | Replay lacked canonical input identity and public result validation | P1 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
 | GFA-TEST-305 | Replay regression coverage omitted critical partial-progress and integrity invariants | P2 retrospective | CLOSED | `133_HISTORICAL_REPLAY_REVIEW_HARDENING.md` | `38b14fbb8649a2e7e875cd4ae7ed73b6a954a068` |
+| GFA-DATA-306 | Projection points were not bound to one exact horizon grid | P1 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-DATA-307 | Limited results could omit evidence explaining the limitation | P1 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-DATA-308 | Projection confidence was not reconciled with reasons and mandatory evidence | P1 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-CONTRACT-309 | Projection Contract duplicated the shared confidence vocabulary | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-DATA-310 | Projection input fingerprints accepted arbitrary non-empty text | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-CONTRACT-311 | ICAO24 identifiers lacked exact hexadecimal validation | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-CONTRACT-312 | Estimated Arrival accepted non-ICAO airport location indicators | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-DATA-313 | Projection provenance could omit source or observation-basis evidence | P1 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-DATA-314 | Projection provenance chronology allowed retrieval before observation | P1 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-DATA-315 | Duplicate Projection evidence and explanation identities were accepted | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-CONTRACT-316 | Projection Result lacked a typed public validation boundary | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-TEST-317 | Projection Contract regression tests omitted critical cross-field invariants | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-TEST-318 | Projection fixtures encoded invalid aircraft/confidence/provenance evidence | P2 retrospective | CLOSED | `134_PROJECTION_CONTRACT_REVIEW_HARDENING.md` | `964556d0ca8a1ce9aa74c37c55961cdd006b3de8` |
+| GFA-DATA-319 | Projection Horizon Step did not define one exact fixed grid | P1 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-DATA-320 | Public Projection Horizon Plan lacked a canonical integrity boundary | P1 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-REL-321 | Configured default Projection Horizon was unreachable through production HTTP | P2 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-DATA-322 | Projection strategy fingerprints duplicated incomplete horizon identity | P1 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-OPS-323 | Nil Projection Horizon policy returned an unrelated configuration error | P2 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-CONTRACT-324 | Projection Horizon policy identity was not required to be canonical | P2 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-PERF-325 | Projection Horizon configuration lacked a package-wide allocation bound | P2 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-DATA-326 | Projection consumers trusted malformed alternative Horizon plans | P1 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
+| GFA-TEST-327 | Projection Horizon remediation lacked permanent regression and CI enforcement | P2 retrospective | CLOSED | `135_PROJECTION_HORIZON_REVIEW_HARDENING.md` | `7249aa7625dd306bbd769dade6ce3262edca01ab`; audit `d2bc87b07ea0eb6a0b9b25f0a1e3cb2cbc52cd1b` |
 
 ## Stage-level closure evidence
 
@@ -410,8 +432,9 @@ Documents 120–123 = Geographical / Operational / Trajectory Builder / Validato
 Documents 124–126 = Historical Contract / Window / Read review chain enriched and merged through PR #124 (`849c2f4b0e99a35cf3c75ca39d2aaeefc35c41b1`)
 Documents 127–129 = Historical Series / Route / Comparison review chain enriched and merged through PR #125 (`4f9b1d71177ad89fa43581ef6ed080ce5c1aa1ab`)
 Documents 130–131 = Historical Similarity / Aggregate review chain enriched and merged through PR #126 (`feaaba300df6e4273083da2bf13dbc4346fb4425`)
-Documents 132–133 = Historical Materialization / Replay review chain enriched to canonical standard in source
-Canonical finding register covers 305 findings (001–305 with category prefixes)
+Documents 132–133 = Historical Materialization / Replay review chain enriched and merged through PR #127 (`5847b8b30b8be8900361d95422859bfc5f70044f`)
+Documents 134–135 = Projection Contract / Horizon review chain enriched to canonical standard in source
+Canonical finding register covers 327 findings (001–327 with category prefixes)
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -423,8 +446,9 @@ Builder/Validator review reconciliation = CLOSED AND MERGED
 Historical Contract/Window/Read review reconciliation = CLOSED AND MERGED
 Historical Series/Route/Comparison review reconciliation = CLOSED AND MERGED
 Historical Similarity/Aggregate review reconciliation = CLOSED AND MERGED
-Historical Materialization/Replay review reconciliation = CLOSED IN SOURCE
+Historical Materialization/Replay review reconciliation = CLOSED AND MERGED
+Projection Contract/Horizon review reconciliation = CLOSED IN SOURCE
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-Next post-Stage-14 audit range begins at Document 134 (Projection Contract review)
+Next post-Stage-14 audit range begins at Document 136 (Projection Baseline review)
 README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
 ```
