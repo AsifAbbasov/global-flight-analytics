@@ -16,7 +16,7 @@ This Worker implements the zero-cost reliability design for production traffic i
 
 ## Free-tier scheduling boundary
 
-The deployed source-controlled schedule is:
+The source-controlled FREE_V1 target schedule under review is:
 
 ```text
 primary:  17 */2 * * *
