@@ -138,10 +138,11 @@ During controlled scheduler validation on 2026-09-05, Neon operations recorded r
 18:48:32Z start → 19:09:02Z suspend  ≈ 20.5 min
 19:18:38Z start → 19:42:32Z suspend  ≈ 23.9 min
 19:48:35Z start → 20:09:02Z suspend  ≈ 20.5 min
+20:18Z start    → 21:09Z suspend     ≈ 50 min
 21:18:26Z start → 21:38:47Z suspend  ≈ 20.4 min
 ```
 
-One observed window remained active substantially longer because additional scheduled activity arrived before a clean sleep boundary. These observations prove that scale-to-zero works, but they also invalidate a five-minute wake assumption for capacity planning.
+The approximately fifty-minute window remained active because additional scheduled activity arrived before a clean sleep boundary. These observations prove that scale-to-zero works, but they also invalidate a five-minute wake assumption for capacity planning.
 
 ### 4.3 Why the 30-minute primary is rejected for FREE_V1
 
