@@ -34,7 +34,7 @@ test('free-tier cutover assigns scheduled ownership exclusively to Cloudflare', 
   assert.match(workflow, /manual\|cloudflare-primary\|cloudflare-watchdog/)
   assert.match(workflow, /SCHEDULER-OWNERSHIP-V1/)
   assert.deepEqual(config.triggers.crons, [
-    '17,47 * * * *',
+    '17 */2 * * *',
     '19 */2 * * *',
   ])
 })
