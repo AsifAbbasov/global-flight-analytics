@@ -10,7 +10,7 @@ const DEFAULTS = Object.freeze({
   githubRef: 'main',
   trafficAPIURL:
     'https://global-flight-analytics-api.onrender.com/api/v1/traffic/current',
-  primaryCron: '17,47 * * * *',
+  primaryCron: '17 */2 * * *',
   watchdogCron: '19 */2 * * *',
   maxTrafficAgeSeconds: 1800,
   maxFutureSkewSeconds: 60,
