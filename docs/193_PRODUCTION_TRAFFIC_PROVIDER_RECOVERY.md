@@ -1,7 +1,8 @@
 # Production Traffic Provider Recovery
 
-Status: Provider response received; compliance hardening merged; runtime activation still pending
+Status: Controlled runtime path proven; final recovery reconciliation remains open while the revised FREE_V1 cadence is validated
 Date: 2026-08-23
+Last updated: 2026-09-06
 Scope: policy-aware recovery of production traffic ingestion after the Airplanes.live access incident
 
 ## 1. Recovery objective
@@ -112,8 +113,11 @@ The project explicitly asked whether this revised pattern was acceptable and
 whether additional identification, attribution, API-key or feeder setup was
 required.
 
-The 30-minute production cadence supersedes the earlier 2026-08-18
-one-request-per-10-seconds proposal for the current zero-cost production plan.
+The 30-minute production cadence superseded the earlier 2026-08-18
+one-request-per-10-seconds proposal at the time of that correspondence. It is
+preserved here as historical inquiry evidence, not as the current FREE_V1
+scheduler policy. Subsequent Neon runtime measurements caused the project to
+reduce its own production cadence further to one request every two hours.
 
 ### 3.5 ADSB.lol response to revised inquiry — 2026-08-21
 
@@ -180,8 +184,10 @@ provenance=PROJECT-CONSERVATIVE
 ```
 
 This is a project safety cap, not a claim about an upstream hard quota. The
-planned production scheduler remains substantially slower at approximately one
-bounded ingestion request every 30 minutes.
+current source-controlled FREE_V1 scheduler is substantially slower at one
+bounded ingestion request every two hours. The reduction from the earlier
+30-minute recovery target was driven by measured Neon wake duration and free-tier
+compute safety, not by a new upstream ADSB.lol restriction.
 
 ## 6. Fail-closed production activation
 
@@ -193,8 +199,8 @@ ADSBLOL_PRODUCTION_CONTACT_CONFIRMED=true
 
 The operator responses provide the external evidence needed to satisfy that gate,
 but the repository does not treat receipt of email as permission to bypass
-compliance hardening or runtime availability checks. The gate must still be
-explicitly enabled for the controlled production run.
+compliance hardening or runtime availability checks. The gate was explicitly
+enabled for the controlled production runs and those runs succeeded.
 
 Airplanes.live additionally requires `AIRPLANES_LIVE_ACCESS_APPROVED=true`.
 OpenSky additionally requires `OPENSKY_OPERATIONAL_AGREEMENT_CONFIRMED=true`.
@@ -205,9 +211,9 @@ The Render web service runs `/app/server`, not the ingestion command. Stale
 `TRAFFIC_PROVIDER` and `AIRPLANES_LIVE_TIMEOUT` values are therefore removed from
 `render.yaml`; provider configuration belongs to the ingestion runtime.
 
-## 8. Production activation criteria
+## 8. Production activation criteria and post-reset evidence
 
-Provider recovery is not closed until:
+The provider recovery criteria remain:
 
 ```text
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
@@ -221,7 +227,41 @@ GRAFANA_FRESHNESS_RECOVERY=PASS
 PRODUCTION_PROVIDER_RECOVERY=CLOSED
 ```
 
-Until live runtime validation is possible:
+The September 2026 recovery window established the provider/runtime portion with
+real production evidence:
+
+```text
+CANONICAL_PRODUCTION_REVISION=e7d4445778b75cfbfa7812857154640b48659c69
+PRODUCTION_SMOKE_RUN_ID=33969466911
+PRODUCTION_SMOKE=PASS
+MANUAL_INGESTION_RUN_ID=33971235793
+MANUAL_INGESTION=PASS
+MANUAL_INGESTION_PROVIDER=adsb.lol
+MANUAL_INGESTION_STORED=5
+MANUAL_TRAFFIC_FRESHNESS=PASS
+CLOUDFLARE_PRIMARY_RUN_ID=33985176640
+CLOUDFLARE_PRIMARY_DISPATCH_SOURCE=cloudflare-primary
+CLOUDFLARE_PRIMARY=PASS
+CLOUDFLARE_PRIMARY_PROVIDER=adsb.lol
+CLOUDFLARE_PRIMARY_STORED=5
+CLOUDFLARE_PRIMARY_TRAFFIC_FRESHNESS=PASS
+SUBSEQUENT_AUTOMATIC_PRIMARY_RUNS=PASS
+NEON_SCALE_TO_ZERO=OBSERVED_WORKING
+```
+
+Run `33985176640` executed on the exact canonical revision and recorded
+`PRODUCTION_INGESTION_DISPATCH_SOURCE=cloudflare-primary`. ADSB.lol returned five
+usable observations, all five were stored, five trajectories were produced, and
+the production freshness verifier passed with data within the configured
+30-minute freshness boundary.
+
+The controlled window also proved that the provider path was not the remaining
+FREE_V1 blocker. Neon wake-duration measurements showed the then-configured
+30-minute primary was too aggressive for the 100 CU-hour monthly allowance. The
+Cloudflare kill switch was therefore returned to `false`, and the primary target
+was reduced to `17 */2 * * *` before permanent activation.
+
+Current status is therefore:
 
 ```text
 ADSBLOL_ADAPTER=IMPLEMENTED
@@ -229,10 +269,19 @@ ADSBLOL_PROVIDER_POLICY=IMPLEMENTED
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
 ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_WORKFLOW_SOURCE_READY=YES
-PRODUCTION_WORKFLOW_CONTACT_GATE=ACTIVE
-PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
-PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
+PRODUCTION_WORKFLOW_CONTACT_GATE=PASS
+CONTROLLED_PRODUCTION_ADSBLOL_SMOKE=PASS
+CONTROLLED_PRODUCTION_TRAFFIC_FRESHNESS=PASS
+CONTROLLED_CLOUDFLARE_PRIMARY=PASS
+SUBSEQUENT_SCHEDULED_RUN=PASS
+PRODUCTION_INGESTION=INTENTIONALLY_FAIL_CLOSED
+PRODUCTION_PROVIDER_RECOVERY=OPEN_FINAL_RECONCILIATION
 ```
+
+Provider recovery is not marked `CLOSED` in this document yet because the final
+FREE_V1 production state must use the revised two-hour scheduler, be deployed from
+an exact merged revision, and complete the remaining observability/final-recovery
+reconciliation without weakening the free-tier budget boundary.
 
 ## 9. Provider configuration and compatibility hardening
 

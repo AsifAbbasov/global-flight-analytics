@@ -20,21 +20,23 @@ confidence, provenance and limitations visible.
 
 The heavy backend, PostgreSQL, analytical, API, OpenAPI and frontend-integration work is
 closed for the current portfolio scope. **Stage 14 is closed** for the current repository
-scope. Production-provider recovery and free-tier runtime recovery remain intentionally
-fail-closed until controlled live runtime verification can be completed.
+scope. The production provider path has completed controlled live execution, while free-tier
+runtime recovery remains fail-closed until the safer two-hour scheduler profile is merged,
+deployed from an exact revision, and validated against Neon scale-to-zero.
 
 ```text
 ADSB.lol adapter / provider policy        IMPLEMENTED
 ADSB.lol production response              RECEIVED
 ADSB.lol compliance hardening             MERGED
-Production Traffic Ingestion              DISPATCH-ONLY / OFFLINE
-Cloudflare primary target cadence         30 MINUTES
+Production Traffic Ingestion              DISPATCH-ONLY / FAIL-CLOSED
+Cloudflare primary target cadence         2 HOURS
 Cloudflare watchdog target cadence        2 HOURS
 Production Metrics Scrape                 2 HOURS
 Production Reconciliation                 MANUAL-ONLY WHILE INGESTION OFFLINE
 Cloudflare DISPATCH_ENABLED               false
 Neon scale-to-zero                        OBSERVED WORKING
 Neon monthly quota reset                  2026-09-01T00:00:00Z
+Controlled Cloudflare primary runtime     PASS
 Frontend Product Closure                  CLOSED — EXACT-HEAD CI VERIFIED
 Frontend Visual Polish V2                 CLOSED — EXACT-HEAD CI VERIFIED
 ```
@@ -135,10 +137,10 @@ Historical reliability closure proved the Cloudflare scheduling, watchdog, dedup
 recovery and exact-revision runtime path on the earlier production profile. Those immutable
 runs remain historical evidence.
 
-The current `FREE_V1` profile is intentionally different:
+The current source-controlled `FREE_V1` profile is intentionally different:
 
 ```text
-Cloudflare primary:     17,47 * * * *
+Cloudflare primary:     17 */2 * * *
 Cloudflare watchdog:    19 */2 * * *
 Metrics scrape:         20 */2 * * *
 GitHub ingestion cron:  NONE
@@ -146,10 +148,13 @@ GitHub reconciliation:  workflow_dispatch only while ingestion is offline
 DISPATCH_ENABLED:       false
 ```
 
-The old 10-minute primary, 5-minute watchdog, 15-minute metrics keep-awake pattern and
-independent 10-minute reconciliation schedule are no longer the current deployment policy.
-The production ingestion workflow remains disabled/fail-closed until provider and Neon
-recovery criteria are satisfied.
+The old 10-minute primary, later 30-minute recovery target, 5-minute watchdog, 15-minute
+metrics keep-awake pattern and independent 10-minute reconciliation schedule are no longer
+the current deployment policy. Controlled September runtime validation proved the
+Cloudflare-origin ingestion path and Neon scale-to-zero, but also showed real Neon wake
+windows around twenty minutes. The 30-minute primary was therefore rejected for FREE_V1
+before permanent activation. Production ingestion remains fail-closed until the revised
+two-hour profile is merged, deployed from an exact revision, and validated once in runtime.
 
 Historical reliability diagnosis and repository-recorded closure evidence are preserved in
 [`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md)
@@ -183,8 +188,10 @@ ADSBLOL_PRODUCTION_CONTACT=SENT
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
 ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_WORKFLOW_SOURCE_READY=YES
-PRODUCTION_INGESTION=INTENTIONALLY_OFFLINE
-PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
+CONTROLLED_PRODUCTION_INGESTION=PASS
+CONTROLLED_CLOUDFLARE_PRIMARY=PASS
+PRODUCTION_INGESTION=INTENTIONALLY_FAIL_CLOSED
+PRODUCTION_PROVIDER_RECOVERY=OPEN_FINAL_RECONCILIATION
 ```
 
 Implementation details and activation criteria are recorded in
@@ -197,18 +204,23 @@ not sustained high compute scaling. Live inspection recorded approximately 373.6
 hours, approximately 101.2 CU-hours and approximately 0.27 CU average effective compute,
 close to the 0.25 CU minimum. Scale-to-zero was observed working after inactivity.
 
+Post-reset controlled runtime validation proved the production path and repeatedly observed
+Neon start/suspend cycles. Representative wake windows were roughly twenty to twenty-four
+minutes, materially longer than the earlier five-minute planning assumption. The 30-minute
+primary target was therefore replaced with one two-hour primary wake cluster.
+
 ```text
 TARGET_MONTHLY_NEON_COMPUTE <= 60 CU-hours
 RESERVE_FOR_INTERACTIVE_AND_RECOVERY_WORK >= 40 CU-hours
-30-minute ingestion target
+2-hour ingestion target
 2-hour metrics/watchdog
 one daily release smoke
 no keep-alive traffic
 ```
 
-The incident remains open until quota availability returns and live production evidence
-shows successful ingestion, PostgreSQL persistence, Grafana recovery and bounded sleep /
-compute behavior under the new cadence.
+The incident remains open until the revised two-hour profile is merged, deployed from an
+exact merged revision, one scheduled ingestion succeeds under that profile, and Neon is
+observed scaling to zero afterward.
 
 ## Recent Engineering Milestones — August 2026
 
@@ -392,17 +404,18 @@ audits, Docker configuration and repository integrity.
 ## Remaining Portfolio v1.0.0 Work
 
 Frontend Product Closure, Frontend Visual Polish V2 and ADSB.lol provider-compliance
-hardening are closed. Provider recovery itself remains open for live runtime validation,
-and Neon recovery remains an external/runtime verification track rather than a reason to
-extend the backend or frontend architecture. Pixel-golden comparison is deliberately not
-adopted as a release requirement for the externally rendered live-map surface.
+hardening are closed. Controlled manual and Cloudflare-origin production ingestion have
+succeeded after the Neon reset. The remaining runtime work is now focused on deploying and
+validating the revised FREE_V1 wake budget rather than extending backend or frontend scope.
+Pixel-golden comparison is deliberately not adopted as a release requirement for the
+externally rendered live-map surface.
 
 Remaining sequence:
 
-1. after Neon quota availability returns, explicitly satisfy the ADSB.lol production-contact gate and run one controlled production ingestion;
-2. verify PostgreSQL write, traffic freshness, Grafana recovery and bounded scale-to-zero behavior under the new cadence;
-3. verify a subsequent scheduled run after controlled activation;
-4. perform final exact-production deployment validation against the release revision;
+1. merge the safer two-hour FREE_V1 scheduler profile with `DISPATCH_ENABLED=false`;
+2. deploy the exact merged Worker revision without enabling dispatch;
+3. run one controlled scheduled primary under the two-hour profile and verify ingestion, freshness, and subsequent Neon scale-to-zero;
+4. reconcile the provider/free-tier recovery documents and perform final exact-production deployment validation;
 5. complete final release documentation and publish `v1.0.0`.
 
 ```text
@@ -416,7 +429,9 @@ PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING
 DOCUMENT_INDEX_194_196=CLOSED
 ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
 ADSBLOL_COMPLIANCE_HARDENING=MERGED
-PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION
+CONTROLLED_PRODUCTION_INGESTION=PASS
+CONTROLLED_CLOUDFLARE_PRIMARY=PASS
+PRODUCTION_PROVIDER_RECOVERY=OPEN_FINAL_RECONCILIATION
 FREE_TIER_INFRASTRUCTURE_RECOVERY=OPEN_RUNTIME_VALIDATION
 FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
 FINAL_RELEASE_DOCUMENTATION=OPEN
