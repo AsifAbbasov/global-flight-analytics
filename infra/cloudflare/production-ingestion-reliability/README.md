@@ -4,7 +4,7 @@ Status: production ingestion reliability implementation is hardened; production 
 
 This Worker implements the zero-cost reliability design for production traffic ingestion:
 
-- the primary Cron Trigger requests a GitHub workflow dispatch every 30 minutes;
+- the primary Cron Trigger requests a GitHub workflow dispatch every two hours;
 - the watchdog checks public traffic freshness every two hours;
 - the primary and watchdog schedules are deliberately sparse so they do not act as an artificial Render/Neon keep-alive;
 - queued or active workflow runs suppress duplicate dispatches;
@@ -16,16 +16,18 @@ This Worker implements the zero-cost reliability design for production traffic i
 
 ## Free-tier scheduling boundary
 
-The deployed schedule is:
+The deployed source-controlled schedule is:
 
 ```text
-primary:  17,47 * * * *
+primary:  17 */2 * * *
 watchdog: 19 */2 * * *
 ```
 
 When dispatch is disabled, both Cron Triggers return before any GitHub or Render network request.
 
-When production traffic ingestion is restored, the primary cadence provides at most two scheduled ingestion wake windows per hour. The watchdog runs every two hours and is intentionally placed two minutes after the `:17` primary window so a healthy system can reuse the same Render/Neon wake period instead of creating a separate keep-alive cycle.
+When production traffic ingestion is restored, the primary cadence provides at most one scheduled ingestion wake window every two hours. The watchdog runs two minutes after the primary and is intentionally placed in the same two-hour window so a healthy system can reuse the same Render/Neon wake period instead of creating a separate keep-alive cycle. Production metrics run at `20 */2 * * *`, keeping ingestion, watchdog, and metrics inside one staggered wake cluster.
+
+The two-hour primary replaced the earlier 30-minute recovery target after controlled September 2026 runtime validation showed real Neon wake windows lasting roughly twenty minutes and demonstrated that two ingestion windows per hour could consume the FREE_V1 compute allowance too aggressively. This is a free-tier deployment policy correction, not a product or domain-architecture downgrade.
 
 The GitHub production ingestion workflow should remain dispatch/manual-owned rather than becoming a second independent high-frequency scheduler. Reconciliation should execute in the same database wake window after ingestion instead of using its own cron.
 
@@ -58,7 +60,7 @@ npx --yes wrangler@4.94.0 dev --test-scheduled --config wrangler.jsonc
 Then invoke either configured expression:
 
 ```bash
-curl 'http://127.0.0.1:8787/__scheduled?cron=17%2C47+*+*+*+*'
+curl 'http://127.0.0.1:8787/__scheduled?cron=17+*%2F2+*+*+*'
 curl 'http://127.0.0.1:8787/__scheduled?cron=19+*%2F2+*+*+*'
 ```
 
