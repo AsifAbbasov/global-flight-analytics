@@ -407,8 +407,8 @@ Frontend Product Closure, Frontend Visual Polish V2 and ADSB.lol provider-compli
 hardening are closed. Controlled manual and Cloudflare-origin production ingestion have
 succeeded after the Neon reset. The remaining runtime work is now focused on deploying and
 validating the revised FREE_V1 wake budget rather than extending backend or frontend scope.
-Pixel-golden comparison remains deliberately nonblocking for the externally rendered
-live-map surface.
+Pixel-golden comparison is deliberately not adopted as a release requirement for the
+externally rendered live-map surface.
 
 Remaining sequence:
 
