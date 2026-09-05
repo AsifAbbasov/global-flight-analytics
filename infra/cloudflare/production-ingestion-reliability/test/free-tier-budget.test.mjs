@@ -14,18 +14,19 @@ const readme = fs.readFileSync(
 )
 
 test('Cloudflare production reliability profile is free-tier bounded', () => {
-  assert.match(wrangler, /"17,47 \* \* \* \*"/)
+  assert.match(wrangler, /"17 \*\/2 \* \* \*"/)
   assert.match(wrangler, /"19 \*\/2 \* \* \*"/)
-  assert.match(wrangler, /"PRIMARY_CRON": "17,47 \* \* \* \*"/)
+  assert.match(wrangler, /"PRIMARY_CRON": "17 \*\/2 \* \* \*"/)
   assert.match(wrangler, /"WATCHDOG_CRON": "19 \*\/2 \* \* \*"/)
   assert.match(wrangler, /"DISPATCH_ENABLED": "false"/)
 
+  assert.doesNotMatch(wrangler, /17,47/)
   assert.doesNotMatch(wrangler, /3,13,23,33,43,53/)
   assert.doesNotMatch(wrangler, /"\*\/5 \* \* \* \*"/)
 
   assert.match(
     readme,
-    /primary Cron Trigger requests a GitHub workflow dispatch every 30 minutes/,
+    /primary Cron Trigger requests a GitHub workflow dispatch every two hours/,
   )
   assert.match(
     readme,
@@ -39,7 +40,7 @@ test('Worker source defaults preserve the free-tier cadence', () => {
     GITHUB_ACTIONS_TOKEN: 'test-token-never-log',
   })
 
-  assert.equal(config.primaryCron, '17,47 * * * *')
+  assert.equal(config.primaryCron, '17 */2 * * *')
   assert.equal(config.watchdogCron, '19 */2 * * *')
   assert.equal(config.dispatchEnabled, false)
 })
