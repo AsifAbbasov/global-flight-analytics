@@ -415,7 +415,7 @@ Remaining sequence:
 1. merge the safer two-hour FREE_V1 scheduler profile with `DISPATCH_ENABLED=false`;
 2. deploy the exact merged Worker revision without enabling dispatch;
 3. run one controlled scheduled primary under the two-hour profile and verify ingestion, freshness, and subsequent Neon scale-to-zero;
-4. reconcile the provider/free-tier recovery documents and perform final exact-production validation;
+4. reconcile the provider/free-tier recovery documents and perform final exact-production deployment validation;
 5. complete final release documentation and publish `v1.0.0`.
 
 ```text
