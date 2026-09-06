@@ -53,6 +53,12 @@ test('Stage 20 preserves bounded-region and observed-time evidence semantics', (
   )
 })
 
+test('Stage 20 keeps Airspace provenance fingerprints bounded to SHA-256 transport encodings', () => {
+  assert.match(api, /\(\?:sha256:\)\?\[0-9a-f\]\{64\}/)
+  assert.match(api, /optional sha256 prefix/)
+  assert.doesNotMatch(api, /fingerprint\(value[\s\S]*return text\(value, field\)/)
+})
+
 test('Stage 20 preserves research-only airspace scope guards', () => {
   assert.match(panel, /not air traffic control guidance or certified separation[\s\S]*monitoring/)
   assert.match(panel, /do not represent[\s\S]*official sectors/)
