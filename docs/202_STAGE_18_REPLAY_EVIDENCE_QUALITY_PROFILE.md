@@ -1,6 +1,6 @@
 # Stage 18 Replay Evidence Quality Profile
 
-Status: remediation validation pending
+Status: pre-merge validation passed; final exact-head verification pending
 
 ```text
 STAGE_18_REPLAY_EVIDENCE_QUALITY=IN_PROGRESS
@@ -9,12 +9,15 @@ STAGE_18_IMPLEMENTATION_HEAD=8048e37747802ac65e3ceae6142331256d6b70aa
 STAGE_18_FIRST_VALIDATION_HEAD=cb93a00d46f874e0cd0cf48fe00f855948e65e7a
 STAGE_18_FIRST_FRONTEND_CI=FAIL
 STAGE_18_REMEDIATION_HEAD=f814848601d5d78c736b5c7cd73e1e5735bf5dea
+STAGE_18_REMEDIATION_VALIDATION_HEAD=9ca39c6f2b170ae260e5f67d21265c5fcf285c42
+STAGE_18_REMEDIATION_VALIDATION=PASS
 STAGE_18_EVIDENCE_PROFILE=DESCRIPTIVE_ONLY
 STAGE_18_SYNTHETIC_QUALITY_SCORE=NONE
 STAGE_18_POSITION_INTERPOLATION=NONE
 STAGE_18_NEW_BACKEND_DATA=NONE
 STAGE_18_ADDITIONAL_COST=0_RUB
-STAGE_18_PRE_MERGE_CI=PENDING
+STAGE_18_PRE_MERGE_CI=PASS
+STAGE_18_FINAL_EXACT_HEAD_CI=PENDING
 STAGE_18_POST_MERGE_CI=PENDING
 ```
 
@@ -414,7 +417,62 @@ A future formatter may replace one newline with several spaces or vice versa. Th
 
 The Stage 18 source-contract test still requires all evidence markers, metric labels and the full `not calibrated aviation ... quality grades` phrase. Only whitespace representation became flexible.
 
-No fictional product-review rejection is recorded. The only rejection at this point is the real Frontend CI #428 source-contract failure above.
+No fictional product-review rejection is recorded. The only rejection is the real Frontend CI #428 source-contract failure above.
+
+## Successful remediation validation
+
+The complete repository validation matrix was rerun after the remediation and documentation-contract update on exact head:
+
+```text
+9ca39c6f2b170ae260e5f67d21265c5fcf285c42
+```
+
+All required PR workflows completed successfully:
+
+```text
+Frontend CI #431
+run=34045730187
+result=SUCCESS
+
+Backend CI #769
+run=34045730140
+result=SUCCESS
+
+CodeQL #411
+run=34045730178
+result=SUCCESS
+
+API Load Baseline #299
+run=34045729973
+result=SUCCESS
+
+Playwright E2E #208
+run=34045730064
+result=SUCCESS
+
+Vercel preview
+result=SUCCESS
+```
+
+Frontend #431 proves that ESLint, TypeScript, the full frontend contract suite and production build all pass after the whitespace-tolerant remediation.
+
+Backend #769 proves that repository-wide backend quality, PostgreSQL integration, race safety, container build, non-root runtime verification, historical materializer verification and container health smoke remain green even though Stage 18 is frontend-only.
+
+CodeQL #411 completed successfully for Go and JavaScript/TypeScript. API Load #299 preserved the existing performance baseline. Playwright #208 completed the Chromium end-to-end suite and evidence upload successfully, including the new honest single-sample replay-evidence profile assertions. Vercel preview for the same exact head completed successfully.
+
+No second product or architecture defect was discovered in this cycle, so no additional remediation story is invented.
+
+## Why another exact-head cycle is still required
+
+Recording the successful remediation matrix changes the documentation commit and therefore changes the PR head. A commit cannot contain a truthful assertion of its own future CI run IDs without creating a self-referential commit chain.
+
+The repository therefore uses this two-layer rule:
+
+1. Document 202 records the completed pre-merge validation and real remediation history on `9ca39c6f...`.
+2. The resulting documentation head must pass one final complete exact-head CI/Vercel cycle without further code changes.
+3. That final exact merge-candidate head and its independent validation matrix are recorded in PR metadata, which does not change the commit SHA.
+
+This preserves both auditable documentation and an exact-head merge guard without an infinite sequence of evidence-only commits.
 
 ## Zero-budget impact
 
@@ -461,9 +519,9 @@ Without that evidence, the profile must remain descriptive-only.
 
 If the only defensible implementation of a future evidence-quality feature requires paid data or paid infrastructure, development of that feature must stop and the budget boundary must be reported before implementation.
 
-## Pre-merge closure requirements
+## Final pre-merge closure requirement
 
-Stage 18 is not merge-ready until:
+The completed remediation validation satisfies the pre-merge quality requirements. The evidence-recording commit must now pass a final no-change exact-head cycle:
 
 ```text
 ESLINT=PASS
@@ -473,9 +531,10 @@ PRODUCTION_BUILD=PASS
 PLAYWRIGHT=PASS
 CODEQL=PASS
 BACKEND_GUARDS=PASS
-API_LOAD_BASELINE=PASS_IF_TRIGGERED
+API_LOAD_BASELINE=PASS
 VERCEL=PASS
 DOCUMENTATION=COMPLETE
+FINAL_EXACT_HEAD_CI=PASS
 ```
 
-The first cycle did not satisfy these requirements because Frontend contract tests failed. A new complete validation cycle is required after remediation. Exact successful evidence must be appended only after it exists.
+Until that final exact-head cycle completes, PR #159 is not merge-ready.
