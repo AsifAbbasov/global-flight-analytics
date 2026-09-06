@@ -71,6 +71,23 @@ test('replay controls surface persisted telemetry without new external providers
   assert.match(control, /currentPoint\.origin_country/)
 })
 
+test('replay analytics remain evidence-derived and avoid inferred intermediate values', () => {
+  const model = source('lib/replay/flight-replay-model.ts')
+  const control = source('components/aircraft/flight-replay-control.tsx')
+
+  assert.match(model, /buildFlightReplayAnalyticsSummary/)
+  assert.match(model, /altitudeCoveragePercent/)
+  assert.match(model, /medianGapSeconds/)
+  assert.match(model, /peakVelocityMPS/)
+  assert.match(model, /maxClimbRateMPS/)
+  assert.match(model, /steepestDescentRateMPS/)
+  assert.match(control, /Observed replay analytics/)
+  assert.match(control, /Aggregates use persisted samples only/)
+  assert.match(control, /No values are inferred between observations/)
+  assert.match(control, /data-flight-replay-analytics='observed-samples-only'/)
+  assert.doesNotMatch(model, /predict|forecast|interpolat/i)
+})
+
 test('map renders replay as discrete point features instead of a replay line', () => {
   const map = source('components/map/traffic-map.tsx')
 
