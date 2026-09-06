@@ -113,6 +113,18 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
   ).toBeVisible()
   await expect(analytics.getByText('1 / 0', { exact: true })).toBeVisible()
 
+  const observedChange = replay.getByLabel(
+    'Observed change from previous sample'
+  )
+  await expect(observedChange).toBeVisible()
+  await expect(
+    observedChange.getByText('Observed change', { exact: true })
+  ).toBeVisible()
+  await expect(observedChange.getByText('Two-point evidence')).toBeVisible()
+  await expect(
+    observedChange.getByText(/No previous persisted observation is available/)
+  ).toBeVisible()
+
   const velocityDatum = replay.getByText('Velocity', { exact: true }).locator('..')
   await expect(velocityDatum).toBeVisible()
   await expect(

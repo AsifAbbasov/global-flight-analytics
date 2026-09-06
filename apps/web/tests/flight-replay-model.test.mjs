@@ -14,6 +14,7 @@ const {
   buildFlightReplayGaps,
   buildFlightReplayGapSummary,
   buildFlightReplayObservationShareURL,
+  buildFlightReplayObservedChange,
   clampFlightReplayCursorIndex,
   flightReplayObservationParameter,
   resolveFlightReplayCursorFromSearch,
@@ -173,6 +174,58 @@ test('replay analytics expose zero evidence for an unavailable replay', () => {
     airborneSampleCount: 0,
     onGroundSampleCount: 0,
   })
+})
+
+test('observed change compares only adjacent persisted samples', () => {
+  assert.equal(buildFlightReplayObservedChange(replay, 0), null)
+
+  const change = buildFlightReplayObservedChange(replay, 1)
+  assert.ok(change)
+  assert.equal(change.previousPointID, 'state-1')
+  assert.equal(change.currentPointID, 'state-2')
+  assert.equal(change.elapsedSeconds, 450)
+  assert.ok(Math.abs(change.greatCircleDisplacementM - 5543.38) < 1)
+  assert.equal(change.altitudeDeltaM, 3000)
+  assert.equal(change.velocityDeltaMPS, 30)
+  assert.equal(change.headingChangeDegrees, 25)
+  assert.equal(change.previousOnGround, false)
+  assert.equal(change.currentOnGround, false)
+})
+
+test('observed change does not invent an altitude delta when either endpoint lacks altitude evidence', () => {
+  const replayWithUnavailableAltitude = {
+    ...replay,
+    points: replay.points.map((point, index) =>
+      index === 1
+        ? {
+            ...point,
+            barometric_altitude_m: null,
+            barometric_altitude_status: 'unavailable',
+          }
+        : point
+    ),
+  }
+
+  const change = buildFlightReplayObservedChange(
+    replayWithUnavailableAltitude,
+    1
+  )
+  assert.ok(change)
+  assert.equal(change.altitudeDeltaM, null)
+})
+
+test('observed heading change uses the shortest angular difference', () => {
+  const wraparoundReplay = {
+    ...replay,
+    points: [
+      { ...replay.points[0], heading_degrees: 350 },
+      { ...replay.points[1], heading_degrees: 10 },
+    ],
+  }
+
+  const change = buildFlightReplayObservedChange(wraparoundReplay, 1)
+  assert.ok(change)
+  assert.equal(change.headingChangeDegrees, 20)
 })
 
 test('replay observation deep links resolve exact persisted state identifiers', () => {

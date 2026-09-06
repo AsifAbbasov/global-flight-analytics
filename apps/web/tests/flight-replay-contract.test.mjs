@@ -88,6 +88,25 @@ test('replay analytics remain evidence-derived and avoid inferred intermediate v
   assert.doesNotMatch(model, /predict|forecast|interpolat/i)
 })
 
+test('observed change inspector compares adjacent persisted endpoints without claiming path distance', () => {
+  const model = source('lib/replay/flight-replay-model.ts')
+  const control = source('components/aircraft/flight-replay-control.tsx')
+
+  assert.match(model, /buildFlightReplayObservedChange/)
+  assert.match(model, /greatCircleDisplacementM/)
+  assert.match(model, /altitudeDeltaM/)
+  assert.match(model, /velocityDeltaMPS/)
+  assert.match(model, /headingChangeDegrees/)
+  assert.match(model, /previousPointID/)
+  assert.match(model, /currentPointID/)
+  assert.match(control, /Observed change/)
+  assert.match(control, /Endpoint displacement/)
+  assert.match(control, /immediately previous persisted observations only/)
+  assert.match(control, /not traveled path distance/)
+  assert.match(control, /No intermediate position is inferred/)
+  assert.match(control, /data-flight-replay-change='two-persisted-observations'/)
+})
+
 test('replay observation sharing uses exact persisted state ids without new storage', () => {
   const model = source('lib/replay/flight-replay-model.ts')
   const workspace = source('components/map/map-evidence-workspace.tsx')

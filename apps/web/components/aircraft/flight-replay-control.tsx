@@ -7,9 +7,11 @@ import {
   buildFlightReplayAnalyticsSummary,
   buildFlightReplayGapSummary,
   buildFlightReplayObservationShareURL,
+  buildFlightReplayObservedChange,
   flightReplaySpeeds,
   type FlightReplayAnalyticsSummary,
   type FlightReplayGapSummary,
+  type FlightReplayObservedChange,
   type FlightReplaySpeed,
 } from '@/lib/replay/flight-replay-model'
 import type {
@@ -63,6 +65,7 @@ export function FlightReplayControl({
   const altitude = currentPoint ? formatObservedAltitude(currentPoint) : null
   const gapSummary = buildFlightReplayGapSummary(replay, cursorIndex)
   const analyticsSummary = buildFlightReplayAnalyticsSummary(replay)
+  const observedChange = buildFlightReplayObservedChange(replay, cursorIndex)
   const currentCopyStatus =
     currentPoint && copyState?.pointID === currentPoint.id
       ? copyState.status
@@ -216,6 +219,7 @@ export function FlightReplayControl({
           ) : null}
 
           <ReplayAnalyticsSummary summary={analyticsSummary} />
+          <ReplayObservedChange change={observedChange} />
 
           <div className='grid gap-2 text-xs sm:grid-cols-3 xl:grid-cols-5'>
             <ReplayDatum label='Observed at' value={observedAt ?? 'Unavailable'} />
@@ -409,6 +413,76 @@ function ReplayAnalyticsSummary({
   )
 }
 
+function ReplayObservedChange({
+  change,
+}: {
+  change: FlightReplayObservedChange | null
+}) {
+  return (
+    <div
+      className='rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2.5'
+      aria-label='Observed change from previous sample'
+      data-flight-replay-change='two-persisted-observations'
+    >
+      <div className='flex flex-wrap items-start justify-between gap-2'>
+        <div>
+          <p className='text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500'>
+            Observed change
+          </p>
+          <p className='mt-1 text-[11px] leading-relaxed text-slate-500'>
+            Computed between the current and immediately previous persisted observations only.
+          </p>
+        </div>
+        <span className='rounded-full border border-sky-400/25 bg-sky-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-sky-200'>
+          Two-point evidence
+        </span>
+      </div>
+
+      {change === null ? (
+        <p className='mt-2 text-xs text-slate-400'>
+          No previous persisted observation is available for this sample.
+        </p>
+      ) : (
+        <>
+          <div className='mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'>
+            <ReplayDatum
+              label='Elapsed since previous'
+              value={formatDuration(change.elapsedSeconds)}
+            />
+            <ReplayDatum
+              label='Endpoint displacement'
+              value={formatDistance(change.greatCircleDisplacementM)}
+            />
+            <ReplayDatum
+              label='Altitude delta'
+              value={
+                change.altitudeDeltaM === null
+                  ? 'Unavailable'
+                  : formatSignedMeters(change.altitudeDeltaM)
+              }
+            />
+            <ReplayDatum
+              label='Velocity delta'
+              value={formatSignedVelocity(change.velocityDeltaMPS)}
+            />
+            <ReplayDatum
+              label='Heading change'
+              value={`${Math.round(change.headingChangeDegrees)}°`}
+            />
+            <ReplayDatum
+              label='Flight-state transition'
+              value={`${formatFlightState(change.previousOnGround)} → ${formatFlightState(change.currentOnGround)}`}
+            />
+          </div>
+          <p className='mt-2 text-[11px] leading-relaxed text-slate-500'>
+            Endpoint displacement is great-circle distance between two persisted positions, not traveled path distance. No intermediate position is inferred.
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 function ReplaySampleButton({
   sampleIndex,
   observedAt,
@@ -492,6 +566,25 @@ function formatVerticalRate(value: number): string {
 function formatAltitudeRange(minimum: number | null, maximum: number | null): string {
   if (minimum === null || maximum === null) return 'Unavailable'
   return `${Math.round(minimum).toLocaleString()}–${Math.round(maximum).toLocaleString()} m`
+}
+
+function formatDistance(value: number): string {
+  if (value < 1000) return `${Math.round(value)} m`
+  return `${(value / 1000).toFixed(2)} km`
+}
+
+function formatSignedMeters(value: number): string {
+  const sign = value > 0 ? '+' : ''
+  return `${sign}${Math.round(value).toLocaleString()} m`
+}
+
+function formatSignedVelocity(value: number): string {
+  const sign = value > 0 ? '+' : ''
+  return `${sign}${value.toFixed(1)} m/s`
+}
+
+function formatFlightState(onGround: boolean): string {
+  return onGround ? 'On ground' : 'Airborne'
 }
 
 function formatDuration(value: number): string {
