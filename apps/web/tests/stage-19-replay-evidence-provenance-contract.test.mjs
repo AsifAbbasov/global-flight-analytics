@@ -38,7 +38,6 @@ test('Stage 19 UI preserves descriptive provenance semantics', () => {
     'Source composition',
     'Adjacent source-label transitions',
     'Percentages are shares of persisted samples, not shares of elapsed time',
-    'the exact provider switch time between those observations is unknown',
   ]) {
     assert.match(provenanceComponent, new RegExp(marker))
   }
@@ -46,6 +45,10 @@ test('Stage 19 UI preserves descriptive provenance semantics', () => {
   assert.match(
     provenanceComponent,
     /does not\s+rank provider accuracy, infer a better source, or reconstruct the exact switch instant/
+  )
+  assert.match(
+    provenanceComponent,
+    /the\s+exact provider switch time between those observations is unknown/
   )
 })
 
