@@ -33,11 +33,15 @@ test('Stage 17 UI exposes interval quality and explicitly refuses path inference
     'Largest internal gap',
     'Endpoint displacement',
     'not travelled path distance',
-    'no intermediate coordinate, route, phase or intent is synthesized',
     'At least two persisted observations are required for interval comparison',
   ]) {
     assert.match(intervalComponent, new RegExp(marker))
   }
+
+  assert.match(
+    intervalComponent,
+    /no\s+intermediate coordinate, route, phase or intent is synthesized/
+  )
 })
 
 test('Stage 17 integration stays inside existing replay time navigation', () => {
