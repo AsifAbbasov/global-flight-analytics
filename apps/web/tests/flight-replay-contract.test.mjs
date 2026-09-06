@@ -88,6 +88,24 @@ test('replay analytics remain evidence-derived and avoid inferred intermediate v
   assert.doesNotMatch(model, /predict|forecast|interpolat/i)
 })
 
+test('replay observation sharing uses exact persisted state ids without new storage', () => {
+  const model = source('lib/replay/flight-replay-model.ts')
+  const workspace = source('components/map/map-evidence-workspace.tsx')
+  const control = source('components/aircraft/flight-replay-control.tsx')
+
+  assert.match(model, /flightReplayObservationParameter = 'replay_observation'/)
+  assert.match(model, /resolveFlightReplayCursorFromSearch/)
+  assert.match(model, /buildFlightReplayObservationShareURL/)
+  assert.match(model, /point\.id === requestedPointID/)
+  assert.match(workspace, /resolveFlightReplayCursorFromSearch/)
+  assert.match(workspace, /window\.location\.search/)
+  assert.match(control, /Copy observation link/)
+  assert.match(control, /Copy replay observation link/)
+  assert.match(control, /navigator\.clipboard/)
+  assert.match(control, /data-replay-observation-id/)
+  assert.match(control, /exact\s+persisted observation identifier/)
+})
+
 test('map renders replay as discrete point features instead of a replay line', () => {
   const map = source('components/map/traffic-map.tsx')
 
