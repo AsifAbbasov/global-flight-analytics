@@ -13,7 +13,10 @@ const {
   buildFlightReplayFrame,
   buildFlightReplayGaps,
   buildFlightReplayGapSummary,
+  buildFlightReplayObservationShareURL,
   clampFlightReplayCursorIndex,
+  flightReplayObservationParameter,
+  resolveFlightReplayCursorFromSearch,
 } = replayModel
 
 const replay = {
@@ -170,6 +173,40 @@ test('replay analytics expose zero evidence for an unavailable replay', () => {
     airborneSampleCount: 0,
     onGroundSampleCount: 0,
   })
+})
+
+test('replay observation deep links resolve exact persisted state identifiers', () => {
+  assert.equal(flightReplayObservationParameter, 'replay_observation')
+  assert.equal(
+    resolveFlightReplayCursorFromSearch(replay, '?replay_observation=state-2'),
+    1
+  )
+  assert.equal(
+    resolveFlightReplayCursorFromSearch(
+      replay,
+      '?region=world&replay_observation=state-3&view=intelligence'
+    ),
+    2
+  )
+  assert.equal(
+    resolveFlightReplayCursorFromSearch(replay, '?replay_observation=missing'),
+    null
+  )
+  assert.equal(resolveFlightReplayCursorFromSearch(replay, '?region=world'), null)
+})
+
+test('replay observation share URLs preserve workspace state and hash', () => {
+  const shared = buildFlightReplayObservationShareURL(
+    'https://example.test/?region=world&aircraft=4b1801&view=intelligence#live-traffic',
+    'state-2'
+  )
+  const url = new URL(shared)
+
+  assert.equal(url.searchParams.get('region'), 'world')
+  assert.equal(url.searchParams.get('aircraft'), '4b1801')
+  assert.equal(url.searchParams.get('view'), 'intelligence')
+  assert.equal(url.searchParams.get('replay_observation'), 'state-2')
+  assert.equal(url.hash, '#live-traffic')
 })
 
 test('replay cursor advances discretely and stops at the final observed sample', () => {
