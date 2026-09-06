@@ -60,9 +60,29 @@ test('Stage 18 documentation records adversarial and residual evidence limits', 
   }
 })
 
-test('Stage 18 documentation keeps truthful CI state before validation', () => {
+test('Stage 18 documentation preserves the real first CI rejection and remediation', () => {
+  for (const evidence of [
+    'STAGE_18_FIRST_VALIDATION_HEAD=cb93a00d46f874e0cd0cf48fe00f855948e65e7a',
+    'STAGE_18_FIRST_FRONTEND_CI=FAIL',
+    'STAGE_18_REMEDIATION_HEAD=f814848601d5d78c736b5c7cd73e1e5735bf5dea',
+    'Frontend CI #428',
+    'run=34045471852',
+    'Tests=173',
+    'Pass=172',
+    'Fail=1',
+  ]) {
+    assert.match(document, new RegExp(evidence))
+  }
+
+  assert.match(document, /formatting-sensitive literal sequence/i)
+  assert.match(document, /test-contract defect, not an evidence-model or product-UI defect/i)
+  assert.match(document, /rewriting the production UI sentence onto one source line/i)
+  assert.match(document, /not calibrated aviation\\s\+quality grades/)
+  assert.match(document, /No fictional product-review rejection is recorded/i)
+})
+
+test('Stage 18 documentation keeps truthful pending state until remediation validation completes', () => {
   assert.match(document, /STAGE_18_PRE_MERGE_CI=PENDING/)
   assert.match(document, /STAGE_18_POST_MERGE_CI=PENDING/)
-  assert.match(document, /No CI\/review outcome is claimed yet/)
-  assert.match(document, /fictional review history must not be invented/i)
+  assert.match(document, /new complete validation cycle is required after remediation/i)
 })
