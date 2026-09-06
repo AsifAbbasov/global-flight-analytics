@@ -106,8 +106,11 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
   ).toBeVisible()
   await expect(analytics.getByText('1 / 0', { exact: true })).toBeVisible()
 
-  await expect(replay.getByText('Velocity', { exact: true })).toBeVisible()
-  await expect(replay.getByText('230.0 m/s · 828 km/h')).toBeVisible()
+  const velocityDatum = replay.getByText('Velocity', { exact: true }).locator('..')
+  await expect(velocityDatum).toBeVisible()
+  await expect(
+    velocityDatum.getByText('230.0 m/s · 828 km/h', { exact: true }),
+  ).toBeVisible()
   await expect(replay.getByText('Heading', { exact: true })).toBeVisible()
   await expect(replay.getByText('285°')).toBeVisible()
   await expect(replay.getByText('Vertical rate', { exact: true })).toBeVisible()
