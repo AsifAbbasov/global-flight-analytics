@@ -75,6 +75,23 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
     timeNavigation.getByText(/Aircraft position changes only when another persisted observation is reached/),
   ).toBeVisible()
 
+  const intervalComparison = timeNavigation.getByLabel('Observed interval comparison')
+  await expect(intervalComparison).toBeVisible()
+  await expect(
+    intervalComparison.getByText('Observed interval comparison', { exact: true }),
+  ).toBeVisible()
+  await expect(intervalComparison).toHaveAttribute(
+    'data-flight-replay-interval-evidence',
+    'observed-endpoints-only'
+  )
+  await expect(intervalComparison).toHaveAttribute(
+    'data-flight-replay-path-distance',
+    'not-claimed'
+  )
+  await expect(
+    intervalComparison.getByText(/At least two persisted observations are required/),
+  ).toBeVisible()
+
   const replay = page.getByRole('region', { name: 'Historical flight replay' })
   await expect(
     replay.getByRole('heading', { name: 'Historical flight replay' }),

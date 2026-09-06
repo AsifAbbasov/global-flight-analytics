@@ -20,6 +20,7 @@
     "lib/product/application-status.ts",
     "lib/product/runtime-resilience-model.ts",
     "lib/replay/flight-replay-model.ts",
+    "lib/replay/flight-replay-interval-model.ts",
     "lib/traffic/aircraft-explorer-model.ts",
     "lib/traffic/traffic-workspace-model.ts",
     "lib/traffic/regional-traffic-brief-model.ts",
