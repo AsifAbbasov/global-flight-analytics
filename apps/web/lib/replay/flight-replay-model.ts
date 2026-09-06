@@ -3,7 +3,7 @@ import type {
   FlightReplayPoint,
 } from '../../types/flight-replay'
 
-export const flightReplaySpeeds = [1, 2, 4] as const
+export const flightReplaySpeeds = [1, 5, 10, 30] as const
 export type FlightReplaySpeed = (typeof flightReplaySpeeds)[number]
 export const flightReplayObservationParameter = 'replay_observation'
 
@@ -17,6 +17,33 @@ export interface FlightReplayFrame {
 export interface FlightReplayAdvance {
   cursorIndex: number
   completed: boolean
+}
+
+export interface FlightReplayTimeFrame {
+  cursorSeconds: number
+  cursorObservedAt: string | null
+  cursorIndex: number
+  point: FlightReplayPoint | null
+  trailPoints: FlightReplayPoint[]
+  progress: number
+  exactObservationAtCursor: boolean
+  secondsSinceObserved: number
+  nextObservationIndex: number | null
+  totalObservedSpanSeconds: number
+}
+
+export interface FlightReplayTimeAdvance {
+  cursorSeconds: number
+  completed: boolean
+}
+
+export interface FlightReplayTimeNavigation {
+  startCursorSeconds: number
+  endCursorSeconds: number
+  previousObservationCursorSeconds: number | null
+  nextObservationCursorSeconds: number | null
+  largestGapCursorSeconds: number | null
+  largestGapSeconds: number
 }
 
 export interface FlightReplayGap {
@@ -106,6 +133,187 @@ export function buildFlightReplayFrame(
       replay.points.length === 1
         ? 1
         : currentIndex / (replay.points.length - 1),
+  }
+}
+
+export function flightReplayObservationCursorSeconds(
+  replay: FlightReplay | undefined,
+  cursorIndex: number
+): number {
+  if (!replay || replay.points.length === 0) return 0
+
+  const first = replay.points[0]
+  if (!first) return 0
+  const normalizedIndex = clampFlightReplayCursorIndex(
+    cursorIndex,
+    replay.points.length
+  )
+  const point = replay.points[normalizedIndex]
+  if (!point) return 0
+
+  return Math.max(
+    0,
+    (Date.parse(point.observed_at) - Date.parse(first.observed_at)) / 1000
+  )
+}
+
+export function buildFlightReplayTimeFrame(
+  replay: FlightReplay | undefined,
+  cursorSeconds: number
+): FlightReplayTimeFrame {
+  if (!replay || replay.points.length === 0) {
+    return {
+      cursorSeconds: 0,
+      cursorObservedAt: null,
+      cursorIndex: 0,
+      point: null,
+      trailPoints: [],
+      progress: 0,
+      exactObservationAtCursor: false,
+      secondsSinceObserved: 0,
+      nextObservationIndex: null,
+      totalObservedSpanSeconds: 0,
+    }
+  }
+
+  const first = replay.points[0]
+  const last = replay.points[replay.points.length - 1]
+  if (!first || !last) {
+    return {
+      cursorSeconds: 0,
+      cursorObservedAt: null,
+      cursorIndex: 0,
+      point: null,
+      trailPoints: [],
+      progress: 0,
+      exactObservationAtCursor: false,
+      secondsSinceObserved: 0,
+      nextObservationIndex: null,
+      totalObservedSpanSeconds: 0,
+    }
+  }
+
+  const firstObservedAtMS = Date.parse(first.observed_at)
+  const lastObservedAtMS = Date.parse(last.observed_at)
+  const totalObservedSpanSeconds = Math.max(
+    0,
+    (lastObservedAtMS - firstObservedAtMS) / 1000
+  )
+  const normalizedCursorSeconds = clampFlightReplayCursorSeconds(
+    cursorSeconds,
+    totalObservedSpanSeconds
+  )
+  const cursorTimestampMS = firstObservedAtMS + normalizedCursorSeconds * 1000
+
+  let cursorIndex = 0
+  for (let index = 1; index < replay.points.length; index++) {
+    const point = replay.points[index]
+    if (!point || Date.parse(point.observed_at) > cursorTimestampMS) break
+    cursorIndex = index
+  }
+
+  const point = replay.points[cursorIndex] ?? first
+  const pointTimestampMS = Date.parse(point.observed_at)
+  const exactObservationAtCursor = Math.abs(cursorTimestampMS - pointTimestampMS) < 0.5
+  const nextObservationIndex =
+    cursorIndex < replay.points.length - 1 ? cursorIndex + 1 : null
+
+  return {
+    cursorSeconds: normalizedCursorSeconds,
+    cursorObservedAt: new Date(cursorTimestampMS).toISOString(),
+    cursorIndex,
+    point,
+    trailPoints: replay.points.slice(0, cursorIndex + 1),
+    progress:
+      totalObservedSpanSeconds === 0
+        ? 1
+        : normalizedCursorSeconds / totalObservedSpanSeconds,
+    exactObservationAtCursor,
+    secondsSinceObserved: Math.max(
+      0,
+      (cursorTimestampMS - pointTimestampMS) / 1000
+    ),
+    nextObservationIndex,
+    totalObservedSpanSeconds,
+  }
+}
+
+export function buildFlightReplayTimeNavigation(
+  replay: FlightReplay | undefined,
+  cursorSeconds: number
+): FlightReplayTimeNavigation {
+  const frame = buildFlightReplayTimeFrame(replay, cursorSeconds)
+  if (!replay || replay.points.length === 0) {
+    return {
+      startCursorSeconds: 0,
+      endCursorSeconds: 0,
+      previousObservationCursorSeconds: null,
+      nextObservationCursorSeconds: null,
+      largestGapCursorSeconds: null,
+      largestGapSeconds: 0,
+    }
+  }
+
+  const observationCursorSeconds = replay.points.map((_, index) =>
+    flightReplayObservationCursorSeconds(replay, index)
+  )
+  const previousObservationCursorSeconds = [...observationCursorSeconds]
+    .reverse()
+    .find(value => value < frame.cursorSeconds - 0.0005) ?? null
+  const nextObservationCursorSeconds =
+    observationCursorSeconds.find(value => value > frame.cursorSeconds + 0.0005) ?? null
+  const gaps = buildFlightReplayGaps(replay)
+  const largestGap = gaps.reduce<FlightReplayGap | null>(
+    (largest, gap) =>
+      largest === null || gap.durationSeconds > largest.durationSeconds
+        ? gap
+        : largest,
+    null
+  )
+  const largestGapCursorSeconds = largestGap
+    ? flightReplayObservationCursorSeconds(replay, largestGap.fromIndex) +
+      largestGap.durationSeconds / 2
+    : null
+
+  return {
+    startCursorSeconds: 0,
+    endCursorSeconds: frame.totalObservedSpanSeconds,
+    previousObservationCursorSeconds,
+    nextObservationCursorSeconds,
+    largestGapCursorSeconds,
+    largestGapSeconds: largestGap?.durationSeconds ?? 0,
+  }
+}
+
+export function advanceFlightReplayTimeCursor(
+  cursorSeconds: number,
+  totalObservedSpanSeconds: number,
+  elapsedSeconds: number
+): FlightReplayTimeAdvance {
+  const normalizedTotal = Math.max(
+    0,
+    Number.isFinite(totalObservedSpanSeconds) ? totalObservedSpanSeconds : 0
+  )
+  const normalizedCursor = clampFlightReplayCursorSeconds(
+    cursorSeconds,
+    normalizedTotal
+  )
+  if (normalizedCursor >= normalizedTotal) {
+    return { cursorSeconds: normalizedTotal, completed: true }
+  }
+
+  const normalizedElapsed = Math.max(
+    0,
+    Number.isFinite(elapsedSeconds) ? elapsedSeconds : 0
+  )
+  const nextCursorSeconds = Math.min(
+    normalizedTotal,
+    normalizedCursor + normalizedElapsed
+  )
+
+  return {
+    cursorSeconds: nextCursorSeconds,
+    completed: nextCursorSeconds >= normalizedTotal,
   }
 }
 
@@ -317,6 +525,15 @@ export function resolveFlightReplayCursorFromSearch(
   return cursorIndex >= 0 ? cursorIndex : null
 }
 
+export function resolveFlightReplayTimeCursorFromSearch(
+  replay: FlightReplay | undefined,
+  search: string
+): number | null {
+  const cursorIndex = resolveFlightReplayCursorFromSearch(replay, search)
+  if (cursorIndex === null) return null
+  return flightReplayObservationCursorSeconds(replay, cursorIndex)
+}
+
 export function buildFlightReplayObservationShareURL(
   currentURL: string,
   pointID: string
@@ -351,6 +568,18 @@ export function advanceFlightReplayCursor(
     cursorIndex: nextIndex,
     completed: nextIndex >= normalizedPointCount - 1,
   }
+}
+
+function clampFlightReplayCursorSeconds(
+  cursorSeconds: number,
+  totalObservedSpanSeconds: number
+): number {
+  if (!Number.isFinite(cursorSeconds)) return 0
+  const normalizedTotal = Math.max(
+    0,
+    Number.isFinite(totalObservedSpanSeconds) ? totalObservedSpanSeconds : 0
+  )
+  return Math.min(Math.max(0, cursorSeconds), normalizedTotal)
 }
 
 function observedAltitudeMeters(point: FlightReplayPoint): number | null {
