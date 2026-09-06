@@ -35,6 +35,7 @@ interface ReplayMapWorkspaceProps {
   region: Region
   selectedAircraftICAO24: string | null
   trajectory: AircraftTrajectory | undefined
+  mapTrajectory: AircraftTrajectory | undefined
   projection: ProjectionResult | undefined
   onSelectAircraft: (icao24: string) => void
 }
@@ -66,7 +67,8 @@ export function MapEvidenceWorkspace({
       aircraft={aircraft}
       region={region}
       selectedAircraftICAO24={selectedAircraftICAO24}
-      trajectory={trajectoryVisible ? trajectory : undefined}
+      trajectory={trajectory}
+      mapTrajectory={trajectoryVisible ? trajectory : undefined}
       projection={projectionVisible ? projection : undefined}
       onSelectAircraft={onSelectAircraft}
     />
@@ -78,6 +80,7 @@ function ReplayMapWorkspace({
   region,
   selectedAircraftICAO24,
   trajectory,
+  mapTrajectory,
   projection,
   onSelectAircraft,
 }: ReplayMapWorkspaceProps) {
@@ -134,7 +137,7 @@ function ReplayMapWorkspace({
         aircraft={aircraft}
         region={region}
         selectedAircraftICAO24={selectedAircraftICAO24}
-        trajectory={trajectory}
+        trajectory={mapTrajectory}
         projection={projection}
         replayPoint={replayFrame.point ?? undefined}
         replayTrail={replayFrame.trailPoints}
