@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.28
+Status: Canonical Finding Registry v1.29
 
 ## Purpose
 
@@ -512,7 +512,7 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-REL-453 | Provider-level Unauthorized terminated the complete fallback chain instead of only the failed provider attempt | P1 retrospective | CLOSED | `191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md` | PR #79 head `4f4aab82e609baece3346240620b0bbf195fb7f5`; merge `f97e367667686e58429f26656f998537931236d7`; patch `557636f3818b8ecb241b2320503a32660ca05aa2` |
 | GFA-OPS-454 | Production created durable reconciliation tasks without an operated production consumer | P1 retrospective | CLOSED | `192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md` | PR #80 head `f1e79a0ae935b144870f46649926fc4066221c3e`; merge `1c98329c026e47377140f9f3eb5c2e438efd7a7b`; recovery run `32372102564` |
 | GFA-OBS-455 | Reconciliation alert could falsely resolve when telemetry aged out while a real backlog remained | P1 retrospective | CLOSED | `192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md` | PR #80 head `f1e79a0ae935b144870f46649926fc4066221c3e`; merge `1c98329c026e47377140f9f3eb5c2e438efd7a7b`; metrics run `32373146931` |
-| GFA-OPS-456 | Independent high-frequency production schedules created a free-tier-incompatible infrastructure wake pattern | P1 retrospective | IN_PROGRESS | `194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md` | PR #85 head `1a82b8eae63ff5e293830c630fed6a9102eb9480`; merge `4a95b7a0caae8e8581cf132945c2b1be3a7a3cca`; Backend CI `32478940782`; post-reset runtime evidence pending |
+| GFA-OPS-456 | Independent high-frequency production schedules created a free-tier-incompatible infrastructure wake pattern | P1 retrospective | CLOSED | `194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md` | PR #85 head `1a82b8eae63ff5e293830c630fed6a9102eb9480`; initial merge `4a95b7a0caae8e8581cf132945c2b1be3a7a3cca`; revised cadence PR #145 head `ddcff2c0776c261c09992f7a3abe5a48ce107b02`, merge `d024f2c9c1183f903a6be1b6264829496adf52b6`; controlled run `34000891812` / #3585 SUCCESS; Neon `00:17:51Z` start → `00:38:32Z` suspend |
 
 ## Stage-level closure evidence
 
@@ -585,10 +585,10 @@ Documents 184–186 = Stage 13 Frontend Analytics Integration / CI Required-Chec
 Documents 187–190 = not present in the repository; DOCUMENT_INDEX jumps from 186 to 191
 Document 191 = Production Ingestion Resilience incident enriched to canonical standard; findings `GFA-OPS-452` and `GFA-REL-453`; external Airplanes.live access-policy failure remains provider evidence, not a synthetic application finding
 Document 192 = Production Reconciliation / Alert Stability incident enriched to canonical standard; findings `GFA-OPS-454` and `GFA-OBS-455`
-Document 193 = ADSB.lol provider recovery/readiness evidence classified; compliance hardening was performed before controlled activation, no synthetic finding ID created; `PRODUCTION_PROVIDER_RECOVERY=OPEN_RUNTIME_VALIDATION`
-Document 194 = Free-Tier Production Infrastructure Budget enriched to canonical standard; `GFA-OPS-456=IN_PROGRESS` pending post-reset runtime evidence
+Document 193 = ADSB.lol provider recovery/readiness evidence classified and closed after compliant exact-revision FREE_V1 controlled runtime validation; no synthetic finding ID created; `PRODUCTION_PROVIDER_RECOVERY=CLOSED`
+Document 194 = Free-Tier Production Infrastructure Budget enriched to canonical standard; `GFA-OPS-456=CLOSED` after revised two-hour scheduled ingestion and subsequent Neon scale-to-zero
 Documents 195–196 = Frontend Product Closure / Visual Polish V2 closure evidence classified; no synthetic finding IDs created
-Canonical finding register covers 456 findings (001–456 with category prefixes); two findings (`GFA-SEC-445`, `GFA-OPS-456`) remain IN_PROGRESS
+Canonical finding register covers 456 findings (001–456 with category prefixes); one finding (`GFA-SEC-445`) remains IN_PROGRESS
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -616,7 +616,7 @@ Repository Governance and Security Automation = PARTIALLY CLOSED AND MERGED; `GF
 Core Flight Data Ingestion production historical findings = CLOSED AND MERGED; later runtime/provider recovery is owned by later documents
 Documents 174–180 = CLASSIFIED; performance/testing/contract/closure evidence only; no synthetic finding IDs
 OpenAPI Developer Experience conditional-request remediation = CLOSED AND MERGED
-Zero-Cost Production Ingestion Reliability historical scheduler finding = CLOSED AND MERGED; current later provider/free-tier recovery remains separately owned
+Zero-Cost Production Ingestion Reliability historical scheduler finding = CLOSED AND MERGED; later provider/free-tier recovery is separately owned and now CLOSED on revised FREE_V1 runtime evidence
 Documents 184–196 = RETROSPECTIVE CLASSIFICATION COMPLETE IN SOURCE; real incident owners are 452–456, feature/prevention/recovery/closure-only documents receive no synthetic IDs
 Mass retrospective documentation retrofit through the highest indexed document (196) = COMPLETE IN SOURCE; no further blanket retrofit boundary is scheduled
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
