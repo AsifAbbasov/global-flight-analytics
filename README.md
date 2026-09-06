@@ -413,7 +413,7 @@ audits, Docker configuration and repository integrity.
 - [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md) — normative remediation-history and evidence-honesty standard;
 - [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–196 are registered and reconciled.
 
-## Remaining Portfolio v1.0.0 Work
+## Portfolio v1.0.0 Release
 
 Frontend Product Closure, Frontend Visual Polish V2, ADSB.lol provider recovery and the
 FREE_V1 wake-budget remediation are closed. The final exact-production release validation is
@@ -424,15 +424,12 @@ exact `/api/v1/version` provenance and production CORS contract. Production disp
 intentionally fail-closed after the bounded FREE_V1 ingestion validation.
 
 Pixel-golden comparison is deliberately not adopted as a release requirement for the
-externally rendered live-map surface. Final release documentation is closed by the
-repository-owned release contract in this candidate; the actual `v1.0.0` publication remains
-separate until the final PR is merged and the resulting exact `main` SHA is verified.
+externally rendered live-map surface. Final release documentation is closed, and the
+production-validated portfolio release `v1.0.0` was published from exact post-merge `main`
+revision `cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70` as a full GitHub Release (not draft and
+not prerelease):
 
-Remaining sequence:
-
-1. merge this final release-candidate documentation after required CI/review;
-2. verify the resulting exact `main` revision and post-merge CI;
-3. publish `v1.0.0` from that exact revision.
+`https://github.com/AsifAbbasov/global-flight-analytics/releases/tag/v1.0.0`
 
 ```text
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
@@ -453,7 +450,9 @@ PRODUCTION_PROVIDER_RECOVERY=CLOSED
 FREE_TIER_INFRASTRUCTURE_RECOVERY=CLOSED
 FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED
 FINAL_RELEASE_DOCUMENTATION=CLOSED
-V1_RELEASE=OPEN
+V1_RELEASE_TAG=v1.0.0
+V1_RELEASE_SHA=cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70
+V1_RELEASE=CLOSED
 ```
 
 ## Evidence Boundaries
