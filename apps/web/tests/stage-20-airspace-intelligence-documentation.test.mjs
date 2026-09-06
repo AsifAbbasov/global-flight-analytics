@@ -35,7 +35,10 @@ test('Stage 20 document protects product purpose and evidence boundaries', () =>
 
 test('Stage 20 document records validation and zero-budget scope honestly', () => {
   assert.match(document, /Continuous Integration and browser validation[\s\S]*remain pending/)
-  assert.match(document, /final exact head/)
+  assert.match(
+    document,
+    /final(?:\s+documentation-complete)?\s+exact[-\s]+head/i
+  )
   assert.match(document, /New paid provider\s+= NO/)
   assert.match(document, /New PostgreSQL table\s+= NO/)
   assert.match(document, /New external aviation call\s+= NO/)
