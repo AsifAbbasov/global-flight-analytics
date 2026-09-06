@@ -2,8 +2,10 @@
 
 import { getRequestErrorMessage } from '@/lib/api/client'
 import {
+  buildFlightReplayAnalyticsSummary,
   buildFlightReplayGapSummary,
   flightReplaySpeeds,
+  type FlightReplayAnalyticsSummary,
   type FlightReplayGapSummary,
   type FlightReplaySpeed,
 } from '@/lib/replay/flight-replay-model'
@@ -51,6 +53,7 @@ export function FlightReplayControl({
     : null
   const altitude = currentPoint ? formatObservedAltitude(currentPoint) : null
   const gapSummary = buildFlightReplayGapSummary(replay, cursorIndex)
+  const analyticsSummary = buildFlightReplayAnalyticsSummary(replay)
 
   return (
     <section
@@ -162,6 +165,8 @@ export function FlightReplayControl({
               }}
             />
           ) : null}
+
+          <ReplayAnalyticsSummary summary={analyticsSummary} />
 
           <div className='grid gap-2 text-xs sm:grid-cols-3 xl:grid-cols-5'>
             <ReplayDatum label='Observed at' value={observedAt ?? 'Unavailable'} />
@@ -289,6 +294,71 @@ function ReplayEvidenceTimeline({
   )
 }
 
+function ReplayAnalyticsSummary({
+  summary,
+}: {
+  summary: FlightReplayAnalyticsSummary
+}) {
+  return (
+    <div
+      className='rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2.5'
+      aria-label='Observed replay analytics'
+      data-flight-replay-analytics='observed-samples-only'
+    >
+      <div className='flex flex-wrap items-start justify-between gap-2'>
+        <div>
+          <p className='text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500'>
+            Observed replay analytics
+          </p>
+          <p className='mt-1 text-[11px] leading-relaxed text-slate-500'>
+            Aggregates use persisted samples only. No values are inferred between observations.
+          </p>
+        </div>
+        <span className='rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-200'>
+          Evidence-derived
+        </span>
+      </div>
+
+      <div className='mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5'>
+        <ReplayDatum label='Samples' value={String(summary.sampleCount)} />
+        <ReplayDatum label='Observed span' value={formatDuration(summary.observedSpanSeconds)} />
+        <ReplayDatum
+          label='Median sample gap'
+          value={summary.medianGapSeconds === null ? 'Unavailable' : formatDuration(summary.medianGapSeconds)}
+        />
+        <ReplayDatum
+          label='Largest sample gap'
+          value={summary.sampleCount <= 1 ? 'Unavailable' : formatDuration(summary.largestGapSeconds)}
+        />
+        <ReplayDatum
+          label='Altitude coverage'
+          value={`${summary.altitudeCoveragePercent}%`}
+        />
+        <ReplayDatum
+          label='Observed altitude range'
+          value={formatAltitudeRange(summary.minObservedAltitudeM, summary.maxObservedAltitudeM)}
+        />
+        <ReplayDatum
+          label='Peak observed velocity'
+          value={summary.peakVelocityMPS === null ? 'Unavailable' : formatVelocity(summary.peakVelocityMPS)}
+        />
+        <ReplayDatum
+          label='Max observed climb'
+          value={summary.maxClimbRateMPS === null ? 'None observed' : formatVerticalRate(summary.maxClimbRateMPS)}
+        />
+        <ReplayDatum
+          label='Steepest observed descent'
+          value={summary.steepestDescentRateMPS === null ? 'None observed' : formatVerticalRate(summary.steepestDescentRateMPS)}
+        />
+        <ReplayDatum
+          label='Airborne / ground samples'
+          value={`${summary.airborneSampleCount} / ${summary.onGroundSampleCount}`}
+        />
+      </div>
+    </div>
+  )
+}
+
 function ReplaySampleButton({
   sampleIndex,
   observedAt,
@@ -367,6 +437,11 @@ function formatHeading(value: number): string {
 function formatVerticalRate(value: number): string {
   const sign = value > 0 ? '+' : ''
   return `${sign}${value.toFixed(1)} m/s`
+}
+
+function formatAltitudeRange(minimum: number | null, maximum: number | null): string {
+  if (minimum === null || maximum === null) return 'Unavailable'
+  return `${Math.round(minimum).toLocaleString()}–${Math.round(maximum).toLocaleString()} m`
 }
 
 function formatDuration(value: number): string {
