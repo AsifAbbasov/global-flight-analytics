@@ -20,10 +20,12 @@ test('Stage 19 documentation records product purpose, evidence boundary and arch
     '## Percentage semantics',
     '## Transition semantics',
     '## Regression protection',
+    '## Real first Continuous Integration rejection and remediation',
+    '## Successful remediation validation',
+    '## Why final exact-head validation is still pending',
     '## Expected result',
     '## Infrastructure and monetary impact',
     '## Residual limitations',
-    '## Continuous Integration evidence',
     '## Future guard',
   ]) {
     assert.match(document, new RegExp(heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
@@ -60,19 +62,55 @@ test('Stage 19 documentation protects missing provenance and zero-budget behavio
   }
 })
 
-test('Stage 19 documentation keeps future CI facts pending before validation exists', () => {
-  for (const marker of [
-    'STAGE_19_PRE_MERGE_CI=PENDING',
-    'STAGE_19_POST_MERGE_CI=PENDING',
-    'Frontend CI       PENDING',
-    'Backend CI        PENDING',
-    'CodeQL            PENDING',
-    'API Load Baseline PENDING',
-    'Playwright E2E    PENDING',
-    'Vercel            PENDING',
+test('Stage 19 documentation preserves the real first CI rejection and remediation', () => {
+  for (const evidence of [
+    'STAGE_19_FIRST_VALIDATION_HEAD=88981e7036b3313d9aefad48983ac0bfd814902f',
+    'STAGE_19_FIRST_FRONTEND_CI=FAIL',
+    'STAGE_19_REMEDIATION_HEAD=282fa45ca6dba35cc7e1dc17bb811cafce917b7e',
+    'Frontend CI #437',
+    '34050031425',
+    'Tests        190 total',
+    'Pass         189',
+    'Fail         1',
   ]) {
-    assert.match(document, new RegExp(marker))
+    assert.match(document, new RegExp(evidence))
   }
 
-  assert.match(document, /must not be fabricated/i)
+  assert.match(document, /formatting-sensitive source-contract defect/i)
+  assert.match(document, /product component was not changed for the test/i)
+  assert.match(document, /the\\s\+exact provider switch time between those observations is unknown/)
+  assert.match(document, /Backend CI #775 \/ 34050031452\s+CANCELLED/)
+  assert.match(document, /CodeQL #417 \/ 34050031494\s+CANCELLED/)
+  assert.match(document, /API Load Baseline #303 \/ 34050031472 CANCELLED/)
+  assert.match(document, /Playwright E2E #214 \/ 34050031497\s+CANCELLED/)
+})
+
+test('Stage 19 documentation records the successful remediation validation matrix', () => {
+  for (const evidence of [
+    'STAGE_19_REMEDIATION_VALIDATION=PASS',
+    'Frontend CI #438',
+    '34050082969',
+    'Backend CI #776',
+    '34050082973',
+    'CodeQL #418',
+    '34050082945',
+    'API Load Baseline #304',
+    '34050083049',
+    'Playwright E2E #215',
+    '34050083066',
+    'Vercel',
+    'SUCCESS',
+  ]) {
+    assert.match(document, new RegExp(evidence))
+  }
+
+  assert.match(document, /No second product, architecture or evidence defect was discovered/i)
+})
+
+test('Stage 19 documentation requires independent final exact-head verification', () => {
+  assert.match(document, /STAGE_19_FINAL_EXACT_HEAD_CI=PENDING/)
+  assert.match(document, /STAGE_19_POST_MERGE_CI=PENDING/)
+  assert.match(document, /A commit cannot truthfully contain the future Continuous Integration run identifiers for itself/i)
+  assert.match(document, /new independent exact-head Frontend, Backend, CodeQL, API Load, Playwright and Vercel cycle/i)
+  assert.match(document, /Final run identifiers belong in pull-request metadata/i)
 })
