@@ -97,6 +97,43 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
   const altitudeEvidence = evidenceQuality.getByText('Altitude evidence', { exact: true }).locator('..')
   await expect(altitudeEvidence.getByText('100%', { exact: true })).toBeVisible()
 
+  const evidenceProvenance = timeNavigation.getByLabel('Replay evidence provenance profile')
+  await expect(evidenceProvenance).toBeVisible()
+  await expect(evidenceProvenance).toHaveAttribute(
+    'data-flight-replay-provenance',
+    'persisted-source-labels-only'
+  )
+  await expect(evidenceProvenance).toHaveAttribute(
+    'data-flight-replay-provider-ranking',
+    'none'
+  )
+  await expect(evidenceProvenance).toHaveAttribute(
+    'data-flight-replay-provider-accuracy-claim',
+    'none'
+  )
+  await expect(
+    evidenceProvenance.getByText('Replay evidence provenance', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    evidenceProvenance.getByText('Observed provenance', { exact: true }),
+  ).toBeVisible()
+  const identifiedSources = evidenceProvenance
+    .getByText('Identified sources', { exact: true })
+    .locator('..')
+  await expect(identifiedSources.getByText('1', { exact: true })).toBeVisible()
+  const unattributedSamples = evidenceProvenance
+    .getByText('Unattributed samples', { exact: true })
+    .locator('..')
+  await expect(unattributedSamples.getByText('0', { exact: true })).toBeVisible()
+  const sourceTransitions = evidenceProvenance
+    .getByText('Observed source transitions', { exact: true })
+    .locator('..')
+  await expect(sourceTransitions.getByText('0', { exact: true })).toBeVisible()
+  await expect(evidenceProvenance.getByText('playwright-fixture', { exact: true })).toBeVisible()
+  await expect(
+    evidenceProvenance.getByText(/Percentages are shares of persisted samples, not shares of elapsed time/),
+  ).toBeVisible()
+
   const intervalComparison = timeNavigation.getByLabel('Observed interval comparison')
   await expect(intervalComparison).toBeVisible()
   await expect(
