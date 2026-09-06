@@ -32,7 +32,7 @@ test('README presents the implemented product instead of an obsolete first slice
   assert.doesNotMatch(portfolio, /## First Coding Slice/)
 })
 
-test('README records current engineering closure and remaining v1 boundary', async () => {
+test('README records current engineering closure and published v1 release truth', async () => {
   const readme = await text('README.md')
   const index = await text('docs/DOCUMENT_INDEX.md')
 
@@ -57,13 +57,16 @@ test('README records current engineering closure and remaining v1 boundary', asy
   assert.match(readme, /DOCUMENT_INDEX_194_196=CLOSED/)
   assert.match(readme, /FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED/)
   assert.match(readme, /FINAL_RELEASE_DOCUMENTATION=CLOSED/)
-  assert.match(readme, /V1_RELEASE=OPEN/)
+  assert.match(readme, /V1_RELEASE=CLOSED/)
+  assert.match(readme, /V1_RELEASE_TAG=v1\.0\.0/)
+  assert.match(readme, /V1_RELEASE_SHA=cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70/)
+  assert.match(readme, /releases\/tag\/v1\.0\.0/)
   assert.match(readme, /Pixel-golden comparison is deliberately not/)
   assert.match(readme, /final exact-production/i)
   assert.match(readme, /34016471540/)
   assert.match(readme, /366a406bc33c7deb839d4c1a56feb82901402e75/)
   assert.match(readme, /`v1\.0\.0`/)
-  assert.doesNotMatch(readme, /GLOBAL_FLIGHT_ANALYTICS_V1=COMPLETE/)
+  assert.doesNotMatch(readme, /V1_RELEASE=OPEN/)
 
   assert.match(index, /## Document 194 — Free-Tier Production Infrastructure Budget/)
   assert.match(index, /## Document 195 — Frontend Product Closure/)
@@ -130,7 +133,7 @@ test('deployment runbook separates direct migration and pooled runtime database 
   assert.doesNotMatch(runbook, /postgres(ql)?:\/\/[^\s]+:[^\s]+@[^\s]+\.neon\.tech/i)
 })
 
-test('closure document distinguishes historical evidence from final release-candidate validation', async () => {
+test('closure document distinguishes historical evidence from published v1 release truth', async () => {
   const closure = await text('docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md')
   assert.match(closure, /Source implementation/i)
   assert.match(closure, /Exact-commit Continuous Integration/i)
@@ -142,11 +145,15 @@ test('closure document distinguishes historical evidence from final release-cand
   assert.match(closure, /03ac45dc2a515c77af8d992aa6489816f1cbe927/)
   assert.match(closure, /FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED/)
   assert.match(closure, /FINAL_RELEASE_DOCUMENTATION=CLOSED/)
-  assert.match(closure, /V1_RELEASE=OPEN/)
+  assert.match(closure, /V1_RELEASE=CLOSED/)
+  assert.match(closure, /V1_RELEASE_TAG=v1\.0\.0/)
+  assert.match(closure, /V1_RELEASE_SHA=cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70/)
+  assert.match(closure, /releases\/tag\/v1\.0\.0/)
   assert.match(closure, /dep-daegc2ss728c7380js90/)
   assert.match(closure, /34016471540/)
   assert.match(closure, /101441002735/)
   assert.match(closure, /366a406bc33c7deb839d4c1a56feb82901402e75/)
+  assert.doesNotMatch(closure, /V1_RELEASE=OPEN/)
 })
 
 test('recruiter guide has a bounded product and code walkthrough', async () => {

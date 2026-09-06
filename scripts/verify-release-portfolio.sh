@@ -90,8 +90,14 @@ require_literal README.md 'FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED' \
   'README final exact-production validation closure is missing'
 require_literal README.md 'FINAL_RELEASE_DOCUMENTATION=CLOSED' \
   'README final release documentation closure is missing'
-require_literal README.md 'V1_RELEASE=OPEN' \
-  'README v1 release boundary is missing'
+require_literal README.md 'V1_RELEASE=CLOSED' \
+  'README v1 release publication closure is missing'
+require_literal README.md 'V1_RELEASE_TAG=v1.0.0' \
+  'README v1 release tag evidence is missing'
+require_literal README.md 'V1_RELEASE_SHA=cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70' \
+  'README v1 release SHA evidence is missing'
+require_literal README.md 'https://github.com/AsifAbbasov/global-flight-analytics/releases/tag/v1.0.0' \
+  'README v1 release URL is missing'
 require_literal README.md '34016471540' \
   'README final Production Smoke run evidence is missing'
 require_literal README.md '366a406bc33c7deb839d4c1a56feb82901402e75' \
@@ -118,6 +124,10 @@ printf '%s\n' "$readme_portfolio_section" | grep -F 'public deployment phase is 
   fail 'README still claims that public frontend deployment is deferred'
 printf '%s\n' "$readme_portfolio_section" | grep -F 'The public production application is deployed from revision' >/dev/null && \
   fail 'README presents historical deployment evidence as a perpetually current revision'
+printf '%s\n' "$readme_portfolio_section" | grep -F 'V1_RELEASE=OPEN' >/dev/null && \
+  fail 'README still presents the published v1 release as open'
+printf '%s\n' "$readme_portfolio_section" | grep -F 'actual `v1.0.0` publication remains' >/dev/null && \
+  fail 'README still presents v1 publication as pending'
 
 require_literal package.json '"verify:release": "bash scripts/verify-release.sh"' \
   'root verify:release script is missing'
@@ -242,8 +252,14 @@ require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'FINAL_EXACT_PRODUCTIO
   'release closure does not record final exact-production validation'
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'FINAL_RELEASE_DOCUMENTATION=CLOSED' \
   'release closure does not record final release documentation closure'
-require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'V1_RELEASE=OPEN' \
-  'release closure prematurely claims v1 publication'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'V1_RELEASE=CLOSED' \
+  'release closure does not record published v1 closure'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'V1_RELEASE_TAG=v1.0.0' \
+  'release closure does not record the published v1 tag'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'V1_RELEASE_SHA=cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70' \
+  'release closure does not record the published v1 SHA'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'https://github.com/AsifAbbasov/global-flight-analytics/releases/tag/v1.0.0' \
+  'release closure does not record the published v1 URL'
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'dep-daegc2ss728c7380js90' \
   'release closure does not record the exact Render deployment'
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md '34016471540' \
