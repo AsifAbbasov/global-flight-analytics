@@ -75,6 +75,28 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
     timeNavigation.getByText(/Aircraft position changes only when another persisted observation is reached/),
   ).toBeVisible()
 
+  const evidenceQuality = timeNavigation.getByLabel('Replay evidence quality profile')
+  await expect(evidenceQuality).toBeVisible()
+  await expect(evidenceQuality).toHaveAttribute(
+    'data-flight-replay-evidence-quality',
+    'descriptive-only'
+  )
+  await expect(evidenceQuality).toHaveAttribute(
+    'data-flight-replay-evidence-score',
+    'none'
+  )
+  await expect(
+    evidenceQuality.getByText('Replay evidence quality', { exact: true }),
+  ).toBeVisible()
+  await expect(evidenceQuality.getByText('No synthetic score', { exact: true })).toBeVisible()
+  await expect(
+    evidenceQuality.getByText(/Only one persisted observation is available/),
+  ).toBeVisible()
+  const samplingIntervals = evidenceQuality.getByText('Sampling intervals', { exact: true }).locator('..')
+  await expect(samplingIntervals.getByText('0', { exact: true })).toBeVisible()
+  const altitudeEvidence = evidenceQuality.getByText('Altitude evidence', { exact: true }).locator('..')
+  await expect(altitudeEvidence.getByText('100%', { exact: true })).toBeVisible()
+
   const intervalComparison = timeNavigation.getByLabel('Observed interval comparison')
   await expect(intervalComparison).toBeVisible()
   await expect(

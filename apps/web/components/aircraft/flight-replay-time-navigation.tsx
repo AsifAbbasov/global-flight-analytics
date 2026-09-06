@@ -1,5 +1,6 @@
 'use client'
 
+import { FlightReplayEvidenceQuality } from '@/components/aircraft/flight-replay-evidence-quality'
 import { FlightReplayIntervalComparison } from '@/components/aircraft/flight-replay-interval-comparison'
 import {
   buildFlightReplayTimeNavigation,
@@ -149,6 +150,7 @@ export function FlightReplayTimeNavigation({
         {isPlaying ? ' Playback is currently advancing elapsed time.' : ''}
       </p>
 
+      <FlightReplayEvidenceQuality replay={replay} />
       <FlightReplayIntervalComparison replay={replay} />
     </section>
   )
