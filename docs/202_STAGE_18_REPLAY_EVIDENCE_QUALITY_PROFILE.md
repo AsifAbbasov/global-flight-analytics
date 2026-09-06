@@ -1,11 +1,14 @@
 # Stage 18 Replay Evidence Quality Profile
 
-Status: implementation candidate pending validation
+Status: remediation validation pending
 
 ```text
 STAGE_18_REPLAY_EVIDENCE_QUALITY=IN_PROGRESS
 STAGE_18_BASE_MAIN=cfd005f3e6259736f589c9b209820cc53c38c3cd
 STAGE_18_IMPLEMENTATION_HEAD=8048e37747802ac65e3ceae6142331256d6b70aa
+STAGE_18_FIRST_VALIDATION_HEAD=cb93a00d46f874e0cd0cf48fe00f855948e65e7a
+STAGE_18_FIRST_FRONTEND_CI=FAIL
+STAGE_18_REMEDIATION_HEAD=f814848601d5d78c736b5c7cd73e1e5735bf5dea
 STAGE_18_EVIDENCE_PROFILE=DESCRIPTIVE_ONLY
 STAGE_18_SYNTHETIC_QUALITY_SCORE=NONE
 STAGE_18_POSITION_INTERPOLATION=NONE
@@ -314,15 +317,104 @@ The initial Stage 18 implementation was created from exact base main:
 cfd005f3e6259736f589c9b209820cc53c38c3cd
 ```
 
-Implementation head before this documentation commit:
+Implementation head before documentation:
 
 ```text
 8048e37747802ac65e3ceae6142331256d6b70aa
 ```
 
-No CI/review outcome is claimed yet. The first full validation cycle must determine whether remediation is required.
+Initial PR validation head:
 
-If review or CI rejects any part of the implementation, this document must record the actual failure, root cause, rejected fixes and final remediation. A fictional review history must not be invented.
+```text
+cb93a00d46f874e0cd0cf48fe00f855948e65e7a
+```
+
+## First CI rejection and real remediation history
+
+The first full validation cycle produced a real Frontend CI failure. This is preserved instead of being rewritten as though the first implementation had passed.
+
+```text
+Frontend CI #428
+run=34045471852
+head=cb93a00d46f874e0cd0cf48fe00f855948e65e7a
+ESLint=PASS
+TypeScript=PASS
+Frontend contract tests=FAIL
+Production build=SKIPPED
+Tests=173
+Pass=172
+Fail=1
+```
+
+The failing test was:
+
+```text
+Stage 18 UI is descriptive only and exposes no synthetic quality grade
+```
+
+### Root cause of the rejection
+
+The product UI already contained the required semantic disclosure:
+
+```text
+These values describe the persisted sample set only. They are not calibrated aviation
+quality grades and must not be interpreted as ATC-, navigation- or safety-grade coverage.
+```
+
+The source-contract test incorrectly searched for the formatting-sensitive literal sequence:
+
+```text
+not calibrated aviation quality grades
+```
+
+Because JSX wrapped the sentence across a newline between `aviation` and `quality`, the contract failed even though the rendered semantic wording was present. The failure was therefore a test-contract defect, not an evidence-model or product-UI defect.
+
+### Failure scenario
+
+A source contract tied to one physical line layout can fail after harmless formatting, Prettier output or JSX wrapping even when the required user-visible evidence disclosure is unchanged.
+
+This creates false-negative CI and encourages developers to change production markup merely to satisfy test formatting.
+
+### Bad fixes rejected
+
+The following responses were rejected:
+
+1. rewriting the production UI sentence onto one source line only to satisfy the regex;
+2. deleting the wording assertion;
+3. weakening the contract to check only for a generic word such as `quality`;
+4. disabling or bypassing the failed test.
+
+All four would either couple production formatting to test mechanics or weaken the evidence guarantee.
+
+### Chosen remediation
+
+The source contract was changed to preserve the semantic phrase while allowing ordinary source whitespace:
+
+```text
+/not calibrated aviation\s+quality grades/
+```
+
+The production model, UI wording, metrics and evidence semantics were not changed.
+
+Remediation code head:
+
+```text
+f814848601d5d78c736b5c7cd73e1e5735bf5dea
+```
+
+### Why this remediation was selected
+
+The requirement is semantic continuity of the disclosure, not a particular JSX line break. A whitespace-tolerant expression keeps the meaningful phrase mandatory while making the contract robust to source formatting.
+
+### Second attack scenario
+
+A future formatter may replace one newline with several spaces or vice versa. The new contract continues to require the full ordered phrase and therefore survives formatting changes without allowing the disclosure to disappear.
+
+### Regression protection after remediation
+
+The Stage 18 source-contract test still requires all evidence markers, metric labels and the full `not calibrated aviation ... quality grades` phrase. Only whitespace representation became flexible.
+
+No fictional product-review rejection is recorded. The only rejection at this point is the real Frontend CI #428 source-contract failure above.
 
 ## Zero-budget impact
 
@@ -386,4 +478,4 @@ VERCEL=PASS
 DOCUMENTATION=COMPLETE
 ```
 
-The exact CI/review evidence will be appended after the first validation cycle rather than guessed in advance.
+The first cycle did not satisfy these requirements because Frontend contract tests failed. A new complete validation cycle is required after remediation. Exact successful evidence must be appended only after it exists.
