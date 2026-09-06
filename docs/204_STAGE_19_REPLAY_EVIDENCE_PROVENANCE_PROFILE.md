@@ -1,6 +1,6 @@
 # Stage 19 Replay Evidence Provenance Profile
 
-Status: implementation in progress; pre-merge validation pending
+Status: remediation validation passed; final exact-head verification pending
 
 ```text
 STAGE_19_REPLAY_EVIDENCE_PROVENANCE=IN_PROGRESS
@@ -11,7 +11,11 @@ STAGE_19_PROVIDER_ACCURACY_SCORE=NONE
 STAGE_19_PROVIDER_SWITCH_TIME_INFERENCE=NONE
 STAGE_19_NEW_BACKEND_DATA=NONE
 STAGE_19_ADDITIONAL_COST=0_RUB
-STAGE_19_PRE_MERGE_CI=PENDING
+STAGE_19_FIRST_VALIDATION_HEAD=88981e7036b3313d9aefad48983ac0bfd814902f
+STAGE_19_FIRST_FRONTEND_CI=FAIL
+STAGE_19_REMEDIATION_HEAD=282fa45ca6dba35cc7e1dc17bb811cafce917b7e
+STAGE_19_REMEDIATION_VALIDATION=PASS
+STAGE_19_FINAL_EXACT_HEAD_CI=PENDING
 STAGE_19_POST_MERGE_CI=PENDING
 ```
 
@@ -201,7 +205,7 @@ Unattributed observations:
 - do not create a named source summary;
 - do not create a direct transition through unknown provenance.
 
-This prevents the UI from inventing a provider name or silently deleting unknown provenance from the evidence denominator.
+This prevents the user interface from inventing a provider name or silently deleting unknown provenance from the evidence denominator.
 
 ## Percentage semantics
 
@@ -248,7 +252,7 @@ Stage 19 adds:
 - `apps/web/tests/stage-19-replay-evidence-provenance-contract.test.mjs` protecting source-only, no-ranking and no-second-data-path semantics;
 - explicit inclusion of the production provenance model in `apps/web/tsconfig.test.json`;
 - browser coverage in the existing aircraft-intelligence Playwright journey;
-- a documentation contract protecting product purpose, evidence boundaries, zero-budget scope and residual limitations.
+- `apps/web/tests/stage-19-replay-evidence-provenance-documentation.test.mjs` protecting product purpose, evidence boundaries, zero-budget scope and truthful validation history.
 
 Critical regression guards include:
 
@@ -260,6 +264,119 @@ ELAPSED_TIME_SHARE_FROM_SAMPLE_SHARE=FORBIDDEN
 EXACT_SWITCH_TIME_INFERENCE=FORBIDDEN
 UNKNOWN_SOURCE_BRIDGING=FORBIDDEN
 ```
+
+## Real first Continuous Integration rejection and remediation
+
+The first pull-request validation head was:
+
+```text
+88981e7036b3313d9aefad48983ac0bfd814902f
+```
+
+Frontend CI #437, run `34050031425`, completed with failure. The earlier steps were healthy:
+
+```text
+ESLint       PASS
+TypeScript   PASS
+Tests        190 total
+Pass         189
+Fail         1
+```
+
+The failed test was:
+
+```text
+Stage 19 UI preserves descriptive provenance semantics
+```
+
+The product copy was semantically correct. The contract test required this literal source sequence:
+
+```text
+the exact provider switch time between those observations is unknown
+```
+
+but JSX formatting stored it across a harmless source newline:
+
+```text
+the
+exact provider switch time between those observations is unknown
+```
+
+The failure was therefore a formatting-sensitive source-contract defect, not a provenance-model defect, provider-evidence defect or user-interface semantics defect.
+
+Rejected remediations:
+
+- rewrite the production copy solely to satisfy a regular expression;
+- remove the assertion;
+- weaken the assertion to a generic word such as `switch`;
+- disable the contract test;
+- replace the semantic guarantee with a snapshot that would hide why the wording matters.
+
+Chosen remediation:
+
+```text
+/the\s+exact provider switch time between those observations is unknown/
+```
+
+This preserves the complete semantic guarantee while allowing harmless JSX whitespace. The product component was not changed for the test.
+
+The remediation commit/head was:
+
+```text
+282fa45ca6dba35cc7e1dc17bb811cafce917b7e
+```
+
+Because that new push superseded the first head, the other first-cycle workflows were cancelled rather than misrepresented as successful or failed product validation:
+
+```text
+Backend CI #775 / 34050031452        CANCELLED
+CodeQL #417 / 34050031494            CANCELLED
+API Load Baseline #303 / 34050031472 CANCELLED
+Playwright E2E #214 / 34050031497    CANCELLED
+```
+
+## Successful remediation validation
+
+The remediation head `282fa45ca6dba35cc7e1dc17bb811cafce917b7e` passed the complete independent pull-request matrix:
+
+```text
+Frontend CI #438
+run 34050082969
+SUCCESS
+
+Backend CI #776
+run 34050082973
+SUCCESS
+
+CodeQL #418
+run 34050082945
+SUCCESS
+
+API Load Baseline #304
+run 34050083049
+SUCCESS
+
+Playwright E2E #215
+run 34050083066
+SUCCESS
+
+Vercel
+SUCCESS
+```
+
+Frontend CI #438 includes successful dependency/security checks, ESLint, TypeScript validation, the real compiled Stage 19 model and contract tests, and production frontend build.
+
+Backend CI #776 includes Go tests and vet, architecture and review audits, PostgreSQL 16 integration, race-safety verification and container verification. Stage 19 changes no Go or PostgreSQL behavior, but the full backend matrix remains an independent regression gate.
+
+Playwright E2E #215 executes the existing Chromium aircraft-intelligence journey and verifies the Stage 19 single-source provenance state in the real browser surface.
+
+No second product, architecture or evidence defect was discovered in the remediation validation cycle.
+
+## Why final exact-head validation is still pending
+
+Recording the real validation history in this document changes the branch head. A commit cannot truthfully contain the future Continuous Integration run identifiers for itself before those runs exist.
+
+Therefore the remediation matrix above is evidence for `282fa45c...`, while the documentation-enriched merge candidate must receive a new independent exact-head Frontend, Backend, CodeQL, API Load, Playwright and Vercel cycle. Final run identifiers belong in pull-request metadata after that exact head has actually been validated, so recording them does not mutate the commit being approved.
 
 ## Expected result
 
@@ -304,23 +421,6 @@ Stage 19 intentionally does not solve or claim:
 
 A source label says where the persisted observation is attributed. It does not certify that observation as more accurate than another provider's observation.
 
-## Continuous Integration evidence
-
-Pre-merge Continuous Integration evidence does not exist yet and must not be fabricated.
-
-Current status:
-
-```text
-Frontend CI       PENDING
-Backend CI        PENDING
-CodeQL            PENDING
-API Load Baseline PENDING
-Playwright E2E    PENDING
-Vercel            PENDING
-```
-
-Real failures, root causes, rejected fixes, remediation commits and successful reruns must be appended here only after they actually occur.
-
 ## Future guard
 
 Any future replay provenance feature must declare before implementation:
@@ -341,9 +441,11 @@ Provider provenance must never be silently converted into provider quality, accu
 ## Current stage status
 
 ```text
-STAGE_19_PRODUCT_IMPLEMENTATION=IN_PROGRESS
-STAGE_19_DOCUMENTATION=PREMERGE_DRAFT
-STAGE_19_PRE_MERGE_CI=PENDING
+STAGE_19_PRODUCT_IMPLEMENTATION=IMPLEMENTED_PREMERGE
+STAGE_19_DOCUMENTATION=REMEDIATION_VALIDATION_RECORDED
+STAGE_19_FIRST_FRONTEND_CI=FAIL_REMEDIATED
+STAGE_19_REMEDIATION_VALIDATION=PASS
+STAGE_19_FINAL_EXACT_HEAD_CI=PENDING
 STAGE_19_POST_MERGE_CI=PENDING
 STAGE_19_REPLAY_EVIDENCE_PROVENANCE=IN_PROGRESS
 ```
