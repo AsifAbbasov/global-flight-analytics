@@ -26,7 +26,7 @@ test('README records exact CI closure verified public deployment and the current
   assert.match(source, /STRUCTURAL_VISUAL_REGRESSION=CLOSED/)
   assert.match(source, /RETAINED_SCREENSHOT_EVIDENCE=CLOSED/)
   assert.match(source, /PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING/)
-  assert.match(source, /FINAL_EXACT_PRODUCTION_VALIDATION=OPEN/)
+  assert.match(source, /FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED/)
 })
 
 test('root package publishes backend operations commands', () => {

@@ -86,10 +86,16 @@ require_literal README.md 'PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKIN
   'README pixel-golden decision boundary is missing'
 require_literal README.md 'DOCUMENT_INDEX_194_196=CLOSED' \
   'README document index reconciliation closure marker is missing'
-require_literal README.md 'FINAL_EXACT_PRODUCTION_VALIDATION=OPEN' \
-  'README final exact-production validation boundary is missing'
+require_literal README.md 'FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED' \
+  'README final exact-production validation closure is missing'
+require_literal README.md 'FINAL_RELEASE_DOCUMENTATION=CLOSED' \
+  'README final release documentation closure is missing'
 require_literal README.md 'V1_RELEASE=OPEN' \
   'README v1 release boundary is missing'
+require_literal README.md '34016471540' \
+  'README final Production Smoke run evidence is missing'
+require_literal README.md '366a406bc33c7deb839d4c1a56feb82901402e75' \
+  'README final deployed revision evidence is missing'
 
 require_literal README.md '<!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1 -->' \
   'README production observability marker is missing'
@@ -232,6 +238,20 @@ require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'PUBLIC_NEXTJS_DEPLOYM
   'release closure does not record verified public Next.js deployment'
 require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'FULL_BROWSER_PRODUCTION_SMOKE=CLOSED' \
   'release closure does not record verified browser production smoke'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED' \
+  'release closure does not record final exact-production validation'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'FINAL_RELEASE_DOCUMENTATION=CLOSED' \
+  'release closure does not record final release documentation closure'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'V1_RELEASE=OPEN' \
+  'release closure prematurely claims v1 publication'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md 'dep-daegc2ss728c7380js90' \
+  'release closure does not record the exact Render deployment'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md '34016471540' \
+  'release closure does not record the final Production Smoke run'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md '101441002735' \
+  'release closure does not record the final Production Smoke job'
+require_literal docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md '366a406bc33c7deb839d4c1a56feb82901402e75' \
+  'release closure does not record the final deployed revision'
 require_literal docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md 'PRODUCTION_RELEASE_SMOKE=PASS' \
   'deployment runbook does not record the verified full production smoke'
 require_literal docs/169_RELEASE_TRUTH_AND_DEPLOYMENT_REVISION_CLOSURE.md 'RELEASE_TRUTH_CONTRACT=PASS' \

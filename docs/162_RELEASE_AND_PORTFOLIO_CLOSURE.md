@@ -2,7 +2,7 @@
 
 <!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
 
-Status: Public production deployment verified; frontend visual redesign remains a separate product phase
+Status: FINAL RELEASE DOCUMENTATION CLOSED; `v1.0.0` publication pending
 Original source release SHA: `49e474e929dcca5b687464f0a47ce73fcd5a52a7`
 Historically verified production application SHA (2026-08-02): `6bca02a8ed1487195b165ae9ced3ca687a373666`
 Production migration evidence SHA: `31deab02507adc49bd296761d1551834e214b768`
@@ -10,6 +10,11 @@ Backend Continuous Integration: run `30715613342`, completed successfully
 Frontend Continuous Integration: run `30715613361`, completed successfully
 Original release-closure baseline: `03ac45dc2a515c77af8d992aa6489816f1cbe927`
 Production verification date: 2026-08-02
+Final exact-production validation date: 2026-09-06
+Final validated production revision: `366a406bc33c7deb839d4c1a56feb82901402e75`
+Render deployment: `dep-daegc2ss728c7380js90` — live
+Production Smoke run: `34016471540`
+Production Smoke job: `101441002735`
 
 ## Purpose
 
@@ -30,7 +35,15 @@ PUBLIC_NEXTJS_DEPLOYMENT=CLOSED
 PRODUCTION_CORS=CLOSED
 FULL_BROWSER_PRODUCTION_SMOKE=CLOSED
 FRONTEND_VISUAL_REDESIGN=PLANNED_SEPARATE_PHASE
+FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED
+FINAL_RELEASE_DOCUMENTATION=CLOSED
+V1_RELEASE=OPEN
 ```
+
+`FRONTEND_VISUAL_REDESIGN=PLANNED_SEPARATE_PHASE` is retained above as historical state from
+the original August release closure. The later frontend redesign and Visual Polish V2 were
+completed and closed in their own canonical evidence documents; this file does not rewrite
+that historical release snapshot.
 
 ## Public production endpoints
 
@@ -70,6 +83,53 @@ served application revision `6bca02a8ed1487195b165ae9ced3ca687a373666`. The API 
 same revision during that revision-specific smoke test. The public aliases are mutable,
 so this document does not assert that they continue to serve the historical SHA.
 
+## Final exact-production validation — 2026-09-06
+
+The final release candidate was validated from hosting metadata rather than inferred from a
+local checkout. Render reported deployment `dep-daegc2ss728c7380js90` as `live` for exact
+commit:
+
+`366a406bc33c7deb839d4c1a56feb82901402e75`
+
+GitHub Actions Production Smoke run `34016471540`, job `101441002735`, was then dispatched
+explicitly with that same full SHA as `EXPECTED_API_REVISION`. The workflow checked out the
+same `main` revision and produced:
+
+```text
+PRODUCTION_SMOKE_EXPECTED_REVISION=366a406bc33c7deb839d4c1a56feb82901402e75
+PRODUCTION_SMOKE_REVISION_INPUT=PASS
+PRODUCTION_FRONTEND=PASS
+PRODUCTION_API_HEALTH=PASS
+PRODUCTION_API_READINESS=PASS
+PRODUCTION_API_VERSION=PASS
+PRODUCTION_CORS=PASS
+PRODUCTION_RELEASE_SMOKE=PASS
+PRODUCTION_SMOKE_EVENT=workflow_dispatch
+SCHEDULED_PRODUCTION_SMOKE=PASS
+```
+
+This closes the final exact-production validation boundary for the release candidate. It
+proves the public frontend identity, API lifecycle, exact runtime revision and production
+CORS contract together. It does not make the mutable public aliases immutable and does not
+claim that production ingestion was permanently enabled; the FREE_V1 ingestion path remains
+intentionally fail-closed after its separately recorded controlled validation.
+
+The owner-side repository governance verifier was also executed against exact revision
+`366a406bc33c7deb839d4c1a56feb82901402e75` and returned:
+
+```text
+DEPENDABOT_ALERTS_API=PASS
+SECRET_SCANNING_ALERTS_API=PASS
+CODEQL_ANALYSIS=PASS
+MAIN_RULESET=PASS
+ACTIONS_POLICY=PASS
+REPOSITORY_GOVERNANCE_SETTINGS=PASS
+```
+
+Those markers are supporting release evidence for the controls the verifier actually checks.
+They do not silently reclassify any separate canonical finding whose closure criteria extend
+beyond that verifier.
+
 ## Release truth and evidence freshness
 
 Source revision, intended deployment revision, observed runtime revision, and current
@@ -106,11 +166,14 @@ The release keeps separate evidence for:
 4. public API deployment;
 5. public Next.js deployment;
 6. exact-origin CORS behavior;
-7. browser-to-API production smoke.
+7. browser-to-API production smoke;
+8. final exact-production revision validation;
+9. final release documentation;
+10. publication of the `v1.0.0` tag/release.
 
-All seven states are closed for the deployment recorded above. Future visual redesign
-work does not invalidate this production evidence and must remain a separate product
-increment with its own verification.
+States 1–9 are closed for the release candidate. State 10 remains open until the release tag
+and GitHub release are created from the exact post-merge revision. The tag/release must not
+be represented as published before that mutation occurs.
 
 ## Free-tier operational boundary
 
@@ -126,11 +189,12 @@ and secret-bearing connection strings are prohibited release evidence. Public de
 is recorded only because the exact URLs, API revision, readiness, frontend identity, and
 CORS behavior were verified together.
 
-## Remaining product phase
+## Remaining release action
 
-The current frontend is publicly deployed and technically integrated. A substantial visual
-and interaction redesign remains planned as a separate frontend phase. This closure does
-not claim that the present interface is the final design and does not modify frontend code.
+Final exact-production validation and final release documentation are closed for the release
+candidate. The remaining release action is to merge the final documentation candidate after
+required CI, verify the resulting exact `main` revision, and publish `v1.0.0` from that exact
+revision with its immutable release evidence.
 
 ## Scope boundary
 

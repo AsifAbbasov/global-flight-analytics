@@ -55,11 +55,13 @@ test('README records current engineering closure and remaining v1 boundary', asy
   assert.match(readme, /RETAINED_SCREENSHOT_EVIDENCE=CLOSED/)
   assert.match(readme, /PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING/)
   assert.match(readme, /DOCUMENT_INDEX_194_196=CLOSED/)
-  assert.match(readme, /FINAL_EXACT_PRODUCTION_VALIDATION=OPEN/)
-  assert.match(readme, /FINAL_RELEASE_DOCUMENTATION=OPEN/)
+  assert.match(readme, /FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED/)
+  assert.match(readme, /FINAL_RELEASE_DOCUMENTATION=CLOSED/)
   assert.match(readme, /V1_RELEASE=OPEN/)
   assert.match(readme, /Pixel-golden comparison is deliberately not/)
-  assert.match(readme, /final exact-production deployment validation/)
+  assert.match(readme, /final exact-production/i)
+  assert.match(readme, /34016471540/)
+  assert.match(readme, /366a406bc33c7deb839d4c1a56feb82901402e75/)
   assert.match(readme, /`v1\.0\.0`/)
   assert.doesNotMatch(readme, /GLOBAL_FLIGHT_ANALYTICS_V1=COMPLETE/)
 
@@ -128,7 +130,7 @@ test('deployment runbook separates direct migration and pooled runtime database 
   assert.doesNotMatch(runbook, /postgres(ql)?:\/\/[^\s]+:[^\s]+@[^\s]+\.neon\.tech/i)
 })
 
-test('closure document distinguishes source CI deployment and remaining visual work', async () => {
+test('closure document distinguishes historical evidence from final release-candidate validation', async () => {
   const closure = await text('docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md')
   assert.match(closure, /Source implementation/i)
   assert.match(closure, /Exact-commit Continuous Integration/i)
@@ -138,6 +140,13 @@ test('closure document distinguishes source CI deployment and remaining visual w
   assert.match(closure, /FULL_BROWSER_PRODUCTION_SMOKE=CLOSED/)
   assert.match(closure, /FRONTEND_VISUAL_REDESIGN=PLANNED_SEPARATE_PHASE/)
   assert.match(closure, /03ac45dc2a515c77af8d992aa6489816f1cbe927/)
+  assert.match(closure, /FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED/)
+  assert.match(closure, /FINAL_RELEASE_DOCUMENTATION=CLOSED/)
+  assert.match(closure, /V1_RELEASE=OPEN/)
+  assert.match(closure, /dep-daegc2ss728c7380js90/)
+  assert.match(closure, /34016471540/)
+  assert.match(closure, /101441002735/)
+  assert.match(closure, /366a406bc33c7deb839d4c1a56feb82901402e75/)
 })
 
 test('recruiter guide has a bounded product and code walkthrough', async () => {
