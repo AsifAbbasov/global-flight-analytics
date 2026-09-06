@@ -81,8 +81,34 @@ test('Stage 18 documentation preserves the real first CI rejection and remediati
   assert.match(document, /No fictional product-review rejection is recorded/i)
 })
 
-test('Stage 18 documentation keeps truthful pending state until remediation validation completes', () => {
-  assert.match(document, /STAGE_18_PRE_MERGE_CI=PENDING/)
+test('Stage 18 documentation records the successful remediation validation matrix', () => {
+  for (const evidence of [
+    'STAGE_18_REMEDIATION_VALIDATION_HEAD=9ca39c6f2b170ae260e5f67d21265c5fcf285c42',
+    'STAGE_18_REMEDIATION_VALIDATION=PASS',
+    'STAGE_18_PRE_MERGE_CI=PASS',
+    'Frontend CI #431',
+    'run=34045730187',
+    'Backend CI #769',
+    'run=34045730140',
+    'CodeQL #411',
+    'run=34045730178',
+    'API Load Baseline #299',
+    'run=34045729973',
+    'Playwright E2E #208',
+    'run=34045730064',
+    'Vercel preview',
+    'result=SUCCESS',
+  ]) {
+    assert.match(document, new RegExp(evidence))
+  }
+
+  assert.match(document, /No second product or architecture defect was discovered/i)
+})
+
+test('Stage 18 documentation requires independent final exact-head verification', () => {
+  assert.match(document, /STAGE_18_FINAL_EXACT_HEAD_CI=PENDING/)
   assert.match(document, /STAGE_18_POST_MERGE_CI=PENDING/)
-  assert.match(document, /new complete validation cycle is required after remediation/i)
+  assert.match(document, /A commit cannot contain a truthful assertion of its own future CI run IDs/i)
+  assert.match(document, /final complete exact-head CI\/Vercel cycle/i)
+  assert.match(document, /PR metadata, which does not change the commit SHA/i)
 })
