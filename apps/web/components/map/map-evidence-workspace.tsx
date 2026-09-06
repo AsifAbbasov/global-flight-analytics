@@ -13,6 +13,7 @@ import { useTrajectoryFlightReplay } from '@/lib/queries/flight-replay'
 import {
   advanceFlightReplayCursor,
   buildFlightReplayFrame,
+  resolveFlightReplayCursorFromSearch,
   type FlightReplaySpeed,
 } from '@/lib/replay/flight-replay-model'
 import type { ProjectionResult } from '@/types/projection-intelligence'
@@ -85,13 +86,18 @@ function ReplayMapWorkspace({
   onSelectAircraft,
 }: ReplayMapWorkspaceProps) {
   const replayQuery = useTrajectoryFlightReplay(trajectory)
-  const [replayCursorIndex, setReplayCursorIndex] = useState(0)
+  const [replayCursorIndex, setReplayCursorIndex] = useState<number | null>(null)
   const [replayPlaying, setReplayPlaying] = useState(false)
   const [replaySpeed, setReplaySpeed] = useState<FlightReplaySpeed>(1)
   const replay = replayQuery.data
+  const resolvedReplayCursorIndex = useMemo(() => {
+    if (replayCursorIndex !== null) return replayCursorIndex
+    if (typeof window === 'undefined') return 0
+    return resolveFlightReplayCursorFromSearch(replay, window.location.search) ?? 0
+  }, [replay, replayCursorIndex])
   const replayFrame = useMemo(
-    () => buildFlightReplayFrame(replay, replayCursorIndex),
-    [replay, replayCursorIndex]
+    () => buildFlightReplayFrame(replay, resolvedReplayCursorIndex),
+    [replay, resolvedReplayCursorIndex]
   )
 
   useEffect(() => {
@@ -99,14 +105,17 @@ function ReplayMapWorkspace({
 
     const intervalID = window.setInterval(() => {
       setReplayCursorIndex(current => {
-        const next = advanceFlightReplayCursor(current, replay.points.length)
+        const next = advanceFlightReplayCursor(
+          current ?? replayFrame.cursorIndex,
+          replay.points.length
+        )
         if (next.completed) setReplayPlaying(false)
         return next.cursorIndex
       })
     }, 1000 / replaySpeed)
 
     return () => window.clearInterval(intervalID)
-  }, [replay, replayPlaying, replaySpeed])
+  }, [replay, replayFrame.cursorIndex, replayPlaying, replaySpeed])
 
   const setPlaying = (nextPlaying: boolean) => {
     if (!nextPlaying) {
@@ -118,7 +127,7 @@ function ReplayMapWorkspace({
       setReplayPlaying(false)
       return
     }
-    if (replayCursorIndex >= replay.points.length - 1) {
+    if (replayFrame.cursorIndex >= replay.points.length - 1) {
       setReplayCursorIndex(0)
     }
     setReplayPlaying(true)
