@@ -10,6 +10,8 @@ const replayModel = importedModule.default ?? importedModule
 const {
   advanceFlightReplayCursor,
   buildFlightReplayFrame,
+  buildFlightReplayGaps,
+  buildFlightReplayGapSummary,
   clampFlightReplayCursorIndex,
 } = replayModel
 
@@ -34,6 +36,11 @@ const replay = {
       barometric_altitude_status: 'observed',
       geometric_altitude_m: null,
       geometric_altitude_status: 'unavailable',
+      velocity_mps: 185,
+      heading_degrees: 240,
+      vertical_rate_mps: 7.2,
+      on_ground: false,
+      origin_country: 'Azerbaijan',
       observed_at: '2026-08-04T17:45:00Z',
       source_name: 'fixture',
     },
@@ -48,6 +55,11 @@ const replay = {
       barometric_altitude_status: 'observed',
       geometric_altitude_m: null,
       geometric_altitude_status: 'unavailable',
+      velocity_mps: 215,
+      heading_degrees: 265,
+      vertical_rate_mps: 4.1,
+      on_ground: false,
+      origin_country: 'Azerbaijan',
       observed_at: '2026-08-04T17:52:30Z',
       source_name: 'fixture',
     },
@@ -62,6 +74,11 @@ const replay = {
       barometric_altitude_status: 'observed',
       geometric_altitude_m: null,
       geometric_altitude_status: 'unavailable',
+      velocity_mps: 230,
+      heading_degrees: 285,
+      vertical_rate_mps: 0,
+      on_ground: false,
+      origin_country: 'Azerbaijan',
       observed_at: '2026-08-04T18:00:00Z',
       source_name: 'fixture',
     },
@@ -87,6 +104,37 @@ test('replay frame exposes only the observed prefix through the current sample',
   )
   assert.equal(frame.progress, 0.5)
   assert.equal(replay.points.length, 3)
+})
+
+test('replay gaps preserve exact elapsed time between persisted observations', () => {
+  const gaps = buildFlightReplayGaps(replay)
+
+  assert.deepEqual(
+    gaps.map(gap => ({
+      fromIndex: gap.fromIndex,
+      toIndex: gap.toIndex,
+      durationSeconds: gap.durationSeconds,
+    })),
+    [
+      { fromIndex: 0, toIndex: 1, durationSeconds: 450 },
+      { fromIndex: 1, toIndex: 2, durationSeconds: 450 },
+    ]
+  )
+})
+
+test('replay gap summary describes the current observed sample without filling gaps', () => {
+  assert.deepEqual(buildFlightReplayGapSummary(replay, 1), {
+    gaps: buildFlightReplayGaps(replay),
+    previousGapSeconds: 450,
+    nextGapSeconds: 450,
+    largestGapSeconds: 450,
+    totalObservedSpanSeconds: 900,
+  })
+
+  const finalSummary = buildFlightReplayGapSummary(replay, 2)
+  assert.equal(finalSummary.previousGapSeconds, 450)
+  assert.equal(finalSummary.nextGapSeconds, null)
+  assert.equal(finalSummary.totalObservedSpanSeconds, 900)
 })
 
 test('replay cursor advances discretely and stops at the final observed sample', () => {

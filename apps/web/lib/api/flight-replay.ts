@@ -117,6 +117,24 @@ function parseReplayPoint(value: unknown, index: number): FlightReplayPoint {
       `${field}.geometric_altitude_m`
     ),
     geometric_altitude_status: geometricStatus,
+    velocity_mps: requireNonNegativeNumber(
+      record.velocity_mps,
+      `${field}.velocity_mps`
+    ),
+    heading_degrees: requireHeadingDegrees(
+      record.heading_degrees,
+      `${field}.heading_degrees`
+    ),
+    vertical_rate_mps: requireFiniteNumber(
+      record.vertical_rate_mps,
+      `${field}.vertical_rate_mps`
+    ),
+    on_ground: requireBoolean(record.on_ground, `${field}.on_ground`),
+    origin_country: requireString(
+      record.origin_country,
+      `${field}.origin_country`,
+      true
+    ),
     observed_at: requireTimestamp(record.observed_at, `${field}.observed_at`),
     source_name: requireString(record.source_name, `${field}.source_name`, true),
   }
@@ -184,6 +202,36 @@ function requireNullableAltitude(
   }
   if (status !== 'observed' && status !== 'ground') {
     throw invalidPayload(`${fieldName} cannot carry a value for status ${status}.`)
+  }
+  return value
+}
+
+function requireFiniteNumber(value: unknown, fieldName: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw invalidPayload(`${fieldName} must be a finite number.`)
+  }
+  return value
+}
+
+function requireNonNegativeNumber(value: unknown, fieldName: string): number {
+  const parsed = requireFiniteNumber(value, fieldName)
+  if (parsed < 0) {
+    throw invalidPayload(`${fieldName} must be non-negative.`)
+  }
+  return parsed
+}
+
+function requireHeadingDegrees(value: unknown, fieldName: string): number {
+  const parsed = requireFiniteNumber(value, fieldName)
+  if (parsed < 0 || parsed > 360) {
+    throw invalidPayload(`${fieldName} must be between 0 and 360.`)
+  }
+  return parsed
+}
+
+function requireBoolean(value: unknown, fieldName: string): boolean {
+  if (typeof value !== 'boolean') {
+    throw invalidPayload(`${fieldName} must be a boolean.`)
   }
   return value
 }

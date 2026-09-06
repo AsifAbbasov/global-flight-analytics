@@ -69,6 +69,26 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
   await expect(
     replay.getByRole('slider', { name: 'Historical replay position' }),
   ).toHaveAttribute('max', '0')
+  await expect(
+    replay.getByLabel('Historical evidence gap timeline'),
+  ).toBeVisible()
+  await expect(
+    replay.getByText(/Only one persisted observation is available/),
+  ).toBeVisible()
+  await expect(replay.getByText('Velocity', { exact: true })).toBeVisible()
+  await expect(replay.getByText('230.0 m/s · 828 km/h')).toBeVisible()
+  await expect(replay.getByText('Heading', { exact: true })).toBeVisible()
+  await expect(replay.getByText('285°')).toBeVisible()
+  await expect(replay.getByText('Vertical rate', { exact: true })).toBeVisible()
+  await expect(replay.getByText('0.0 m/s', { exact: true })).toBeVisible()
+  await expect(replay.getByText('Flight state', { exact: true })).toBeVisible()
+  await expect(replay.getByText('Airborne', { exact: true })).toBeVisible()
+  await expect(
+    replay.getByText('Aircraft origin country', { exact: true }),
+  ).toBeVisible()
+  await expect(replay.getByText('Azerbaijan', { exact: true })).toBeVisible()
+  await expect(replay.getByText('Source', { exact: true })).toBeVisible()
+  await expect(replay.getByText('playwright-fixture')).toBeVisible()
 })
 
 test('aircraft deep link restores intelligence and clearing selection returns to explorer', async ({

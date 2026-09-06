@@ -18,6 +18,22 @@ export interface FlightReplayAdvance {
   completed: boolean
 }
 
+export interface FlightReplayGap {
+  fromIndex: number
+  toIndex: number
+  startObservedAt: string
+  endObservedAt: string
+  durationSeconds: number
+}
+
+export interface FlightReplayGapSummary {
+  gaps: FlightReplayGap[]
+  previousGapSeconds: number | null
+  nextGapSeconds: number | null
+  largestGapSeconds: number
+  totalObservedSpanSeconds: number
+}
+
 export function clampFlightReplayCursorIndex(
   cursorIndex: number,
   pointCount: number
@@ -62,6 +78,80 @@ export function buildFlightReplayFrame(
       replay.points.length === 1
         ? 1
         : currentIndex / (replay.points.length - 1),
+  }
+}
+
+export function buildFlightReplayGaps(
+  replay: FlightReplay | undefined
+): FlightReplayGap[] {
+  if (!replay || replay.points.length <= 1) return []
+
+  const gaps: FlightReplayGap[] = []
+  for (let toIndex = 1; toIndex < replay.points.length; toIndex++) {
+    const fromIndex = toIndex - 1
+    const from = replay.points[fromIndex]
+    const to = replay.points[toIndex]
+    if (!from || !to) continue
+
+    const durationSeconds = Math.max(
+      0,
+      (Date.parse(to.observed_at) - Date.parse(from.observed_at)) / 1000
+    )
+
+    gaps.push({
+      fromIndex,
+      toIndex,
+      startObservedAt: from.observed_at,
+      endObservedAt: to.observed_at,
+      durationSeconds,
+    })
+  }
+
+  return gaps
+}
+
+export function buildFlightReplayGapSummary(
+  replay: FlightReplay | undefined,
+  cursorIndex: number
+): FlightReplayGapSummary {
+  const gaps = buildFlightReplayGaps(replay)
+  if (!replay || replay.points.length === 0) {
+    return {
+      gaps,
+      previousGapSeconds: null,
+      nextGapSeconds: null,
+      largestGapSeconds: 0,
+      totalObservedSpanSeconds: 0,
+    }
+  }
+
+  const currentIndex = clampFlightReplayCursorIndex(
+    cursorIndex,
+    replay.points.length
+  )
+  const first = replay.points[0]
+  const last = replay.points[replay.points.length - 1]
+  const totalObservedSpanSeconds =
+    first && last
+      ? Math.max(
+          0,
+          (Date.parse(last.observed_at) - Date.parse(first.observed_at)) / 1000
+        )
+      : 0
+
+  return {
+    gaps,
+    previousGapSeconds:
+      currentIndex > 0 ? (gaps[currentIndex - 1]?.durationSeconds ?? null) : null,
+    nextGapSeconds:
+      currentIndex < replay.points.length - 1
+        ? (gaps[currentIndex]?.durationSeconds ?? null)
+        : null,
+    largestGapSeconds: gaps.reduce(
+      (largest, gap) => Math.max(largest, gap.durationSeconds),
+      0
+    ),
+    totalObservedSpanSeconds,
   }
 }
 
