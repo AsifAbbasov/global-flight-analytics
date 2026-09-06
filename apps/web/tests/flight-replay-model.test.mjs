@@ -9,15 +9,21 @@ const importedModule = await import(moduleURL.href)
 const replayModel = importedModule.default ?? importedModule
 const {
   advanceFlightReplayCursor,
+  advanceFlightReplayTimeCursor,
   buildFlightReplayAnalyticsSummary,
   buildFlightReplayFrame,
   buildFlightReplayGaps,
   buildFlightReplayGapSummary,
   buildFlightReplayObservationShareURL,
   buildFlightReplayObservedChange,
+  buildFlightReplayTimeFrame,
+  buildFlightReplayTimeNavigation,
   clampFlightReplayCursorIndex,
+  flightReplayObservationCursorSeconds,
   flightReplayObservationParameter,
+  flightReplaySpeeds,
   resolveFlightReplayCursorFromSearch,
+  resolveFlightReplayTimeCursorFromSearch,
 } = replayModel
 
 const replay = {
@@ -109,6 +115,62 @@ test('replay frame exposes only the observed prefix through the current sample',
   )
   assert.equal(frame.progress, 0.5)
   assert.equal(replay.points.length, 3)
+})
+
+test('time replay cursor follows elapsed observation time without inventing gap positions', () => {
+  const frame = buildFlightReplayTimeFrame(replay, 225)
+
+  assert.equal(frame.cursorSeconds, 225)
+  assert.equal(frame.cursorObservedAt, '2026-08-04T17:48:45.000Z')
+  assert.equal(frame.cursorIndex, 0)
+  assert.equal(frame.point.id, 'state-1')
+  assert.deepEqual(frame.trailPoints.map(point => point.id), ['state-1'])
+  assert.equal(frame.progress, 0.25)
+  assert.equal(frame.exactObservationAtCursor, false)
+  assert.equal(frame.secondsSinceObserved, 225)
+  assert.equal(frame.nextObservationIndex, 1)
+  assert.equal(frame.totalObservedSpanSeconds, 900)
+})
+
+test('time replay recognizes exact persisted timestamps and durable observation offsets', () => {
+  assert.equal(flightReplayObservationCursorSeconds(replay, 0), 0)
+  assert.equal(flightReplayObservationCursorSeconds(replay, 1), 450)
+  assert.equal(flightReplayObservationCursorSeconds(replay, 2), 900)
+
+  const frame = buildFlightReplayTimeFrame(replay, 450)
+  assert.equal(frame.cursorIndex, 1)
+  assert.equal(frame.point.id, 'state-2')
+  assert.equal(frame.exactObservationAtCursor, true)
+  assert.equal(frame.secondsSinceObserved, 0)
+})
+
+test('time navigation exposes real previous/next observation jumps and largest gap midpoint', () => {
+  const navigation = buildFlightReplayTimeNavigation(replay, 450)
+
+  assert.deepEqual(navigation, {
+    startCursorSeconds: 0,
+    endCursorSeconds: 900,
+    previousObservationCursorSeconds: 0,
+    nextObservationCursorSeconds: 900,
+    largestGapCursorSeconds: 225,
+    largestGapSeconds: 450,
+  })
+})
+
+test('time playback advances elapsed seconds and stops exactly at observed span end', () => {
+  assert.deepEqual(advanceFlightReplayTimeCursor(100, 900, 7.5), {
+    cursorSeconds: 107.5,
+    completed: false,
+  })
+  assert.deepEqual(advanceFlightReplayTimeCursor(895, 900, 10), {
+    cursorSeconds: 900,
+    completed: true,
+  })
+  assert.deepEqual(advanceFlightReplayTimeCursor(900, 900, 10), {
+    cursorSeconds: 900,
+    completed: true,
+  })
+  assert.deepEqual(flightReplaySpeeds, [1, 5, 10, 30])
 })
 
 test('replay gaps preserve exact elapsed time between persisted observations', () => {
@@ -246,6 +308,13 @@ test('replay observation deep links resolve exact persisted state identifiers', 
     null
   )
   assert.equal(resolveFlightReplayCursorFromSearch(replay, '?region=world'), null)
+  assert.equal(
+    resolveFlightReplayTimeCursorFromSearch(
+      replay,
+      '?region=world&replay_observation=state-2'
+    ),
+    450
+  )
 })
 
 test('replay observation share URLs preserve workspace state and hash', () => {
