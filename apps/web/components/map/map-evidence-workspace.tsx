@@ -83,11 +83,11 @@ export function MapEvidenceWorkspace({
       return
     }
 
-    if (!replay || replay.points.length === 0) return
-    if (
-      replayCursorIndex >= replay.points.length - 1 &&
-      replay.points.length > 1
-    ) {
+    if (!replay || replay.points.length <= 1) {
+      setReplayPlaying(false)
+      return
+    }
+    if (replayCursorIndex >= replay.points.length - 1) {
       setReplayCursorIndex(0)
     }
     setReplayPlaying(true)
