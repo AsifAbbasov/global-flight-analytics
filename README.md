@@ -166,7 +166,9 @@ Historical reliability diagnosis and repository-recorded closure evidence are pr
 [`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md)
 and
 [`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`](docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md).
-Those historical documents are not rewritten by the later FREE_V1 recovery closure.
+Those historical documents are not rewritten by the later FREE_V1 recovery closure. GitHub
+Actions retains the immutable execution history; the final validator log remains
+owner-local, non-secret supporting evidence and is not committed to the repository.
 
 ## Production Provider Recovery — ADSB.lol
 
