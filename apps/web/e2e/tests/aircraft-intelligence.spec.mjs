@@ -75,8 +75,42 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
   await expect(
     replay.getByText(/Only one persisted observation is available/),
   ).toBeVisible()
-  await expect(replay.getByText('Velocity', { exact: true })).toBeVisible()
-  await expect(replay.getByText('230.0 m/s · 828 km/h')).toBeVisible()
+
+  const analytics = replay.getByLabel('Observed replay analytics')
+  await expect(analytics).toBeVisible()
+  await expect(
+    analytics.getByText('Observed replay analytics', { exact: true }),
+  ).toBeVisible()
+  await expect(analytics.getByText('Evidence-derived', { exact: true })).toBeVisible()
+  await expect(
+    analytics.getByText(/Aggregates use persisted samples only/),
+  ).toBeVisible()
+  await expect(
+    analytics.getByText('Altitude coverage', { exact: true }),
+  ).toBeVisible()
+  await expect(analytics.getByText('100%', { exact: true })).toBeVisible()
+  await expect(
+    analytics.getByText('Observed altitude range', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    analytics.getByText('10,668–10,668 m', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    analytics.getByText('Peak observed velocity', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    analytics.getByText('230.0 m/s · 828 km/h', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    analytics.getByText('Airborne / ground samples', { exact: true }),
+  ).toBeVisible()
+  await expect(analytics.getByText('1 / 0', { exact: true })).toBeVisible()
+
+  const velocityDatum = replay.getByText('Velocity', { exact: true }).locator('..')
+  await expect(velocityDatum).toBeVisible()
+  await expect(
+    velocityDatum.getByText('230.0 m/s · 828 km/h', { exact: true }),
+  ).toBeVisible()
   await expect(replay.getByText('Heading', { exact: true })).toBeVisible()
   await expect(replay.getByText('285°')).toBeVisible()
   await expect(replay.getByText('Vertical rate', { exact: true })).toBeVisible()

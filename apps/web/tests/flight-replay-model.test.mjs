@@ -9,6 +9,7 @@ const importedModule = await import(moduleURL.href)
 const replayModel = importedModule.default ?? importedModule
 const {
   advanceFlightReplayCursor,
+  buildFlightReplayAnalyticsSummary,
   buildFlightReplayFrame,
   buildFlightReplayGaps,
   buildFlightReplayGapSummary,
@@ -135,6 +136,40 @@ test('replay gap summary describes the current observed sample without filling g
   assert.equal(finalSummary.previousGapSeconds, 450)
   assert.equal(finalSummary.nextGapSeconds, null)
   assert.equal(finalSummary.totalObservedSpanSeconds, 900)
+})
+
+test('replay analytics aggregate only persisted observed samples', () => {
+  assert.deepEqual(buildFlightReplayAnalyticsSummary(replay), {
+    sampleCount: 3,
+    observedSpanSeconds: 900,
+    medianGapSeconds: 450,
+    largestGapSeconds: 450,
+    altitudeCoveragePercent: 100,
+    minObservedAltitudeM: 3000,
+    maxObservedAltitudeM: 10668,
+    peakVelocityMPS: 230,
+    maxClimbRateMPS: 7.2,
+    steepestDescentRateMPS: null,
+    airborneSampleCount: 3,
+    onGroundSampleCount: 0,
+  })
+})
+
+test('replay analytics expose zero evidence for an unavailable replay', () => {
+  assert.deepEqual(buildFlightReplayAnalyticsSummary(undefined), {
+    sampleCount: 0,
+    observedSpanSeconds: 0,
+    medianGapSeconds: null,
+    largestGapSeconds: 0,
+    altitudeCoveragePercent: 0,
+    minObservedAltitudeM: null,
+    maxObservedAltitudeM: null,
+    peakVelocityMPS: null,
+    maxClimbRateMPS: null,
+    steepestDescentRateMPS: null,
+    airborneSampleCount: 0,
+    onGroundSampleCount: 0,
+  })
 })
 
 test('replay cursor advances discretely and stops at the final observed sample', () => {
