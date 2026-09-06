@@ -1,115 +1,106 @@
 # Stage 16 Time-Based Historical Replay Navigation
 
-Status: PR candidate
+Status: merge candidate pending final exact-head CI
 
 ```text
-STAGE_16_TIME_BASED_REPLAY_NAVIGATION=PR_CANDIDATE
+STAGE_16_TIME_BASED_REPLAY_NAVIGATION=MERGE_CANDIDATE
 STAGE_16_BASE_SHA=ceed3ecd31bd72d0de9491d23eda6bcb10cb2a98
+STAGE_16_PR=155
+STAGE_16_IMPLEMENTATION_VALIDATION_SHA=9601b4809e6e467e9820c6467b91086d59a0a355
 STAGE_16_EVIDENCE_CLASS=OBSERVED
 STAGE_16_TIME_CURSOR=REAL_ELAPSED_OBSERVATION_TIME
 STAGE_16_POSITION_POLICY=LAST_PERSISTED_OBSERVATION
 STAGE_16_POSITION_INTERPOLATION=NONE
 STAGE_16_ADDITIONAL_COST=0_RUB
+STAGE_16_INITIAL_PR_CI=PASS
+STAGE_16_DOCUMENTATION=PREMERGE_COMPLETE
+STAGE_16_POST_MERGE_CI=PENDING
 ```
 
 ## Product need
 
-Stage 15 established a trustworthy Historical Flight Replay built from persisted Flight State observations. The remaining navigation weakness is that the primary playback mechanic advances by array/sample order rather than by the actual elapsed time represented by `observed_at` timestamps.
+Stage 15 established trustworthy Historical Flight Replay from persisted Flight State observations. Its remaining navigation weakness was temporal: playback advanced by sample order, not by the actual elapsed time represented by `observed_at`.
 
-A user can therefore see three samples but cannot directly understand whether those samples are separated by seconds or by several minutes without reading the evidence-gap panel. This weakens the analytical value of replay even though the underlying timestamps already exist.
+That meant two adjacent samples separated by three seconds and two adjacent samples separated by five minutes consumed the same playback interval. The stored evidence was correct, but replay cadence did not communicate historical spacing faithfully.
 
-Stage 16 makes elapsed time a first-class replay navigation dimension without creating any new aircraft positions.
+Stage 16 makes elapsed observation time a first-class replay dimension without inventing aircraft positions.
 
 ## Why this feature exists
 
-The product needs to answer two different questions at the same time:
+The product must answer two different questions simultaneously:
 
-1. **where was the aircraft actually observed?**
-2. **where is the replay cursor in real historical time?**
+1. where was the aircraft actually observed?
+2. where is the replay cursor in historical time?
 
-Those are not the same thing when observations are sparse.
+When evidence is sparse, those are not the same thing.
 
-The user must be able to move the historical cursor through a five-minute evidence gap while the map honestly keeps the aircraft at the last known persisted observation until another persisted observation timestamp is reached.
+A user must be able to move the replay cursor through an unobserved interval while the aircraft remains at the latest persisted observation until the timestamp of the next persisted observation is reached.
 
 ## Expected product result
 
-The expected user-visible behavior is:
+Expected behavior:
 
 ```text
-17:45:00 observed A
-        ↓
-        ●──────────────────────────────────────────────●
-        ↑                                              ↑
- cursor can move through elapsed time          17:52:30 observed B
- aircraft remains at A until B is reached
+17:45:00 observed A                         17:52:30 observed B
+        ●-------------------------------------------●
+        ^                 ^                         ^
+        |                 |                         |
+   position A        time cursor in gap        position B
 ```
 
-The interface adds:
+The cursor can move through the interval. The map does not create any coordinate between A and B.
 
-- a real elapsed-time slider from the first to the last persisted `observed_at`;
-- explicit cursor timestamp and elapsed-from-start display;
+User-visible capabilities:
+
+- elapsed-time slider based on first/last persisted `observed_at`;
+- cursor timestamp and elapsed-from-start display;
 - exact-observation vs no-observation-at-cursor status;
 - previous observation jump;
 - next observation jump;
 - start and end jumps;
 - largest-gap midpoint jump for evidence inspection;
-- time-scaled playback at 1x, 5x, 10x and 30x;
-- preservation of the existing durable `replay_observation=<state.id>` deep-link behavior.
-
-The existing sample selector remains useful as a direct jump to a persisted observation, but it no longer defines playback time semantics.
+- 1x / 5x / 10x / 30x time-scale playback;
+- existing `replay_observation=<state.id>` deep links preserved;
+- existing sample selector retained as a direct jump to a persisted observation.
 
 ## Problem
 
-The Stage 15 workspace stores replay progress as a `cursorIndex` and advances it once per timer tick.
+Before Stage 16, replay state was primarily a `cursorIndex` and timer advancement meant one persisted sample per tick.
 
-That means:
-
-```text
-sample 1 -> sample 2 -> sample 3
-```
-
-is treated as evenly spaced playback even if real timestamps are:
+Example:
 
 ```text
-17:45:00 -> 17:45:03 -> 17:52:30
+sample A = 17:45:00
+sample B = 17:45:03
+sample C = 17:52:30
 ```
 
-The visual playback cadence therefore does not represent the historical elapsed-time cadence.
+Sample stepping visually treats A→B and B→C as equal playback intervals even though the historical durations are radically different.
 
 ## Root cause
 
-The original Stage 15 goal was to establish the evidence boundary first: observed samples only, no interpolation. A discrete sample index was the safest initial cursor because it could not synthesize intermediate positions.
+Stage 15 deliberately optimized first for evidence safety. A discrete sample cursor was the simplest way to guarantee that no intermediate position could be fabricated.
 
-Once that guarantee was established and protected by tests, the remaining limitation became explicit: safe sample stepping is not equivalent to true time navigation.
+Once observed-only/no-interpolation semantics were protected by tests, the next safe evolution was to separate time navigation from position evidence.
 
 ## Failure scenario
 
-Assume persisted observations:
+If sample-index playback remained the only playback clock, a user could interpret evenly timed UI transitions as evidence of evenly spaced observations.
 
-```text
-A = 18:01:00
-B = 18:01:10
-C = 18:06:10
-```
-
-With sample-index playback, A→B and B→C consume the same UI interval even though the second historical interval is thirty times larger.
-
-A user can incorrectly interpret the playback cadence as evidence that observations were evenly distributed.
+This would not fabricate coordinates, but it would compress evidence gaps and weaken temporal fidelity.
 
 ## Project impact
 
-The issue does not corrupt stored data, but it weakens analytical fidelity:
+Primary impact:
 
-- historical elapsed time is visually compressed into sample count;
-- large gaps are less intuitive to inspect;
-- playback speed means “samples per second” rather than historical time scale;
-- the replay is less useful for evidence-quality analysis.
+- gap duration is harder to perceive during playback;
+- replay speed means samples-per-second rather than historical time scale;
+- long evidence gaps are visually compressed;
+- replay is less useful for evidence-quality analysis.
 
-Severity classification: **P2 product-semantics limitation**. It does not create false positions because Stage 15 forbids interpolation, but it can misrepresent temporal spacing.
+Severity: **P2 product-semantics limitation**. Stored truth remains intact, but presentation underrepresents temporal sparsity.
 
 ## Existing guarantees that must remain intact
-
-Stage 16 must preserve all Stage 15 evidence guarantees:
 
 ```text
 EVIDENCE_CLASS=OBSERVED
@@ -118,102 +109,103 @@ GAPS_REMAIN_UNKNOWN=YES
 SHARED_OBSERVATION_ID=DURABLE_STATE_ID
 ```
 
-In particular, a continuous time cursor must never be converted into a continuous aircraft position.
+A continuous time cursor must never imply a continuous observed path.
 
 ## Considered solutions
 
-### Option A — interpolate aircraft coordinates between observations
+### Option A — interpolate coordinates between observations
 
 Rejected.
 
-This would make time playback visually smooth but would create aircraft positions that were never persisted or observed.
+Smooth motion would create positions that were never persisted or observed.
 
 ### Option B — request denser historical data from a new provider
 
 Rejected under current constraints.
 
-It introduces a new external dependency and can cross the zero-budget boundary. It also does not solve the fundamental need to represent missing evidence honestly.
+It introduces an external dependency, can cross the zero-budget boundary, and still does not remove the need to represent missing evidence honestly.
 
-### Option C — add a new backend replay endpoint that emits synthetic time frames
+### Option C — create a new backend replay endpoint that emits synthetic time frames
 
-Rejected for this stage.
+Rejected for Stage 16.
 
-The existing `GET /api/v1/flights/{flightID}/states` already contains every datum required for truthful time navigation. A new backend API would add complexity without new evidence.
+The existing flight-state endpoint already exposes every timestamp and persisted state required for truthful time navigation. A new backend contract would add complexity without adding evidence.
 
-### Option D — keep position discrete, make only the cursor continuous in elapsed time
+### Option D — continuous elapsed-time cursor + discrete observed position
 
 Selected.
 
-The cursor can move through real historical seconds while the map resolves the latest persisted observation whose timestamp is less than or equal to the cursor timestamp.
+Time can move continuously; position resolves only to the latest persisted observation with `observed_at <= cursor_time`.
 
 ## Chosen architecture
 
 ```text
 persisted flight_states
         ↓
-existing flight states endpoint
+existing GET /api/v1/flights/{flightID}/states
         ↓
 sorted persisted replay points
         ↓
 continuous elapsed-time cursor
         ↓
-latest observed sample <= cursor time
+latest persisted observation <= cursor timestamp
         ↓
-MapLibre observed point only
+MapLibre Point evidence only
 ```
 
-The state model is split into two concepts:
+Two state concepts are intentionally separated:
 
 ```text
 TIME CURSOR
-continuous elapsed historical time
+continuous historical elapsed time
 
 POSITION CURSOR
 latest persisted observation at-or-before time cursor
 ```
 
-This separation is the core Stage 16 architectural decision.
+This separation is the central Stage 16 architectural decision.
 
 ## Why this solution was selected
 
-It provides real historical time semantics while preserving source truth.
+It improves product fidelity without weakening source truth.
 
-It also:
+It also preserves the project constraints:
 
-- reuses the existing API and persisted data;
-- requires no database migration;
-- requires no provider change;
-- requires no server-side replay engine;
-- preserves durable observation deep links;
-- makes gaps visible instead of hiding them;
-- keeps the additional monetary cost at 0 RUB.
+- existing API reused;
+- no database migration;
+- no provider change;
+- no server-side replay engine;
+- no new persistent state;
+- durable observation links preserved;
+- missing evidence remains visible;
+- additional monetary cost remains 0 RUB.
 
 ## Implementation design
 
-### Replay model
+### Replay time model
 
-The replay model adds deterministic helpers for:
+Deterministic helpers now cover:
 
 - observation timestamp → elapsed cursor seconds;
-- elapsed cursor → current held observation;
-- exact observation detection;
-- seconds since last persisted observation;
-- previous/next observation jumps;
+- elapsed cursor → held persisted observation;
+- exact persisted observation detection;
+- seconds since last observation;
+- previous/next observation cursor positions;
 - largest-gap midpoint navigation;
-- elapsed-time playback advancement;
-- deep-link observation → elapsed cursor restoration.
+- elapsed-time cursor advancement;
+- deep-link observation ID → elapsed cursor restoration.
 
 ### Playback clock
 
-Playback uses a 250 ms UI tick.
+The browser clock uses a 250 ms UI tick.
 
-At speed `S`, each tick advances:
+At time scale `S`:
 
 ```text
-0.25 seconds * S
+cursor advance per tick = 0.25 seconds * S
 ```
 
-Supported time scales:
+Supported scales:
 
 ```text
 1x
@@ -222,31 +214,31 @@ Supported time scales:
 30x
 ```
 
-The timer changes the time cursor only. Position changes only when a persisted observation timestamp is crossed.
+Only time advances continuously. Position changes only when another persisted observation timestamp is crossed.
 
-### Map behavior inside a gap
+### Gap behavior
 
-If the cursor is between two observations:
+Example:
 
 ```text
-cursor = 18:03:00
-previous observation = 18:01:00
-next observation = 18:06:00
+cursor                 = 18:03:00
+previous observation   = 18:01:00
+next observation       = 18:06:00
 ```
 
-then:
+Resolved state:
 
 ```text
-current map position = position observed at 18:01:00
+map position           = persisted position at 18:01:00
 seconds since observed = 120
-exact observation at cursor = false
+exact observation      = false
 ```
 
 No coordinate is computed for 18:03:00.
 
-## Adversarial scenario 1 — continuous slider implies continuous evidence
+## Adversarial scenario 1 — continuous slider is mistaken for continuous evidence
 
-A reviewer or future developer could assume that a continuous slider justifies continuous map movement.
+Risk: a future implementation could move the aircraft marker smoothly with the time slider.
 
 Guard:
 
@@ -255,27 +247,35 @@ STAGE_16_POSITION_POLICY=LAST_PERSISTED_OBSERVATION
 STAGE_16_POSITION_INTERPOLATION=NONE
 ```
 
-The UI explicitly says “No observation at cursor” while inside a gap.
+The UI explicitly reports `No observation at cursor` while the cursor is inside a gap.
 
-## Adversarial scenario 2 — time playback accidentally becomes sample playback again
+## Adversarial scenario 2 — timer silently regresses to sample-per-tick behavior
 
-If the timer calls the old `advanceFlightReplayCursor`, Stage 16 silently regresses to sample-per-tick semantics.
+Risk: reusing the old discrete `advanceFlightReplayCursor` would restore Stage 15 sample-clock semantics.
 
 Guard: source contracts require `advanceFlightReplayTimeCursor`, a fixed elapsed tick and multiplication by replay speed.
 
-## Adversarial scenario 3 — deep links lose observation identity
+## Adversarial scenario 3 — deep-link identity is replaced by time-only identity
 
-A time-only query parameter would make old shared observation links less durable and would create a second identity mechanism.
+Risk: introducing a new time query parameter would weaken durable observation identity and create two competing share contracts.
 
-Chosen behavior: retain `replay_observation=<state.id>`. The observation ID resolves to its elapsed-time position when replay initializes.
+Chosen behavior: retain `replay_observation=<state.id>` and resolve that persisted ID to its elapsed cursor offset during initialization.
+
+## Initial implementation review outcome
+
+The first Stage 16 architecture reached full PR CI without an architectural or test rejection.
+
+No historical rejection is invented for this stage.
+
+This means there is no legitimate `initial solution rejected → remediation` story to record for the first validation cycle. The relevant engineering evidence is that the initial continuous-time/discrete-position separation passed lint, type checking, contracts, production build, CodeQL, API load baseline, backend repository guards and Chromium E2E unchanged.
 
 ## Trade-offs
 
-- sparse data still produces long periods where the map marker does not move;
-- that behavior is intentionally truthful rather than visually smooth;
-- the browser timer is not a scientific timing instrument and can be throttled in background tabs;
-- replay cursor time is UI state, not a server-side historical clock;
-- largest-gap navigation jumps to the midpoint of the longest observed interval for inspection, not to a claimed aircraft position.
+- sparse evidence intentionally produces long periods where the aircraft marker does not move;
+- browser timers can be throttled in background tabs;
+- cursor time is UI navigation state, not a scientific timing instrument;
+- largest-gap navigation points to the interval midpoint for inspection, not to an aircraft position;
+- Stage 16 does not improve source sampling density.
 
 ## Zero-budget impact
 
@@ -286,7 +286,7 @@ New database                = NO
 New server                  = NO
 New cache                   = NO
 New persistent storage      = NO
-New map provider            = NO
+New paid map service        = NO
 New runtime dependency      = NO
 Additional cost             = 0 RUB
 ```
@@ -295,49 +295,72 @@ Additional cost             = 0 RUB
 
 Permanent tests cover:
 
-- real elapsed-time cursor resolution;
-- position held at the previous persisted observation inside a gap;
+- elapsed-time cursor resolution;
+- held previous observation inside a gap;
 - exact persisted observation detection;
-- previous/next observation navigation;
+- previous/next observation jumps;
 - largest-gap midpoint calculation;
-- elapsed-time playback completion at the exact observed-span end;
-- 1x/5x/10x/30x time-scale contract;
-- deep-link observation restoration into time cursor;
-- source-level prohibition against coordinate interpolation;
-- MapLibre replay remaining Point-based rather than a synthetic replay line.
+- exact observed-span playback completion;
+- 1x/5x/10x/30x speed contract;
+- deep-link observation restoration into elapsed time;
+- no coordinate interpolation contract;
+- Point-based replay map representation;
+- browser visibility of the time-navigation workspace;
+- documentation completeness and zero-budget markers.
 
 ## CI / review evidence
 
-Pending first exact-head PR validation.
+Pull request:
 
-This section must be updated before Stage 16 is considered merge-ready with:
+```text
+PR=155
+IMPLEMENTATION_VALIDATION_HEAD=9601b4809e6e467e9820c6467b91086d59a0a355
+BASE=ceed3ecd31bd72d0de9491d23eda6bcb10cb2a98
+```
 
-- PR number;
-- exact final head SHA;
-- Frontend CI run;
-- Backend CI run;
-- CodeQL run;
-- API Load Baseline run when triggered by PR policy;
-- Playwright E2E run;
-- Vercel preview status;
-- any real remediation history discovered by CI/review.
+First complete validation cycle on that implementation head:
 
-No review rejection will be invented if the first architecture passes unchanged.
+```text
+Frontend CI #414
+run=34036243832
+result=SUCCESS
+
+Backend CI #752
+run=34036243790
+result=SUCCESS
+
+CodeQL #394
+run=34036243838
+result=SUCCESS
+
+API Load Baseline #286
+run=34036243839
+result=SUCCESS
+
+Playwright E2E #191
+run=34036243846
+result=SUCCESS
+
+Vercel preview
+result=SUCCESS
+```
+
+The documentation update that records this evidence necessarily creates a newer PR head. Therefore merge readiness requires a second full exact-head CI cycle after this documentation commit. The final exact head is authoritative in PR metadata and final merge authorization, not self-embedded into the commit that would need to contain its own SHA.
 
 ## Residual limitations
 
-- replay can only navigate evidence that is actually persisted;
-- FREE_V1 ingestion cadence can leave replay sparse;
-- missing historical observations cannot be reconstructed truthfully;
-- browser background throttling can make wall-clock playback less precise;
-- the feature is not ATC-grade or navigation-grade;
-- time navigation does not establish travelled path between observations;
-- time navigation does not establish flight phase, intent or route;
-- commercial historical coverage is not added by this stage.
+- replay can only navigate evidence that was actually persisted;
+- FREE_V1 ingestion cadence can leave historical replay sparse;
+- missing observations cannot be reconstructed truthfully;
+- background-tab timer throttling can reduce wall-clock playback precision;
+- replay is not ATC-grade or navigation-grade;
+- time navigation does not establish travelled path between samples;
+- time navigation does not establish flight phase, route or intent;
+- no commercial historical coverage is added.
 
 ## Expected completion criteria
 
-Stage 16 can be marked CLOSED only when all of the following are true:
+Pre-merge requirements:
 
 ```text
 TIME_CURSOR_USES_OBSERVED_AT=YES
@@ -349,21 +372,28 @@ LARGEST_GAP_NAVIGATION=YES
 DEEP_LINK_IDENTITY_PRESERVED=YES
 ADDITIONAL_COST=0_RUB
 REGRESSION_TESTS=PASS
-PR_CI=PASS
+INITIAL_PR_CI=PASS
+DOCUMENTATION=PREMERGE_COMPLETE
+FINAL_EXACT_HEAD_CI=PASS
+```
+
+Post-merge closure requirement:
+
+```text
 POST_MERGE_CI=PASS
-DOCUMENTATION=COMPLETE
 ```
 
 ## Future guard
 
-Any later feature that proposes smoother historical movement must first declare:
+Any later replay feature proposing smoother historical movement must declare before implementation:
 
-1. evidence source;
-2. whether positions are observed, derived or projected;
+1. source data;
+2. observed / derived / projected evidence class;
 3. interpolation policy;
 4. missing-data behavior;
 5. user-visible uncertainty semantics;
 6. infrastructure impact;
-7. monetary cost.
+7. monetary cost;
+8. regression protection.
 
-A continuous historical line or marker motion cannot be introduced under the label “observed” unless the intermediate positions actually exist as persisted observations.
+A continuous path or smooth marker movement cannot be described as observed unless the intermediate positions actually exist as persisted observations.
