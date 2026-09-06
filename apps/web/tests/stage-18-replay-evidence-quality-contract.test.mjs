@@ -39,10 +39,11 @@ test('Stage 18 UI is descriptive only and exposes no synthetic quality grade', (
     'Altitude evidence',
     'Largest unobserved interval',
     'No persisted position exists between these endpoint observations',
-    'not calibrated aviation quality grades',
   ]) {
     assert.match(qualityComponent, new RegExp(marker))
   }
+
+  assert.match(qualityComponent, /not calibrated aviation\s+quality grades/)
 })
 
 test('Stage 18 keeps the single-sample state honest', () => {
