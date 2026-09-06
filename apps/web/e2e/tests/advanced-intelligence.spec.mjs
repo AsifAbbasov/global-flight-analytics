@@ -6,7 +6,7 @@ test.beforeEach(async ({ request }) => {
   await setScenario(request, 'healthy')
 })
 
-test('projection weather and stability expose server-owned evidence semantics', async ({
+test('projection weather stability and airspace expose server-owned evidence semantics', async ({
   page,
 }) => {
   await page.goto(
@@ -50,5 +50,22 @@ test('projection weather and stability expose server-owned evidence semantics', 
   ).toBeVisible()
   await expect(
     page.getByRole('heading', { name: 'Attribution and scope guards' }),
+  ).toBeVisible()
+
+  await expect(
+    page.getByRole('heading', { name: 'Airspace Intelligence — Azerbaijan' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Regional occupancy' }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('Not suitable for separation or air traffic control.', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(
+    page.getByText(
+      /They do not represent official sectors, controller workload, regulatory separation minima/,
+    ),
   ).toBeVisible()
 })

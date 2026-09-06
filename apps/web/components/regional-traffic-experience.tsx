@@ -3,6 +3,7 @@
 // FRONTEND_HISTORICAL_ANALYTICS_COMPARISON_V1
 // FRONTEND_PRODUCT_HARDENING_V1
 // FRONTEND_MAP_FIRST_PRODUCT_SHELL_V1
+// FRONTEND_AIRSPACE_INTELLIGENCE_V1
 'use client'
 
 import dynamic from 'next/dynamic'
@@ -20,6 +21,16 @@ import {
 } from '@/lib/traffic/workspace-url-state'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
+
+const AirspaceIntelligenceWorkspace = dynamic(
+  () =>
+    import('@/components/analytics/airspace-intelligence-workspace').then(
+      module => module.AirspaceIntelligenceWorkspace
+    ),
+  {
+    loading: () => <ResearchSectionLoading label='Airspace Intelligence' />,
+  }
+)
 
 const UnifiedAirportAnalyticsWorkspace = dynamic(
   () =>
@@ -201,6 +212,10 @@ export function RegionalTrafficExperience({
           initialError={initialError}
           regionsWarning={regionsWarning}
         />
+      </div>
+
+      <div id='airspace-intelligence' className='scroll-mt-20'>
+        <AirspaceIntelligenceWorkspace selectedRegion={selectedRegion} />
       </div>
 
       <div id='overview' className='scroll-mt-20'>
