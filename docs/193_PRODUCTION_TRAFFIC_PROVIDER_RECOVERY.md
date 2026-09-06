@@ -1,6 +1,6 @@
 # Production Traffic Provider Recovery
 
-Status: Controlled runtime path proven; final recovery reconciliation remains open while the revised FREE_V1 cadence is validated
+Status: **CLOSED** — provider/compliance path and revised FREE_V1 controlled runtime validation complete
 Date: 2026-08-23
 Last updated: 2026-09-06
 Scope: policy-aware recovery of production traffic ingestion after the Airplanes.live access incident
@@ -261,6 +261,55 @@ FREE_V1 blocker. Neon wake-duration measurements showed the then-configured
 Cloudflare kill switch was therefore returned to `false`, and the primary target
 was reduced to `17 */2 * * *` before permanent activation.
 
+### 8.1 Final revised FREE_V1 controlled validation — 2026-09-06
+
+The safer two-hour profile was merged through PR #145. The exact merged source
+revision was `d024f2c9c1183f903a6be1b6264829496adf52b6`. The Cloudflare Worker was
+deployed from that revision with the production kill switch still fail-closed:
+
+```text
+PRIMARY_CRON=17 */2 * * *
+WATCHDOG_CRON=19 */2 * * *
+DISPATCH_ENABLED=false
+FAIL_CLOSED_WORKER_VERSION=4c88baa0-d137-42f0-99f7-bc846c85c81a
+```
+
+For one bounded scheduler validation only, Worker version
+`3ed8b1bd-20e5-4809-93bb-88c9071f2da4` enabled dispatch and was then returned to
+the known fail-closed version immediately after the primary window. GitHub run
+`34000891812` (`Production Traffic Ingestion #3585`) started from the scheduled
+Cloudflare primary and completed successfully on the exact merged revision.
+
+The run recorded:
+
+```text
+PRODUCTION_INGESTION_DISPATCH_SOURCE=cloudflare-primary
+provider=adsb.lol
+loaded=7
+provider_received=7
+provider_rejected=0
+received=7
+usable=7
+invalid=0
+stored=7
+trajectories=7
+PRODUCTION_TRAFFIC_FRESHNESS=PASS
+freshness_count=5
+freshness_age_seconds=25
+```
+
+The corresponding Neon compute start was recorded at `2026-09-06T00:17:51Z`
+(`start_compute` operation `618d5f2a-3c11-4e57-af89-74f1f961d047`). Neon later
+suspended the same endpoint at `2026-09-06T00:38:32Z` (`suspend_compute`
+operation `4a347d9c-625e-4297-aaad-dfbe2a7fd7e4`), a wake window of approximately
+20 minutes 41 seconds. The endpoint subsequently reported `current_state=idle`.
+No second `start_compute` occurred between that start and suspend operation.
+
+The production Worker rollback completed at `2026-09-06T00:18:20Z`, restoring
+`4c88baa0-d137-42f0-99f7-bc846c85c81a` at 100% with
+`DISPATCH_ENABLED=false`. This closes provider recovery without silently enabling
+continuous production ingestion.
+
 Current status is therefore:
 
 ```text
@@ -273,15 +322,19 @@ PRODUCTION_WORKFLOW_CONTACT_GATE=PASS
 CONTROLLED_PRODUCTION_ADSBLOL_SMOKE=PASS
 CONTROLLED_PRODUCTION_TRAFFIC_FRESHNESS=PASS
 CONTROLLED_CLOUDFLARE_PRIMARY=PASS
-SUBSEQUENT_SCHEDULED_RUN=PASS
+REVISED_FREE_V1_PRIMARY_RUNTIME=PASS
+REVISED_FREE_V1_SCALE_TO_ZERO=PASS
 PRODUCTION_INGESTION=INTENTIONALLY_FAIL_CLOSED
-PRODUCTION_PROVIDER_RECOVERY=OPEN_FINAL_RECONCILIATION
+PRODUCTION_PROVIDER_RECOVERY=CLOSED
 ```
 
-Provider recovery is not marked `CLOSED` in this document yet because the final
-FREE_V1 production state must use the revised two-hour scheduler, be deployed from
-an exact merged revision, and complete the remaining observability/final-recovery
-reconciliation without weakening the free-tier budget boundary.
+Provider recovery is closed because the compliant ADSB.lol path, exact-revision
+Cloudflare dispatch, bounded ingestion, persistence, trajectory construction,
+freshness verification and subsequent Neon scale-to-zero were all observed under
+the revised FREE_V1 profile. This does not create an ADSB.lol SLA or guaranteed
+quota, does not prove full-month Neon consumption, and does not authorize a
+permanent production-dispatch enablement. Those remain separate operating and
+capacity decisions.
 
 ## 9. Provider configuration and compatibility hardening
 

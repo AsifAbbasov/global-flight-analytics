@@ -20,9 +20,10 @@ confidence, provenance and limitations visible.
 
 The heavy backend, PostgreSQL, analytical, API, OpenAPI and frontend-integration work is
 closed for the current portfolio scope. **Stage 14 is closed** for the current repository
-scope. The production provider path has completed controlled live execution, while free-tier
-runtime recovery remains fail-closed until the safer two-hour scheduler profile is merged,
-deployed from an exact revision, and validated against Neon scale-to-zero.
+scope. The production provider path and the revised FREE_V1 two-hour scheduler profile have
+completed controlled live validation, including exact-revision ingestion and subsequent
+Neon scale-to-zero. Production dispatch was intentionally returned to fail-closed after the
+bounded validation; permanent activation remains a separate operating decision.
 
 ```text
 ADSB.lol adapter / provider policy        IMPLEMENTED
@@ -37,6 +38,7 @@ Cloudflare DISPATCH_ENABLED               false
 Neon scale-to-zero                        OBSERVED WORKING
 Neon monthly quota reset                  2026-09-01T00:00:00Z
 Controlled Cloudflare primary runtime     PASS
+Revised FREE_V1 runtime recovery          CLOSED
 Frontend Product Closure                  CLOSED — EXACT-HEAD CI VERIFIED
 Frontend Visual Polish V2                 CLOSED — EXACT-HEAD CI VERIFIED
 ```
@@ -46,7 +48,7 @@ keep-alive traffic. Cloudflare is the single scheduled owner for future producti
 ingestion. The GitHub production ingestion workflow is `workflow_dispatch`-only, so there
 is no second independent ingestion scheduler waking Render or Neon.
 
-The current free-tier budget and recovery criteria are recorded in
+The current free-tier budget and recovery evidence are recorded in
 [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md).
 
 <!-- ANALYTICAL-CORE-REVIEW-CLOSURE:README -->
@@ -93,8 +95,9 @@ The later zero-budget Visual Polish V2 was independently verified on PR #102 exa
 Baseline and Playwright E2E all completed successfully, and the Chromium suite finished
 20/20 with zero flaky retries. PR #102 was then expected-head squash-merged as
 `ce7ee7ab0b95655fff7a1b546e277a4e1c0b842f`. GitHub subsequently recorded Vercel status
-`success` for that merge revision. This Vercel status is not a substitute for the still-open
-Render/Neon/provider runtime validation.
+`success` for that merge revision. That Vercel status is historical frontend deployment
+evidence rather than a substitute for provider/Render/Neon runtime validation; the later
+FREE_V1 recovery validation was completed separately on the evidence recorded below.
 
 Structural desktop/mobile Playwright regression and retained screenshot evidence are the
 repository-owned visual strategy. A full live-map pixel-golden baseline is deliberately not
@@ -150,17 +153,21 @@ DISPATCH_ENABLED:       false
 
 The old 10-minute primary, later 30-minute recovery target, 5-minute watchdog, 15-minute
 metrics keep-awake pattern and independent 10-minute reconciliation schedule are no longer
-the current deployment policy. Controlled September runtime validation proved the
-Cloudflare-origin ingestion path and Neon scale-to-zero, but also showed real Neon wake
-windows around twenty minutes. The 30-minute primary was therefore rejected for FREE_V1
-before permanent activation. Production ingestion remains fail-closed until the revised
-two-hour profile is merged, deployed from an exact revision, and validated once in runtime.
+the current deployment policy. Controlled September runtime validation showed real Neon
+wake windows around twenty minutes, so the 30-minute primary was rejected for FREE_V1.
+PR #145 then merged the two-hour profile as exact revision
+`d024f2c9c1183f903a6be1b6264829496adf52b6`. One bounded scheduled Cloudflare primary
+produced successful Production Traffic Ingestion run `34000891812` / `#3585` on that
+revision with ADSB.lol `stored=7`, `trajectories=7` and freshness PASS. Neon subsequently
+returned to suspended state at `2026-09-06T00:38:32Z`. The Worker was restored to
+`DISPATCH_ENABLED=false` after the controlled validation.
 
 Historical reliability diagnosis and repository-recorded closure evidence are preserved in
 [`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md)
 and
 [`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`](docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md).
-GitHub Actions retains the immutable execution history; the final validator log remains
+Those historical documents are not rewritten by the later FREE_V1 recovery closure. GitHub
+Actions retains the immutable execution history; the final validator log remains
 owner-local, non-secret supporting evidence and is not committed to the repository.
 
 ## Production Provider Recovery — ADSB.lol
@@ -190,11 +197,13 @@ ADSBLOL_COMPLIANCE_HARDENING=MERGED
 PRODUCTION_WORKFLOW_SOURCE_READY=YES
 CONTROLLED_PRODUCTION_INGESTION=PASS
 CONTROLLED_CLOUDFLARE_PRIMARY=PASS
+REVISED_FREE_V1_PRIMARY_RUNTIME=PASS
+REVISED_FREE_V1_SCALE_TO_ZERO=PASS
 PRODUCTION_INGESTION=INTENTIONALLY_FAIL_CLOSED
-PRODUCTION_PROVIDER_RECOVERY=OPEN_FINAL_RECONCILIATION
+PRODUCTION_PROVIDER_RECOVERY=CLOSED
 ```
 
-Implementation details and activation criteria are recorded in
+Implementation details and exact runtime evidence are recorded in
 [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md).
 
 ## Free-Tier Infrastructure Recovery
@@ -216,11 +225,14 @@ RESERVE_FOR_INTERACTIVE_AND_RECOVERY_WORK >= 40 CU-hours
 2-hour metrics/watchdog
 one daily release smoke
 no keep-alive traffic
+FREE_TIER_INFRASTRUCTURE_RECOVERY=CLOSED
 ```
 
-The incident remains open until the revised two-hour profile is merged, deployed from an
-exact merged revision, one scheduled ingestion succeeds under that profile, and Neon is
-observed scaling to zero afterward.
+The revised two-hour profile was merged, deployed from its exact merged revision, exercised
+through one scheduled `cloudflare-primary` ingestion, and followed by observed Neon
+scale-to-zero. That closes `GFA-OPS-456` without claiming that one cycle guarantees future
+full-month CU-hour consumption. Production dispatch remains intentionally fail-closed after
+the bounded validation.
 
 ## Recent Engineering Milestones — August 2026
 
@@ -393,8 +405,8 @@ audits, Docker configuration and repository integrity.
 - [`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md) — Stage 13 frontend analytics closure;
 - [`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md) — provider incident containment;
 - [`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md) — reconciliation incident evidence;
-- [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation and runtime activation criteria;
-- [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget and current recovery state;
+- [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation and runtime closure evidence;
+- [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget, cadence policy and `GFA-OPS-456` closure evidence;
 - [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — frontend product closure and post-closure visual boundary;
 - [`docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`](docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md) — zero-budget Visual Polish V2 evidence and Flightradar24-reference boundary;
 - [`docs/FINDING_REGISTER.md`](docs/FINDING_REGISTER.md) — canonical engineering finding/status register and remediation ownership index;
@@ -403,20 +415,19 @@ audits, Docker configuration and repository integrity.
 
 ## Remaining Portfolio v1.0.0 Work
 
-Frontend Product Closure, Frontend Visual Polish V2 and ADSB.lol provider-compliance
-hardening are closed. Controlled manual and Cloudflare-origin production ingestion have
-succeeded after the Neon reset. The remaining runtime work is now focused on deploying and
-validating the revised FREE_V1 wake budget rather than extending backend or frontend scope.
+Frontend Product Closure, Frontend Visual Polish V2, ADSB.lol provider recovery and the
+FREE_V1 wake-budget remediation are closed. The revised two-hour profile has been merged,
+deployed from exact source revision `d024f2c9c1183f903a6be1b6264829496adf52b6`, exercised
+through one scheduled Cloudflare primary, and followed by observed Neon scale-to-zero.
+Production dispatch remains intentionally fail-closed after that bounded validation.
 Pixel-golden comparison is deliberately not adopted as a release requirement for the
 externally rendered live-map surface.
 
 Remaining sequence:
 
-1. merge the safer two-hour FREE_V1 scheduler profile with `DISPATCH_ENABLED=false`;
-2. deploy the exact merged Worker revision without enabling dispatch;
-3. run one controlled scheduled primary under the two-hour profile and verify ingestion, freshness, and subsequent Neon scale-to-zero;
-4. reconcile the provider/free-tier recovery documents and perform final exact-production deployment validation;
-5. complete final release documentation and publish `v1.0.0`.
+1. merge the provider/free-tier documentation reconciliation after required CI/review;
+2. perform final exact-production deployment validation required by the release policy;
+3. complete final release documentation and publish `v1.0.0`.
 
 ```text
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
@@ -431,8 +442,10 @@ ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
 ADSBLOL_COMPLIANCE_HARDENING=MERGED
 CONTROLLED_PRODUCTION_INGESTION=PASS
 CONTROLLED_CLOUDFLARE_PRIMARY=PASS
-PRODUCTION_PROVIDER_RECOVERY=OPEN_FINAL_RECONCILIATION
-FREE_TIER_INFRASTRUCTURE_RECOVERY=OPEN_RUNTIME_VALIDATION
+REVISED_FREE_V1_PRIMARY_RUNTIME=PASS
+REVISED_FREE_V1_SCALE_TO_ZERO=PASS
+PRODUCTION_PROVIDER_RECOVERY=CLOSED
+FREE_TIER_INFRASTRUCTURE_RECOVERY=CLOSED
 FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
 FINAL_RELEASE_DOCUMENTATION=OPEN
 V1_RELEASE=OPEN
