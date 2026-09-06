@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { FlightReplayControl } from '@/components/aircraft/flight-replay-control'
+import { FlightReplayTimeNavigation } from '@/components/aircraft/flight-replay-time-navigation'
 import { TrafficMap } from '@/components/map/traffic-map'
 import {
   shouldRenderProjection,
@@ -11,9 +12,10 @@ import {
 } from '@/lib/map/map-evidence-controls'
 import { useTrajectoryFlightReplay } from '@/lib/queries/flight-replay'
 import {
-  advanceFlightReplayCursor,
-  buildFlightReplayFrame,
-  resolveFlightReplayCursorFromSearch,
+  advanceFlightReplayTimeCursor,
+  buildFlightReplayTimeFrame,
+  flightReplayObservationCursorSeconds,
+  resolveFlightReplayTimeCursorFromSearch,
   type FlightReplaySpeed,
 } from '@/lib/replay/flight-replay-model'
 import type { ProjectionResult } from '@/types/projection-intelligence'
@@ -86,36 +88,51 @@ function ReplayMapWorkspace({
   onSelectAircraft,
 }: ReplayMapWorkspaceProps) {
   const replayQuery = useTrajectoryFlightReplay(trajectory)
-  const [replayCursorIndex, setReplayCursorIndex] = useState<number | null>(null)
+  const [replayCursorSeconds, setReplayCursorSeconds] = useState<number | null>(null)
   const [replayPlaying, setReplayPlaying] = useState(false)
   const [replaySpeed, setReplaySpeed] = useState<FlightReplaySpeed>(1)
   const replay = replayQuery.data
-  const resolvedReplayCursorIndex = useMemo(() => {
-    if (replayCursorIndex !== null) return replayCursorIndex
+  const resolvedReplayCursorSeconds = useMemo(() => {
+    if (replayCursorSeconds !== null) return replayCursorSeconds
     if (typeof window === 'undefined') return 0
-    return resolveFlightReplayCursorFromSearch(replay, window.location.search) ?? 0
-  }, [replay, replayCursorIndex])
+    return resolveFlightReplayTimeCursorFromSearch(replay, window.location.search) ?? 0
+  }, [replay, replayCursorSeconds])
   const replayFrame = useMemo(
-    () => buildFlightReplayFrame(replay, resolvedReplayCursorIndex),
-    [replay, resolvedReplayCursorIndex]
+    () => buildFlightReplayTimeFrame(replay, resolvedReplayCursorSeconds),
+    [replay, resolvedReplayCursorSeconds]
   )
 
   useEffect(() => {
-    if (!replayPlaying || !replay || replay.points.length <= 1) return
+    if (
+      !replayPlaying ||
+      !replay ||
+      replay.points.length <= 1 ||
+      replayFrame.totalObservedSpanSeconds <= 0
+    ) {
+      return
+    }
 
+    const tickSeconds = 0.25
     const intervalID = window.setInterval(() => {
-      setReplayCursorIndex(current => {
-        const next = advanceFlightReplayCursor(
-          current ?? replayFrame.cursorIndex,
-          replay.points.length
+      setReplayCursorSeconds(current => {
+        const next = advanceFlightReplayTimeCursor(
+          current ?? replayFrame.cursorSeconds,
+          replayFrame.totalObservedSpanSeconds,
+          tickSeconds * replaySpeed
         )
         if (next.completed) setReplayPlaying(false)
-        return next.cursorIndex
+        return next.cursorSeconds
       })
-    }, 1000 / replaySpeed)
+    }, tickSeconds * 1000)
 
     return () => window.clearInterval(intervalID)
-  }, [replay, replayFrame.cursorIndex, replayPlaying, replaySpeed])
+  }, [
+    replay,
+    replayFrame.cursorSeconds,
+    replayFrame.totalObservedSpanSeconds,
+    replayPlaying,
+    replaySpeed,
+  ])
 
   const setPlaying = (nextPlaying: boolean) => {
     if (!nextPlaying) {
@@ -123,14 +140,24 @@ function ReplayMapWorkspace({
       return
     }
 
-    if (!replay || replay.points.length <= 1) {
+    if (
+      !replay ||
+      replay.points.length <= 1 ||
+      replayFrame.totalObservedSpanSeconds <= 0
+    ) {
       setReplayPlaying(false)
       return
     }
-    if (replayFrame.cursorIndex >= replay.points.length - 1) {
-      setReplayCursorIndex(0)
+    if (replayFrame.cursorSeconds >= replayFrame.totalObservedSpanSeconds) {
+      setReplayCursorSeconds(0)
     }
     setReplayPlaying(true)
+  }
+
+  const setObservationCursorIndex = (cursorIndex: number) => {
+    setReplayCursorSeconds(
+      flightReplayObservationCursorSeconds(replay, cursorIndex)
+    )
   }
 
   const replayUnavailableReason =
@@ -154,23 +181,32 @@ function ReplayMapWorkspace({
       />
 
       {selectedAircraftICAO24 !== null ? (
-        <FlightReplayControl
-          replay={replay}
-          currentPoint={replayFrame.point}
-          cursorIndex={replayFrame.cursorIndex}
-          isPlaying={replayPlaying}
-          speed={replaySpeed}
-          isPending={replayQuery.isPending}
-          isFetching={replayQuery.isFetching}
-          error={replayQuery.error}
-          unavailableReason={replayUnavailableReason}
-          onCursorIndexChange={setReplayCursorIndex}
-          onPlayingChange={setPlaying}
-          onSpeedChange={setReplaySpeed}
-          onRetry={() => {
-            void replayQuery.refetch()
-          }}
-        />
+        <>
+          <FlightReplayTimeNavigation
+            replay={replay}
+            frame={replayFrame}
+            isPlaying={replayPlaying}
+            onCursorSecondsChange={setReplayCursorSeconds}
+            onPlayingChange={setPlaying}
+          />
+          <FlightReplayControl
+            replay={replay}
+            currentPoint={replayFrame.point}
+            cursorIndex={replayFrame.cursorIndex}
+            isPlaying={replayPlaying}
+            speed={replaySpeed}
+            isPending={replayQuery.isPending}
+            isFetching={replayQuery.isFetching}
+            error={replayQuery.error}
+            unavailableReason={replayUnavailableReason}
+            onCursorIndexChange={setObservationCursorIndex}
+            onPlayingChange={setPlaying}
+            onSpeedChange={setReplaySpeed}
+            onRetry={() => {
+              void replayQuery.refetch()
+            }}
+          />
+        </>
       ) : null}
     </div>
   )
