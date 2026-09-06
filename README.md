@@ -418,13 +418,13 @@ FREE_V1 wake-budget remediation are closed. The revised two-hour profile has bee
 deployed from exact source revision `d024f2c9c1183f903a6be1b6264829496adf52b6`, exercised
 through one scheduled Cloudflare primary, and followed by observed Neon scale-to-zero.
 Production dispatch remains intentionally fail-closed after that bounded validation.
-Pixel-golden comparison remains deliberately nonblocking for the externally rendered
-live-map surface.
+Pixel-golden comparison is deliberately not adopted as a release requirement for the
+externally rendered live-map surface.
 
 Remaining sequence:
 
 1. merge the provider/free-tier documentation reconciliation after required CI/review;
-2. perform the final release-level exact-production validation required by the release policy;
+2. perform final exact-production deployment validation required by the release policy;
 3. complete final release documentation and publish `v1.0.0`.
 
 ```text
