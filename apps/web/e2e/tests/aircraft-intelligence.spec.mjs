@@ -59,6 +59,22 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
     }),
   ).toBeVisible()
 
+  const timeNavigation = page.getByRole('region', {
+    name: 'Historical replay time navigation',
+  })
+  await expect(
+    timeNavigation.getByRole('heading', { name: 'Observed time navigation' }),
+  ).toBeVisible()
+  await expect(
+    timeNavigation.getByRole('slider', { name: 'Historical replay time cursor' }),
+  ).toHaveAttribute('max', '0')
+  await expect(
+    timeNavigation.getByText('Exact persisted observation at cursor.'),
+  ).toBeVisible()
+  await expect(
+    timeNavigation.getByText(/Aircraft position changes only when another persisted observation is reached/),
+  ).toBeVisible()
+
   const replay = page.getByRole('region', { name: 'Historical flight replay' })
   await expect(
     replay.getByRole('heading', { name: 'Historical flight replay' }),
