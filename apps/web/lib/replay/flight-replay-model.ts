@@ -50,6 +50,18 @@ export interface FlightReplayAnalyticsSummary {
   onGroundSampleCount: number
 }
 
+export interface FlightReplayObservedChange {
+  previousPointID: string
+  currentPointID: string
+  elapsedSeconds: number
+  greatCircleDisplacementM: number
+  altitudeDeltaM: number | null
+  velocityDeltaMPS: number
+  headingChangeDegrees: number
+  previousOnGround: boolean
+  currentOnGround: boolean
+}
+
 export function clampFlightReplayCursorIndex(
   cursorIndex: number,
   pointCount: number
@@ -241,6 +253,52 @@ export function buildFlightReplayAnalyticsSummary(
   }
 }
 
+export function buildFlightReplayObservedChange(
+  replay: FlightReplay | undefined,
+  cursorIndex: number
+): FlightReplayObservedChange | null {
+  if (!replay || replay.points.length <= 1) return null
+
+  const currentIndex = clampFlightReplayCursorIndex(
+    cursorIndex,
+    replay.points.length
+  )
+  if (currentIndex === 0) return null
+
+  const previous = replay.points[currentIndex - 1]
+  const current = replay.points[currentIndex]
+  if (!previous || !current) return null
+
+  const previousAltitudeM = observedAltitudeMeters(previous)
+  const currentAltitudeM = observedAltitudeMeters(current)
+
+  return {
+    previousPointID: previous.id,
+    currentPointID: current.id,
+    elapsedSeconds: Math.max(
+      0,
+      (Date.parse(current.observed_at) - Date.parse(previous.observed_at)) / 1000
+    ),
+    greatCircleDisplacementM: greatCircleDistanceMeters(
+      previous.latitude,
+      previous.longitude,
+      current.latitude,
+      current.longitude
+    ),
+    altitudeDeltaM:
+      previousAltitudeM === null || currentAltitudeM === null
+        ? null
+        : currentAltitudeM - previousAltitudeM,
+    velocityDeltaMPS: current.velocity_mps - previous.velocity_mps,
+    headingChangeDegrees: shortestHeadingChangeDegrees(
+      previous.heading_degrees,
+      current.heading_degrees
+    ),
+    previousOnGround: previous.on_ground,
+    currentOnGround: current.on_ground,
+  }
+}
+
 export function resolveFlightReplayCursorFromSearch(
   replay: FlightReplay | undefined,
   search: string
@@ -313,6 +371,43 @@ function observedAltitudeMeters(point: FlightReplayPoint): number | null {
   }
 
   return null
+}
+
+function greatCircleDistanceMeters(
+  fromLatitude: number,
+  fromLongitude: number,
+  toLatitude: number,
+  toLongitude: number
+): number {
+  const earthRadiusM = 6_371_000
+  const fromLatitudeRadians = degreesToRadians(fromLatitude)
+  const toLatitudeRadians = degreesToRadians(toLatitude)
+  const latitudeDelta = degreesToRadians(toLatitude - fromLatitude)
+  const longitudeDelta = degreesToRadians(toLongitude - fromLongitude)
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(fromLatitudeRadians) *
+      Math.cos(toLatitudeRadians) *
+      Math.sin(longitudeDelta / 2) ** 2
+  const angularDistance = 2 * Math.atan2(
+    Math.sqrt(haversine),
+    Math.sqrt(Math.max(0, 1 - haversine))
+  )
+
+  return earthRadiusM * angularDistance
+}
+
+function shortestHeadingChangeDegrees(
+  previousHeadingDegrees: number,
+  currentHeadingDegrees: number
+): number {
+  return Math.abs(
+    ((currentHeadingDegrees - previousHeadingDegrees + 540) % 360) - 180
+  )
+}
+
+function degreesToRadians(value: number): number {
+  return (value * Math.PI) / 180
 }
 
 function median(values: number[]): number | null {
