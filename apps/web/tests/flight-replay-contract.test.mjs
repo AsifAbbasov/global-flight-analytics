@@ -55,6 +55,31 @@ test('replay controls disclose observed-only evidence, gap semantics and no inte
   assert.match(control, /aria-label='Historical evidence gap timeline'/)
 })
 
+test('time navigation advances elapsed time while holding the last persisted observation in gaps', () => {
+  const model = source('lib/replay/flight-replay-model.ts')
+  const navigation = source('components/aircraft/flight-replay-time-navigation.tsx')
+  const workspace = source('components/map/map-evidence-workspace.tsx')
+
+  assert.match(model, /buildFlightReplayTimeFrame/)
+  assert.match(model, /buildFlightReplayTimeNavigation/)
+  assert.match(model, /advanceFlightReplayTimeCursor/)
+  assert.match(model, /resolveFlightReplayTimeCursorFromSearch/)
+  assert.match(model, /flightReplaySpeeds = \[1, 5, 10, 30\]/)
+  assert.match(navigation, /Observed time navigation/)
+  assert.match(navigation, /Historical replay time cursor/)
+  assert.match(navigation, /Previous observation/)
+  assert.match(navigation, /Next observation/)
+  assert.match(navigation, /Largest gap/)
+  assert.match(navigation, /No observation at cursor/)
+  assert.match(navigation, /last-persisted-observation/)
+  assert.match(navigation, /no position is synthesized inside a gap/)
+  assert.match(workspace, /tickSeconds = 0\.25/)
+  assert.match(workspace, /tickSeconds \* replaySpeed/)
+  assert.match(workspace, /buildFlightReplayTimeFrame/)
+  assert.match(workspace, /<FlightReplayTimeNavigation/)
+  assert.doesNotMatch(navigation, /interpolat(e|ion)\(/i)
+})
+
 test('replay controls surface persisted telemetry without new external providers', () => {
   const control = source('components/aircraft/flight-replay-control.tsx')
 
@@ -114,9 +139,10 @@ test('replay observation sharing uses exact persisted state ids without new stor
 
   assert.match(model, /flightReplayObservationParameter = 'replay_observation'/)
   assert.match(model, /resolveFlightReplayCursorFromSearch/)
+  assert.match(model, /resolveFlightReplayTimeCursorFromSearch/)
   assert.match(model, /buildFlightReplayObservationShareURL/)
   assert.match(model, /point\.id === requestedPointID/)
-  assert.match(workspace, /resolveFlightReplayCursorFromSearch/)
+  assert.match(workspace, /resolveFlightReplayTimeCursorFromSearch/)
   assert.match(workspace, /window\.location\.search/)
   assert.match(control, /Copy observation link/)
   assert.match(control, /Copy replay observation link/)
@@ -143,8 +169,9 @@ test('map workspace owns replay timing without changing trajectory or projection
   const workspace = source('components/map/map-evidence-workspace.tsx')
 
   assert.match(workspace, /useTrajectoryFlightReplay/)
-  assert.match(workspace, /advanceFlightReplayCursor/)
-  assert.match(workspace, /buildFlightReplayFrame/)
+  assert.match(workspace, /advanceFlightReplayTimeCursor/)
+  assert.match(workspace, /buildFlightReplayTimeFrame/)
+  assert.match(workspace, /flightReplayObservationCursorSeconds/)
   assert.match(workspace, /<FlightReplayControl/)
   assert.match(workspace, /replayPoint=\{replayFrame\.point \?\? undefined\}/)
   assert.match(workspace, /replayTrail=\{replayFrame\.trailPoints\}/)
