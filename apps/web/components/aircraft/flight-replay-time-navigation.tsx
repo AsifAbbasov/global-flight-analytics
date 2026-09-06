@@ -1,9 +1,11 @@
 'use client'
 
+import { FlightReplayEvidenceProvenance } from '@/components/aircraft/flight-replay-evidence-provenance'
 import { FlightReplayEvidenceQuality } from '@/components/aircraft/flight-replay-evidence-quality'
 import { FlightReplayIntervalComparison } from '@/components/aircraft/flight-replay-interval-comparison'
 import {
   buildFlightReplayTimeNavigation,
+  flightReplayObservationCursorSeconds,
   type FlightReplayTimeFrame,
 } from '@/lib/replay/flight-replay-model'
 import type { FlightReplay } from '@/types/flight-replay'
@@ -151,6 +153,12 @@ export function FlightReplayTimeNavigation({
       </p>
 
       <FlightReplayEvidenceQuality replay={replay} />
+      <FlightReplayEvidenceProvenance
+        replay={replay}
+        onSelectObservation={cursorIndex =>
+          jump(flightReplayObservationCursorSeconds(replay, cursorIndex))
+        }
+      />
       <FlightReplayIntervalComparison replay={replay} />
     </section>
   )
