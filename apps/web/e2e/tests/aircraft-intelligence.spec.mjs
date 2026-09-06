@@ -58,6 +58,17 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
       name: 'Stability and Explainability',
     }),
   ).toBeVisible()
+
+  const replay = page.getByRole('region', { name: 'Historical flight replay' })
+  await expect(
+    replay.getByRole('heading', { name: 'Historical flight replay' }),
+  ).toBeVisible()
+  await expect(replay.getByText('Observed only')).toBeVisible()
+  await expect(replay.getByText('No interpolation')).toBeVisible()
+  await expect(replay.getByText('Sample 1 / 1')).toBeVisible()
+  await expect(
+    replay.getByRole('slider', { name: 'Historical replay position' }),
+  ).toHaveAttribute('max', '0')
 })
 
 test('aircraft deep link restores intelligence and clearing selection returns to explorer', async ({
