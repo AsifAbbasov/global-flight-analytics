@@ -279,8 +279,10 @@ function timestamp(value: unknown, field: string): string {
 
 function fingerprint(value: unknown, field: string): string {
   const result = text(value, field).toLowerCase()
-  if (!/^[0-9a-f]{64}$/.test(result)) {
-    invalid(`${field} must be a 64-character hexadecimal fingerprint.`)
+  if (!/^(?:sha256:)?[0-9a-f]{64}$/.test(result)) {
+    invalid(
+      `${field} must be a 64-character hexadecimal digest with an optional sha256 prefix.`
+    )
   }
   return result
 }
