@@ -1,10 +1,15 @@
 # Stage 20 — Airspace Intelligence Frontend Integration
 
-Status: implementation in progress; exact-head validation pending
+Status: implementation validated on remediation head; final documentation-complete exact-head validation pending; Vercel blocked by external free-tier rate limit
 
 ```text
 STAGE_20_AIRSPACE_INTELLIGENCE_FRONTEND=IN_PROGRESS
 STAGE_20_BASE_MAIN=84989c72e4cc8fddb79e484f2c7de2e6e597ba0f
+STAGE_20_INITIAL_VALIDATION_HEAD=04ea9511b3568b50b0f3af26a86187a0bad7903c
+STAGE_20_REMEDIATION_HEAD=b803d6e6515877ed25d9fd5851bfbbc1f4f07129
+STAGE_20_REMEDIATION_GITHUB_CI=PASS
+STAGE_20_VERCEL=BLOCKED_EXTERNAL_RATE_LIMIT
+STAGE_20_MERGE_READY=NO
 STAGE_20_BACKEND_ANALYTICS_RECOMPUTATION=NONE
 STAGE_20_NEW_BACKEND_ENDPOINT=NONE
 STAGE_20_NEW_DATABASE_DATA=NONE
@@ -190,13 +195,106 @@ The source-contract tests protect:
 - no component/query-level raw `fetch` or axios path;
 - observed-time semantics;
 - bounded `world` behavior;
+- bounded SHA-256 provenance fingerprint transport encodings;
 - research-only copy;
 - rendered backend-owned metric families;
 - absence of an invented heatmap or direct grid-index rendering.
 
 The existing advanced-intelligence Playwright journey is extended to require visible Airspace Intelligence evidence and the backend research-only separation/ATC limitation.
 
-## 10. Infrastructure and cost impact
+## 10. Real first validation failure and remediation
+
+Stage 20 has a real browser-validation failure and it is retained rather than rewritten away.
+
+Initial exact feature head:
+
+```text
+HEAD=04ea9511b3568b50b0f3af26a86187a0bad7903c
+```
+
+GitHub validation on that head produced:
+
+```text
+Frontend CI #444 / run 34056126220 = SUCCESS
+Backend CI #782 / run 34056126227 = SUCCESS
+CodeQL #424 / run 34056126269 = SUCCESS
+API Load Baseline #308 / run 34056126253 = SUCCESS
+Playwright E2E #221 / run 34056126301 = FAILURE
+```
+
+The Chromium suite completed 19 scenarios successfully and failed the Stage 20 extension of `advanced-intelligence.spec.mjs`. The Airspace workspace heading was present, but the expected result-content heading `Regional occupancy` never appeared.
+
+The failure was traced to the frontend transport parser rejecting the existing deterministic Airspace Playwright provenance fingerprint before the panel could render result content.
+
+The relevant repository contract has two facts:
+
+1. the current production Airspace fingerprint builder returns a raw 64-character hexadecimal SHA-256 digest;
+2. the public OpenAPI/generated Airspace provenance contract exposes `input_fingerprint` as a string rather than declaring one exact textual digest representation, while existing GFA analytical fixtures use the explicit `sha256:<64 hex>` representation.
+
+The first Stage 20 parser had silently promoted the current backend producer representation into a stricter frontend transport rule by allowing only raw 64 hex.
+
+Rejected fixes:
+
+- weakening the fingerprint to any non-empty string;
+- deleting fingerprint validation;
+- changing product copy or browser assertions to hide the unavailable result;
+- fabricating Airspace result content when parsing fails.
+
+Selected remediation:
+
+```text
+FINGERPRINT_DIGEST=SHA256_ONLY
+RAW_64_HEX=ACCEPTED
+SHA256_PREFIX_PLUS_64_HEX=ACCEPTED
+ARBITRARY_FINGERPRINT_STRING=REJECTED
+```
+
+The parser remains bounded to a SHA-256 hexadecimal digest while accepting the two representations already present across the project transport/test surface. A permanent source contract protects that bounded compatibility.
+
+Remediation head:
+
+```text
+HEAD=b803d6e6515877ed25d9fd5851bfbbc1f4f07129
+```
+
+Independent validation on that exact head completed successfully:
+
+```text
+Frontend CI #445 / run 34056447720 = SUCCESS
+Backend CI #783 / run 34056447770 = SUCCESS
+CodeQL #425 / run 34056447741 = SUCCESS
+API Load Baseline #309 / run 34056447708 = SUCCESS
+Playwright E2E #222 / run 34056447750 = SUCCESS
+```
+
+Playwright #222 is the direct browser remediation evidence: the Chromium journey that failed on #221 completed successfully on the remediation head.
+
+No Airspace metric formula, backend service, database contract, provider path, safety boundary or UI claim changed as part of the remediation.
+
+## 11. Vercel external rate-limit evidence
+
+Vercel did not build either Stage 20 validation head because the account reached its free-tier deployment build limit.
+
+For both `04ea9511b3568b50b0f3af26a86187a0bad7903c` and `b803d6e6515877ed25d9fd5851bfbbc1f4f07129`, GitHub commit status reports:
+
+```text
+context=Vercel
+state=failure
+description=Deployment rate limited — retry in 24 hours.
+```
+
+This is classified as an external deployment-capacity blocker, not as successful deployment evidence and not as a Stage 20 code failure.
+
+```text
+VERCEL_EXACT_HEAD_VALIDATION=NOT_VERIFIED
+VERCEL_EXTERNAL_RATE_LIMIT=BLOCKING
+PAID_UPGRADE_REQUIRED_BY_STAGE_20=NO
+ZERO_BUDGET_BOUNDARY=PRESERVED
+```
+
+Stage 20 does not change the zero-budget constraint merely to bypass a temporary hosted preview limit.
+
+## 12. Infrastructure and cost impact
 
 ```text
 New paid provider             = NO
@@ -215,7 +313,7 @@ Additional cost               = 0 RUB
 
 The only new product request is to an existing GFA read-only backend endpoint for a capability already present in the production API surface.
 
-## 11. Acceptance criteria
+## 13. Acceptance criteria
 
 Stage 20 product implementation can be proposed for merge only when one exact Pull Request head demonstrates:
 
@@ -228,9 +326,11 @@ Playwright E2E       = SUCCESS
 Vercel               = SUCCESS
 ```
 
+A Vercel free-tier rate-limit status is not equivalent to Vercel success. The acceptance contract is intentionally not weakened after the external failure appeared.
+
 The exact merge-candidate SHA must be revalidated after any remediation or documentation change. A successful earlier head cannot be reused as evidence for a later head.
 
-## 12. Residual limitations
+## 14. Residual limitations
 
 Even after product merge:
 
@@ -243,8 +343,10 @@ Even after product merge:
 - no grid heatmap is rendered until geographic cell bounds are independently verified;
 - no operational separation, controller workload or collision-avoidance claim is introduced.
 
-## 13. Current status
+## 15. Current status
 
-Implementation is present on the Stage 20 feature branch. Continuous Integration and browser validation on the final exact head remain pending at the time this engineering-history snapshot is written.
+The Stage 20 product implementation and its remediation have passed all five GitHub validation workflows on the remediation head. This documentation update creates a later head, so Continuous Integration and browser validation on the final exact documentation-complete head remain pending at the time this engineering-history snapshot is written.
+
+Vercel exact-head deployment remains `NOT_VERIFIED` because the free-tier build service is rate limited. Stage 20 therefore remains `IN_PROGRESS` and `MERGE_READY=NO` until the acceptance contract is actually satisfied.
 
 A later post-merge closure document must append the actual merge and post-merge evidence without rewriting this pre-merge history.
