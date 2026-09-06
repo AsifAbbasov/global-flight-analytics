@@ -416,18 +416,23 @@ audits, Docker configuration and repository integrity.
 ## Remaining Portfolio v1.0.0 Work
 
 Frontend Product Closure, Frontend Visual Polish V2, ADSB.lol provider recovery and the
-FREE_V1 wake-budget remediation are closed. The revised two-hour profile has been merged,
-deployed from exact source revision `d024f2c9c1183f903a6be1b6264829496adf52b6`, exercised
-through one scheduled Cloudflare primary, and followed by observed Neon scale-to-zero.
-Production dispatch remains intentionally fail-closed after that bounded validation.
+FREE_V1 wake-budget remediation are closed. The final exact-production release validation is
+also closed: Render reported live deployment `dep-daegc2ss728c7380js90` for exact revision
+`366a406bc33c7deb839d4c1a56feb82901402e75`, and Production Smoke run `34016471540`
+(job `101441002735`) verified the deployed revision, frontend identity, API health/readiness,
+exact `/api/v1/version` provenance and production CORS contract. Production dispatch remains
+intentionally fail-closed after the bounded FREE_V1 ingestion validation.
+
 Pixel-golden comparison is deliberately not adopted as a release requirement for the
-externally rendered live-map surface.
+externally rendered live-map surface. Final release documentation is closed by the
+repository-owned release contract in this candidate; the actual `v1.0.0` publication remains
+separate until the final PR is merged and the resulting exact `main` SHA is verified.
 
 Remaining sequence:
 
-1. merge the provider/free-tier documentation reconciliation after required CI/review;
-2. perform final exact-production deployment validation required by the release policy;
-3. complete final release documentation and publish `v1.0.0`.
+1. merge this final release-candidate documentation after required CI/review;
+2. verify the resulting exact `main` revision and post-merge CI;
+3. publish `v1.0.0` from that exact revision.
 
 ```text
 FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
@@ -446,8 +451,8 @@ REVISED_FREE_V1_PRIMARY_RUNTIME=PASS
 REVISED_FREE_V1_SCALE_TO_ZERO=PASS
 PRODUCTION_PROVIDER_RECOVERY=CLOSED
 FREE_TIER_INFRASTRUCTURE_RECOVERY=CLOSED
-FINAL_EXACT_PRODUCTION_VALIDATION=OPEN
-FINAL_RELEASE_DOCUMENTATION=OPEN
+FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED
+FINAL_RELEASE_DOCUMENTATION=CLOSED
 V1_RELEASE=OPEN
 ```
 
