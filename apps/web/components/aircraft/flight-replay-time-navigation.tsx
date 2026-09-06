@@ -1,5 +1,6 @@
 'use client'
 
+import { FlightReplayIntervalComparison } from '@/components/aircraft/flight-replay-interval-comparison'
 import {
   buildFlightReplayTimeNavigation,
   type FlightReplayTimeFrame,
@@ -147,6 +148,8 @@ export function FlightReplayTimeNavigation({
         latest persisted observation until the next observed sample timestamp is reached.
         {isPlaying ? ' Playback is currently advancing elapsed time.' : ''}
       </p>
+
+      <FlightReplayIntervalComparison replay={replay} />
     </section>
   )
 }
