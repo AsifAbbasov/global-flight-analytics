@@ -18,6 +18,7 @@ import {
   type AircraftVisualState,
 } from '@/lib/map/aircraft-visual'
 import { formatTrafficAltitude } from '@/lib/traffic/altitude'
+import type { FlightReplayPoint } from '@/types/flight-replay'
 import type { ProjectionResult } from '@/types/projection-intelligence'
 import type { Region } from '@/types/region'
 import type { TrafficAircraft } from '@/types/traffic'
@@ -28,6 +29,7 @@ import type {
 
 const trajectorySourceID = 'selected-aircraft-trajectory'
 const projectionSourceID = 'selected-aircraft-projection'
+const replaySourceID = 'selected-aircraft-flight-replay'
 const projectionLayerIDs = {
   uncertainty: 'selected-aircraft-projection-uncertainty',
   line: 'selected-aircraft-projection-line',
@@ -39,6 +41,10 @@ const trajectoryLayerIDs = {
   estimated: 'selected-aircraft-trajectory-estimated',
   invalid: 'selected-aircraft-trajectory-invalid',
 } as const
+const replayLayerIDs = {
+  samples: 'selected-aircraft-flight-replay-samples',
+  current: 'selected-aircraft-flight-replay-current',
+} as const
 
 interface TrafficMapProps {
   aircraft: TrafficAircraft[]
@@ -46,6 +52,8 @@ interface TrafficMapProps {
   selectedAircraftICAO24: string | null
   trajectory: AircraftTrajectory | undefined
   projection: ProjectionResult | undefined
+  replayPoint?: FlightReplayPoint
+  replayTrail?: FlightReplayPoint[]
   onSelectAircraft: (icao24: string) => void
 }
 
@@ -75,12 +83,32 @@ interface TrajectoryFeatureCollection {
   features: TrajectoryLineFeature[]
 }
 
+interface ReplayPointFeature {
+  type: 'Feature'
+  properties: {
+    kind: 'sample' | 'current'
+    observed_at: string
+    source_name: string
+  }
+  geometry: {
+    type: 'Point'
+    coordinates: [number, number]
+  }
+}
+
+interface ReplayFeatureCollection {
+  type: 'FeatureCollection'
+  features: ReplayPointFeature[]
+}
+
 export function TrafficMap({
   aircraft,
   region,
   selectedAircraftICAO24,
   trajectory,
   projection,
+  replayPoint,
+  replayTrail = [],
   onSelectAircraft,
 }: TrafficMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
@@ -219,6 +247,29 @@ export function TrafficMap({
     const map = mapRef.current
     if (!map) return
 
+    const updateReplay = () => {
+      ensureReplayLayers(map)
+      const source = map.getSource(
+        replaySourceID
+      ) as maplibregl.GeoJSONSource | undefined
+      source?.setData(buildReplayFeatureCollection(replayTrail, replayPoint))
+    }
+
+    if (map.loaded()) {
+      updateReplay()
+      return
+    }
+
+    map.once('load', updateReplay)
+    return () => {
+      map.off('load', updateReplay)
+    }
+  }, [replayPoint, replayTrail])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
     const nextAircraftKeys = new Set<string>()
 
     for (const item of aircraft) {
@@ -268,6 +319,11 @@ export function TrafficMap({
         {selectedLabel ? (
           <div className='rounded-full border border-amber-300/50 bg-amber-300/15 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-amber-100 shadow-xl backdrop-blur-md'>
             Selected · {selectedLabel}
+          </div>
+        ) : null}
+        {replayPoint ? (
+          <div className='rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-emerald-100 shadow-xl backdrop-blur-md'>
+            Historical replay · observed sample
           </div>
         ) : null}
       </div>
@@ -511,6 +567,86 @@ function focusTrajectory(
     duration: 700,
     maxZoom: aviationMapView.maxEvidenceZoom,
   })
+}
+
+function ensureReplayLayers(map: maplibregl.Map) {
+  if (!map.getSource(replaySourceID)) {
+    map.addSource(replaySourceID, {
+      type: 'geojson',
+      data: emptyReplayFeatureCollection(),
+    })
+  }
+
+  if (!map.getLayer(replayLayerIDs.samples)) {
+    map.addLayer({
+      id: replayLayerIDs.samples,
+      type: 'circle',
+      source: replaySourceID,
+      filter: ['==', ['get', 'kind'], 'sample'],
+      paint: {
+        'circle-radius': 4,
+        'circle-color': '#6ee7b7',
+        'circle-stroke-color': '#064e3b',
+        'circle-stroke-width': 1.5,
+        'circle-opacity': 0.72,
+      },
+    })
+  }
+
+  if (!map.getLayer(replayLayerIDs.current)) {
+    map.addLayer({
+      id: replayLayerIDs.current,
+      type: 'circle',
+      source: replaySourceID,
+      filter: ['==', ['get', 'kind'], 'current'],
+      paint: {
+        'circle-radius': 8,
+        'circle-color': '#fef3c7',
+        'circle-stroke-color': '#10b981',
+        'circle-stroke-width': 3,
+        'circle-opacity': 1,
+      },
+    })
+  }
+}
+
+function buildReplayFeatureCollection(
+  trail: FlightReplayPoint[],
+  current: FlightReplayPoint | undefined
+): ReplayFeatureCollection {
+  const features = trail.map<ReplayPointFeature>(point => ({
+    type: 'Feature',
+    properties: {
+      kind: 'sample',
+      observed_at: point.observed_at,
+      source_name: point.source_name,
+    },
+    geometry: {
+      type: 'Point',
+      coordinates: [point.longitude, point.latitude],
+    },
+  }))
+
+  if (current) {
+    features.push({
+      type: 'Feature',
+      properties: {
+        kind: 'current',
+        observed_at: current.observed_at,
+        source_name: current.source_name,
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [current.longitude, current.latitude],
+      },
+    })
+  }
+
+  return { type: 'FeatureCollection', features }
+}
+
+function emptyReplayFeatureCollection(): ReplayFeatureCollection {
+  return { type: 'FeatureCollection', features: [] }
 }
 
 function createMarkerRecord(
