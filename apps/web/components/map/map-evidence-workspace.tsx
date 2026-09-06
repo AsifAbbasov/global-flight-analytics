@@ -30,6 +30,15 @@ interface MapEvidenceWorkspaceProps {
   onSelectAircraft: (icao24: string) => void
 }
 
+interface ReplayMapWorkspaceProps {
+  aircraft: TrafficAircraft[]
+  region: Region
+  selectedAircraftICAO24: string | null
+  trajectory: AircraftTrajectory | undefined
+  projection: ProjectionResult | undefined
+  onSelectAircraft: (icao24: string) => void
+}
+
 export function MapEvidenceWorkspace({
   aircraft,
   region,
@@ -39,11 +48,6 @@ export function MapEvidenceWorkspace({
   visibility,
   onSelectAircraft,
 }: MapEvidenceWorkspaceProps) {
-  const replayQuery = useTrajectoryFlightReplay(trajectory)
-  const [replayCursorIndex, setReplayCursorIndex] = useState(0)
-  const [replayPlaying, setReplayPlaying] = useState(false)
-  const [replaySpeed, setReplaySpeed] = useState<FlightReplaySpeed>(1)
-
   const trajectoryVisible = shouldRenderTrajectory(
     visibility,
     trajectory?.segments.length ?? 0
@@ -52,16 +56,40 @@ export function MapEvidenceWorkspace({
     visibility,
     projection?.points.length ?? 0
   )
+  const replayIdentity = trajectory
+    ? `${trajectory.id}:${trajectory.updated_at}`
+    : `selection:${selectedAircraftICAO24 ?? 'none'}`
+
+  return (
+    <ReplayMapWorkspace
+      key={replayIdentity}
+      aircraft={aircraft}
+      region={region}
+      selectedAircraftICAO24={selectedAircraftICAO24}
+      trajectory={trajectoryVisible ? trajectory : undefined}
+      projection={projectionVisible ? projection : undefined}
+      onSelectAircraft={onSelectAircraft}
+    />
+  )
+}
+
+function ReplayMapWorkspace({
+  aircraft,
+  region,
+  selectedAircraftICAO24,
+  trajectory,
+  projection,
+  onSelectAircraft,
+}: ReplayMapWorkspaceProps) {
+  const replayQuery = useTrajectoryFlightReplay(trajectory)
+  const [replayCursorIndex, setReplayCursorIndex] = useState(0)
+  const [replayPlaying, setReplayPlaying] = useState(false)
+  const [replaySpeed, setReplaySpeed] = useState<FlightReplaySpeed>(1)
   const replay = replayQuery.data
   const replayFrame = useMemo(
     () => buildFlightReplayFrame(replay, replayCursorIndex),
     [replay, replayCursorIndex]
   )
-
-  useEffect(() => {
-    setReplayCursorIndex(0)
-    setReplayPlaying(false)
-  }, [trajectory?.id, replay?.points.length])
 
   useEffect(() => {
     if (!replayPlaying || !replay || replay.points.length <= 1) return
@@ -106,8 +134,8 @@ export function MapEvidenceWorkspace({
         aircraft={aircraft}
         region={region}
         selectedAircraftICAO24={selectedAircraftICAO24}
-        trajectory={trajectoryVisible ? trajectory : undefined}
-        projection={projectionVisible ? projection : undefined}
+        trajectory={trajectory}
+        projection={projection}
         replayPoint={replayFrame.point ?? undefined}
         replayTrail={replayFrame.trailPoints}
         onSelectAircraft={onSelectAircraft}
