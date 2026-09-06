@@ -80,7 +80,7 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
   await expect(replay.getByText('Heading', { exact: true })).toBeVisible()
   await expect(replay.getByText('285°')).toBeVisible()
   await expect(replay.getByText('Vertical rate', { exact: true })).toBeVisible()
-  await expect(replay.getByText('0.0 m/s')).toBeVisible()
+  await expect(replay.getByText('0.0 m/s', { exact: true })).toBeVisible()
   await expect(replay.getByText('Flight state', { exact: true })).toBeVisible()
   await expect(replay.getByText('Airborne', { exact: true })).toBeVisible()
   await expect(
