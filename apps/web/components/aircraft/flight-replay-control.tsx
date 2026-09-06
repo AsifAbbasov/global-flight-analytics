@@ -43,6 +43,7 @@ export function FlightReplayControl({
 }: FlightReplayControlProps) {
   const pointCount = replay?.points.length ?? 0
   const hasReplay = pointCount > 0 && currentPoint !== null
+  const canPlay = pointCount > 1
   const observedAt = currentPoint
     ? formatObservedAt(currentPoint.observed_at)
     : null
@@ -98,8 +99,9 @@ export function FlightReplayControl({
           <div className='flex flex-wrap items-center gap-2'>
             <button
               type='button'
+              disabled={!canPlay}
               onClick={() => onPlayingChange(!isPlaying)}
-              className='min-w-20 rounded-lg border border-sky-400/35 bg-sky-400/10 px-3 py-2 text-xs font-bold text-sky-100 hover:bg-sky-400/15'
+              className='min-w-20 rounded-lg border border-sky-400/35 bg-sky-400/10 px-3 py-2 text-xs font-bold text-sky-100 hover:bg-sky-400/15 disabled:cursor-not-allowed disabled:opacity-40'
             >
               {isPlaying ? 'Pause' : 'Play'}
             </button>
@@ -113,8 +115,9 @@ export function FlightReplayControl({
                   key={candidate}
                   type='button'
                   aria-pressed={speed === candidate}
+                  disabled={!canPlay}
                   onClick={() => onSpeedChange(candidate)}
-                  className={`rounded-md border px-2.5 py-2 text-xs font-bold ${
+                  className={`rounded-md border px-2.5 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 ${
                     speed === candidate
                       ? 'border-amber-300/50 bg-amber-300/10 text-amber-100'
                       : 'border-slate-700 text-slate-400 hover:bg-slate-900'
@@ -136,12 +139,13 @@ export function FlightReplayControl({
             max={Math.max(0, pointCount - 1)}
             step={1}
             value={cursorIndex}
+            disabled={!canPlay}
             onChange={event => {
               onPlayingChange(false)
               onCursorIndexChange(Number(event.target.value))
             }}
             aria-label='Historical replay position'
-            className='w-full accent-sky-400'
+            className='w-full accent-sky-400 disabled:opacity-50'
           />
 
           <div className='grid gap-2 text-xs sm:grid-cols-3'>
