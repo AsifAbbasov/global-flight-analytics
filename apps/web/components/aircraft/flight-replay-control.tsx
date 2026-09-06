@@ -1,9 +1,12 @@
 'use client'
 
+import { useState } from 'react'
+
 import { getRequestErrorMessage } from '@/lib/api/client'
 import {
   buildFlightReplayAnalyticsSummary,
   buildFlightReplayGapSummary,
+  buildFlightReplayObservationShareURL,
   flightReplaySpeeds,
   type FlightReplayAnalyticsSummary,
   type FlightReplayGapSummary,
@@ -30,6 +33,11 @@ interface FlightReplayControlProps {
   onRetry: () => void
 }
 
+type ReplayCopyState = {
+  pointID: string
+  status: 'copied' | 'failed'
+}
+
 export function FlightReplayControl({
   replay,
   currentPoint,
@@ -45,6 +53,7 @@ export function FlightReplayControl({
   onSpeedChange,
   onRetry,
 }: FlightReplayControlProps) {
+  const [copyState, setCopyState] = useState<ReplayCopyState | null>(null)
   const pointCount = replay?.points.length ?? 0
   const hasReplay = pointCount > 0 && currentPoint !== null
   const canPlay = pointCount > 1
@@ -54,6 +63,31 @@ export function FlightReplayControl({
   const altitude = currentPoint ? formatObservedAltitude(currentPoint) : null
   const gapSummary = buildFlightReplayGapSummary(replay, cursorIndex)
   const analyticsSummary = buildFlightReplayAnalyticsSummary(replay)
+  const currentCopyStatus =
+    currentPoint && copyState?.pointID === currentPoint.id
+      ? copyState.status
+      : null
+
+  const copyObservationLink = async () => {
+    if (!currentPoint || typeof window === 'undefined') return
+
+    if (!navigator.clipboard?.writeText) {
+      setCopyState({ pointID: currentPoint.id, status: 'failed' })
+      return
+    }
+
+    const shareURL = buildFlightReplayObservationShareURL(
+      window.location.href,
+      currentPoint.id
+    )
+
+    try {
+      await navigator.clipboard.writeText(shareURL)
+      setCopyState({ pointID: currentPoint.id, status: 'copied' })
+    } catch {
+      setCopyState({ pointID: currentPoint.id, status: 'failed' })
+    }
+  }
 
   return (
     <section
@@ -61,6 +95,7 @@ export function FlightReplayControl({
       aria-label='Historical flight replay'
       data-flight-replay-evidence='observed-only'
       data-flight-replay-interpolation='none'
+      data-replay-observation-id={currentPoint?.id}
     >
       <div className='flex flex-wrap items-start justify-between gap-3'>
         <div>
@@ -133,6 +168,20 @@ export function FlightReplayControl({
                 </button>
               ))}
             </div>
+            <button
+              type='button'
+              aria-label='Copy replay observation link'
+              onClick={() => {
+                void copyObservationLink()
+              }}
+              className='rounded-md border border-slate-700 px-2.5 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900'
+            >
+              {currentCopyStatus === 'copied'
+                ? 'Link copied'
+                : currentCopyStatus === 'failed'
+                  ? 'Copy unavailable'
+                  : 'Copy observation link'}
+            </button>
             <span className='ml-auto text-xs text-slate-400'>
               Sample {cursorIndex + 1} / {pointCount}
               {isFetching ? ' · refreshing' : ''}
@@ -196,7 +245,8 @@ export function FlightReplayControl({
 
       <p className='mt-3 text-[11px] leading-relaxed text-slate-500'>
         Playback advances only across persisted observed flight states. Gaps are not filled,
-        and positions between observations are not synthesized.
+        and positions between observations are not synthesized. Shared links target the exact
+        persisted observation identifier.
       </p>
     </section>
   )

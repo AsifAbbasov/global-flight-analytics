@@ -5,6 +5,7 @@ import type {
 
 export const flightReplaySpeeds = [1, 2, 4] as const
 export type FlightReplaySpeed = (typeof flightReplaySpeeds)[number]
+export const flightReplayObservationParameter = 'replay_observation'
 
 export interface FlightReplayFrame {
   cursorIndex: number
@@ -238,6 +239,36 @@ export function buildFlightReplayAnalyticsSummary(
     airborneSampleCount: replay.points.filter(point => !point.on_ground).length,
     onGroundSampleCount: replay.points.filter(point => point.on_ground).length,
   }
+}
+
+export function resolveFlightReplayCursorFromSearch(
+  replay: FlightReplay | undefined,
+  search: string
+): number | null {
+  if (!replay || replay.points.length === 0) return null
+
+  const parameters = new URLSearchParams(
+    search.startsWith('?') ? search.slice(1) : search
+  )
+  const requestedPointID = parameters
+    .get(flightReplayObservationParameter)
+    ?.trim()
+  if (!requestedPointID) return null
+
+  const cursorIndex = replay.points.findIndex(point => point.id === requestedPointID)
+  return cursorIndex >= 0 ? cursorIndex : null
+}
+
+export function buildFlightReplayObservationShareURL(
+  currentURL: string,
+  pointID: string
+): string {
+  const normalizedPointID = pointID.trim()
+  if (normalizedPointID.length === 0) return currentURL
+
+  const url = new URL(currentURL)
+  url.searchParams.set(flightReplayObservationParameter, normalizedPointID)
+  return url.toString()
 }
 
 export function advanceFlightReplayCursor(

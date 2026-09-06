@@ -66,6 +66,13 @@ test('aircraft explorer selection opens the complete intelligence workspace', as
   await expect(replay.getByText('Observed only')).toBeVisible()
   await expect(replay.getByText('No interpolation')).toBeVisible()
   await expect(replay.getByText('Sample 1 / 1')).toBeVisible()
+  await expect(replay).toHaveAttribute(
+    'data-replay-observation-id',
+    'state-azal-101-1'
+  )
+  await expect(
+    replay.getByRole('button', { name: 'Copy replay observation link' }),
+  ).toBeVisible()
   await expect(
     replay.getByRole('slider', { name: 'Historical replay position' }),
   ).toHaveAttribute('max', '0')
