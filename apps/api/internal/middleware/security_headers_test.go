@@ -46,6 +46,7 @@ func TestSecurityHeadersSetsAPIResponseProtection(
 		"Permissions-Policy":                "camera=(), geolocation=(), microphone=()",
 		"Content-Security-Policy":           "default-src 'none'; base-uri 'none'; frame-ancestors 'none'",
 		"X-Permitted-Cross-Domain-Policies": "none",
+		"Strict-Transport-Security":         strictTransportSecurityPolicy,
 	}
 
 	for name, expected := range expectedHeaders {

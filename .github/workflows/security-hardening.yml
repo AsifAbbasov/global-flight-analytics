@@ -1,0 +1,160 @@
+name: Security Hardening
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '41 4 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-hardening-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository with Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_VERSION: "8.30.1"
+
+  source-sbom:
+    name: CycloneDX SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Prepare security artifact directory
+        run: mkdir -p artifacts/security
+
+      - name: Generate CycloneDX SBOM with Syft
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: artifacts/security/gfa-source-sbom.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          syft-version: v1.51.1
+
+      - name: Verify SBOM output
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s artifacts/security/gfa-source-sbom.cdx.json
+          grep -q '"bomFormat"[[:space:]]*:[[:space:]]*"CycloneDX"' artifacts/security/gfa-source-sbom.cdx.json
+
+      - name: Upload SBOM evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gfa-cyclonedx-sbom-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/security/gfa-source-sbom.cdx.json
+          if-no-files-found: error
+          retention-days: 30
+
+  fuzz:
+    name: Go Fuzz Safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Fuzz trusted proxy client identity
+        run: go test ./internal/security/clientidentity -run '^$' -fuzz '^FuzzPolicyResolveReturnsBoundedIPAddress$' -fuzztime=15s
+
+      - name: Fuzz traffic state normalization
+        run: go test ./internal/services/traffic/normalizer -run '^$' -fuzz '^FuzzNormalizeFlightStateIsDeterministic$' -fuzztime=15s
+
+  postgres-backup-restore:
+    name: PostgreSQL Backup Restore Drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BACKEND_IMAGE: global-flight-analytics-api:security-hardening
+      POSTGRES_IMAGE: postgres:16.14-alpine3.24
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Verify backup drill script syntax
+        run: bash -n scripts/run-postgres-backup-restore-drill.sh
+
+      - name: Build backend image
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_date="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          docker build \
+            --pull \
+            --build-arg APP_VERSION="security-hardening-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}" \
+            --build-arg RENDER_GIT_COMMIT="$SOURCE_SHA" \
+            --build-arg BUILD_DATE="$build_date" \
+            --file apps/api/Dockerfile \
+            --tag "$BACKEND_IMAGE" \
+            .
+
+      - name: Run disposable backup and restore drill
+        run: bash scripts/run-postgres-backup-restore-drill.sh
+
+      - name: Upload backup drill evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: postgres-backup-restore-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/security/postgres-backup-restore/gfa-backup-restore-drill.dump.sha256
+            artifacts/security/postgres-backup-restore/evidence.json
+          if-no-files-found: error
+          retention-days: 30
+
+  security-hardening-gate:
+    name: Security Hardening Gate
+    if: ${{ always() }}
+    needs:
+      - secret-scan
+      - source-sbom
+      - fuzz
+      - postgres-backup-restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify hardening jobs
+        shell: bash
+        run: |
+          test "${{ needs.secret-scan.result }}" = "success"
+          test "${{ needs.source-sbom.result }}" = "success"
+          test "${{ needs.fuzz.result }}" = "success"
+          test "${{ needs.postgres-backup-restore.result }}" = "success"

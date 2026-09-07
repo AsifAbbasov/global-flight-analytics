@@ -15,13 +15,15 @@ import (
 )
 
 const (
-	defaultAllowedOrigins  = "http://localhost:3000,http://localhost:3001"
-	defaultBodyLimitBytes  = 1024 * 1024
-	defaultReadTimeout     = 10 * time.Second
-	defaultWriteTimeout    = 15 * time.Second
-	defaultIdleTimeout     = 60 * time.Second
-	defaultRateLimitMax    = 120
-	defaultRateLimitWindow = time.Minute
+	defaultAllowedOrigins        = "http://localhost:3000,http://localhost:3001"
+	defaultBodyLimitBytes        = 1024 * 1024
+	defaultReadTimeout           = 10 * time.Second
+	defaultWriteTimeout          = 15 * time.Second
+	defaultIdleTimeout           = 60 * time.Second
+	defaultRateLimitMax          = 120
+	defaultRateLimitWindow       = time.Minute
+	defaultReadBufferSize        = 4096
+	defaultConnectionConcurrency = 4096
 )
 
 func normalizeConfig(
@@ -228,6 +230,8 @@ func newFiberConfig(
 ) fiber.Config {
 	return fiber.Config{
 		BodyLimit:             cfg.Protection.BodyLimitBytes,
+		Concurrency:           defaultConnectionConcurrency,
+		ReadBufferSize:        defaultReadBufferSize,
 		ReadTimeout:           cfg.Protection.ReadTimeout,
 		WriteTimeout:          cfg.Protection.WriteTimeout,
 		IdleTimeout:           cfg.Protection.IdleTimeout,
@@ -262,14 +266,20 @@ func newErrorHandler(
 				internalmiddleware.RequestIDLocalKey,
 			).(string)
 
+			route := "unmatched"
+			if currentRoute := c.Route(); currentRoute != nil &&
+				currentRoute.Path != "" {
+				route = currentRoute.Path
+			}
+
 			log.Error(
 				"unhandled api request error",
 				"request_id",
 				requestID,
 				"method",
 				c.Method(),
-				"path",
-				c.Path(),
+				"route",
+				route,
 				"status",
 				status,
 				"error_type",

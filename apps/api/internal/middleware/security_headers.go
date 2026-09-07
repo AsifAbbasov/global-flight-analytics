@@ -2,6 +2,8 @@ package middleware
 
 import "github.com/gofiber/fiber/v2"
 
+const strictTransportSecurityPolicy = "max-age=31536000"
+
 func SecurityHeaders() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Set(
@@ -27,6 +29,10 @@ func SecurityHeaders() fiber.Handler {
 		c.Set(
 			"X-Permitted-Cross-Domain-Policies",
 			"none",
+		)
+		c.Set(
+			"Strict-Transport-Security",
+			strictTransportSecurityPolicy,
 		)
 
 		return c.Next()
