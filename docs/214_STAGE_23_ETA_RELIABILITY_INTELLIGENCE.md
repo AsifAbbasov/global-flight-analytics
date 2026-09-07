@@ -230,7 +230,7 @@ The endpoint is read-only.
 
 The public contract must be added to both canonical OpenAPI copies and the generated TypeScript client before Stage 23 can become review-ready.
 
-At the time this document was created, that OpenAPI synchronization remained intentionally incomplete and therefore Stage 23 remained `IN_PROGRESS`.
+At the current Stage 23 documentation state, that OpenAPI synchronization remains incomplete and therefore Stage 23 remains `IN_PROGRESS`.
 
 ## 13. Frontend integration
 
@@ -331,7 +331,7 @@ OpenAPI #143 remains a genuine release blocker until the canonical OpenAPI route
 
 ## 16. Current validation status
 
-At document creation time:
+The canonical documentation surfaces are now aligned to the in-progress Stage 23 state, but implementation validation is not complete:
 
 ```text
 STAGE_23_STATUS=IN_PROGRESS
@@ -340,13 +340,36 @@ STAGE_23_PR_DRAFT=YES
 STAGE_23_REVIEW_READY=NO
 STAGE_23_MERGE_READY=NO
 STAGE_23_MERGE_AUTHORIZATION=NOT_GRANTED
+STAGE_23_DOCUMENT_214=ALIGNED_IN_PROGRESS
+STAGE_23_DOCUMENT_INDEX=ALIGNED_V2_4
+STAGE_23_README=ALIGNED_IN_PROGRESS
+STAGE_23_ROADMAP=ALIGNED_V1_3
+STAGE_23_DOCUMENTATION_REGRESSION_TEST=INSTALLED
 STAGE_23_EXACT_HEAD_FINAL_CI=NOT_YET_AVAILABLE
 STAGE_23_POST_MERGE_CI=NOT_APPLICABLE
 ```
 
 No earlier successful workflow may be transferred to a later Stage 23 head.
 
-## 17. Remaining engineering work before review-ready
+## 17. Documentation and governance alignment
+
+Stage 23 is registered in all high-level documentation surfaces needed for the in-progress feature:
+
+```text
+docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md
+docs/DOCUMENT_INDEX.md — Documentation Index v2.4
+README.md — Stage 23 in-progress product summary
+docs/24_MVP_VERSION_ROADMAP.md — Architecture Baseline v1.3 / explicit Stage 23 product increment
+apps/web/tests/stage-23-eta-reliability-documentation.test.mjs
+```
+
+Document 24 also repairs the stale Version 2 candidate language and records the already verified Version 2 closure from Document 213.
+
+The Version 2 reconciliation subsection of Document 25 was written before Stage 23 existed and states that the reconciliation itself did not create Stage 23. That sentence remains historically true about the reconciliation operation. The later explicit product decision that authorizes Stage 23 is owned by Document 24 Section 21 and this Document 214; it must not be misread as a retroactive claim that Version 2 reconciliation created Stage 23.
+
+No synthetic finding ID is created merely because a product feature exists. `GFA-SEC-445` remains the independent existing repository-security finding and is not modified by Stage 23.
+
+## 18. Remaining engineering work before review-ready
 
 The stage remains blocked on all of the following:
 
@@ -356,12 +379,12 @@ The stage remains blocked on all of the following:
 4. regenerate the canonical TypeScript API client from OpenAPI;
 5. update route inventory/count assertions from the previous surface to the new source-backed surface;
 6. add dedicated production E2E/mock assertions for the ETA Reliability user path rather than relying only on unrelated Playwright success;
-7. add permanent Stage 23 documentation/claim-boundary regression coverage;
-8. align README and `DOCUMENT_INDEX.md`;
-9. complete a full exact-head GitHub CI matrix and Vercel check;
-10. verify review threads/reviews and mergeability on the exact final head.
+7. complete a full exact-head GitHub CI matrix and Vercel check;
+8. verify review threads/reviews and mergeability on the exact final head.
 
-## 18. Review-ready gate
+The Stage 23 documentation/claim-boundary regression test, README alignment, Document Index registration and roadmap registration are already present and are no longer listed as unfinished engineering work.
+
+## 19. Review-ready gate
 
 Stage 23 may become review-ready only when all of the following are true on one exact PR head:
 
@@ -379,7 +402,7 @@ Stage 23 permanent regression tests=PASS
 Document 214 current-state evidence aligned
 ```
 
-## 19. Merge gate
+## 20. Merge gate
 
 Review-ready is not merge authorization.
 
@@ -387,7 +410,7 @@ Merge requires a separate explicit exact-head authorization after the final revi
 
 If the head moves, prior authorization and prior exact-head validation are not transferred.
 
-## 20. Closure gate
+## 21. Closure gate
 
 Stage 23 must not be declared `CLOSED` merely because PR #171 merges.
 
@@ -400,7 +423,7 @@ Formal closure requires:
 5. non-triggered workflows reported as `NOT_TRIGGERED`, never as pass;
 6. post-merge closure evidence recorded separately without rewriting this pre-merge history.
 
-## 21. Scaling path
+## 22. Scaling path
 
 Stage 23 is intentionally reusable.
 
@@ -414,7 +437,7 @@ If the trajectory-level product proves useful, the same bounded evidence semanti
 
 Those extensions are not part of Stage 23 and require separate product decisions. Stage 23 must not pre-build them speculatively.
 
-## 22. Non-goals
+## 23. Non-goals
 
 Stage 23 does not implement:
 
@@ -433,7 +456,7 @@ persistent trajectory spatial index
 new ML model training
 ```
 
-## 23. Current disposition
+## 24. Current disposition
 
 ```text
 STAGE_23_ETA_RELIABILITY=IN_PROGRESS
@@ -444,6 +467,7 @@ STAGE_23_ARCHITECTURE_FOR_ARCHITECTURE_SAKE=NO
 STAGE_23_OFFICIAL_ARRIVAL_TRUTH=NONE
 STAGE_23_ENDPOINT_PROXY_DISCLOSURE=REQUIRED
 STAGE_23_SAMPLE_SIZE_DISCLOSURE=REQUIRED
+STAGE_23_DOCUMENTATION_ALIGNMENT=COMPLETE_FOR_IN_PROGRESS_STATE
 STAGE_23_FINAL_EXACT_HEAD=UNKNOWN
 STAGE_23_CLOSED=NO
 ```
