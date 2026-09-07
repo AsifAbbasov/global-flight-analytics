@@ -20,6 +20,8 @@ test('Stage 23 keeps ETA Reliability as a real zero-poll frontend consumer', () 
   assert.match(panel, /Within ±10 min/)
   assert.match(panel, /ETA window covered endpoint/)
   assert.match(panel, /observed endpoint proxy, not an official touchdown, gate or schedule timestamp/i)
+  assert.match(panel, /arrival !== undefined/)
+  assert.match(panel, /if \(arrival === undefined\) return null/)
 
   assert.match(query, /staleTime: 5 \* 60_000/)
   assert.match(query, /refetchInterval: false/)
@@ -62,6 +64,10 @@ test('Stage 23 has dedicated browser evidence and no hidden infrastructure expan
   assert.match(browser, /Evidence boundary/)
   assert.match(mock, /'eta-reliability'/)
   assert.match(mock, /\/api\/v1\/trajectories\/\{id\}\/eta-reliability/)
+  assert.match(mock, /scenario === 'eta-reliability'/)
+  assert.match(mock, /fixture\.arrival_status = 'available'/)
+  assert.match(mock, /fixture\.projection\.arrival = \{/)
+  assert.match(mock, /DETERMINISTIC_BROWSER_FIXTURE/)
 
   for (const marker of [
     'STAGE_23_ADDITIONAL_COST=0_RUB',
