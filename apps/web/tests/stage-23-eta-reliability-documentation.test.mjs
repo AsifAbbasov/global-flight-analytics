@@ -50,7 +50,10 @@ test('Stage 23 documentation preserves sample-size and proxy disclosure', () => 
   assert.match(document, /STAGE_23_SAMPLE_SIZE_DISCLOSURE=REQUIRED/)
   assert.match(document, /eligible historical sample count/)
   assert.match(document, /unavailable or limited evidence state/)
-  assert.doesNotMatch(document, /ETA accuracy guaranteed/)
+  assert.match(document, /The frontend must not say or imply:/)
+  assert.match(document, /ETA accuracy guaranteed/)
+  assert.match(document, /actual landing time/)
+  assert.match(document, /official arrival accuracy/)
 })
 
 test('Stage 23 documentation preserves rejected validation history', () => {
@@ -90,4 +93,5 @@ test('Stage 23 is registered in canonical documentation surfaces', () => {
   assert.match(readme, /STAGE_23_ADDITIONAL_COST=0_RUB/)
   assert.match(readme, /PERSISTED_ENDPOINT_PROXY/)
   assert.match(readme, /OFFICIAL_ARRIVAL_TRUTH=NONE/)
+  assert.match(readme, /VERSION_2_RECONCILIATION=CLOSED/)
 })
