@@ -12,14 +12,14 @@ func TestSelectHistoricalAsOfUsesPersistedObservationNearComparableLead(t *testi
 	base := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
 	item := trajectory.FlightTrajectory{Points: make([]trajectory.TrackPoint4D, 0, 10)}
 	for index := 0; index < 10; index++ {
-		item.Points = append(item.Points, trajectory.TrackPoint4D{ID: string(rune('a'+index)), ObservedAt: base.Add(time.Duration(index)*10*time.Minute)})
+		item.Points = append(item.Points, trajectory.TrackPoint4D{ID: string(rune('a' + index)), ObservedAt: base.Add(time.Duration(index) * 10 * time.Minute)})
 	}
 	endpoint := item.Points[len(item.Points)-1].ObservedAt
 	selected, ok := selectHistoricalAsOf(item, endpoint, 30*time.Minute, DefaultPolicy())
 	if !ok {
 		t.Fatal("expected comparable persisted observation")
 	}
-	want := endpoint.Add(-30*time.Minute)
+	want := endpoint.Add(-30 * time.Minute)
 	if !selected.Equal(want) {
 		t.Fatalf("selected = %s, want %s", selected, want)
 	}

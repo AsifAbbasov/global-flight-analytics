@@ -10,10 +10,10 @@ import (
 )
 
 type projectionDatabaseRuntime struct {
-	projection handlers.ProjectionIntelligenceReader
+	projection     handlers.ProjectionIntelligenceReader
 	etaReliability handlers.ETAReliabilityReader
-	stability handlers.StabilityIntelligenceReader
-	weather handlers.WeatherContextReader
+	stability      handlers.StabilityIntelligenceReader
+	weather        handlers.WeatherContextReader
 }
 
 func registerProjectionDatabaseContext(
@@ -53,9 +53,9 @@ func composeProjectionDatabaseRuntime(
 	}
 
 	return projectionDatabaseRuntime{
-		projection: projectionReader,
+		projection:     projectionReader,
 		etaReliability: etaReliabilityReader,
-		stability: stabilityService,
-		weather: weatherReader,
+		stability:      stabilityService,
+		weather:        weatherReader,
 	}, nil
 }

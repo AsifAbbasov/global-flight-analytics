@@ -6,25 +6,25 @@ import (
 )
 
 type Policy struct {
-	MaximumCandidateCount int
-	MinimumSampleCount int
-	CompleteSampleCount int
-	MinimumLead time.Duration
-	MaximumLead time.Duration
-	LeadTolerance time.Duration
-	EndpointRadiusKM float64
+	MaximumCandidateCount   int
+	MinimumSampleCount      int
+	CompleteSampleCount     int
+	MinimumLead             time.Duration
+	MaximumLead             time.Duration
+	LeadTolerance           time.Duration
+	EndpointRadiusKM        float64
 	MinimumPrefixPointCount int
 }
 
 func DefaultPolicy() Policy {
 	return Policy{
-		MaximumCandidateCount: 8,
-		MinimumSampleCount: 3,
-		CompleteSampleCount: 6,
-		MinimumLead: 5 * time.Minute,
-		MaximumLead: 90 * time.Minute,
-		LeadTolerance: 10 * time.Minute,
-		EndpointRadiusKM: 15,
+		MaximumCandidateCount:   8,
+		MinimumSampleCount:      3,
+		CompleteSampleCount:     6,
+		MinimumLead:             5 * time.Minute,
+		MaximumLead:             90 * time.Minute,
+		LeadTolerance:           10 * time.Minute,
+		EndpointRadiusKM:        15,
 		MinimumPrefixPointCount: 5,
 	}
 }

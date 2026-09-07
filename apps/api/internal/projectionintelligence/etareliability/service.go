@@ -20,11 +20,11 @@ import (
 )
 
 var (
-	ErrServiceUnavailable = errors.New("ETA reliability service is unavailable")
-	ErrInvalidRequest = errors.New("ETA reliability request is invalid")
+	ErrServiceUnavailable    = errors.New("ETA reliability service is unavailable")
+	ErrInvalidRequest        = errors.New("ETA reliability request is invalid")
 	ErrCurrentETAUnavailable = errors.New("current ETA is unavailable")
-	ErrRouteUnavailable = errors.New("complete route evidence is unavailable")
-	ErrLeadOutsidePolicy = errors.New("current ETA lead time is outside the reliability policy")
+	ErrRouteUnavailable      = errors.New("complete route evidence is unavailable")
+	ErrLeadOutsidePolicy     = errors.New("current ETA lead time is outside the reliability policy")
 )
 
 type ProjectionReader interface {
@@ -41,25 +41,25 @@ type ArrivalEvaluator interface {
 
 type ServiceConfig struct {
 	ProjectionReader ProjectionReader
-	SnapshotReader SnapshotReader
-	Evaluator ArrivalEvaluator
-	Policy Policy
-	Now func() time.Time
+	SnapshotReader   SnapshotReader
+	Evaluator        ArrivalEvaluator
+	Policy           Policy
+	Now              func() time.Time
 }
 
 type Service struct {
 	projectionReader ProjectionReader
-	snapshotReader SnapshotReader
-	evaluator ArrivalEvaluator
-	policy Policy
-	now func() time.Time
+	snapshotReader   SnapshotReader
+	evaluator        ArrivalEvaluator
+	policy           Policy
+	now              func() time.Time
 }
 
 type sample struct {
-	TrajectoryID string
-	AsOfTime time.Time
-	AbsoluteErrorSeconds float64
-	IntervalCovered bool
+	TrajectoryID          string
+	AsOfTime              time.Time
+	AbsoluteErrorSeconds  float64
+	IntervalCovered       bool
 	EvaluationFingerprint string
 }
 
@@ -76,10 +76,10 @@ func New(config ServiceConfig) (*Service, error) {
 	}
 	return &Service{
 		projectionReader: config.ProjectionReader,
-		snapshotReader: config.SnapshotReader,
-		evaluator: config.Evaluator,
-		policy: config.Policy,
-		now: now,
+		snapshotReader:   config.SnapshotReader,
+		evaluator:        config.Evaluator,
+		policy:           config.Policy,
+		now:              now,
 	}, nil
 }
 
@@ -106,7 +106,7 @@ func (service *Service) Get(ctx context.Context, request projectionread.Request)
 
 	snapshot, err := service.snapshotReader.LoadSnapshot(ctx, projectionread.SnapshotRequest{
 		TrajectoryID: trajectoryID,
-		AsOfTime: asOfTime,
+		AsOfTime:     asOfTime,
 	})
 	if err != nil {
 		return Result{}, err
@@ -154,8 +154,8 @@ func (service *Service) Get(ctx context.Context, request projectionread.Request)
 		}
 
 		historicalProjection, err := service.projectionReader.Get(ctx, projectionread.Request{
-			TrajectoryID: candidate.ID,
-			AsOfTime: historicalAsOf,
+			TrajectoryID:      candidate.ID,
+			AsOfTime:          historicalAsOf,
 			RequestedDuration: request.RequestedDuration,
 		})
 		if err != nil || historicalProjection.Projection.Arrival == nil || historicalProjection.ArrivalStatus != projectionproduction.ArrivalStatusAttached {
@@ -174,27 +174,27 @@ func (service *Service) Get(ctx context.Context, request projectionread.Request)
 		availability := truthAvailability(candidate, evaluatedAt)
 		actualArrival := &projectionevaluation.ActualArrival{
 			AirportICAOCode: destination,
-			BoundaryTime: endpoint.ObservedAt.UTC(),
-			SourceName: "persisted_trajectory_endpoint_proxy",
-			ObservedAt: endpoint.ObservedAt.UTC(),
-			AvailableAt: evaluatedAt,
+			BoundaryTime:    endpoint.ObservedAt.UTC(),
+			SourceName:      "persisted_trajectory_endpoint_proxy",
+			ObservedAt:      endpoint.ObservedAt.UTC(),
+			AvailableAt:     evaluatedAt,
 		}
 		evaluation, err := service.evaluator.Evaluate(projectionevaluation.Request{
-			Projection: historicalProjection.Projection,
-			ActualTrajectory: candidate,
+			Projection:        historicalProjection.Projection,
+			ActualTrajectory:  candidate,
 			TruthAvailability: availability,
-			ActualArrival: actualArrival,
-			EvaluatedAt: evaluatedAt,
+			ActualArrival:     actualArrival,
+			EvaluatedAt:       evaluatedAt,
 		})
 		if err != nil || !evaluation.Arrival.Available || !evaluation.Arrival.AirportMatched {
 			rejected++
 			continue
 		}
 		samples = append(samples, sample{
-			TrajectoryID: candidate.ID,
-			AsOfTime: historicalAsOf,
-			AbsoluteErrorSeconds: evaluation.Arrival.EstimatedAbsoluteErrorSeconds,
-			IntervalCovered: evaluation.Arrival.IntervalCoveredActual,
+			TrajectoryID:          candidate.ID,
+			AsOfTime:              historicalAsOf,
+			AbsoluteErrorSeconds:  evaluation.Arrival.EstimatedAbsoluteErrorSeconds,
+			IntervalCovered:       evaluation.Arrival.IntervalCoveredActual,
 			EvaluationFingerprint: evaluation.EvaluationInputFingerprint,
 		})
 	}
@@ -202,7 +202,7 @@ func (service *Service) Get(ctx context.Context, request projectionread.Request)
 	status := StatusUnavailable
 	var metrics *Metrics
 	limitations := []Notice{{
-		Code: "trajectory_endpoint_arrival_proxy",
+		Code:    "trajectory_endpoint_arrival_proxy",
 		Message: fmt.Sprintf("Historical arrival truth uses the last persisted trajectory observation within %.0f km of %s; it is not an official touchdown, gate or schedule timestamp.", service.policy.EndpointRadiusKM, destination),
 	}}
 	if len(samples) >= service.policy.MinimumSampleCount {
@@ -214,45 +214,45 @@ func (service *Service) Get(ctx context.Context, request projectionread.Request)
 		metrics = &value
 	} else {
 		limitations = append(limitations, Notice{
-			Code: "insufficient_comparable_history",
+			Code:    "insufficient_comparable_history",
 			Message: fmt.Sprintf("Only %d comparable historical ETA evaluations were eligible; at least %d are required before publishing reliability metrics.", len(samples), service.policy.MinimumSampleCount),
 		})
 	}
 	if status == StatusLimited {
 		limitations = append(limitations, Notice{
-			Code: "limited_sample_size",
+			Code:    "limited_sample_size",
 			Message: fmt.Sprintf("Reliability is based on %d samples; %d samples are required for complete status.", len(samples), service.policy.CompleteSampleCount),
 		})
 	}
 	if rejected > 0 {
 		limitations = append(limitations, Notice{
-			Code: "historical_candidates_rejected",
+			Code:    "historical_candidates_rejected",
 			Message: fmt.Sprintf("%d bounded historical candidates were excluded because endpoint, lead-time, route, method or evaluation evidence was not comparable.", rejected),
 		})
 	}
 	if len(snapshot.HistoricalCandidates) > len(candidates) {
 		limitations = append(limitations, Notice{
-			Code: "candidate_scan_bounded",
+			Code:    "candidate_scan_bounded",
 			Message: fmt.Sprintf("The on-demand zero-cost reliability read evaluates at most %d recent route-scoped historical candidates.", service.policy.MaximumCandidateCount),
 		})
 	}
 
 	generatedAt := service.now().UTC()
 	result := Result{
-		Version: Version,
-		Status: status,
-		TrajectoryID: trajectoryID,
-		Route: Route{OriginICAOCode: origin, DestinationICAOCode: destination},
-		Method: current.Projection.Method,
-		TargetLeadSeconds: int64(targetLead / time.Second),
+		Version:              Version,
+		Status:               status,
+		TrajectoryID:         trajectoryID,
+		Route:                Route{OriginICAOCode: origin, DestinationICAOCode: destination},
+		Method:               current.Projection.Method,
+		TargetLeadSeconds:    int64(targetLead / time.Second),
 		LeadToleranceSeconds: int64(service.policy.LeadTolerance / time.Second),
-		EndpointRadiusKM: service.policy.EndpointRadiusKM,
-		CandidateCount: len(candidates),
-		EligibleSampleCount: len(samples),
-		Metrics: metrics,
-		EvidenceClass: EvidenceClass,
-		Limitations: normalizeNotices(limitations),
-		GeneratedAt: generatedAt,
+		EndpointRadiusKM:     service.policy.EndpointRadiusKM,
+		CandidateCount:       len(candidates),
+		EligibleSampleCount:  len(samples),
+		Metrics:              metrics,
+		EvidenceClass:        EvidenceClass,
+		Limitations:          normalizeNotices(limitations),
+		GeneratedAt:          generatedAt,
 	}
 	result.InputFingerprint = reliabilityFingerprint(request, current, result, samples)
 	if err := result.Validate(); err != nil {
@@ -294,7 +294,9 @@ func selectHistoricalAsOf(item trajectory.FlightTrajectory, endpointTime time.Ti
 			continue
 		}
 		delta := observedAt.Sub(target)
-		if delta < 0 { delta = -delta }
+		if delta < 0 {
+			delta = -delta
+		}
 		if delta < bestDelta {
 			bestDelta = delta
 			best = observedAt
@@ -310,12 +312,16 @@ func truthAvailability(item trajectory.FlightTrajectory, availableAt time.Time) 
 	result := make([]projectionevaluation.TruthAvailability, 0, len(item.Points))
 	for _, point := range item.Points {
 		pointID := strings.TrimSpace(point.ID)
-		if pointID == "" { continue }
+		if pointID == "" {
+			continue
+		}
 		source := strings.TrimSpace(point.SourceName)
-		if source == "" { source = "persisted_trajectory" }
+		if source == "" {
+			source = "persisted_trajectory"
+		}
 		result = append(result, projectionevaluation.TruthAvailability{
-			PointID: pointID,
-			SourceName: source + ":eta_reliability_read",
+			PointID:     pointID,
+			SourceName:  source + ":eta_reliability_read",
 			AvailableAt: availableAt,
 		})
 	}
@@ -333,33 +339,49 @@ func buildMetrics(samples []sample) Metrics {
 	covered := 0
 	for _, item := range samples {
 		errorsSeconds = append(errorsSeconds, item.AbsoluteErrorSeconds)
-		if item.AbsoluteErrorSeconds <= 5*60 { withinFive++ }
-		if item.AbsoluteErrorSeconds <= 10*60 { withinTen++ }
-		if item.IntervalCovered { covered++ }
+		if item.AbsoluteErrorSeconds <= 5*60 {
+			withinFive++
+		}
+		if item.AbsoluteErrorSeconds <= 10*60 {
+			withinTen++
+		}
+		if item.IntervalCovered {
+			covered++
+		}
 	}
 	sort.Float64s(errorsSeconds)
 	return Metrics{
-		SampleCount: len(samples),
+		SampleCount:                len(samples),
 		MedianAbsoluteErrorSeconds: median(errorsSeconds),
-		P80AbsoluteErrorSeconds: percentileNearestRank(errorsSeconds, 0.80),
-		WithinFiveMinutesRatio: float64(withinFive)/float64(len(samples)),
-		WithinTenMinutesRatio: float64(withinTen)/float64(len(samples)),
-		IntervalCoverageRatio: float64(covered)/float64(len(samples)),
+		P80AbsoluteErrorSeconds:    percentileNearestRank(errorsSeconds, 0.80),
+		WithinFiveMinutesRatio:     float64(withinFive) / float64(len(samples)),
+		WithinTenMinutesRatio:      float64(withinTen) / float64(len(samples)),
+		IntervalCoverageRatio:      float64(covered) / float64(len(samples)),
 	}
 }
 
 func median(values []float64) float64 {
-	if len(values) == 0 { return 0 }
-	middle := len(values)/2
-	if len(values)%2 == 1 { return values[middle] }
-	return (values[middle-1]+values[middle])/2
+	if len(values) == 0 {
+		return 0
+	}
+	middle := len(values) / 2
+	if len(values)%2 == 1 {
+		return values[middle]
+	}
+	return (values[middle-1] + values[middle]) / 2
 }
 
 func percentileNearestRank(values []float64, percentile float64) float64 {
-	if len(values) == 0 { return 0 }
-	index := int(math.Ceil(percentile*float64(len(values))))-1
-	if index < 0 { index = 0 }
-	if index >= len(values) { index = len(values)-1 }
+	if len(values) == 0 {
+		return 0
+	}
+	index := int(math.Ceil(percentile*float64(len(values)))) - 1
+	if index < 0 {
+		index = 0
+	}
+	if index >= len(values) {
+		index = len(values) - 1
+	}
 	return values[index]
 }
 
@@ -367,9 +389,9 @@ func distanceKM(lat1, lon1, lat2, lon2 float64) float64 {
 	const radius = 6371.0088
 	toRadians := func(value float64) float64 { return value * math.Pi / 180 }
 	phi1, phi2 := toRadians(lat1), toRadians(lat2)
-	dPhi := toRadians(lat2-lat1)
-	dLambda := toRadians(lon2-lon1)
-	a := math.Sin(dPhi/2)*math.Sin(dPhi/2)+math.Cos(phi1)*math.Cos(phi2)*math.Sin(dLambda/2)*math.Sin(dLambda/2)
+	dPhi := toRadians(lat2 - lat1)
+	dLambda := toRadians(lon2 - lon1)
+	a := math.Sin(dPhi/2)*math.Sin(dPhi/2) + math.Cos(phi1)*math.Cos(phi2)*math.Sin(dLambda/2)*math.Sin(dLambda/2)
 	return radius * 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 }
 
@@ -401,13 +423,19 @@ func normalizeNotices(items []Notice) []Notice {
 	seen := make(map[string]Notice, len(items))
 	for _, item := range items {
 		code, message := strings.TrimSpace(item.Code), strings.TrimSpace(item.Message)
-		if code == "" || message == "" { continue }
+		if code == "" || message == "" {
+			continue
+		}
 		seen[code+"\x00"+message] = Notice{Code: code, Message: message}
 	}
 	keys := make([]string, 0, len(seen))
-	for key := range seen { keys = append(keys, key) }
+	for key := range seen {
+		keys = append(keys, key)
+	}
 	sort.Strings(keys)
 	result := make([]Notice, 0, len(keys))
-	for _, key := range keys { result = append(result, seen[key]) }
+	for _, key := range keys {
+		result = append(result, seen[key])
+	}
 	return result
 }

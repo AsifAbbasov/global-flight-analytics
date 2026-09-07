@@ -28,37 +28,37 @@ func (adapter etaReliabilityReaderAdapter) GetETAReliability(
 		return etareliability.Result{}, etareliability.ErrServiceUnavailable
 	}
 	return adapter.reader.Get(ctx, projectionread.Request{
-		TrajectoryID: request.TrajectoryID,
-		AsOfTime: request.AsOfTime,
+		TrajectoryID:      request.TrajectoryID,
+		AsOfTime:          request.AsOfTime,
 		RequestedDuration: request.RequestedDuration,
 	})
 }
 
 func newETAReliabilityPostgresReader(pool *pgxpool.Pool) (handlers.ETAReliabilityReader, error) {
 	composition, err := projectionread.NewPostgres(projectionread.PostgresConfig{
-		Pool: pool,
+		Pool:   pool,
 		Policy: projectionread.DefaultPolicy(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("compose PostgreSQL Projection Intelligence dependency for ETA Reliability: %w", err)
 	}
 	evaluator, err := projectionevaluation.New(projectionevaluation.Config{
-		MaximumInterpolationGap: 3 * time.Minute,
-		MaximumTruthGroundSpeedMPS: 400,
+		MaximumInterpolationGap:     3 * time.Minute,
+		MaximumTruthGroundSpeedMPS:  400,
 		MaximumTruthVerticalRateMPS: 100,
-		MinimumEvaluatedPointCount: 1,
-		MaximumHorizontalErrorM: 10000,
-		MaximumAltitudeErrorM: 1000,
-		LeadTimeBucketSize: time.Minute,
+		MinimumEvaluatedPointCount:  1,
+		MaximumHorizontalErrorM:     10000,
+		MaximumAltitudeErrorM:       1000,
+		LeadTimeBucketSize:          time.Minute,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("compose projection evaluator for ETA Reliability: %w", err)
 	}
 	service, err := etareliability.New(etareliability.ServiceConfig{
 		ProjectionReader: composition.Service,
-		SnapshotReader: composition.DataSource,
-		Evaluator: evaluator,
-		Policy: etareliability.DefaultPolicy(),
+		SnapshotReader:   composition.DataSource,
+		Evaluator:        evaluator,
+		Policy:           etareliability.DefaultPolicy(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("compose ETA Reliability service: %w", err)
