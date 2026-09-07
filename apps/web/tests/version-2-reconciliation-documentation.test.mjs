@@ -69,7 +69,20 @@ test('README publishes the current OpenAPI surface and bounded Version 2 candida
   assert.match(readme, /VERSION_2_RECONCILIATION=CANDIDATE/)
   assert.match(readme, /Discrete Fréchet[^\n]*DEFERRED_RESEARCH/)
   assert.match(readme, /Weather Grid[^\n]*DEFERRED_RESEARCH/)
-  assert.doesNotMatch(readme, /OPENAPI_CONTRACT_PATHS=38/)
+})
+
+test('README preserves historical v1 release-contract markers without presenting them as the current Version 2 surface', () => {
+  assert.match(readme, /Historical v1\.0\.0 release-contract baseline/)
+  assert.match(readme, /OPENAPI_CONTRACT_PATHS=38/)
+  assert.match(readme, /PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20/)
+  assert.match(readme, /PLAYWRIGHT_E2E_MOCK_SCENARIOS=7/)
+  const currentSurfaceStart = readme.indexOf('## Contract and Test Surface')
+  const historicalBaselineStart = readme.indexOf('### Historical v1.0.0 release-contract baseline')
+  assert.ok(currentSurfaceStart >= 0)
+  assert.ok(historicalBaselineStart > currentSurfaceStart)
+  const currentSurface = readme.slice(currentSurfaceStart, historicalBaselineStart)
+  assert.match(currentSurface, /OPENAPI_CONTRACT_OPERATIONS=39/)
+  assert.doesNotMatch(currentSurface, /OPENAPI_CONTRACT_PATHS=38/)
 })
 
 test('The reconciliation document cannot self-close before exact-head and post-merge evidence exist', () => {
