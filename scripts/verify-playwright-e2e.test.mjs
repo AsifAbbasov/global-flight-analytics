@@ -46,10 +46,10 @@ test('mock failure scenario surface is explicit and bounded', () => {
     [
       'aircraft-error',
       'airport-error',
+      'eta-reliability',
       'healthy',
       'historical-error',
       'intelligence-error',
-      'eta-reliability',
       'regions-error',
       'traffic-error',
     ],
