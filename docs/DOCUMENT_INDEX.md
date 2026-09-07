@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v2.1
+Status: Documentation Index v2.2
 Project: Global Flight Analytics
 
 ---
@@ -892,8 +892,7 @@ regression evidence and the remaining Analytical Core review scope.
 
 Records strict source retrieval timestamps, placeholder-source rejection,
 unattributed-source disclosure, default failure sanitization, honest confidence
-for request-parameter snapshots, regression evidence and remaining Analytical
-Core review scope.
+for request-parameter snapshots, regression evidence and remaining Analytical Core review scope.
 
 <!-- QUERY-ARCHITECTURE-CONSOLIDATION:DOCUMENT-INDEX -->
 
@@ -1809,3 +1808,71 @@ zero-budget data boundary and separation from provider/runtime recovery.
 
 Records the zero-budget map-first visual polish, Flightradar24 reference boundary,
 exact-head CI and Chromium evidence, and the nonblocking pixel-golden decision.
+
+<!-- VERSION-2-PRODUCT-SEQUENCE:DOCUMENT-INDEX -->
+
+## Document 197 — Stage 15 Historical Flight Replay Product and Evidence Hardening
+
+`197_STAGE_15_HISTORICAL_FLIGHT_REPLAY_PRODUCT_AND_EVIDENCE_HARDENING.md` records the closed observed-only Historical Flight Replay product, persisted observation evidence, gap-aware timeline, analytics and shareable observation state.
+
+## Document 198 — Stage 16 Time-Based Historical Replay Navigation
+
+`198_STAGE_16_TIME_BASED_HISTORICAL_REPLAY_NAVIGATION.md` records elapsed-time replay navigation over persisted `observed_at` evidence and the pre-merge engineering state.
+
+## Document 199 — Stage 16 Time-Based Replay Post-Merge Closure
+
+`199_STAGE_16_TIME_BASED_REPLAY_POST_MERGE_CLOSURE.md` owns the canonical Stage 16 merge and post-merge closure evidence.
+
+## Document 200 — Stage 17 Observed Interval Comparison
+
+`200_STAGE_17_OBSERVED_INTERVAL_COMPARISON.md` records bounded comparison between two persisted replay observations without inventing unobserved interval evidence.
+
+## Document 201 — Stage 17 Observed Interval Comparison Post-Merge Closure
+
+`201_STAGE_17_OBSERVED_INTERVAL_COMPARISON_POST_MERGE_CLOSURE.md` owns the canonical Stage 17 merge and post-merge closure evidence.
+
+## Document 202 — Stage 18 Replay Evidence Quality Profile
+
+`202_STAGE_18_REPLAY_EVIDENCE_QUALITY_PROFILE.md` records descriptive replay evidence-density and quality presentation without creating a synthetic quality verdict.
+
+## Document 203 — Stage 18 Replay Evidence Quality Post-Merge Closure
+
+`203_STAGE_18_REPLAY_EVIDENCE_QUALITY_POST_MERGE_CLOSURE.md` owns the canonical Stage 18 merge and post-merge closure evidence.
+
+## Document 204 — Stage 19 Replay Evidence Provenance Profile
+
+`204_STAGE_19_REPLAY_EVIDENCE_PROVENANCE_PROFILE.md` records source/provenance presentation for persisted historical replay evidence.
+
+## Document 205 — Stage 19 Replay Evidence Provenance Post-Merge Closure
+
+`205_STAGE_19_REPLAY_EVIDENCE_PROVENANCE_POST_MERGE_CLOSURE.md` owns the canonical Stage 19 merge and post-merge closure evidence.
+
+## Document 206 — Stage 20 Airspace Intelligence Frontend Integration
+
+`206_STAGE_20_AIRSPACE_INTELLIGENCE_FRONTEND_INTEGRATION.md` records frontend integration of existing backend-owned Airspace Intelligence and preserves the unsupported-geometry heatmap deferral.
+
+## Document 207 — Stage 21 Airport Congestion Intelligence
+
+`207_STAGE_21_AIRPORT_CONGESTION_INTELLIGENCE.md` records the relative observed-activity proxy, frontend/API integration, and explicit non-capacity/non-delay claim boundary.
+
+## Document 208 — Stage 22 Estimated Time of Arrival Evolution Analyzer
+
+`208_STAGE_22_ETA_EVOLUTION_ANALYZER.md` records the pre-merge engineering history for bounded historically recomputed ETA Evolution over persisted replay observations.
+
+## Document 209 — Stage 20 Airspace Intelligence Post-Merge Closure
+
+`209_STAGE_20_AIRSPACE_INTELLIGENCE_POST_MERGE_CLOSURE.md` owns the canonical Stage 20 merge and post-merge closure evidence.
+
+## Document 210 — Stage 21 Airport Congestion Intelligence Post-Merge Closure
+
+`210_STAGE_21_AIRPORT_CONGESTION_INTELLIGENCE_POST_MERGE_CLOSURE.md` owns the canonical Stage 21 merge and post-merge closure evidence and the 39-operation OpenAPI surface transition.
+
+## Document 211 — Stage 22 Estimated Time of Arrival Evolution Post-Merge Closure
+
+`211_STAGE_22_ETA_EVOLUTION_POST_MERGE_CLOSURE.md` owns the canonical Stage 22 feature merge and post-merge closure evidence while preserving Document 208 as immutable pre-merge history.
+
+<!-- VERSION-2-RECONCILIATION:DOCUMENT-INDEX -->
+
+## Document 212 — Version 2 Reconciliation Audit
+
+`212_VERSION_2_RECONCILIATION_AUDIT.md` reconciles the original eighteen-item Version 2 roadmap against the Stage 22-closed repository baseline, classifies fourteen implemented capabilities, one bounded uncalibrated policy and three deferred research capabilities, aligns README/roadmap/implementation/index/finding governance, and keeps canonical closure gated on exact-head merge evidence and independent post-merge validation.

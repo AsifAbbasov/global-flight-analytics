@@ -1,6 +1,6 @@
 # Finding Register — Global Flight Analytics
 
-Status: Canonical Finding Registry v1.29
+Status: Canonical Finding Registry v1.30
 
 ## Purpose
 
@@ -509,10 +509,11 @@ If an original severity, pull-request number, review comment, reviewer identity,
 | GFA-CONTRACT-450 | Production conditional GET did not accept proxy-weakened equivalent ETag validators | P2 retrospective | CLOSED | `181_OPENAPI_DEVELOPER_EXPERIENCE.md` | PR #54 head `837a97b8696333fcbe8c7a50d76b3f76521a149b`; merge `855f82bf97cf0db47d1a3918f75ea70f7f2b06fe`; Backend CI `31059068320` |
 | GFA-OPS-451 | GitHub-hosted scheduled ingestion was the sole production timing/recovery authority and could leave current traffic silently stale for hours | P1 retrospective | CLOSED | `182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md` | incident PR #55 `dc2f6f7042ea16d13cf25ce8700831df160b8158`; cutover `7dfc66685247a5a1aaea87b1391624d1014d7013`; final closure PR #59 `a983ebcb2920b7371fa8210f1cc1c8eb7cfa6cf6` |
 | GFA-OPS-452 | Deterministic provider failures could be amplified into repeated external dispatch/failure loops | P1 retrospective | CLOSED | `191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md` | PR #79 head `4f4aab82e609baece3346240620b0bbf195fb7f5`; merge `f97e367667686e58429f26656f998537931236d7`; Backend CI `32362621147` |
-| GFA-REL-453 | Provider-level Unauthorized terminated the complete fallback chain instead of only the failed provider attempt | P1 retrospective | CLOSED | `191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md` | PR #79 head `4f4aab82e609baece3346240620b0bbf195fb7f5`; merge `f97e367667686e58429f26656f998537931236d7`; patch `557636f3818b8ecb241b2320503a32660ca05aa2` |
+| GFA-REL-453 | Provider-level Unauthorized terminated the complete fallback chain instead of only the failed provider attempt | P1 retrospective | CLOSED | `191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md` | PR #79 head `4f4aab82e609baece3346240620b0bbf195fb7f5`; merge `f97e367667686e58429f26656f998537931236d7`; Backend CI `32362621147`; patch `557636f3818b8ecb241b2320503a32660ca05aa2` |
 | GFA-OPS-454 | Production created durable reconciliation tasks without an operated production consumer | P1 retrospective | CLOSED | `192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md` | PR #80 head `f1e79a0ae935b144870f46649926fc4066221c3e`; merge `1c98329c026e47377140f9f3eb5c2e438efd7a7b`; recovery run `32372102564` |
 | GFA-OBS-455 | Reconciliation alert could falsely resolve when telemetry aged out while a real backlog remained | P1 retrospective | CLOSED | `192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md` | PR #80 head `f1e79a0ae935b144870f46649926fc4066221c3e`; merge `1c98329c026e47377140f9f3eb5c2e438efd7a7b`; metrics run `32373146931` |
 | GFA-OPS-456 | Independent high-frequency production schedules created a free-tier-incompatible infrastructure wake pattern | P1 retrospective | CLOSED | `194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md` | PR #85 head `1a82b8eae63ff5e293830c630fed6a9102eb9480`; initial merge `4a95b7a0caae8e8581cf132945c2b1be3a7a3cca`; revised cadence PR #145 head `ddcff2c0776c261c09992f7a3abe5a48ce107b02`, merge `d024f2c9c1183f903a6be1b6264829496adf52b6`; controlled run `34000891812` / #3585 SUCCESS; Neon `00:17:51Z` start → `00:38:32Z` suspend |
+| GFA-GOV-457 | Version 2 roadmap, index, implementation sequence and README drift | P2 retrospective | IN_PROGRESS | `212_VERSION_2_RECONCILIATION_AUDIT.md` | source reconciliation candidate; permanent documentation regression test added; exact-head CI, merge and post-merge validation pending |
 
 ## Stage-level closure evidence
 
@@ -588,7 +589,9 @@ Document 192 = Production Reconciliation / Alert Stability incident enriched to 
 Document 193 = ADSB.lol provider recovery/readiness evidence classified and closed after compliant exact-revision FREE_V1 controlled runtime validation; no synthetic finding ID created; `PRODUCTION_PROVIDER_RECOVERY=CLOSED`
 Document 194 = Free-Tier Production Infrastructure Budget enriched to canonical standard; `GFA-OPS-456=CLOSED` after revised two-hour scheduled ingestion and subsequent Neon scale-to-zero
 Documents 195–196 = Frontend Product Closure / Visual Polish V2 closure evidence classified; no synthetic finding IDs created
-Canonical finding register covers 456 findings (001–456 with category prefixes); one finding (`GFA-SEC-445`) remains IN_PROGRESS
+Documents 197–211 = Stage 15–22 product, engineering-history and post-merge closure evidence; no synthetic finding IDs created
+Document 212 = Version 2 reconciliation governance owner; canonical finding `GFA-GOV-457=IN_PROGRESS` until exact-head validation, merge and post-merge verification complete
+Canonical finding register covers 457 findings (001–457 with category prefixes); two findings (`GFA-SEC-445` and `GFA-GOV-457`) remain IN_PROGRESS
 Stage 14 retrospective finding extraction and canonical ownership reconciliation = CLOSED
 Post-Stage-14 Ingestion / Provider finding extraction = CLOSED
 Post-Stage-14 Server / HTTP finding extraction = CLOSED
@@ -618,7 +621,8 @@ Documents 174–180 = CLASSIFIED; performance/testing/contract/closure evidence 
 OpenAPI Developer Experience conditional-request remediation = CLOSED AND MERGED
 Zero-Cost Production Ingestion Reliability historical scheduler finding = CLOSED AND MERGED; later provider/free-tier recovery is separately owned and now CLOSED on revised FREE_V1 runtime evidence
 Documents 184–196 = RETROSPECTIVE CLASSIFICATION COMPLETE IN SOURCE; real incident owners are 452–456, feature/prevention/recovery/closure-only documents receive no synthetic IDs
-Mass retrospective documentation retrofit through the highest indexed document (196) = COMPLETE IN SOURCE; no further blanket retrofit boundary is scheduled
+Version 2 Documents 197–212 = RECONCILIATION CANDIDATE IN SOURCE; `GFA-GOV-457` owns documentation drift and remains IN_PROGRESS pending canonical closure evidence
+Mass retrospective documentation retrofit through the highest indexed pre-Version-2 document (196) = COMPLETE IN SOURCE; later Version 2 evidence is governed by Documents 197–212
 Documents 80–82 = closure/standard summary layer; no duplicate finding IDs created
-README / DOCUMENT_INDEX navigation reconciliation = COMPLETE IN SOURCE; pull-request and merge evidence remain external GitHub history
+README / DOCUMENT_INDEX / roadmap / implementation-sequence Version 2 reconciliation = COMPLETE IN CANDIDATE SOURCE; pull-request, exact-head and merge evidence remain external GitHub history
 ```

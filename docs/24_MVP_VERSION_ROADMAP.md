@@ -1,6 +1,6 @@
 # Document 24 — MVP and Version Roadmap
 
-Status: Architecture Baseline v1.1  
+Status: Architecture Baseline v1.2  
 Project: Global Flight Analytics  
 Scope: MVP, Version 1, Version 2, and release boundaries
 
@@ -261,6 +261,8 @@ and region-level analytical dashboards.
 
 ## 15. Version 2 Scope
 
+The list below is the original Version 2 planning scope. It is preserved as historical planning evidence. The current release boundary is governed by the reconciliation amendment in Section 20.
+
 ```text
 1. Historical Trajectory Similarity Engine
 2. Discrete Fréchet Similarity Filter
@@ -316,6 +318,8 @@ region_analytics_snapshots
 airport_congestion_reports
 ```
 
+This table list is architectural planning, not a requirement that every capability owns a dedicated physical table. Later stages deliberately reused existing persistence where separate durable storage was unnecessary.
+
 ---
 
 ## 18. Release Boundary Rules
@@ -338,4 +342,93 @@ MVP = reliable trajectory and basic route intelligence
 Version 1 = features, historical patterns, replay, projection, confidence
 Version 2 = advanced similarity, airspace intelligence, multi-aircraft context, stability
 Research Backlog = heavy models, satellite fusion, climate models, regulated operational systems
+```
+
+---
+
+<!-- VERSION-2-RECONCILIATION:ROADMAP -->
+## 20. Version 2 Reconciliation Amendment — 2026-09-07
+
+Document 212 reconciles the original Version 2 planning list against the Stage 22-closed canonical repository baseline `8c9bd7f798ca29e584ad7fce102578eac6dc7ff9`.
+
+The original Section 15 is not deleted or rewritten into fictitious history. This amendment defines the current release boundary.
+
+### 20.1 Canonical capability disposition
+
+```text
+Historical Trajectory Similarity Engine      IMPLEMENTED
+Discrete Fréchet Similarity Filter           DEFERRED_RESEARCH
+Trajectory Similarity Spatial Index          DEFERRED_RESEARCH
+Similarity Threshold Policy                  IMPLEMENTED_BOUNDED_UNCALIBRATED
+Multi-Aircraft Context Intelligence          IMPLEMENTED
+Airborne Interaction Graph                   IMPLEMENTED
+Local Traffic Scene Builder                  IMPLEMENTED
+Separation Risk Intelligence                 IMPLEMENTED
+Sector Complexity Score                      IMPLEMENTED
+Temporal Airspace Occupancy Index            IMPLEMENTED
+Weather Grid Context                         DEFERRED_RESEARCH
+Forecast Versioning                          IMPLEMENTED
+Forecast Stability Analysis                  IMPLEMENTED
+Decision Stability Evaluator                 IMPLEMENTED
+Airspace Region Analytics                    IMPLEMENTED
+Airport Congestion Score                     IMPLEMENTED_AS_OBSERVED_ACTIVITY_PROXY
+Estimated Time of Arrival Evolution Analyzer IMPLEMENTED
+Unknown Intervention Guard                   IMPLEMENTED
+```
+
+The resulting accounting is:
+
+```text
+VERSION_2_ORIGINAL_SCOPE_ITEMS=18
+VERSION_2_IMPLEMENTED_CAPABILITIES=14
+VERSION_2_BOUNDED_UNCALIBRATED_CAPABILITIES=1
+VERSION_2_DEFERRED_RESEARCH_CAPABILITIES=3
+```
+
+### 20.2 Advanced similarity decision
+
+The repository contains a bounded Historical Similarity engine, but it does not contain or claim a Discrete Fréchet implementation or a persistent trajectory-shape spatial index.
+
+Document 26 already defers Full/Exact Fréchet and Advanced Spatial Similarity Index work. That research backlog is now the canonical owner for those advanced topics.
+
+```text
+VERSION_2_DISCRETE_FRECHET=DEFERRED_RESEARCH
+VERSION_2_TRAJECTORY_SPATIAL_INDEX=DEFERRED_RESEARCH
+```
+
+The current similarity threshold tiers and production selection/confidence thresholds are deterministic policy, not calibrated probability. The release claim is therefore deliberately bounded:
+
+```text
+VERSION_2_SIMILARITY_THRESHOLD_POLICY=IMPLEMENTED_BOUNDED_UNCALIBRATED
+```
+
+### 20.3 Weather decision
+
+Stage 10 provides compact Weather Context, Weather Trust, four-dimensional alignment, encounter evidence and uncertainty modification. It does not provide a full flight-level weather grid.
+
+Document 26 already defers Full Weather Grid Analytics. The original `Weather Grid Context` planning bullet is therefore not a Version 2 release blocker.
+
+```text
+VERSION_2_WEATHER_GRID=DEFERRED_RESEARCH
+```
+
+### 20.4 Product completion surfaces
+
+Later product stages expose repository-real evidence without expanding the claim beyond available data:
+
+```text
+Stage 20 Airspace Intelligence frontend      IMPLEMENTED
+Stage 21 Airport Congestion                  RELATIVE_OBSERVED_ACTIVITY_PROXY
+Stage 22 ETA Evolution                       HISTORICALLY_RECOMPUTED_FROM_PERSISTED_OBSERVATIONS
+```
+
+No airport-capacity model, official congestion status, persisted historical forecast history, ETA interpolation, causal explanation or operational guidance is implied.
+
+### 20.5 Candidate release status
+
+This roadmap amendment does not close itself. Document 212, the synchronized documentation surfaces and the permanent reconciliation test must first pass exact-head validation, be squash-merged under an exact-head guard, and pass independent post-merge validation on the resulting canonical `main` SHA.
+
+```text
+VERSION_2_SCOPE_RECONCILED=YES
+VERSION_2_RELEASE_CLOSURE=PENDING_DOCUMENT_212_EXACT_HEAD_CI_MERGE_AND_POST_MERGE_VALIDATION
 ```

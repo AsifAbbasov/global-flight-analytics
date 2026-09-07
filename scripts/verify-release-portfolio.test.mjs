@@ -43,7 +43,7 @@ test('README records current engineering closure and published v1 release truth'
   assert.match(readme, /PR #101 — Provider recovery truth reconciliation/)
   assert.match(readme, /PR #102 — Frontend Visual Polish V2/)
   assert.match(readme, /38 source-backed OpenAPI paths/)
-  assert.match(readme, /twenty deterministic Chromium product journeys/)
+  assert.match(readme, /twenty deterministic\s+Chromium product journeys/)
   assert.match(readme, /seven deterministic private mock scenarios/)
   assert.match(readme, /OPENAPI_CONTRACT_PATHS=38/)
   assert.match(readme, /PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20/)
