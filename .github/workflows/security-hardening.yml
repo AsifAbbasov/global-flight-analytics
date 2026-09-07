@@ -87,8 +87,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          "$RUNNER_TEMP/gitleaks" git --no-banner --redact .
-          printf '%s\n' 'GITLEAKS_REPOSITORY_SCAN=PASS'
+          report_path="$RUNNER_TEMP/gitleaks-report.json"
+
+          set +e
+          "$RUNNER_TEMP/gitleaks" git \
+            --no-banner \
+            --redact \
+            --report-format json \
+            --report-path "$report_path" \
+            .
+          scan_status=$?
+          set -e
+
+          if [ "$scan_status" -eq 0 ]; then
+            printf '%s\n' 'GITLEAKS_REPOSITORY_SCAN=PASS'
+            exit 0
+          fi
+
+          if [ "$scan_status" -ne 1 ]; then
+            printf '%s\n' "GITLEAKS_REPOSITORY_SCAN=ERROR status=$scan_status" >&2
+            exit "$scan_status"
+          fi
+
+          test -s "$report_path"
+          finding_count="$(jq 'length' "$report_path")"
+          printf '%s\n' "GITLEAKS_REPOSITORY_SCAN=FAIL findings=$finding_count" >&2
+          jq -r \
+            '.[] | "GITLEAKS_FINDING rule=\(.RuleID) file=\(.File) commit=\(.Commit)"' \
+            "$report_path" >&2
+          exit 1
 
   source-sbom:
     name: CycloneDX SBOM
