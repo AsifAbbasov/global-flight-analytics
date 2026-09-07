@@ -1845,7 +1845,35 @@ export function resolveMockResponse({
     normalizePath(pathname) ===
       '/api/v1/trajectories/{id}/projection-intelligence'
   ) {
-    return success(projectionFixture())
+    const fixture = projectionFixture()
+if (scenario === 'eta-reliability') {
+  fixture.arrival_status = 'available'
+  fixture.projection.arrival = {
+    airport_icao_code: 'LTFM',
+    earliest_time: '2026-08-04T18:27:00Z',
+    estimated_time: '2026-08-04T18:35:00Z',
+    latest_time: '2026-08-04T18:43:00Z',
+    confidence: {
+      score: 0.72,
+      level: 'medium',
+      reasons: [
+        {
+          code: 'DETERMINISTIC_BROWSER_FIXTURE',
+          message: 'Current ETA exists so historical reliability can be evaluated.',
+          contribution: 0,
+        },
+      ],
+    },
+    limitations: [
+      {
+        code: 'RESEARCH_ONLY',
+        message: 'Deterministic browser fixture; not operational guidance.',
+        scope: 'research_only',
+      },
+    ],
+  }
+}
+return success(fixture)
   }
   if (
     method === 'GET' &&
