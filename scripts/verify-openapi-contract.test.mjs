@@ -20,11 +20,14 @@ test('repository OpenAPI contract passes', () => {
     { encoding: 'utf8' },
   )
   assert.match(output, /OPENAPI_CONTRACT=PASS/)
+  assert.match(output, /OPENAPI_CONTRACT_PATHS=40/)
+  assert.match(output, /OPENAPI_PUBLIC_READ_OPERATIONS=39/)
+  assert.match(output, /OPENAPI_ETA_RELIABILITY_OPERATIONS=1/)
 })
 
-test('contract exposes 38 reads and one protected mutation across 39 paths', () => {
+test('contract exposes 39 reads and one protected mutation across 40 paths', () => {
   const spec = loadSpec()
-  assert.equal(Object.keys(spec.paths).length, 39)
+  assert.equal(Object.keys(spec.paths).length, 40)
   assert.deepEqual(
     Object.keys(spec.paths).sort(),
     [
@@ -40,6 +43,31 @@ test('contract exposes 38 reads and one protected mutation across 39 paths', () 
     assert.ok(spec.paths[route].post)
     assert.equal(spec.paths[route].get, undefined)
   }
+})
+
+test('ETA Reliability contract preserves endpoint-proxy evidence semantics', () => {
+  const spec = loadSpec()
+  const operation = spec.paths['/api/v1/trajectories/{id}/eta-reliability'].get
+  assert.equal(operation.operationId, 'getETAReliabilityByTrajectoryID')
+  assert.match(operation.description, /endpoint proxy/)
+  assert.match(operation.description, /not an official touchdown/)
+  assert.ok(operation.responses['422'])
+  assert.equal(operation.security, undefined)
+
+  const asOfTime = operation.parameters.find(parameter => parameter.name === 'as_of_time')
+  const duration = operation.parameters.find(parameter => parameter.name === 'duration_seconds')
+  assert.equal(asOfTime.required, true)
+  assert.equal(duration.required, false)
+
+  const schema = spec.components.schemas.ETAReliability
+  assert.equal(schema.additionalProperties, false)
+  assert.deepEqual(schema.properties.status.enum, ['unavailable', 'limited', 'complete'])
+  assert.equal(schema.properties.candidate_count.maximum, 8)
+  assert.equal(
+    schema.properties.evidence_class.const,
+    'historically_recomputed_from_persisted_observations_with_endpoint_proxy',
+  )
+  assert.equal(spec.components.schemas.ETAReliabilityResponse.properties.success.const, true)
 })
 
 test('active-aircraft query bounds remain source aligned', () => {
@@ -139,6 +167,7 @@ test('only intentionally open strategy evidence allows unknown properties', () =
     spec.components.schemas.AirspaceRegionAnalytics.additionalProperties,
     false,
   )
+  assert.equal(spec.components.schemas.ETAReliability.additionalProperties, false)
 })
 
 test('Route Intelligence security and history bounds remain source aligned', () => {
