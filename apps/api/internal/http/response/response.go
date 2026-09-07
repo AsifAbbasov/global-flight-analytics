@@ -26,6 +26,7 @@ type SuccessPayload interface {
 		dto.HistoricalIntelligenceAggregateRecord |
 		dto.HistoricalIntelligenceAggregateHistory |
 		dto.ProjectionIntelligenceResponse |
+		dto.ETAReliabilityResponse |
 		dto.WeatherContextResponse |
 		[]dto.AirportListItem |
 		dto.AirportProfile |
