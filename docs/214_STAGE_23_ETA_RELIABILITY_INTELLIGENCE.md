@@ -227,7 +227,7 @@ GET /api/v1/trajectories/{id}/eta-reliability
 
 The endpoint is read-only.
 
-The feature branch now contains the source-backed 40-operation OpenAPI candidate, byte-identical root/embedded specifications and a regenerated TypeScript client exposing `getETAReliabilityByTrajectoryID`. Canonical `main` remains on the prior 39-operation contract until merge and independent post-merge verification. Stage 23 remains `IN_PROGRESS` until final exact-head validation succeeds.
+The feature branch contains the source-backed 40-operation OpenAPI candidate, byte-identical root/embedded specifications and a regenerated TypeScript client exposing `getETAReliabilityByTrajectoryID`. Canonical `main` remains on the prior 39-operation contract until merge and independent post-merge verification. Stage 23 remains `IN_PROGRESS` until an exact-head authorized merge and post-merge closure are independently verified.
 
 ## 13. Frontend integration
 
@@ -250,6 +250,8 @@ staleTime=5 minutes
 ```
 
 This is both a product and free-tier decision: historical reliability does not need minute-by-minute recomputation.
+
+The UI deliberately requires a current Projection Intelligence arrival estimate before requesting historical ETA reliability. Historical reliability is contextual evidence beside an actual current ETA, not a standalone percentage. The deterministic Stage 23 browser scenario therefore supplies a bounded current ETA while production retains the honest `arrival === undefined` guard.
 
 ## 14. Frontend claim boundary
 
@@ -324,11 +326,72 @@ internal/server/projection_database_composition.go
 
 PostgreSQL 16 Integration and Backend Race Safety on the same workflow completed successfully, but the aggregate Backend CI result remains `FAILURE` and must not be reported as pass.
 
-OpenAPI #143 remains a genuine release blocker until the canonical OpenAPI route/schema inventory and generated client are synchronized to the new read surface.
+OpenAPI #143 remained a genuine release blocker until the canonical OpenAPI route/schema inventory and generated client were synchronized to the new read surface.
+
+### 15.3 Head `5d96101274f863f80dc9d992b4a2558b49094016`
+
+The OpenAPI synchronization had completed, but Playwright E2E #315 / run `34145986533` failed its foundation contract before Chromium execution. The only rejection was deterministic scenario ordering: the expected hard-coded scenario list placed `eta-reliability` after `intelligence-error`, while the validated sorted surface placed it before `healthy`.
+
+This was test-contract drift, not a product transport defect. The expected sorted scenario list was corrected without weakening Playwright coverage.
+
+### 15.4 Head `8849c188d7aa381f341b343afd1d27581f129a54`
+
+Frontend CI #545 failed in the frontend contract-test step while ESLint and TypeScript validation had already succeeded. The new permanent Stage 23 test used repository-root paths even though `pnpm --filter web test` executes from `apps/web`, causing three `ENOENT` failures.
+
+The permanent test was corrected to use workspace-relative paths. No production frontend or backend behavior changed.
+
+### 15.5 Head `f2365626202428ccf10955286b5620e220f51ccc`
+
+Backend CI #884 reached `go test ./...` after formatting succeeded. The Stage 23 ETA Reliability package itself passed, but `internal/http/apidocs` still asserted the historical embedded OpenAPI operation count of 39 and rejected the synchronized 40-operation contract.
+
+The stale embedded API-doc test was updated from 39 to 40 operations. PostgreSQL integration remained successful; the failure was contract-test drift rather than an ETA reliability computation failure.
+
+### 15.6 Head `15d040f251b84d3876c8f9cedc914d2fcc439169`
+
+This head passed the major non-browser release gates:
+
+```text
+Frontend CI #547 = SUCCESS
+Backend CI #885 = SUCCESS
+OpenAPI Contract #176 = SUCCESS
+API Load Baseline #404 = SUCCESS
+CodeQL #528 = SUCCESS
+Playwright E2E #318 = FAILURE
+```
+
+Playwright foundation passed and 20 of 21 Chromium product journeys passed. The only failing journey was the new Stage 23 ETA Reliability browser flow: `Historical ETA Reliability` never appeared because the deterministic `eta-reliability` scenario returned historical reliability evidence but its Projection Intelligence fixture still had `arrival_status: unavailable` and no current `projection.arrival`.
+
+Production behavior was correct: `ETAReliabilityPanel` intentionally does not render or request historical reliability when the current projection has no ETA. The remediation therefore changed only the deterministic browser scenario to provide a bounded current ETA; the production `arrival === undefined` guard was preserved and permanently protected by the Stage 23 contract test.
+
+### 15.7 Head `b2b73540ded8bd5ebb2bdd3012654b4d00aa1167`
+
+A one-time self-cleaning workflow produced the corrected mock fixture and removed itself from the branch. Because this commit was authored by `github-actions[bot]`, GitHub classified the six recursively-created PR workflow runs as `action_required` rather than executing them as normal user-authored validation.
+
+Those `action_required` runs are not pass evidence and are not treated as product failures. A subsequent normal user-authored permanent regression-test commit established a new exact-head validation boundary.
+
+### 15.8 Validated implementation head `c55192a4077c541d9ac52b3d23f7eafc284a728b`
+
+This user-authored head permanently protects both sides of the browser precondition: production requires a real current arrival estimate, while the deterministic Stage 23 browser scenario must supply one before historical reliability can be rendered.
+
+Exact-head validation completed successfully:
+
+```text
+Frontend CI #550 / run 34149930933 = SUCCESS
+Backend CI #888 / run 34149930944 = SUCCESS
+OpenAPI Contract #179 / run 34149930961 = SUCCESS
+API Load Baseline #407 / run 34149930956 = SUCCESS
+CodeQL #531 / run 34149930946 = SUCCESS
+Playwright E2E #321 / run 34149930942 = SUCCESS
+Vercel deployment 5Nafn9zhNJJNkV9fw7WXDGm57QBs = SUCCESS
+```
+
+The same PR state check reported `mergeable=true`, with zero review threads and zero submitted reviews. PR #171 remained a draft and no merge authorization had been granted.
+
+Earlier Vercel preview attempts in the remediation window were rejected by the free-tier build-rate limit. No paid upgrade was purchased. The validated implementation head later deployed successfully on the existing zero-cost Vercel path, so the temporary external rate-limit blocker did not become a product or cost-scope change.
 
 ## 16. Current validation status
 
-The canonical documentation surfaces are now aligned to the in-progress Stage 23 state, but implementation validation is not complete:
+The feature implementation has a complete successful exact-head evidence matrix on `c55192a4077c541d9ac52b3d23f7eafc284a728b`. This document update intentionally creates a later documentation head, so validation is not transferred automatically: the documentation head must run its own exact-head CI before PR #171 can become review-ready.
 
 ```text
 STAGE_23_STATUS=IN_PROGRESS
@@ -345,11 +408,16 @@ STAGE_23_IMPLEMENTATION_SEQUENCE=ALIGNED_V1_8
 STAGE_23_OPENAPI_CANDIDATE_OPERATIONS=40
 STAGE_23_OPENAPI_CANDIDATE_GET_OPERATIONS=39
 STAGE_23_GENERATED_CLIENT=ALIGNED
-STAGE_23_DEDICATED_PLAYWRIGHT_JOURNEY=INSTALLED
+STAGE_23_DEDICATED_PLAYWRIGHT_JOURNEY=PASS_ON_VALIDATED_IMPLEMENTATION_HEAD
 STAGE_23_DOCUMENTATION_REGRESSION_TEST=INSTALLED
+STAGE_23_VALIDATED_IMPLEMENTATION_HEAD=c55192a4077c541d9ac52b3d23f7eafc284a728b
+STAGE_23_VALIDATED_IMPLEMENTATION_GITHUB_CI=6_OF_6_PASS
+STAGE_23_VALIDATED_IMPLEMENTATION_VERCEL=PASS
 STAGE_23_EXACT_HEAD_FINAL_CI=NOT_YET_AVAILABLE
 STAGE_23_POST_MERGE_CI=NOT_APPLICABLE
 ```
+
+`STAGE_23_EXACT_HEAD_FINAL_CI=NOT_YET_AVAILABLE` is an authoring-time governance marker for this pre-merge evidence update. It must not be rewritten recursively merely to insert its own future commit SHA; the final review-ready exact head and its validation matrix are recorded in PR #171 after this documentation head is independently verified.
 
 No earlier successful workflow may be transferred to a later Stage 23 head.
 
@@ -373,14 +441,16 @@ No synthetic finding ID is created merely because a product feature exists. `GFA
 
 ## 18. Remaining engineering work before review-ready
 
-The implementation, formatting, source/OpenAPI/generated-client contract synchronization and dedicated ETA Reliability browser journey are now present on the feature branch. The remaining review-ready work is evidence closure:
+Product implementation, formatting, source/OpenAPI/generated-client synchronization, permanent regression tests, dedicated browser coverage and the zero-cost Vercel deployment have all been validated on the implementation head recorded above.
 
-1. complete a full exact-head GitHub CI matrix and Vercel check;
-2. remediate any SHA-specific failure without transferring earlier pass evidence;
-3. verify review threads/reviews and mergeability on the exact final head;
-4. align this document and the PR body to the final exact-head evidence, then revalidate that final documentation SHA.
+The remaining pre-review work is governance-only:
 
-The Stage 23 documentation/claim-boundary regression test, README, Document Index, roadmap and Implementation Sequence are aligned to the in-progress feature.
+1. independently validate the documentation head created by this evidence update;
+2. re-check exact-head mergeability, review threads and reviews;
+3. record that final exact-head matrix in PR #171 without creating another recursive evidence commit;
+4. mark the PR ready for review only if every Review-ready gate below is satisfied.
+
+No additional product code, provider, infrastructure, migration or paid service is required by the currently known Stage 23 scope.
 
 ## 19. Review-ready gate
 
@@ -466,6 +536,9 @@ STAGE_23_OFFICIAL_ARRIVAL_TRUTH=NONE
 STAGE_23_ENDPOINT_PROXY_DISCLOSURE=REQUIRED
 STAGE_23_SAMPLE_SIZE_DISCLOSURE=REQUIRED
 STAGE_23_DOCUMENTATION_ALIGNMENT=COMPLETE_FOR_IN_PROGRESS_STATE
+STAGE_23_VALIDATED_IMPLEMENTATION_HEAD=c55192a4077c541d9ac52b3d23f7eafc284a728b
+STAGE_23_VALIDATED_IMPLEMENTATION_GITHUB_CI=6_OF_6_PASS
+STAGE_23_VALIDATED_IMPLEMENTATION_VERCEL=PASS
 STAGE_23_FINAL_EXACT_HEAD=UNKNOWN
 STAGE_23_CLOSED=NO
 ```
