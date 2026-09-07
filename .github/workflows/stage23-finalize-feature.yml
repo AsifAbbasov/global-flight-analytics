@@ -1,0 +1,52 @@
+name: Stage 23 Feature Finalizer
+
+on:
+  push:
+    branches:
+      - feat/stage-23-eta-reliability
+    paths:
+      - 'scripts/stage23-finalize-feature.mjs'
+      - '.github/workflows/stage23-finalize-feature.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage23-finalize-feature-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    name: Finalize Stage 23 feature artifacts
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: feat/stage-23-eta-reliability
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.9.0'
+
+      - name: Finalize Stage 23 E2E and governance artifacts
+        run: node scripts/stage23-finalize-feature.mjs
+
+      - name: Commit finalized feature artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/web/e2e/mock-api.mjs apps/web/e2e/tests/advanced-intelligence.spec.mjs scripts/verify-playwright-e2e.mjs scripts/verify-playwright-e2e.test.mjs docs/25_IMPLEMENTATION_SEQUENCE.md README.md docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md
+          if git diff --cached --quiet; then
+            echo 'STAGE_23_FINALIZER_GIT=NO_CHANGES'
+            exit 0
+          fi
+          git commit -m 'test: finalize Stage 23 product evidence'
+          git push origin HEAD:feat/stage-23-eta-reliability
