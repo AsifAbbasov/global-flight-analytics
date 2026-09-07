@@ -7,10 +7,10 @@ function read(path) {
 }
 
 test('Stage 23 keeps ETA Reliability as a real zero-poll frontend consumer', () => {
-  const panel = read('apps/web/components/aircraft/eta-reliability-panel.tsx')
-  const projectionPanel = read('apps/web/components/aircraft/projection-intelligence-panel.tsx')
-  const query = read('apps/web/lib/queries/eta-reliability.ts')
-  const api = read('apps/web/lib/api/eta-reliability.ts')
+  const panel = read('components/aircraft/eta-reliability-panel.tsx')
+  const projectionPanel = read('components/aircraft/projection-intelligence-panel.tsx')
+  const query = read('lib/queries/eta-reliability.ts')
+  const api = read('lib/api/eta-reliability.ts')
 
   assert.match(projectionPanel, /<ETAReliabilityPanel/)
   assert.match(panel, /Historical ETA Reliability/)
@@ -28,10 +28,10 @@ test('Stage 23 keeps ETA Reliability as a real zero-poll frontend consumer', () 
 })
 
 test('Stage 23 keeps bounded endpoint-proxy semantics in backend and OpenAPI', () => {
-  const policy = read('apps/api/internal/projectionintelligence/etareliability/policy.go')
-  const service = read('apps/api/internal/projectionintelligence/etareliability/service.go')
-  const runtime = read('apps/api/internal/server/eta_reliability_runtime.go')
-  const openAPI = JSON.parse(read('openapi/openapi.json'))
+  const policy = read('../api/internal/projectionintelligence/etareliability/policy.go')
+  const service = read('../api/internal/projectionintelligence/etareliability/service.go')
+  const runtime = read('../api/internal/server/eta_reliability_runtime.go')
+  const openAPI = JSON.parse(read('../../openapi/openapi.json'))
 
   assert.match(policy, /MaximumCandidateCount:\s+8/)
   assert.match(service, /trajectory_endpoint_arrival_proxy/)
@@ -53,9 +53,9 @@ test('Stage 23 keeps bounded endpoint-proxy semantics in backend and OpenAPI', (
 })
 
 test('Stage 23 has dedicated browser evidence and no hidden infrastructure expansion', () => {
-  const browser = read('apps/web/e2e/tests/advanced-intelligence.spec.mjs')
-  const mock = read('apps/web/e2e/mock-api.mjs')
-  const document = read('docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md')
+  const browser = read('e2e/tests/advanced-intelligence.spec.mjs')
+  const mock = read('e2e/mock-api.mjs')
+  const document = read('../../docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md')
 
   assert.match(browser, /ETA reliability exposes bounded historical endpoint-proxy evidence/)
   assert.match(browser, /6 eligible \/ 8 checked/)
