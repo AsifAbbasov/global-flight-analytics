@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v2.2
+Status: Documentation Index v2.3
 Project: Global Flight Analytics
 
 ---
@@ -1492,8 +1492,7 @@ exact-commit Continuous Integration evidence before formal closure.
 `160_FRONTEND_HISTORICAL_ANALYTICS_COMPARISON.md` records the typed production
 Historical Intelligence aggregate client, global, airport and route scope controls,
 server-catalog metric filtering, bucket evidence visualization, previous-period and
-persisted-record comparisons, eight dependency-free model tests, exact baseline and
-the requirement for exact-commit Continuous Integration evidence before formal closure.
+persisted-record comparisons, eight dependency-free model tests, exact baseline and the requirement for exact-commit Continuous Integration evidence before formal closure.
 
 <!-- FRONTEND-PRODUCT-HARDENING:DOCUMENT-INDEX -->
 
@@ -1876,3 +1875,9 @@ exact-head CI and Chromium evidence, and the nonblocking pixel-golden decision.
 ## Document 212 — Version 2 Reconciliation Audit
 
 `212_VERSION_2_RECONCILIATION_AUDIT.md` reconciles the original eighteen-item Version 2 roadmap against the Stage 22-closed repository baseline, classifies fourteen implemented capabilities, one bounded uncalibrated policy and three deferred research capabilities, aligns README/roadmap/implementation/index/finding governance, and keeps canonical closure gated on exact-head merge evidence and independent post-merge validation.
+
+<!-- VERSION-2-RECONCILIATION-POST-MERGE-CLOSURE:DOCUMENT-INDEX -->
+
+## Document 213 — Version 2 Reconciliation Post-Merge Closure
+
+`213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md` records the guarded PR #169 merge, rejected validation history, exact pre-merge and independent post-merge CI/Vercel evidence, API Load non-trigger policy, bounded 14/1/3 Version 2 release disposition, the `GFA-GOV-457` closure gate, and the independent `GFA-SEC-445` repository-security boundary.
