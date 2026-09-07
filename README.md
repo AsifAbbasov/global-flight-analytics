@@ -51,6 +51,38 @@ is no second independent ingestion scheduler waking Render or Neon.
 The current free-tier budget and recovery evidence are recorded in
 [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md).
 
+<!-- VERSION-2-RECONCILIATION:README -->
+## Version 2 Reconciliation Candidate
+
+Stages 15 through 22 are implemented and their repository evidence is preserved through
+Documents 197–211. Document 212 reconciles those delivered capabilities against the older
+Version 2 planning list without inventing missing advanced analytics.
+
+```text
+VERSION_2_RECONCILIATION=CANDIDATE
+VERSION_2_ORIGINAL_SCOPE_ITEMS=18
+VERSION_2_IMPLEMENTED_CAPABILITIES=14
+VERSION_2_BOUNDED_UNCALIBRATED_CAPABILITIES=1
+VERSION_2_DEFERRED_RESEARCH_CAPABILITIES=3
+Discrete Fréchet Similarity Filter           DEFERRED_RESEARCH
+Trajectory Similarity Spatial Index          DEFERRED_RESEARCH
+Weather Grid Context                         DEFERRED_RESEARCH
+Similarity Threshold Policy                  IMPLEMENTED_BOUNDED_UNCALIBRATED
+Airport Congestion Score                     IMPLEMENTED_AS_OBSERVED_ACTIVITY_PROXY
+Estimated Time of Arrival Evolution Analyzer HISTORICALLY_RECOMPUTED_FROM_PERSISTED_OBSERVATIONS
+```
+
+The three deferred research items are not release blockers and are not represented as
+production capabilities. The current bounded Historical Similarity engine is not relabeled
+as Fréchet; compact Weather Context is not relabeled as a flight-level weather grid; Airport
+Congestion remains a relative observed-activity proxy rather than an airport-capacity or
+official congestion claim; ETA Evolution recomputes the current projection implementation
+at persisted historical observation times rather than claiming stored historical forecasts.
+
+This reconciliation is not canonically closed until its exact-head validation, merge, and
+independent post-merge validation complete. The independent repository-security finding
+`GFA-SEC-445` remains `IN_PROGRESS` and is not an analytical Version 2 blocker.
+
 <!-- ANALYTICAL-CORE-REVIEW-CLOSURE:README -->
 ## Analytical Core Review Closure
 
@@ -291,6 +323,10 @@ renders evidence without recomputing server-owned analytics.
 - synchronized map, aircraft index and aircraft intelligence;
 - Airport Intelligence ranking, passport, completed-day history and trends;
 - Historical Intelligence across global, airport and route scopes;
+- Historical Flight Replay with elapsed-time navigation, observed interval comparison, evidence quality and provenance profiles;
+- Airspace Intelligence frontend integration;
+- relative observed-activity Airport Congestion Intelligence;
+- historically recomputed Estimated Arrival Evolution;
 - Projection, Weather Context and Stability/Explainability surfaces;
 - deterministic CSV and GeoJSON research exports;
 - shareable workspace state, responsive navigation and recoverable errors.
@@ -300,7 +336,8 @@ renders evidence without recomputing server-owned analytics.
 - canonical flight-state normalization and PostgreSQL persistence;
 - provider budgets, health-aware selection, retry, fallback and ingestion evidence;
 - trajectory construction, segmentation, reconciliation and quality contracts;
-- Route, Airport, Historical, Weather, Projection and Stability Intelligence;
+- Route, Airport, Historical, Weather, Projection, Airspace and Stability Intelligence;
+- bounded Historical Similarity with deterministic policy and separate evidence confidence;
 - materialized analytical records with versioned contracts and provenance;
 - repeatable-read snapshot consistency, nullable telemetry integrity and keyset pagination.
 
@@ -316,21 +353,21 @@ renders evidence without recomputing server-owned analytics.
 
 ## Contract and Test Surface
 
-The current repository contract exposes **38 source-backed OpenAPI paths**: 37
+The current repository contract exposes **39 source-backed OpenAPI operations**: 38
 unauthenticated public read operations and one protected Route Intelligence mutation.
 
-Browser verification contains **twenty deterministic Chromium product journeys** and
-**seven deterministic private mock scenarios** covering workspace navigation, aircraft,
-airport and analytical surfaces, exports, recovery behavior, accessibility and responsive
-layout invariants.
+Browser verification contains deterministic Chromium product journeys and private mock
+scenarios covering workspace navigation, aircraft, airport and analytical surfaces, exports,
+recovery behavior, accessibility and responsive layout invariants. Later Stage 15–22
+journeys extend the original twenty-scenario product baseline; the historical twenty-scenario
+count remains release evidence rather than the current total.
 
 ```text
-OPENAPI_CONTRACT_PATHS=38
-OPENAPI_PUBLIC_READ_OPERATIONS=37
+OPENAPI_CONTRACT_OPERATIONS=39
+OPENAPI_PUBLIC_READ_OPERATIONS=38
 OPENAPI_PROTECTED_MUTATION_OPERATIONS=1
-PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20
-PLAYWRIGHT_E2E_MOCK_SCENARIOS=7
 STAGE_14_OVERALL_STATUS=CLOSED
+VERSION_2_RECONCILIATION=CANDIDATE
 ```
 
 ## Technology
@@ -409,9 +446,10 @@ audits, Docker configuration and repository integrity.
 - [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget, cadence policy and `GFA-OPS-456` closure evidence;
 - [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — frontend product closure and post-closure visual boundary;
 - [`docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`](docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md) — zero-budget Visual Polish V2 evidence and Flightradar24-reference boundary;
+- [`docs/212_VERSION_2_RECONCILIATION_AUDIT.md`](docs/212_VERSION_2_RECONCILIATION_AUDIT.md) — current Version 2 roadmap/release-boundary reconciliation candidate;
 - [`docs/FINDING_REGISTER.md`](docs/FINDING_REGISTER.md) — canonical engineering finding/status register and remediation ownership index;
 - [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md) — normative remediation-history and evidence-honesty standard;
-- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register; Documents 194–196 are registered and reconciled.
+- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register, including Documents 197–212.
 
 ## Portfolio v1.0.0 Release
 
