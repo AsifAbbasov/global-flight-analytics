@@ -6,7 +6,7 @@ test.beforeEach(async ({ request }) => {
   await setScenario(request, 'healthy')
 })
 
-test('projection weather stability and airspace expose server-owned evidence semantics', async ({
+test('projection weather stability airspace and ETA evolution expose server-owned evidence semantics', async ({
   page,
 }) => {
   await page.goto(
@@ -24,6 +24,36 @@ test('projection weather stability and airspace expose server-owned evidence sem
   ).toBeVisible()
   await expect(
     page.getByText('Projection is research-only.', { exact: true }),
+  ).toBeVisible()
+
+  const etaEvolution = page.getByRole('complementary', {
+    name: 'Estimated Arrival Evolution',
+  })
+  await expect(etaEvolution).toBeVisible()
+  await expect(
+    etaEvolution.getByRole('heading', { name: 'Estimated Arrival Evolution' }),
+  ).toBeVisible()
+  await expect(etaEvolution).toHaveAttribute(
+    'data-eta-evolution-evidence',
+    'historically-recomputed-from-persisted-observations',
+  )
+  await expect(etaEvolution).toHaveAttribute(
+    'data-eta-evolution-persisted-forecast-history',
+    'none',
+  )
+  await expect(etaEvolution).toHaveAttribute(
+    'data-eta-evolution-interpolation',
+    'none',
+  )
+  await expect(etaEvolution).toHaveAttribute(
+    'data-eta-evolution-cause-inference',
+    'none',
+  )
+  await expect(
+    etaEvolution.getByText(/not immutable forecast outputs stored at those past/i),
+  ).toBeVisible()
+  await expect(
+    etaEvolution.getByText(/No ETA is interpolated between samples/i),
   ).toBeVisible()
 
   await expect(
