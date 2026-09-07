@@ -13,7 +13,7 @@ const findings = read('../../docs/FINDING_REGISTER.md')
 const reconciliation = read('../../docs/212_VERSION_2_RECONCILIATION_AUDIT.md')
 const readme = read('../../README.md')
 
-test('Version 2 reconciliation preserves the original 18-item roadmap and records the bounded release disposition', () => {
+test('Version 2 reconciliation preserves the original 18-item roadmap and records the closed release disposition', () => {
   assert.match(roadmap, /VERSION_2_ORIGINAL_SCOPE_ITEMS=18/)
   assert.match(roadmap, /VERSION_2_IMPLEMENTED_CAPABILITIES=14/)
   assert.match(roadmap, /VERSION_2_BOUNDED_UNCALIBRATED_CAPABILITIES=1/)
@@ -21,10 +21,8 @@ test('Version 2 reconciliation preserves the original 18-item roadmap and record
   assert.match(roadmap, /VERSION_2_DISCRETE_FRECHET=DEFERRED_RESEARCH/)
   assert.match(roadmap, /VERSION_2_TRAJECTORY_SPATIAL_INDEX=DEFERRED_RESEARCH/)
   assert.match(roadmap, /VERSION_2_WEATHER_GRID=DEFERRED_RESEARCH/)
-  assert.match(
-    roadmap,
-    /VERSION_2_SIMILARITY_THRESHOLD_POLICY=IMPLEMENTED_BOUNDED_UNCALIBRATED/,
-  )
+  assert.match(roadmap, /VERSION_2_SIMILARITY_THRESHOLD_POLICY=IMPLEMENTED_BOUNDED_UNCALIBRATED/)
+  assert.match(roadmap, /VERSION_2_RELEASE_CLOSURE=CLOSED/)
 })
 
 test('Version 2 reconciliation keeps advanced research out of unsupported production claims', () => {
@@ -38,11 +36,10 @@ test('Version 2 reconciliation keeps advanced research out of unsupported produc
   assert.match(reconciliation, /VERSION_2_ADDITIONAL_COST=0_RUB/)
 })
 
-test('Implementation Sequence records the repository-real Stage 15 through Stage 22 progression', () => {
+test('Implementation Sequence preserves the repository-real Stage 15 through Stage 22 progression and bounded research deferrals', () => {
   for (const stage of [15, 16, 17, 18, 19, 20, 21, 22]) {
     assert.match(sequence, new RegExp(`Stage ${stage}`))
   }
-  assert.match(sequence, /VERSION_2_RECONCILIATION=CANDIDATE/)
   assert.match(sequence, /DISCRETE_FRECHET=DEFERRED_RESEARCH/)
   assert.match(sequence, /TRAJECTORY_SPATIAL_INDEX=DEFERRED_RESEARCH/)
   assert.match(sequence, /WEATHER_GRID=DEFERRED_RESEARCH/)
@@ -62,16 +59,18 @@ test('Finding Register owns the documentation drift without closing the independ
   assert.match(findings, /Canonical finding register covers 457 findings/)
 })
 
-test('README publishes the current OpenAPI surface and bounded Version 2 candidate state', () => {
+test('README publishes the closed Version 2 disposition while Stage 23 remains explicitly in progress', () => {
   assert.match(readme, /OPENAPI_CONTRACT_OPERATIONS=39/)
   assert.match(readme, /OPENAPI_PUBLIC_READ_OPERATIONS=38/)
   assert.match(readme, /OPENAPI_PROTECTED_MUTATION_OPERATIONS=1/)
-  assert.match(readme, /VERSION_2_RECONCILIATION=CANDIDATE/)
+  assert.match(readme, /VERSION_2_RECONCILIATION=CLOSED/)
+  assert.match(readme, /VERSION_2_RECONCILIATION_CI_VERIFIED=YES/)
+  assert.match(readme, /STAGE_23_ETA_RELIABILITY=IN_PROGRESS/)
   assert.match(readme, /Discrete Fréchet[^\n]*DEFERRED_RESEARCH/)
   assert.match(readme, /Weather Grid[^\n]*DEFERRED_RESEARCH/)
 })
 
-test('README preserves historical v1 release-contract markers without presenting them as the current Version 2 surface', () => {
+test('README preserves historical v1 release-contract markers without presenting them as the current surface', () => {
   assert.match(readme, /Historical v1\.0\.0 release-contract baseline/)
   assert.match(readme, /OPENAPI_CONTRACT_PATHS=38/)
   assert.match(readme, /PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20/)
@@ -85,12 +84,9 @@ test('README preserves historical v1 release-contract markers without presenting
   assert.doesNotMatch(currentSurface, /OPENAPI_CONTRACT_PATHS=38/)
 })
 
-test('The reconciliation document cannot self-close before exact-head and post-merge evidence exist', () => {
+test('Document 212 remains immutable candidate history while closure is owned by later evidence', () => {
   assert.match(reconciliation, /VERSION_2_RECONCILIATION=CANDIDATE/)
-  assert.match(
-    reconciliation,
-    /VERSION_2_CANONICAL_CLOSURE=PENDING_EXACT_HEAD_CI_MERGE_AND_POST_MERGE_VALIDATION/,
-  )
+  assert.match(reconciliation, /VERSION_2_CANONICAL_CLOSURE=PENDING_EXACT_HEAD_CI_MERGE_AND_POST_MERGE_VALIDATION/)
   assert.match(reconciliation, /GFA_GOV_457=IN_PROGRESS_VERSION_2_DOCUMENTATION_RECONCILIATION/)
   assert.doesNotMatch(reconciliation, /VERSION_2_RECONCILIATION=CLOSED/)
 })
