@@ -370,6 +370,20 @@ STAGE_14_OVERALL_STATUS=CLOSED
 VERSION_2_RECONCILIATION=CANDIDATE
 ```
 
+### Historical v1.0.0 release-contract baseline
+
+The published v1 release contract remains immutable historical evidence. At that release
+boundary the README recorded **38 source-backed OpenAPI paths**, **twenty deterministic
+Chromium product journeys**, and **seven deterministic private mock scenarios**. These
+markers are retained only for the v1 release verifier; they do not describe the current
+Version 2 candidate surface above.
+
+```text
+OPENAPI_CONTRACT_PATHS=38
+PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20
+PLAYWRIGHT_E2E_MOCK_SCENARIOS=7
+```
+
 ## Technology
 
 | Layer | Technology |
