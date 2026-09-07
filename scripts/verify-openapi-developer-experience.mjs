@@ -59,7 +59,7 @@ export function validateRepository(root) {
 
   const spec = JSON.parse(rootSpecBytes.toString('utf8'))
   if (spec.openapi !== '3.1.0') errors.push(`OpenAPI version must remain 3.1.0; found ${spec.openapi}`)
-  if (operationCount(spec) !== 38) errors.push(`OpenAPI operation count must remain 38; found ${operationCount(spec)}`)
+  if (operationCount(spec) !== 39) errors.push(`OpenAPI operation count must remain 39; found ${operationCount(spec)}`)
 
   const server = read(root, files.server)
   if (!server.includes('internal/http/apidocs')) errors.push('server must import the API documentation package')
@@ -157,7 +157,7 @@ function main() {
   }
   console.log('OPENAPI_DEVELOPER_DOCS_ROUTE=/api/docs')
   console.log('OPENAPI_DEVELOPER_SPEC_ROUTE=/api/docs/openapi.json')
-  console.log('OPENAPI_GENERATED_CLIENT_OPERATIONS=38')
+  console.log('OPENAPI_GENERATED_CLIENT_OPERATIONS=39')
   console.log('OPENAPI_BROWSER_MUTATION_EXECUTION=DISABLED')
   console.log('OPENAPI_EMBEDDED_SPEC_DRIFT=PASS')
   console.log('OPENAPI_GENERATED_CLIENT_DRIFT=PASS')

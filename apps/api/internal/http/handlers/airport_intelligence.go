@@ -48,6 +48,7 @@ func (handler *AirportIntelligenceHandler) GetOverview(ctx *fiber.Ctx) error {
 	}
 	return response.OK(ctx, dto.ToAirportIntelligenceOverviewResponse(result))
 }
+
 func (handler *AirportIntelligenceHandler) GetHistory(ctx *fiber.Ctx) error {
 	if handler == nil || handler.service == nil {
 		return airportIntelligenceUnavailable(ctx)
@@ -62,6 +63,7 @@ func (handler *AirportIntelligenceHandler) GetHistory(ctx *fiber.Ctx) error {
 	}
 	return response.OK(ctx, dto.ToAirportIntelligenceHistoryResponse(result))
 }
+
 func (handler *AirportIntelligenceHandler) GetTrends(ctx *fiber.Ctx) error {
 	if handler == nil || handler.service == nil {
 		return airportIntelligenceUnavailable(ctx)
@@ -76,6 +78,22 @@ func (handler *AirportIntelligenceHandler) GetTrends(ctx *fiber.Ctx) error {
 	}
 	return response.OK(ctx, dto.ToAirportIntelligenceTrendsResponse(result))
 }
+
+func (handler *AirportIntelligenceHandler) GetCongestion(ctx *fiber.Ctx) error {
+	if handler == nil || handler.service == nil {
+		return airportIntelligenceUnavailable(ctx)
+	}
+	request, err := parseAirportIntelligenceWindowRequest(ctx)
+	if err != nil {
+		return airportIntelligenceRequestError(ctx, err)
+	}
+	result, err := handler.service.GetCongestion(ctx.UserContext(), ctx.Params("icao"), request)
+	if err != nil {
+		return writeAirportIntelligenceError(ctx, err)
+	}
+	return response.OK(ctx, dto.ToAirportCongestionIntelligenceResponse(result))
+}
+
 func (handler *AirportIntelligenceHandler) GetRanking(ctx *fiber.Ctx) error {
 	if handler == nil || handler.service == nil {
 		return airportIntelligenceUnavailable(ctx)
@@ -94,6 +112,7 @@ func (handler *AirportIntelligenceHandler) GetRanking(ctx *fiber.Ctx) error {
 	}
 	return response.OK(ctx, dto.ToAirportIntelligenceRankingResponse(result, limit))
 }
+
 func parseAirportIntelligenceWindowRequest(ctx *fiber.Ctx) (airportproduction.WindowRequest, error) {
 	days, err := parseAirportIntelligenceDays(ctx.Query(airportIntelligenceDaysQuery))
 	if err != nil {
@@ -105,6 +124,7 @@ func parseAirportIntelligenceWindowRequest(ctx *fiber.Ctx) (airportproduction.Wi
 	}
 	return airportproduction.WindowRequest{AsOfTime: asOfTime, Days: days}, nil
 }
+
 func parseAirportIntelligenceDays(value string) (int, error) {
 	normalized := strings.TrimSpace(value)
 	if normalized == "" {
@@ -116,6 +136,7 @@ func parseAirportIntelligenceDays(value string) (int, error) {
 	}
 	return days, nil
 }
+
 func parseAirportIntelligenceAsOfTime(value string) (time.Time, error) {
 	normalized := strings.TrimSpace(value)
 	if normalized == "" {
@@ -127,6 +148,7 @@ func parseAirportIntelligenceAsOfTime(value string) (time.Time, error) {
 	}
 	return parsed.UTC(), nil
 }
+
 func parseAirportIntelligenceRankingLimit(value string) (int, error) {
 	normalized := strings.TrimSpace(value)
 	if normalized == "" {
@@ -138,6 +160,7 @@ func parseAirportIntelligenceRankingLimit(value string) (int, error) {
 	}
 	return limit, nil
 }
+
 func airportIntelligenceRequestError(ctx *fiber.Ctx, err error) error {
 	switch {
 	case errors.Is(err, errAirportIntelligenceAsOfTimeInvalid):
@@ -150,6 +173,7 @@ func airportIntelligenceRequestError(ctx *fiber.Ctx, err error) error {
 		return response.Error(ctx, fiber.StatusBadRequest, "INVALID_AIRPORT_INTELLIGENCE_REQUEST", "Airport Intelligence request is invalid")
 	}
 }
+
 func writeAirportIntelligenceError(ctx *fiber.Ctx, err error) error {
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
@@ -163,11 +187,12 @@ func writeAirportIntelligenceError(ctx *fiber.Ctx, err error) error {
 	case errors.Is(err, airportproduction.ErrObservationsNotFound):
 		return response.Error(ctx, fiber.StatusNotFound, "AIRPORT_INTELLIGENCE_NOT_FOUND", "No Airport Intelligence observations were available for the requested completed-day window")
 	case errors.Is(err, airportproduction.ErrInsufficientHistory):
-		return response.Error(ctx, fiber.StatusUnprocessableEntity, "AIRPORT_INTELLIGENCE_HISTORY_INSUFFICIENT", "At least two observed daily windows are required for Airport Trends")
+		return response.Error(ctx, fiber.StatusUnprocessableEntity, "AIRPORT_INTELLIGENCE_HISTORY_INSUFFICIENT", "At least two observed completed-day windows are required for the requested Airport Intelligence analysis")
 	default:
 		return response.Error(ctx, fiber.StatusInternalServerError, "AIRPORT_INTELLIGENCE_LOAD_FAILED", "Failed to load Airport Intelligence")
 	}
 }
+
 func airportIntelligenceUnavailable(ctx *fiber.Ctx) error {
 	return response.Error(ctx, fiber.StatusServiceUnavailable, "AIRPORT_INTELLIGENCE_SERVICE_UNAVAILABLE", "Airport Intelligence service is unavailable")
 }

@@ -59,6 +59,20 @@ func TestServiceExercisesCompleteAirportIntelligenceFlow(t *testing.T) {
 		t.Fatalf("trend direction = %q", trendsResult.Trends.Direction)
 	}
 
+	congestionResult, err := service.GetCongestion(context.Background(), "UBBB", request)
+	if err != nil {
+		t.Fatalf("get congestion intelligence: %v", err)
+	}
+	if !congestionResult.Congestion.CongestionScoreKnown {
+		t.Fatal("expected congestion score to be available with prior non-zero observed activity")
+	}
+	if !congestionResult.Congestion.CurrentWindowIsLatestExpected {
+		t.Fatal("expected the latest completed day to be observed")
+	}
+	if congestionResult.Congestion.ObservedWindowCount != 2 || congestionResult.Congestion.ExpectedWindowCount != 2 {
+		t.Fatalf("congestion evidence windows = %d/%d, want 2/2", congestionResult.Congestion.ObservedWindowCount, congestionResult.Congestion.ExpectedWindowCount)
+	}
+
 	rankingResult, err := service.GetRanking(context.Background(), request)
 	if err != nil {
 		t.Fatalf("get ranking: %v", err)
@@ -67,7 +81,7 @@ func TestServiceExercisesCompleteAirportIntelligenceFlow(t *testing.T) {
 		t.Fatalf("ranking airports = %d, want 2", len(rankingResult.Ranking.Airports))
 	}
 	if rankingResult.Ranking.Airports[0].ICAOCode != "UBBB" {
-		t.Fatalf("first ranked ICAO = %q", rankingResult.Ranking.Airports[0].ICAOCode)
+		t.Fatalf("first ranked ICAO = %q, want UBBB", rankingResult.Ranking.Airports[0].ICAOCode)
 	}
 }
 

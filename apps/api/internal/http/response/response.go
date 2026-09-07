@@ -33,6 +33,7 @@ type SuccessPayload interface {
 		dto.AnalyticalMetricResponse |
 		dto.AirspaceRegionAnalyticsResponse |
 		dto.StabilityIntelligenceResponse |
+		dto.AirportCongestionIntelligenceResponse |
 		dto.AirportIntelligenceOverviewResponse |
 		dto.AirportIntelligenceHistoryResponse |
 		dto.AirportIntelligenceTrendsResponse |

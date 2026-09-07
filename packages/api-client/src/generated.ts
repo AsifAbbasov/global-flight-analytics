@@ -1,6 +1,6 @@
 /* eslint-disable */
 // This file is generated from openapi/openapi.json. Do not edit manually.
-// OpenAPI SHA-256: 3a4c8765e3f91af66c3d894e826615af1de08c0fd413a293ffdd45e45f1a9022
+// OpenAPI SHA-256: 2446750ae07a53e18fac0bde2b2842997e022108bc09afc9d1ef7ef070c23ee5
 
 export type ActiveAircraftMetric = {
   readonly metric: "active_aircraft"
@@ -62,6 +62,41 @@ export type AircraftRouteContext = {
 export type AircraftRouteContextResponse = {
   readonly success: true
   readonly data: AircraftRouteContext
+}
+
+export type AirportCongestionIntelligence = {
+  readonly version: string
+  readonly status: "available" | "unavailable"
+  readonly window: AirportIntelligenceWindow
+  readonly icao_code: string
+  readonly current: AirportStatistics
+  readonly observed_window_count: number
+  readonly expected_window_count: number
+  readonly gap_window_count: number
+  readonly trailing_gap_window_count: number
+  readonly current_window_is_latest_expected: boolean
+  readonly evidence_coverage: number
+  readonly evidence_support: number
+  readonly baseline_window_count: number
+  readonly baseline_median_movements_per_hour: number
+  readonly prior_peak_movements_per_hour: number
+  readonly current_to_baseline_ratio: number
+  readonly current_to_baseline_ratio_known: boolean
+  readonly current_to_prior_peak_ratio: number
+  readonly current_to_prior_peak_ratio_known: boolean
+  readonly congestion_score: number
+  readonly congestion_score_known: boolean
+  readonly exceeds_prior_observed_activity_peak: boolean
+  readonly score_semantics: string
+  readonly scope_guard: string
+  readonly explanation: string
+  readonly limitations: ReadonlyArray<AirportIntelligenceLimitation>
+  readonly generated_at: string
+}
+
+export type AirportCongestionIntelligenceResponse = {
+  readonly success: true
+  readonly data: AirportCongestionIntelligence
 }
 
 export type AirportIntelligenceHistory = {
@@ -1646,6 +1681,15 @@ export interface OperationParameters {
       readonly icao: string
     }
   }
+  readonly getAirportCongestionIntelligence: {
+    readonly path: {
+      readonly icao: string
+    }
+    readonly query?: {
+      readonly days?: number
+      readonly as_of_time?: string
+    }
+  }
   readonly getAirportIntelligenceHistory: {
     readonly path: {
       readonly icao: string
@@ -1853,6 +1897,7 @@ export interface OperationResponses {
   readonly getAircraftByICAO24: AircraftResponse
   readonly getAircraftRouteContextByICAO24: AircraftRouteContextResponse
   readonly getAirportByICAO: AirportResponse
+  readonly getAirportCongestionIntelligence: AirportCongestionIntelligenceResponse
   readonly getAirportIntelligenceHistory: AirportIntelligenceHistoryResponse
   readonly getAirportIntelligenceOverview: AirportIntelligenceOverviewResponse
   readonly getAirportIntelligenceRanking: AirportIntelligenceRankingResponse
@@ -1919,6 +1964,13 @@ export const operationDefinitions = {
       protected: false,
       hasBody: false,
       parameters: [{"name":"icao","in":"path","required":true}],
+    },
+  getAirportCongestionIntelligence: {
+      method: "GET",
+      path: "/api/v1/airports/{icao}/intelligence/congestion",
+      protected: false,
+      hasBody: false,
+      parameters: [{"name":"icao","in":"path","required":true},{"name":"days","in":"query","required":false},{"name":"as_of_time","in":"query","required":false}],
     },
   getAirportIntelligenceHistory: {
       method: "GET",

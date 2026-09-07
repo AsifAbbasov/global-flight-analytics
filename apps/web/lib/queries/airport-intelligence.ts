@@ -4,6 +4,7 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 
 import {
+  getAirportCongestionIntelligence,
   getAirportIntelligenceHistory,
   getAirportIntelligenceOverview,
   getAirportIntelligenceRanking,
@@ -11,6 +12,7 @@ import {
 } from '@/lib/api/airport-intelligence'
 import { APIRequestError } from '@/lib/api/client'
 import type {
+  AirportCongestionIntelligence,
   AirportIntelligenceHistory,
   AirportIntelligenceOverview,
   AirportIntelligenceRanking,
@@ -29,6 +31,8 @@ const keys = {
     [...keys.all, 'history', icaoCode, days] as const,
   trends: (icaoCode: string | null, days: number) =>
     [...keys.all, 'trends', icaoCode, days] as const,
+  congestion: (icaoCode: string | null, days: number) =>
+    [...keys.all, 'congestion', icaoCode, days] as const,
 }
 
 export function useAirportIntelligenceRanking(
@@ -94,6 +98,25 @@ export function useAirportIntelligenceTrends(
         throw new APIRequestError('Airport ICAO code is unavailable.')
       }
       return getAirportIntelligenceTrends(normalizedICAO, { days, signal })
+    },
+    enabled: normalizedICAO !== null,
+    staleTime: staleTimeMilliseconds,
+    retry: shouldRetry,
+  })
+}
+
+export function useAirportCongestionIntelligence(
+  icaoCode: string | null,
+  days: number
+): UseQueryResult<AirportCongestionIntelligence, Error> {
+  const normalizedICAO = normalizeICAOCode(icaoCode)
+  return useQuery({
+    queryKey: keys.congestion(normalizedICAO, days),
+    queryFn: ({ signal }: { signal: AbortSignal }) => {
+      if (normalizedICAO === null) {
+        throw new APIRequestError('Airport ICAO code is unavailable.')
+      }
+      return getAirportCongestionIntelligence(normalizedICAO, { days, signal })
     },
     enabled: normalizedICAO !== null,
     staleTime: staleTimeMilliseconds,

@@ -5,6 +5,7 @@ import {
   requestAPIData,
 } from '@/lib/api/client'
 import type {
+  AirportCongestionIntelligence,
   AirportIntelligenceHistory,
   AirportIntelligenceLimitation,
   AirportIntelligenceOverview,
@@ -77,6 +78,21 @@ export async function getAirportIntelligenceTrends(
   return parseTrends(
     await requestAPIData<unknown>(
       `/api/v1/airports/${encodeURIComponent(normalizeICAOCode(icaoCode))}/intelligence/trends`,
+      {
+        signal: options.signal,
+        searchParams: buildSearchParams(options),
+      }
+    )
+  )
+}
+
+export async function getAirportCongestionIntelligence(
+  icaoCode: string,
+  options: AirportIntelligenceWindowOptions
+): Promise<AirportCongestionIntelligence> {
+  return parseCongestion(
+    await requestAPIData<unknown>(
+      `/api/v1/airports/${encodeURIComponent(normalizeICAOCode(icaoCode))}/intelligence/congestion`,
       {
         signal: options.signal,
         searchParams: buildSearchParams(options),
@@ -211,6 +227,39 @@ function parseTrends(value: unknown): AirportIntelligenceTrends {
     continuity_score: ratioValue(item.continuity_score, 'trends.continuity_score'),
     limitations: parseLimitations(item.limitations, 'trends.limitations'),
     generated_at: timestampValue(item.generated_at, 'trends.generated_at'),
+  }
+}
+
+function parseCongestion(value: unknown): AirportCongestionIntelligence {
+  const item = objectValue(value, 'congestion')
+  return {
+    version: stringValue(item.version, 'congestion.version'),
+    status: stringValue(item.status, 'congestion.status'),
+    window: parseWindow(item.window, 'congestion.window'),
+    icao_code: icaoValue(item.icao_code, 'congestion.icao_code'),
+    current: parseStatistics(item.current, 'congestion.current'),
+    observed_window_count: integerValue(item.observed_window_count, 'congestion.observed_window_count'),
+    expected_window_count: integerValue(item.expected_window_count, 'congestion.expected_window_count'),
+    gap_window_count: integerValue(item.gap_window_count, 'congestion.gap_window_count'),
+    trailing_gap_window_count: integerValue(item.trailing_gap_window_count, 'congestion.trailing_gap_window_count'),
+    current_window_is_latest_expected: booleanValue(item.current_window_is_latest_expected, 'congestion.current_window_is_latest_expected'),
+    evidence_coverage: ratioValue(item.evidence_coverage, 'congestion.evidence_coverage'),
+    evidence_support: ratioValue(item.evidence_support, 'congestion.evidence_support'),
+    baseline_window_count: integerValue(item.baseline_window_count, 'congestion.baseline_window_count'),
+    baseline_median_movements_per_hour: nonNegativeNumber(item.baseline_median_movements_per_hour, 'congestion.baseline_median_movements_per_hour'),
+    prior_peak_movements_per_hour: nonNegativeNumber(item.prior_peak_movements_per_hour, 'congestion.prior_peak_movements_per_hour'),
+    current_to_baseline_ratio: nonNegativeNumber(item.current_to_baseline_ratio, 'congestion.current_to_baseline_ratio'),
+    current_to_baseline_ratio_known: booleanValue(item.current_to_baseline_ratio_known, 'congestion.current_to_baseline_ratio_known'),
+    current_to_prior_peak_ratio: nonNegativeNumber(item.current_to_prior_peak_ratio, 'congestion.current_to_prior_peak_ratio'),
+    current_to_prior_peak_ratio_known: booleanValue(item.current_to_prior_peak_ratio_known, 'congestion.current_to_prior_peak_ratio_known'),
+    congestion_score: ratioValue(item.congestion_score, 'congestion.congestion_score'),
+    congestion_score_known: booleanValue(item.congestion_score_known, 'congestion.congestion_score_known'),
+    exceeds_prior_observed_activity_peak: booleanValue(item.exceeds_prior_observed_activity_peak, 'congestion.exceeds_prior_observed_activity_peak'),
+    score_semantics: stringValue(item.score_semantics, 'congestion.score_semantics'),
+    scope_guard: stringValue(item.scope_guard, 'congestion.scope_guard'),
+    explanation: stringValue(item.explanation, 'congestion.explanation'),
+    limitations: parseLimitations(item.limitations, 'congestion.limitations'),
+    generated_at: timestampValue(item.generated_at, 'congestion.generated_at'),
   }
 }
 

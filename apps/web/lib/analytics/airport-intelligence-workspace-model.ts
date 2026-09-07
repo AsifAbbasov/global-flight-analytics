@@ -1,6 +1,7 @@
 // FRONTEND_UNIFIED_AIRPORT_ANALYTICS_WORKSPACE_V1
 
 import type {
+  AirportCongestionIntelligence,
   AirportIntelligenceLimitation,
   AirportIntelligenceTrends,
   AirportRankedItem,
@@ -64,6 +65,21 @@ export interface AirportTrendSummary {
   continuityScore: number
   comparedWindows: number
   hasGaps: boolean
+}
+
+export interface AirportCongestionSummary {
+  status: 'available' | 'unavailable'
+  score: number | null
+  currentToBaselineRatio: number | null
+  currentToPriorPeakRatio: number | null
+  exceedsPriorObservedActivityPeak: boolean
+  currentWindowIsLatestExpected: boolean
+  observedWindowCount: number
+  expectedWindowCount: number
+  gapWindowCount: number
+  trailingGapWindowCount: number
+  evidenceCoverage: number
+  evidenceSupport: number
 }
 
 export function normalizeAirportICAOCode(
@@ -147,6 +163,44 @@ export function buildAirportTrendSummary(
     continuityScore: clampRatio(trends.continuity_score),
     comparedWindows: Math.max(0, Math.trunc(trends.compared_windows)),
     hasGaps: trends.gap_count > 0 || trends.gap_duration_seconds > 0,
+  }
+}
+
+export function buildAirportCongestionSummary(
+  congestion: AirportCongestionIntelligence
+): AirportCongestionSummary {
+  const status = congestion.status.trim().toLowerCase() === 'available'
+    ? 'available'
+    : 'unavailable'
+
+  return {
+    status,
+    score:
+      congestion.congestion_score_known && Number.isFinite(congestion.congestion_score)
+        ? clampRatio(congestion.congestion_score)
+        : null,
+    currentToBaselineRatio:
+      congestion.current_to_baseline_ratio_known &&
+      finiteNonNegative(congestion.current_to_baseline_ratio)
+        ? congestion.current_to_baseline_ratio
+        : null,
+    currentToPriorPeakRatio:
+      congestion.current_to_prior_peak_ratio_known &&
+      finiteNonNegative(congestion.current_to_prior_peak_ratio)
+        ? congestion.current_to_prior_peak_ratio
+        : null,
+    exceedsPriorObservedActivityPeak:
+      congestion.exceeds_prior_observed_activity_peak,
+    currentWindowIsLatestExpected:
+      congestion.current_window_is_latest_expected,
+    observedWindowCount: nonNegativeInteger(congestion.observed_window_count),
+    expectedWindowCount: nonNegativeInteger(congestion.expected_window_count),
+    gapWindowCount: nonNegativeInteger(congestion.gap_window_count),
+    trailingGapWindowCount: nonNegativeInteger(
+      congestion.trailing_gap_window_count
+    ),
+    evidenceCoverage: clampRatio(congestion.evidence_coverage),
+    evidenceSupport: clampRatio(congestion.evidence_support),
   }
 }
 
@@ -283,6 +337,15 @@ function ratio(numerator: number, denominator: number): number {
 function clampRatio(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.min(1, Math.max(0, value))
+}
+
+function finiteNonNegative(value: number): boolean {
+  return Number.isFinite(value) && value >= 0
+}
+
+function nonNegativeInteger(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.trunc(value))
 }
 
 function ascending(left: number, right: number): number {
