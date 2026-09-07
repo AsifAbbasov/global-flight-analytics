@@ -1,1 +1,565 @@
 # Global Flight Analytics
+
+[![Backend CI](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/AsifAbbasov/global-flight-analytics/actions/workflows/frontend-ci.yml)
+
+Global Flight Analytics is a full-stack open-data aviation research platform built to show
+how production engineering, data quality, temporal analytics and explainable inference can
+coexist in one coherent product.
+
+It is not air traffic control, navigation guidance, ticketing, a commercial flight status
+service or regulated aviation software. Every analytical surface keeps its data window,
+confidence, provenance and limitations visible.
+
+<!-- RELEASE-PORTFOLIO-CLOSURE-V1 -->
+<!-- BACKEND-OPERATIONS-EVIDENCE-CLOSURE-V1 -->
+<!-- RELEASE-TRUTH-DEPLOYMENT-REVISION-V1 -->
+<!-- CURRENT-ENGINEERING-STATUS-2026-08-V1 -->
+<!-- STAGE-14-36-FINAL-CLOSURE:README -->
+## Current Engineering Status
+
+The heavy backend, PostgreSQL, analytical, API, OpenAPI and frontend-integration work is
+closed for the current portfolio scope. **Stage 14 is closed** for the current repository
+scope. The production provider path and the revised FREE_V1 two-hour scheduler profile have
+completed controlled live validation, including exact-revision ingestion and subsequent
+Neon scale-to-zero. Production dispatch was intentionally returned to fail-closed after the
+bounded validation; permanent activation remains a separate operating decision.
+
+```text
+ADSB.lol adapter / provider policy        IMPLEMENTED
+ADSB.lol production response              RECEIVED
+ADSB.lol compliance hardening             MERGED
+Production Traffic Ingestion              DISPATCH-ONLY / FAIL-CLOSED
+Cloudflare primary target cadence         2 HOURS
+Cloudflare watchdog target cadence        2 HOURS
+Production Metrics Scrape                 2 HOURS
+Production Reconciliation                 MANUAL-ONLY WHILE INGESTION OFFLINE
+Cloudflare DISPATCH_ENABLED               false
+Neon scale-to-zero                        OBSERVED WORKING
+Neon monthly quota reset                  2026-09-01T00:00:00Z
+Controlled Cloudflare primary runtime     PASS
+Revised FREE_V1 runtime recovery          CLOSED
+Frontend Product Closure                  CLOSED — EXACT-HEAD CI VERIFIED
+Frontend Visual Polish V2                 CLOSED — EXACT-HEAD CI VERIFIED
+```
+
+The free-tier deployment profile accepts Render/Neon cold starts instead of using
+keep-alive traffic. Cloudflare is the single scheduled owner for future production
+ingestion. The GitHub production ingestion workflow is `workflow_dispatch`-only, so there
+is no second independent ingestion scheduler waking Render or Neon.
+
+The current free-tier budget and recovery evidence are recorded in
+[`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md).
+
+<!-- VERSION-2-RECONCILIATION:README -->
+## Version 2 Reconciliation
+
+Stages 15 through 22 are implemented and their repository evidence is preserved through
+Documents 197–211. Documents 212 and 213 reconcile those delivered capabilities against
+the older Version 2 planning list and record the independent post-merge closure evidence
+without inventing missing advanced analytics.
+
+```text
+VERSION_2_RECONCILIATION=CLOSED
+VERSION_2_RECONCILIATION_CI_VERIFIED=YES
+VERSION_2_ORIGINAL_SCOPE_ITEMS=18
+VERSION_2_IMPLEMENTED_CAPABILITIES=14
+VERSION_2_BOUNDED_UNCALIBRATED_CAPABILITIES=1
+VERSION_2_DEFERRED_RESEARCH_CAPABILITIES=3
+Discrete Fréchet Similarity Filter           DEFERRED_RESEARCH
+Trajectory Similarity Spatial Index          DEFERRED_RESEARCH
+Weather Grid Context                         DEFERRED_RESEARCH
+Similarity Threshold Policy                  IMPLEMENTED_BOUNDED_UNCALIBRATED
+Airport Congestion Score                     IMPLEMENTED_AS_OBSERVED_ACTIVITY_PROXY
+Estimated Time of Arrival Evolution Analyzer HISTORICALLY_RECOMPUTED_FROM_PERSISTED_OBSERVATIONS
+```
+
+The three deferred research items are not release blockers and are not represented as
+production capabilities. The current bounded Historical Similarity engine is not relabeled
+as Fréchet; compact Weather Context is not relabeled as a flight-level weather grid; Airport
+Congestion remains a relative observed-activity proxy rather than an airport-capacity or
+official congestion claim; ETA Evolution recomputes the current projection implementation
+at persisted historical observation times rather than claiming stored historical forecasts.
+
+The reconciliation was closed on canonical `main` after the guarded reconciliation merge,
+separate post-merge closure merge and independent final-main GitHub CI/Vercel validation.
+The independent repository-security finding `GFA-SEC-445` remains `IN_PROGRESS` and is not
+an analytical Version 2 blocker.
+
+<!-- STAGE-23-ETA-RELIABILITY:README -->
+## Stage 23 — ETA Reliability Intelligence
+
+Stage 23 is the next zero-budget product slice and is currently **IN_PROGRESS** on draft
+PR #171. It extends the existing Aircraft Detail / Estimated Arrival surface with bounded
+historical ETA reliability evidence instead of creating a separate analytics dashboard.
+
+```text
+STAGE_23_ETA_RELIABILITY=IN_PROGRESS
+STAGE_23_FRONTEND_CONSUMER=YES
+STAGE_23_ADDITIONAL_COST=0_RUB
+STAGE_23_HISTORICAL_ARRIVAL_EVIDENCE=PERSISTED_ENDPOINT_PROXY
+OFFICIAL_ARRIVAL_TRUTH=NONE
+STAGE_23_MAX_HISTORICAL_CANDIDATES=8
+STAGE_23_FRONTEND_POLLING=NONE
+STAGE_23_REVIEW_READY=NO
+STAGE_23_MERGE_READY=NO
+```
+
+The reliability surface is historically recomputed from persisted observations. The
+historical comparison target is the last qualifying persisted trajectory observation near
+the inferred destination airport. That endpoint proxy is **not** an official touchdown,
+gate-arrival, schedule or operational flight-status timestamp. Sample size and limitations
+remain visible, and insufficient evidence stays unavailable or limited instead of becoming
+a fabricated reliability percentage.
+
+Stage 23 reuses the existing Go/PostgreSQL Projection Intelligence and Projection Evaluation
+stack, Next.js and TanStack Query. It introduces no paid aviation provider, new database
+table, migration, server, background materializer, Redis, Kafka or GPU. The current source
+route is still being reconciled with the canonical OpenAPI contract, so the repository-wide
+public OpenAPI surface remains the previously closed 39-operation contract until that sync
+passes exact-head validation.
+
+Canonical Stage 23 pre-merge engineering history is recorded in
+[`docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md`](docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md).
+
+<!-- ANALYTICAL-CORE-REVIEW-CLOSURE:README -->
+## Analytical Core Review Closure
+
+```text
+ANALYTICAL_CORE_REVIEW_STATUS=CLOSED
+Open required changes: 0
+```
+
+The Analytical Core closure remains immutable repository evidence; current recovery work
+does not reopen that completed technical review.
+
+## Portfolio Release Evidence
+
+Source implementation and exact-commit Continuous Integration were closed for the original
+portfolio release `49e474e929dcca5b687464f0a47ce73fcd5a52a7`:
+
+- Backend CI run `30715613342` completed successfully;
+- Frontend CI run `30715613361` completed successfully.
+
+The production verification completed on 2026-08-02 used application revision
+`6bca02a8ed1487195b165ae9ced3ca687a373666`. This is immutable historical evidence for
+that verification event, not a claim that mutable production aliases still serve the same
+revision:
+
+- Frontend: `https://global-flight-analytics-web.vercel.app`
+- API: `https://global-flight-analytics-api.onrender.com`
+- Database: owner-controlled Neon PostgreSQL
+
+Historical release verification recorded:
+
+```text
+PRODUCTION_RELEASE_SMOKE=PASS
+```
+
+The frontend product redesign source implementation is complete through the map-first,
+evidence-aware workspace. Frontend Product Closure was verified on PR #98 exact head
+`b43b6a87eb6224efc2e3c899effe21655d58b996` across all five repository merge-evidence
+workflows before squash merge `c215e7ce5466577f149dc5669c5e0311daf6a56d`.
+
+The later zero-budget Visual Polish V2 was independently verified on PR #102 exact head
+`f1d2ba16cec215b217955fbcd049dd8b728562c4`: Frontend CI, Backend CI, CodeQL, API Load
+Baseline and Playwright E2E all completed successfully, and the Chromium suite finished
+20/20 with zero flaky retries. PR #102 was then expected-head squash-merged as
+`ce7ee7ab0b95655fff7a1b546e277a4e1c0b842f`. GitHub subsequently recorded Vercel status
+`success` for that merge revision. That Vercel status is historical frontend deployment
+evidence rather than a substitute for provider/Render/Neon runtime validation; the later
+FREE_V1 recovery validation was completed separately on the evidence recorded below.
+
+Structural desktop/mobile Playwright regression and retained screenshot evidence are the
+repository-owned visual strategy. A full live-map pixel-golden baseline is deliberately not
+adopted as a completion requirement because it would couple CI to externally rendered
+OpenFreeMap/OSM pixels or require masking the map surface under test.
+
+<!-- STAGE-13-FRONTEND-ANALYTICS-CLOSURE-V1 -->
+## Frontend Analytics Integration
+
+Stage 13 frontend analytics integration is technically complete. Projection Intelligence,
+Weather Context and Stability/Explainability are wired through source-backed API/query
+contracts and rendered by the product workspace without moving server-owned analytical
+recomputation into the browser.
+
+Observed trajectory and estimated projection geometry remain separate MapLibre evidence
+sources, so measured history and estimated future geometry cannot be presented as the same
+kind of observation. The later visual and interaction redesign and Visual Polish V2 are
+closed; pixel-golden comparison is deliberately nonblocking and not adopted for the live
+external-tile map surface.
+
+Formal completion evidence is preserved in
+[`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md).
+
+<!-- PRODUCTION-OBSERVABILITY-CLOSURE-V1 -->
+## Production Observability
+
+Production observability remains repository-owned and historically verified. Protected
+Prometheus-compatible metrics are forwarded through Grafana Alloy to Grafana Cloud; the
+stack owns one production SLO dashboard and nine managed alert rules, with controlled
+notification delivery recorded as historical closure evidence.
+
+Exact resources, security boundaries and notification-delivery evidence are preserved in
+[`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md).
+The current free-tier metrics cadence is two hours, with a 180-minute missing-metrics
+window; that newer cadence does not rewrite the immutable historical closure evidence.
+
+## Production Traffic and Free-Tier Boundary
+
+Historical reliability closure proved the Cloudflare scheduling, watchdog, deduplication,
+recovery and exact-revision runtime path on the earlier production profile. Those immutable
+runs remain historical evidence.
+
+The current source-controlled `FREE_V1` profile is intentionally different:
+
+```text
+Cloudflare primary:     17 */2 * * *
+Cloudflare watchdog:    19 */2 * * *
+Metrics scrape:         20 */2 * * *
+GitHub ingestion cron:  NONE
+GitHub reconciliation:  workflow_dispatch only while ingestion is offline
+DISPATCH_ENABLED:       false
+```
+
+The old 10-minute primary, later 30-minute recovery target, 5-minute watchdog, 15-minute
+metrics keep-awake pattern and independent 10-minute reconciliation schedule are no longer
+the current deployment policy. Controlled September runtime validation showed real Neon
+wake windows around twenty minutes, so the 30-minute primary was rejected for FREE_V1.
+PR #145 then merged the two-hour profile as exact revision
+`d024f2c9c1183f903a6be1b6264829496adf52b6`. One bounded scheduled Cloudflare primary
+produced successful Production Traffic Ingestion run `34000891812` / `#3585` on that
+revision with ADSB.lol `stored=7`, `trajectories=7` and freshness PASS. Neon subsequently
+returned to suspended state at `2026-09-06T00:38:32Z`. The Worker was restored to
+`DISPATCH_ENABLED=false` after the controlled validation.
+
+Historical reliability diagnosis and repository-recorded closure evidence are preserved in
+[`docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md`](docs/182_ZERO_COST_PRODUCTION_INGESTION_RELIABILITY.md)
+and
+[`docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md`](docs/183_CLOUDFLARE_INGESTION_LIVE_DEPLOYMENT_EVIDENCE.md).
+Those historical documents are not rewritten by the later FREE_V1 recovery closure. GitHub
+Actions retains the immutable execution history; the final validator log remains
+owner-local, non-secret supporting evidence and is not committed to the repository.
+
+## Production Provider Recovery — ADSB.lol
+
+The provider recovery implementation uses ADSB.lol as the default open-data provider
+candidate. The backend includes a dedicated readsb-compatible ADSB.lol adapter, bounded
+request policy, source-specific provenance, provider eligibility gates and fail-closed
+fallback selection.
+
+`TRAFFIC_PROVIDER=auto` starts with ADSB.lol. Airplanes.live is eligible only after
+compatible access is explicitly approved. OpenSky remains fail-closed for operational use
+until the required agreement is explicitly confirmed.
+
+The production-use inquiry sent on 2026-08-21 received an operator response the same day.
+The response supplied production-use guidance rather than a bespoke SLA or fixed quota:
+visible ODbL attribution, an identifiable User-Agent with contact information, respect for
+HTTP errors, dynamic rate limits and `Retry-After`, practical caching/deduplication, scoped
+geographic queries, no multi-IP circumvention, and no safety-critical dependency. PR #100
+merged the corresponding compliance hardening while keeping production ingestion offline.
+
+```text
+ADSBLOL_ADAPTER=IMPLEMENTED
+ADSBLOL_PROVIDER_POLICY=IMPLEMENTED
+ADSBLOL_PRODUCTION_CONTACT=SENT
+ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
+PRODUCTION_WORKFLOW_SOURCE_READY=YES
+CONTROLLED_PRODUCTION_INGESTION=PASS
+CONTROLLED_CLOUDFLARE_PRIMARY=PASS
+REVISED_FREE_V1_PRIMARY_RUNTIME=PASS
+REVISED_FREE_V1_SCALE_TO_ZERO=PASS
+PRODUCTION_INGESTION=INTENTIONALLY_FAIL_CLOSED
+PRODUCTION_PROVIDER_RECOVERY=CLOSED
+```
+
+Implementation details and exact runtime evidence are recorded in
+[`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md).
+
+## Free-Tier Infrastructure Recovery
+
+The August 2026 Neon incident was traced to excessive active time / repeated wake windows,
+not sustained high compute scaling. Live inspection recorded approximately 373.6 active
+hours, approximately 101.2 CU-hours and approximately 0.27 CU average effective compute,
+close to the 0.25 CU minimum. Scale-to-zero was observed working after inactivity.
+
+Post-reset controlled runtime validation proved the production path and repeatedly observed
+Neon start/suspend cycles. Representative wake windows were roughly twenty to twenty-four
+minutes, materially longer than the earlier five-minute planning assumption. The 30-minute
+primary target was therefore replaced with one two-hour primary wake cluster.
+
+```text
+TARGET_MONTHLY_NEON_COMPUTE <= 60 CU-hours
+RESERVE_FOR_INTERACTIVE_AND_RECOVERY_WORK >= 40 CU-hours
+2-hour ingestion target
+2-hour metrics/watchdog
+one daily release smoke
+no keep-alive traffic
+FREE_TIER_INFRASTRUCTURE_RECOVERY=CLOSED
+```
+
+The revised two-hour profile was merged, deployed from its exact merged revision, exercised
+through one scheduled `cloudflare-primary` ingestion, and followed by observed Neon
+scale-to-zero. That closes `GFA-OPS-456` without claiming that one cycle guarantees future
+full-month CU-hour consumption. Production dispatch remains intentionally fail-closed after
+the bounded validation.
+
+## Recent Engineering Milestones — August 2026
+
+- **PR #68 — Frontend dependency security.** Closed the production dependency security
+  baseline and permanent dependency-graph protection.
+- **PR #69 — Required-check recovery hardening.** Added exact-head, fail-closed CI recovery
+  rules and prohibited empty retrigger commits or reduced shadow workflows.
+- **PR #70 — Playwright product coverage.** Expanded browser verification to twenty
+  deterministic Chromium product journeys and preserved the visual-redesign boundary.
+- **PR #82 — ADSB.lol provider recovery.** Added the fail-closed open-data provider path.
+- **PR #85 — Free-tier infrastructure hardening.** Reworked monitoring, reconciliation and
+  scheduler cadence around the measured Neon compute budget.
+- **PR #98 — Frontend Product Closure.** Closed the redesigned map-first product source and
+  structural visual-evidence phase after exact-head 5/5 CI and 20/20 clean Chromium journeys.
+- **PR #99 — Frontend closure governance.** Promoted the verified frontend candidate to the
+  repository-owned `CLOSED` state while preserving runtime and release boundaries.
+- **PR #100 — ADSB.lol provider-guidance compliance.** Added identifiable request contact,
+  visible ODbL attribution and regression protection without enabling production ingestion.
+- **PR #101 — Provider recovery truth reconciliation.** Reconciled the received provider
+  response and merged compliance state without claiming live runtime recovery.
+- **PR #102 — Frontend Visual Polish V2.** Promoted the live two-dimensional map to the
+  primary tracker workspace, compacted the aircraft/intelligence rail, removed unsupported
+  placeholder values and closed the zero-budget visual polish after exact-head 5/5 CI and
+  20/20 clean Chromium journeys.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Sources[Open aviation and weather sources]
+    Providers[Governed source adapters]
+    Ingestion[Ingestion and canonical flight state]
+    Quality[Data quality and provenance]
+    Trajectory[Track builder and trajectories]
+    Intelligence[Route, Airport, Historical, Weather and Projection Intelligence]
+    Storage[(PostgreSQL)]
+    API[Go Fiber API]
+    Web[Next.js research interface]
+
+    Sources --> Providers --> Ingestion --> Quality --> Trajectory --> Intelligence
+    Ingestion --> Storage
+    Trajectory --> Storage
+    Intelligence --> Storage
+    Storage --> API --> Web
+```
+
+The production architecture is a modular monolith. The backend is the authority for
+persistence and analytical semantics; the frontend validates transport contracts and
+renders evidence without recomputing server-owned analytics.
+
+## What Is Implemented
+
+### Product experience
+
+- regional and world traffic exploration;
+- synchronized map, aircraft index and aircraft intelligence;
+- Airport Intelligence ranking, passport, completed-day history and trends;
+- Historical Intelligence across global, airport and route scopes;
+- Historical Flight Replay with elapsed-time navigation, observed interval comparison, evidence quality and provenance profiles;
+- Airspace Intelligence frontend integration;
+- relative observed-activity Airport Congestion Intelligence;
+- historically recomputed Estimated Arrival Evolution;
+- Projection, Weather Context and Stability/Explainability surfaces;
+- deterministic CSV and GeoJSON research exports;
+- shareable workspace state, responsive navigation and recoverable errors.
+
+### Analytical platform
+
+- canonical flight-state normalization and PostgreSQL persistence;
+- provider budgets, health-aware selection, retry, fallback and ingestion evidence;
+- trajectory construction, segmentation, reconciliation and quality contracts;
+- Route, Airport, Historical, Weather, Projection, Airspace and Stability Intelligence;
+- bounded Historical Similarity with deterministic policy and separate evidence confidence;
+- materialized analytical records with versioned contracts and provenance;
+- repeatable-read snapshot consistency, nullable telemetry integrity and keyset pagination.
+
+### Engineering depth
+
+- Go modular monolith with explicit bounded contexts;
+- PostgreSQL migrations, constraints, repositories and repeatable-read boundaries;
+- Next.js, React, TypeScript, TanStack Query and MapLibre;
+- OpenAPI 3.1 source-backed contract and generated TypeScript client;
+- protected mutation routes and unauthenticated read-only research routes;
+- GitHub Actions quality gates, CodeQL, API load baseline and Playwright E2E;
+- production observability through Prometheus-compatible metrics and Grafana Cloud.
+
+## Contract and Test Surface
+
+The current **closed canonical** repository contract exposes 39 source-backed OpenAPI
+operations: 38 unauthenticated public read operations and one protected Route Intelligence
+mutation. Stage 23 has added a source route while its OpenAPI reconciliation is still in
+progress, so the feature must not be represented as a closed 40-operation public contract
+until source/OpenAPI/generated-client gates agree on one exact head.
+
+Browser verification contains deterministic Chromium product journeys and private mock
+scenarios covering workspace navigation, aircraft, airport and analytical surfaces, exports,
+recovery behavior, accessibility and responsive layout invariants. Later Stage 15–22
+journeys extend the original twenty-scenario product baseline; the historical twenty-scenario
+count remains release evidence rather than the current total.
+
+```text
+OPENAPI_CONTRACT_OPERATIONS=39
+OPENAPI_PUBLIC_READ_OPERATIONS=38
+OPENAPI_PROTECTED_MUTATION_OPERATIONS=1
+STAGE_14_OVERALL_STATUS=CLOSED
+VERSION_2_RECONCILIATION=CLOSED
+STAGE_23_ETA_RELIABILITY=IN_PROGRESS
+```
+
+### Historical v1.0.0 release-contract baseline
+
+The published v1 release contract remains immutable historical evidence. At that release
+boundary the README recorded **38 source-backed OpenAPI paths**, **twenty deterministic
+Chromium product journeys**, and **seven deterministic private mock scenarios**. These
+markers are retained only for the v1 release verifier; they do not describe the current
+Version 2 / Stage 23 engineering surface above.
+
+```text
+OPENAPI_CONTRACT_PATHS=38
+PLAYWRIGHT_E2E_BROWSER_SCENARIOS=20
+PLAYWRIGHT_E2E_MOCK_SCENARIOS=7
+```
+
+## Technology
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, TanStack Query, MapLibre, Three.js |
+| Backend | Go, Fiber, pgx |
+| Database | PostgreSQL / Neon |
+| Local runtime | Docker Compose |
+| Production path | Vercel frontend, Render Docker API, Neon PostgreSQL |
+| Scheduling | Cloudflare Worker + dispatch-owned GitHub Actions ingestion |
+| Observability | Prometheus metrics, Grafana Alloy, Grafana Cloud dashboards and alerting |
+
+## Run the Local Demo
+
+Prerequisites: Docker Compose v2, Node.js 24.9.0, pnpm 11.8.0 and the Go version declared
+by `apps/api/go.mod`.
+
+```bash
+docker compose config
+docker compose up --build --detach
+docker compose ps
+```
+
+Verify backend lifecycle endpoints:
+
+```bash
+curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/health
+curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/ready
+curl --fail --silent --show-error http://127.0.0.1:8080/api/v1/version
+```
+
+Start the frontend:
+
+```bash
+pnpm install --frozen-lockfile
+test -f apps/web/.env.local || cp apps/web/.env.example apps/web/.env.local
+pnpm dev:web
+```
+
+Open `http://localhost:3000`.
+
+## Verify a Release Candidate
+
+Run the complete source gate:
+
+```bash
+pnpm verify:release
+```
+
+For an explicitly selected deployed revision, the production smoke entry point remains:
+
+```bash
+FRONTEND_URL="https://global-flight-analytics-web.vercel.app" \
+API_BASE_URL="https://global-flight-analytics-api.onrender.com" \
+EXPECTED_API_REVISION='<full deployed API SHA>' \
+pnpm smoke:production
+```
+
+The release gate covers the portfolio contract, recruiter quickstart, dependency graph,
+frontend tests, ESLint, TypeScript, production build, Go formatting/tests/vet, architecture
+audits, Docker configuration and repository integrity.
+
+## Reviewer Guide
+
+- [`docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md`](docs/162_RELEASE_AND_PORTFOLIO_CLOSURE.md) — release definition and production evidence policy;
+- [`docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md`](docs/163_PRODUCTION_DEPLOYMENT_RUNBOOK.md) — production deployment and recovery path;
+- [`docs/164_RECRUITER_DEMO_SCRIPT.md`](docs/164_RECRUITER_DEMO_SCRIPT.md) — product and code walkthrough;
+- [`docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md`](docs/165_SYSTEM_ARCHITECTURE_AND_DECISIONS.md) — architecture, boundaries and trade-offs;
+- [`docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md`](docs/170_PRODUCTION_OBSERVABILITY_AND_ALERTING_CLOSURE.md) — managed production observability evidence;
+- [`docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md`](docs/184_STAGE_13_FRONTEND_ANALYTICS_INTEGRATION_COMPLETION.md) — Stage 13 frontend analytics closure;
+- [`docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md`](docs/191_PRODUCTION_INGESTION_RESILIENCE_INCIDENT_CLOSURE.md) — provider incident containment;
+- [`docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md`](docs/192_PRODUCTION_RECONCILIATION_ALERT_STABILITY_INCIDENT.md) — reconciliation incident evidence;
+- [`docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md`](docs/193_PRODUCTION_TRAFFIC_PROVIDER_RECOVERY.md) — ADSB.lol recovery implementation and runtime closure evidence;
+- [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget, cadence policy and `GFA-OPS-456` closure evidence;
+- [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — frontend product closure and post-closure visual boundary;
+- [`docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`](docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md) — zero-budget Visual Polish V2 evidence and Flightradar24-reference boundary;
+- [`docs/212_VERSION_2_RECONCILIATION_AUDIT.md`](docs/212_VERSION_2_RECONCILIATION_AUDIT.md) — Version 2 roadmap/release-boundary reconciliation;
+- [`docs/213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md`](docs/213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md) — canonical Version 2 reconciliation closure evidence;
+- [`docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md`](docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md) — Stage 23 pre-merge product/evidence/validation record;
+- [`docs/FINDING_REGISTER.md`](docs/FINDING_REGISTER.md) — canonical engineering finding/status register and remediation ownership index;
+- [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md) — normative remediation-history and evidence-honesty standard;
+- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register, including the current Stage 23 record.
+
+## Portfolio v1.0.0 Release
+
+Frontend Product Closure, Frontend Visual Polish V2, ADSB.lol provider recovery and the
+FREE_V1 wake-budget remediation are closed. The final exact-production release validation is
+also closed: Render reported live deployment `dep-daegc2ss728c7380js90` for exact revision
+`366a406bc33c7deb839d4c1a56feb82901402e75`, and Production Smoke run `34016471540`
+(job `101441002735`) verified the deployed revision, frontend identity, API health/readiness,
+exact `/api/v1/version` provenance and production CORS contract. Production dispatch remains
+intentionally fail-closed after the bounded FREE_V1 ingestion validation.
+
+Pixel-golden comparison is deliberately not adopted as a release requirement for the
+externally rendered live-map surface. Final release documentation is closed, and the
+production-validated portfolio release `v1.0.0` was published from exact post-merge `main`
+revision `cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70` as a full GitHub Release (not draft and
+not prerelease):
+
+`https://github.com/AsifAbbasov/global-flight-analytics/releases/tag/v1.0.0`
+
+```text
+FRONTEND_PRODUCT_SOURCE_IMPLEMENTATION=COMPLETE
+FRONTEND_PRODUCT_CLOSURE=CLOSED
+FRONTEND_VISUAL_AND_INTERACTION_REDESIGN=IMPLEMENTED
+FRONTEND_VISUAL_POLISH_V2=CLOSED
+STRUCTURAL_VISUAL_REGRESSION=CLOSED
+RETAINED_SCREENSHOT_EVIDENCE=CLOSED
+PIXEL_GOLDEN_VISUAL_REGRESSION=NOT_ADOPTED_NONBLOCKING
+DOCUMENT_INDEX_194_196=CLOSED
+ADSBLOL_PRODUCTION_RESPONSE=RECEIVED
+ADSBLOL_COMPLIANCE_HARDENING=MERGED
+CONTROLLED_PRODUCTION_INGESTION=PASS
+CONTROLLED_CLOUDFLARE_PRIMARY=PASS
+REVISED_FREE_V1_PRIMARY_RUNTIME=PASS
+REVISED_FREE_V1_SCALE_TO_ZERO=PASS
+PRODUCTION_PROVIDER_RECOVERY=CLOSED
+FREE_TIER_INFRASTRUCTURE_RECOVERY=CLOSED
+FINAL_EXACT_PRODUCTION_VALIDATION=CLOSED
+FINAL_RELEASE_DOCUMENTATION=CLOSED
+V1_RELEASE_TAG=v1.0.0
+V1_RELEASE_SHA=cc962c7c84b84d8e9b9b1306f65f054c6e0c4d70
+V1_RELEASE=CLOSED
+```
+
+## Evidence Boundaries
+
+The project uses open and incomplete observations. It does not invent filed flight plans,
+confirmed incidents, operational airport capacity, safety guarantees or authoritative
+flight status. Missing evidence remains missing; unavailable comparisons are not converted
+into zero; optional identity fields do not invalidate positional evidence.
+
+Machine learning, satellite fusion, billing, authentication, Kubernetes and microservices
+remain outside the current portfolio release boundary.
+
+<!-- SOURCE-CONSTRAINTS-OPENSKY-V1 -->
