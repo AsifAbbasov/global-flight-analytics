@@ -25,16 +25,16 @@ test('repository route inventory passes', () => {
     ['scripts/verify-openapi-route-inventory.mjs'],
     { encoding: 'utf8' },
   )
-  assert.match(output, /SOURCE_PUBLIC_OPERATIONS=38/)
-  assert.match(output, /OPENAPI_DOCUMENTED_OPERATIONS=38/)
+  assert.match(output, /SOURCE_PUBLIC_OPERATIONS=39/)
+  assert.match(output, /OPENAPI_DOCUMENTED_OPERATIONS=39/)
   assert.match(output, /OPENAPI_MISSING_OPERATIONS=0/)
   assert.match(output, /OPENAPI_ROUTE_INVENTORY=PASS/)
 })
 
-test('source inventory exposes exactly 37 GET operations and one POST operation', () => {
+test('source inventory exposes exactly 38 GET operations and one POST operation', () => {
   const { publicOperations } = discoverSourceOperations(process.cwd())
-  assert.equal(publicOperations.length, 38)
-  assert.equal(publicOperations.filter(([method]) => method === 'GET').length, 37)
+  assert.equal(publicOperations.length, 39)
+  assert.equal(publicOperations.filter(([method]) => method === 'GET').length, 38)
   assert.equal(publicOperations.filter(([method]) => method === 'POST').length, 1)
   assert.deepEqual(
     publicOperations.map(([method, routePath]) => `${method} ${routePath}`).sort(),
@@ -47,11 +47,11 @@ test('internal metrics remains the only internal HTTP operation', () => {
   assert.deepEqual(internalOperations, expectedInternalOperations)
 })
 
-test('complete OpenAPI documents all 38 source operations', () => {
+test('complete OpenAPI documents all 39 source operations', () => {
   const { publicOperations } = discoverSourceOperations(process.cwd())
   const openAPIOperations = extractOpenAPIOperations(loadSpec())
   const gap = compareOperationSets(publicOperations, openAPIOperations)
-  assert.equal(openAPIOperations.length, 38)
+  assert.equal(openAPIOperations.length, 39)
   assert.deepEqual(gap.missing, [])
   assert.deepEqual(gap.extra, [])
 })

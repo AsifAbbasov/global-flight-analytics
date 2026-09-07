@@ -22,9 +22,9 @@ test('repository OpenAPI contract passes', () => {
   assert.match(output, /OPENAPI_CONTRACT=PASS/)
 })
 
-test('contract exposes 37 reads and one protected mutation across 38 paths', () => {
+test('contract exposes 38 reads and one protected mutation across 39 paths', () => {
   const spec = loadSpec()
-  assert.equal(Object.keys(spec.paths).length, 38)
+  assert.equal(Object.keys(spec.paths).length, 39)
   assert.deepEqual(
     Object.keys(spec.paths).sort(),
     [
@@ -94,6 +94,22 @@ test('advanced intelligence query contracts remain source aligned', () => {
       default: 300,
     },
   )
+})
+
+test('Airport Congestion Intelligence contract preserves research-only evidence semantics', () => {
+  const spec = loadSpec()
+  const operation = spec.paths['/api/v1/airports/{icao}/intelligence/congestion'].get
+  assert.equal(operation.operationId, 'getAirportCongestionIntelligence')
+  assert.match(operation.description, /relative observed-activity pressure proxy/)
+  assert.match(operation.description, /does not represent airport capacity/)
+  const schema = spec.components.schemas.AirportCongestionIntelligence
+  assert.equal(schema.additionalProperties, false)
+  assert.deepEqual(schema.properties.congestion_score, { type: 'number', minimum: 0, maximum: 1 })
+  assert.deepEqual(schema.properties.evidence_coverage, { type: 'number', minimum: 0, maximum: 1 })
+  assert.ok(schema.required.includes('trailing_gap_window_count'))
+  assert.ok(schema.required.includes('current_window_is_latest_expected'))
+  assert.ok(schema.required.includes('score_semantics'))
+  assert.ok(schema.required.includes('scope_guard'))
 })
 
 test('server-owned analytical quality inputs are not published as client parameters', () => {

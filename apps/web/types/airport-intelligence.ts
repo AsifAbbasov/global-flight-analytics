@@ -176,6 +176,36 @@ export interface AirportIntelligenceTrends {
   generated_at: string
 }
 
+export interface AirportCongestionIntelligence {
+  version: string
+  status: string
+  window: AirportIntelligenceWindow
+  icao_code: string
+  current: AirportStatistics
+  observed_window_count: number
+  expected_window_count: number
+  gap_window_count: number
+  trailing_gap_window_count: number
+  current_window_is_latest_expected: boolean
+  evidence_coverage: number
+  evidence_support: number
+  baseline_window_count: number
+  baseline_median_movements_per_hour: number
+  prior_peak_movements_per_hour: number
+  current_to_baseline_ratio: number
+  current_to_baseline_ratio_known: boolean
+  current_to_prior_peak_ratio: number
+  current_to_prior_peak_ratio_known: boolean
+  congestion_score: number
+  congestion_score_known: boolean
+  exceeds_prior_observed_activity_peak: boolean
+  score_semantics: string
+  scope_guard: string
+  explanation: string
+  limitations: AirportIntelligenceLimitation[]
+  generated_at: string
+}
+
 export interface AirportIntelligenceWindowOptions {
   days: number
   signal?: AbortSignal

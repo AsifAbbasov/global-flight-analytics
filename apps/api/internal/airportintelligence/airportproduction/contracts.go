@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airportintelligence/congestion"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airportintelligence/history"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airportintelligence/overview"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/airportintelligence/ranking"
@@ -92,6 +93,14 @@ type TrendsResult struct {
 	GeneratedAt time.Time
 }
 
+type CongestionResult struct {
+	Version     string
+	Window      Window
+	Congestion  congestion.Result
+	Limitations []Limitation
+	GeneratedAt time.Time
+}
+
 type RankingResult struct {
 	Version     string
 	Window      Window
@@ -105,5 +114,6 @@ type ReadService interface {
 	GetOverview(context.Context, string, WindowRequest) (OverviewResult, error)
 	GetHistory(context.Context, string, WindowRequest) (HistoryResult, error)
 	GetTrends(context.Context, string, WindowRequest) (TrendsResult, error)
+	GetCongestion(context.Context, string, WindowRequest) (CongestionResult, error)
 	GetRanking(context.Context, WindowRequest) (RankingResult, error)
 }

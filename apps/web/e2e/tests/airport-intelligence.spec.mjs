@@ -6,7 +6,7 @@ test.beforeEach(async ({ request }) => {
   await setScenario(request, 'healthy')
 })
 
-test('airport ranking opens passport history and trend evidence', async ({
+test('airport ranking opens passport history trend and activity-pressure evidence', async ({
   page,
 }) => {
   await page.goto('/#airport-intelligence', {
@@ -52,6 +52,26 @@ test('airport ranking opens passport history and trend evidence', async ({
   ).toBeVisible()
   await expect(
     workspace.getByRole('heading', { name: 'Evidence movement' }),
+  ).toBeVisible()
+
+  await profileTabs.getByRole('tab', { name: 'Activity pressure' }).click()
+  const congestionPanel = workspace.locator(
+    '[data-airport-congestion-scope="relative-observed-activity-only"]',
+  )
+  await expect(congestionPanel).toBeVisible()
+  await expect(congestionPanel).toHaveAttribute('data-airport-capacity-model', 'none')
+  await expect(congestionPanel).toHaveAttribute('data-airport-delay-inference', 'none')
+  await expect(
+    congestionPanel.getByRole('heading', { name: 'Airport congestion intelligence' }),
+  ).toBeVisible()
+  await expect(
+    congestionPanel.getByText('Observed proxy available', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    congestionPanel.getByText('29 / 30', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    congestionPanel.getByText(/not airport capacity/i),
   ).toBeVisible()
 
   await workspace

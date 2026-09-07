@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 
+import { AirportCongestionContent } from '@/components/analytics/airport-congestion-content'
 import { getRequestErrorMessage } from '@/lib/api/client'
 import {
   buildAirportHistorySeries,
@@ -17,6 +18,7 @@ import {
   type AirportRankingSort,
 } from '@/lib/analytics/airport-intelligence-workspace-model'
 import {
+  useAirportCongestionIntelligence,
   useAirportIntelligenceHistory,
   useAirportIntelligenceOverview,
   useAirportIntelligenceRanking,
@@ -30,7 +32,7 @@ import type {
 } from '@/types/airport-intelligence'
 
 type AirportWindowDays = 7 | 30 | 90
-type AirportProfilePanel = 'overview' | 'history' | 'trends'
+type AirportProfilePanel = 'overview' | 'history' | 'trends' | 'congestion'
 
 const windowChoices: AirportWindowDays[] = [7, 30, 90]
 const rankingLimit = 100
@@ -47,6 +49,7 @@ export function UnifiedAirportAnalyticsWorkspace() {
   const overviewQuery = useAirportIntelligenceOverview(selectedICAOCode, days)
   const historyQuery = useAirportIntelligenceHistory(selectedICAOCode, days)
   const trendsQuery = useAirportIntelligenceTrends(selectedICAOCode, days)
+  const congestionQuery = useAirportCongestionIntelligence(selectedICAOCode, days)
 
   const rankingView = useMemo(
     () =>
@@ -64,13 +67,15 @@ export function UnifiedAirportAnalyticsWorkspace() {
         rankingQuery.data?.limitations,
         overviewQuery.data?.limitations,
         historyQuery.data?.limitations,
-        trendsQuery.data?.limitations
+        trendsQuery.data?.limitations,
+        congestionQuery.data?.limitations
       ),
     [
       rankingQuery.data?.limitations,
       overviewQuery.data?.limitations,
       historyQuery.data?.limitations,
       trendsQuery.data?.limitations,
+      congestionQuery.data?.limitations,
     ]
   )
 
@@ -85,6 +90,7 @@ export function UnifiedAirportAnalyticsWorkspace() {
       void overviewQuery.refetch()
       void historyQuery.refetch()
       void trendsQuery.refetch()
+      void congestionQuery.refetch()
     }
   }
 
@@ -92,7 +98,8 @@ export function UnifiedAirportAnalyticsWorkspace() {
     rankingQuery.isFetching ||
     overviewQuery.isFetching ||
     historyQuery.isFetching ||
-    trendsQuery.isFetching
+    trendsQuery.isFetching ||
+    congestionQuery.isFetching
 
   return (
     <section
@@ -173,12 +180,15 @@ export function UnifiedAirportAnalyticsWorkspace() {
           overview={overviewQuery.data}
           history={historyQuery.data}
           trends={trendsQuery.data}
+          congestion={congestionQuery.data}
           overviewPending={overviewQuery.isPending}
           historyPending={historyQuery.isPending}
           trendsPending={trendsQuery.isPending}
+          congestionPending={congestionQuery.isPending}
           overviewError={overviewQuery.error}
           historyError={historyQuery.error}
           trendsError={trendsQuery.error}
+          congestionError={congestionQuery.error}
           onPanelChange={setProfilePanel}
           onClear={() => setSelectedICAOCode(null)}
           onRetryOverview={() => {
@@ -189,6 +199,9 @@ export function UnifiedAirportAnalyticsWorkspace() {
           }}
           onRetryTrends={() => {
             void trendsQuery.refetch()
+          }}
+          onRetryCongestion={() => {
+            void congestionQuery.refetch()
           }}
         />
       </div>
@@ -381,17 +394,21 @@ function AirportProfilePanelView({
   overview,
   history,
   trends,
+  congestion,
   overviewPending,
   historyPending,
   trendsPending,
+  congestionPending,
   overviewError,
   historyError,
   trendsError,
+  congestionError,
   onPanelChange,
   onClear,
   onRetryOverview,
   onRetryHistory,
   onRetryTrends,
+  onRetryCongestion,
 }: {
   days: AirportWindowDays
   selectedICAOCode: string | null
@@ -399,17 +416,21 @@ function AirportProfilePanelView({
   overview: ReturnType<typeof useAirportIntelligenceOverview>['data']
   history: ReturnType<typeof useAirportIntelligenceHistory>['data']
   trends: ReturnType<typeof useAirportIntelligenceTrends>['data']
+  congestion: ReturnType<typeof useAirportCongestionIntelligence>['data']
   overviewPending: boolean
   historyPending: boolean
   trendsPending: boolean
+  congestionPending: boolean
   overviewError: Error | null
   historyError: Error | null
   trendsError: Error | null
+  congestionError: Error | null
   onPanelChange: (panel: AirportProfilePanel) => void
   onClear: () => void
   onRetryOverview: () => void
   onRetryHistory: () => void
   onRetryTrends: () => void
+  onRetryCongestion: () => void
 }) {
   if (selectedICAOCode === null) {
     return (
@@ -456,7 +477,7 @@ function AirportProfilePanelView({
       <div
         role='tablist'
         aria-label='Airport Intelligence profile sections'
-        className='mt-5 grid grid-cols-3 gap-2 rounded-lg border border-slate-800 bg-slate-950 p-1'
+        className='mt-5 grid grid-cols-2 gap-2 rounded-lg border border-slate-800 bg-slate-950 p-1 sm:grid-cols-4'
       >
         <ProfileTab
           panel='overview'
@@ -474,6 +495,12 @@ function AirportProfilePanelView({
           panel='trends'
           label='Trends'
           active={activePanel === 'trends'}
+          onSelect={onPanelChange}
+        />
+        <ProfileTab
+          panel='congestion'
+          label='Activity pressure'
+          active={activePanel === 'congestion'}
           onSelect={onPanelChange}
         />
       </div>
@@ -503,6 +530,20 @@ function AirportProfilePanelView({
             <ErrorPanel error={historyError} onRetry={onRetryHistory} />
           ) : history ? (
             <AirportHistoryContent entries={history.entries} />
+          ) : null
+        ) : activePanel === 'congestion' ? (
+          congestionPending ? (
+            <PanelMessage title='Loading observed activity pressure'>
+              Comparing the latest expected completed day with prior observed activity.
+            </PanelMessage>
+          ) : congestionError ? (
+            <ErrorPanel
+              error={congestionError}
+              onRetry={onRetryCongestion}
+              note='The relative activity proxy remains unavailable when current or historical evidence is insufficient.'
+            />
+          ) : congestion ? (
+            <AirportCongestionContent congestion={congestion} />
           ) : null
         ) : trendsPending ? (
           <PanelMessage title='Loading trend evidence'>

@@ -19,5 +19,6 @@ func registerAirportIntelligenceRoutes(v1 fiber.Router, pool *pgxpool.Pool) erro
 	v1.Get("/airports/:icao/intelligence/overview", handler.GetOverview)
 	v1.Get("/airports/:icao/intelligence/history", handler.GetHistory)
 	v1.Get("/airports/:icao/intelligence/trends", handler.GetTrends)
+	v1.Get("/airports/:icao/intelligence/congestion", handler.GetCongestion)
 	return nil
 }

@@ -30,6 +30,7 @@ export const openAPIPaths = new Set([
   '/api/v1/analytics/metrics/data-freshness',
   '/api/v1/airports/intelligence/ranking',
   '/api/v1/airports/{icao}/intelligence/overview',
+  '/api/v1/airports/{icao}/intelligence/congestion',
   '/api/v1/airports/{icao}/intelligence/history',
   '/api/v1/airports/{icao}/intelligence/trends',
   '/api/v1/historical-intelligence/aggregates/latest',
@@ -581,6 +582,54 @@ const airportTrends = {
   gap_duration_seconds: 0,
   observed_duration_seconds: 172_800,
   continuity_score: 1,
+  limitations: airportRanking.limitations,
+  generated_at: '2026-08-05T12:00:01Z',
+}
+
+const airportCongestion = {
+  version: 'airport-congestion-intelligence-v1',
+  status: 'available',
+  window: airportIntelligenceWindow,
+  icao_code: 'UBBB',
+  current: {
+    icao_code: 'UBBB',
+    window_start: '2026-08-04T00:00:00Z',
+    window_end: '2026-08-05T00:00:00Z',
+    arrivals: 21,
+    departures: 19,
+    total_movements: 40,
+    arrival_share: 0.525,
+    departure_share: 0.475,
+    movements_per_hour: 1.6667,
+    active_aircraft: 16,
+    active_routes: 9,
+    observed_samples: 1,
+    expected_samples: 1,
+    coverage_score: 0.96,
+    freshness_score: 0.97,
+    latest_observation_at: '2026-08-04T23:58:00Z',
+    generated_at: '2026-08-05T00:00:00Z',
+  },
+  observed_window_count: 29,
+  expected_window_count: 30,
+  gap_window_count: 1,
+  trailing_gap_window_count: 0,
+  current_window_is_latest_expected: true,
+  evidence_coverage: 0.9667,
+  evidence_support: 0.9,
+  baseline_window_count: 28,
+  baseline_median_movements_per_hour: 1.2,
+  prior_peak_movements_per_hour: 1.5,
+  current_to_baseline_ratio: 1.3889,
+  current_to_baseline_ratio_known: true,
+  current_to_prior_peak_ratio: 1.1111,
+  current_to_prior_peak_ratio_known: true,
+  congestion_score: 1,
+  congestion_score_known: true,
+  exceeds_prior_observed_activity_peak: true,
+  score_semantics: 'current completed-day movements_per_hour divided by the prior observed peak movements_per_hour, capped at 1',
+  scope_guard: 'relative_observed_activity_only_not_airport_capacity_delay_queue_slot_or_runway_congestion',
+  explanation: 'The congestion score is a relative observed-activity proxy and is not an airport capacity, queue, slot, runway occupancy, delay, or official congestion measure.',
   limitations: airportRanking.limitations,
   generated_at: '2026-08-05T12:00:01Z',
 }
@@ -1392,6 +1441,9 @@ function normalizePath(pathname) {
   if (/^\/api\/v1\/airports\/[^/]+\/intelligence\/overview$/.test(pathname)) {
     return '/api/v1/airports/{icao}/intelligence/overview'
   }
+  if (/^\/api\/v1\/airports\/[^/]+\/intelligence\/congestion$/.test(pathname)) {
+    return '/api/v1/airports/{icao}/intelligence/congestion'
+  }
   if (/^\/api\/v1\/airports\/[^/]+\/intelligence\/history$/.test(pathname)) {
     return '/api/v1/airports/{icao}/intelligence/history'
   }
@@ -1653,6 +1705,7 @@ export function resolveMockResponse({
       pathname === '/api/v1/airports/intelligence/ranking' ||
       [
         '/api/v1/airports/{icao}/intelligence/overview',
+        '/api/v1/airports/{icao}/intelligence/congestion',
         '/api/v1/airports/{icao}/intelligence/history',
         '/api/v1/airports/{icao}/intelligence/trends',
       ].includes(normalizePath(pathname))
@@ -1677,6 +1730,13 @@ export function resolveMockResponse({
       '/api/v1/airports/{icao}/intelligence/overview'
   ) {
     return success(airportOverview)
+  }
+  if (
+    method === 'GET' &&
+    normalizePath(pathname) ===
+      '/api/v1/airports/{icao}/intelligence/congestion'
+  ) {
+    return success(airportCongestion)
   }
   if (
     method === 'GET' &&
