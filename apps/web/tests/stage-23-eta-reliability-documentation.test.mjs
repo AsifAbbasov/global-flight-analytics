@@ -8,6 +8,7 @@ function read(path) {
 
 const document = read('../../docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md')
 const index = read('../../docs/DOCUMENT_INDEX.md')
+const roadmap = read('../../docs/24_MVP_VERSION_ROADMAP.md')
 const readme = read('../../README.md')
 
 test('Stage 23 documentation protects product-first vertical slice', () => {
@@ -87,6 +88,13 @@ test('Stage 23 is registered in canonical documentation surfaces', () => {
   assert.match(index, /## Document 214 — Stage 23 ETA Reliability Intelligence/)
   assert.match(index, /214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE\.md/)
 
+  assert.match(roadmap, /Architecture Baseline v1\.3/)
+  assert.match(roadmap, /## 21\. Stage 23 Product Increment — ETA Reliability Intelligence/)
+  assert.match(roadmap, /VERSION_2_RELEASE_CLOSURE=CLOSED/)
+  assert.match(roadmap, /STAGE_23_ADDITIONAL_COST=0_RUB/)
+  assert.match(roadmap, /FRONTEND_CONSUMER=REQUIRED/)
+  assert.match(roadmap, /No future Stage 24 is implied by this roadmap amendment/)
+
   assert.match(readme, /<!-- STAGE-23-ETA-RELIABILITY:README -->/)
   assert.match(readme, /## Stage 23 — ETA Reliability Intelligence/)
   assert.match(readme, /STAGE_23_ETA_RELIABILITY=IN_PROGRESS/)
@@ -94,4 +102,13 @@ test('Stage 23 is registered in canonical documentation surfaces', () => {
   assert.match(readme, /PERSISTED_ENDPOINT_PROXY/)
   assert.match(readme, /OFFICIAL_ARRIVAL_TRUTH=NONE/)
   assert.match(readme, /VERSION_2_RECONCILIATION=CLOSED/)
+})
+
+test('Stage 23 canonical document records documentation alignment without synthetic finding creation', () => {
+  assert.match(document, /STAGE_23_DOCUMENTATION_ALIGNMENT=COMPLETE_FOR_IN_PROGRESS_STATE/)
+  assert.match(document, /STAGE_23_DOCUMENT_214=ALIGNED_IN_PROGRESS/)
+  assert.match(document, /STAGE_23_DOCUMENT_INDEX=ALIGNED_V2_4/)
+  assert.match(document, /STAGE_23_README=ALIGNED_IN_PROGRESS/)
+  assert.match(document, /STAGE_23_ROADMAP=ALIGNED_V1_3/)
+  assert.match(document, /No synthetic finding ID is created merely because a product feature exists/)
 })
