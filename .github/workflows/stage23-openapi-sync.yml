@@ -1,0 +1,52 @@
+name: Stage 23 OpenAPI Sync Helper
+
+on:
+  push:
+    branches:
+      - feat/stage-23-eta-reliability
+    paths:
+      - 'scripts/stage23-openapi-sync.mjs'
+      - '.github/workflows/stage23-openapi-sync.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage23-openapi-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Generate Stage 23 OpenAPI artifacts
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: feat/stage-23-eta-reliability
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.9.0'
+
+      - name: Generate Stage 23 OpenAPI and client artifacts
+        run: node scripts/stage23-openapi-sync.mjs
+
+      - name: Commit generated contract artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- openapi/openapi.json apps/api/internal/http/apidocs/openapi.json packages/api-client/src/generated.ts; then
+            echo 'STAGE_23_OPENAPI_SYNC_GIT=NO_CHANGES'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add openapi/openapi.json apps/api/internal/http/apidocs/openapi.json packages/api-client/src/generated.ts
+          git commit -m 'chore: sync Stage 23 OpenAPI artifacts'
+          git push origin HEAD:feat/stage-23-eta-reliability
