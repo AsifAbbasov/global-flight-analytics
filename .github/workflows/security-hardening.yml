@@ -68,8 +68,10 @@ jobs:
           git -C "$probe_dir" init --quiet
           git -C "$probe_dir" config user.email 'hardening@example.invalid'
           git -C "$probe_dir" config user.name 'GFA Hardening'
-          printf '%s\n' \
-            'token = "ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"' \
+          printf '%s%s%s\n' \
+            'aws_access_key_id = "AKIA' \
+            '7M6N5B4V3C2XQWER' \
+            '"' \
             > "$probe_dir/probe.txt"
           git -C "$probe_dir" add probe.txt
           git -C "$probe_dir" commit --quiet --message 'synthetic secret detector probe'
