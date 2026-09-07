@@ -49,10 +49,10 @@ type Service struct {
 }
 
 type sample struct {
-	TrajectoryID         string
-	AsOfTime             time.Time
-	AbsoluteErrorSeconds float64
-	IntervalCovered      bool
+	TrajectoryID          string
+	AsOfTime              time.Time
+	AbsoluteErrorSeconds  float64
+	IntervalCovered       bool
 	ProjectionFingerprint string
 }
 
