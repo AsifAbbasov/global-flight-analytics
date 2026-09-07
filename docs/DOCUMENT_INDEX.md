@@ -892,8 +892,7 @@ regression evidence and the remaining Analytical Core review scope.
 
 Records strict source retrieval timestamps, placeholder-source rejection,
 unattributed-source disclosure, default failure sanitization, honest confidence
-for request-parameter snapshots, regression evidence and remaining Analytical
-Core review scope.
+for request-parameter snapshots, regression evidence and remaining Analytical Core review scope.
 
 <!-- QUERY-ARCHITECTURE-CONSOLIDATION:DOCUMENT-INDEX -->
 
@@ -1637,7 +1636,7 @@ workflow, and prohibition on targeting public deployments.
 
 ## Document 177 — OpenAPI Contract Closure Route Inventory
 
-`177_OPENAPI_CONTRACT_CLOSURE_ROUTE_INVENTORY.md`
+`177_OPENAPI_CONTRACT_CLOSURE_INVENTORY.md`
 
 Records the source-backed inventory of 38 public operations and one internal metrics operation, the current 20-operation OpenAPI gap after the core read expansion, nested Fiber group and constant-backed path resolution, mutation and metrics authorization boundaries, permanent tests, and the dedicated Continuous Integration gate required before complete OpenAPI expansion.
 
