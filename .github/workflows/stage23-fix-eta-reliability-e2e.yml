@@ -1,0 +1,72 @@
+name: Stage 23 ETA Reliability E2E Fix
+
+on:
+  push:
+    branches:
+      - feat/stage-23-eta-reliability
+    paths:
+      - .github/workflows/stage23-fix-eta-reliability-e2e.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/stage-23-eta-reliability
+          fetch-depth: 0
+      - name: Patch deterministic ETA reliability browser scenario
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/web/e2e/mock-api.mjs')
+          text = path.read_text()
+          needle = "    return success(projectionFixture())"
+          if text.count(needle) != 1:
+              raise SystemExit(f'expected exactly one projection fixture return, found {text.count(needle)}')
+
+          replacement = """    const fixture = projectionFixture()
+          if (scenario === 'eta-reliability') {
+            fixture.arrival_status = 'available'
+            fixture.projection.arrival = {
+              airport_icao_code: 'LTFM',
+              earliest_time: '2026-08-04T18:27:00Z',
+              estimated_time: '2026-08-04T18:35:00Z',
+              latest_time: '2026-08-04T18:43:00Z',
+              confidence: {
+                score: 0.72,
+                level: 'medium',
+                reasons: [
+                  {
+                    code: 'DETERMINISTIC_BROWSER_FIXTURE',
+                    message: 'Current ETA exists so historical reliability can be evaluated.',
+                    contribution: 0,
+                  },
+                ],
+              },
+              limitations: [
+                {
+                  code: 'RESEARCH_ONLY',
+                  message: 'Deterministic browser fixture; not operational guidance.',
+                  scope: 'research_only',
+                },
+              ],
+            }
+          }
+          return success(fixture)"""
+          path.write_text(text.replace(needle, replacement))
+
+          workflow = Path('.github/workflows/stage23-fix-eta-reliability-e2e.yml')
+          workflow.unlink()
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/e2e/mock-api.mjs .github/workflows/stage23-fix-eta-reliability-e2e.yml
+          git commit -m "test: provide current ETA in reliability browser scenario"
+          git push origin HEAD:feat/stage-23-eta-reliability
