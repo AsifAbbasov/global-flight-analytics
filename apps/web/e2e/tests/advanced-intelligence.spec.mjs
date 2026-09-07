@@ -99,3 +99,40 @@ test('projection weather stability airspace and ETA evolution expose server-owne
     ),
   ).toBeVisible()
 })
+
+
+test('ETA reliability exposes bounded historical endpoint-proxy evidence', async ({
+  page,
+  request,
+}) => {
+  await setScenario(request, 'eta-reliability')
+  await page.goto(
+    '/?region=az&aircraft=4b1801&view=intelligence#live-traffic',
+    { waitUntil: 'domcontentloaded' },
+  )
+
+  await expect(
+    page.getByText('Historical ETA Reliability', { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', {
+      name: 'How reliable have comparable ETA estimates been?',
+    }),
+  ).toBeVisible()
+  await expect(page.getByText('6 eligible / 8 checked', { exact: true })).toBeVisible()
+  await expect(page.getByText('Median ETA error', { exact: true })).toBeVisible()
+  await expect(page.getByText('4m 18s', { exact: true })).toBeVisible()
+  await expect(page.getByText('80% error threshold', { exact: true })).toBeVisible()
+  await expect(page.getByText('≤ 7m 42s', { exact: true })).toBeVisible()
+  await expect(page.getByText('Within ±5 min', { exact: true })).toBeVisible()
+  await expect(page.getByText('67%', { exact: true })).toBeVisible()
+  await expect(page.getByText('Within ±10 min', { exact: true })).toBeVisible()
+  await expect(page.getByText('83%', { exact: true }).first()).toBeVisible()
+  await expect(
+    page.getByText('ETA window covered endpoint', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('Evidence boundary', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText(/observed endpoint proxy, not an official touchdown, gate or schedule timestamp/i),
+  ).toBeVisible()
+})

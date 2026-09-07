@@ -116,7 +116,6 @@ Stage 23 reuses:
 - the existing PostgreSQL / Neon data path;
 - existing persisted trajectories;
 - existing Projection Intelligence historical `as_of_time` support;
-- the existing Projection Evaluation package;
 - the existing Next.js frontend;
 - existing TanStack Query infrastructure.
 
@@ -216,7 +215,7 @@ service.go
 service_test.go
 ```
 
-The service composes existing Projection Intelligence and Projection Evaluation behavior instead of introducing a second forecasting engine.
+The service reuses production Projection Intelligence historical recomputation and computes only the bounded ETA absolute-error and interval-coverage definitions needed by the product. The production runtime does not import the offline-only Projection Evaluation package.
 
 ## 12. HTTP contract
 
@@ -228,9 +227,7 @@ GET /api/v1/trajectories/{id}/eta-reliability
 
 The endpoint is read-only.
 
-The public contract must be added to both canonical OpenAPI copies and the generated TypeScript client before Stage 23 can become review-ready.
-
-At the current Stage 23 documentation state, that OpenAPI synchronization remains incomplete and therefore Stage 23 remains `IN_PROGRESS`.
+The feature branch now contains the source-backed 40-operation OpenAPI candidate, byte-identical root/embedded specifications and a regenerated TypeScript client exposing `getETAReliabilityByTrajectoryID`. Canonical `main` remains on the prior 39-operation contract until merge and independent post-merge verification. Stage 23 remains `IN_PROGRESS` until final exact-head validation succeeds.
 
 ## 13. Frontend integration
 
@@ -344,6 +341,11 @@ STAGE_23_DOCUMENT_214=ALIGNED_IN_PROGRESS
 STAGE_23_DOCUMENT_INDEX=ALIGNED_V2_4
 STAGE_23_README=ALIGNED_IN_PROGRESS
 STAGE_23_ROADMAP=ALIGNED_V1_3
+STAGE_23_IMPLEMENTATION_SEQUENCE=ALIGNED_V1_8
+STAGE_23_OPENAPI_CANDIDATE_OPERATIONS=40
+STAGE_23_OPENAPI_CANDIDATE_GET_OPERATIONS=39
+STAGE_23_GENERATED_CLIENT=ALIGNED
+STAGE_23_DEDICATED_PLAYWRIGHT_JOURNEY=INSTALLED
 STAGE_23_DOCUMENTATION_REGRESSION_TEST=INSTALLED
 STAGE_23_EXACT_HEAD_FINAL_CI=NOT_YET_AVAILABLE
 STAGE_23_POST_MERGE_CI=NOT_APPLICABLE
@@ -365,24 +367,20 @@ apps/web/tests/stage-23-eta-reliability-documentation.test.mjs
 
 Document 24 also repairs the stale Version 2 candidate language and records the already verified Version 2 closure from Document 213.
 
-The Version 2 reconciliation subsection of Document 25 was written before Stage 23 existed and states that the reconciliation itself did not create Stage 23. That sentence remains historically true about the reconciliation operation. The later explicit product decision that authorizes Stage 23 is owned by Document 24 Section 21 and this Document 214; it must not be misread as a retroactive claim that Version 2 reconciliation created Stage 23.
+Document 25 is aligned to Implementation Baseline v1.8: Version 2 reconciliation is closed, the historical statement that reconciliation itself did not create Stage 23 is preserved, and a later append-only Stage 23 section records the explicit zero-cost frontend product decision.
 
 No synthetic finding ID is created merely because a product feature exists. `GFA-SEC-445` remains the independent existing repository-security finding and is not modified by Stage 23.
 
 ## 18. Remaining engineering work before review-ready
 
-The stage remains blocked on all of the following:
+The implementation, formatting, source/OpenAPI/generated-client contract synchronization and dedicated ETA Reliability browser journey are now present on the feature branch. The remaining review-ready work is evidence closure:
 
-1. run `gofmt`-equivalent formatting over every changed Go file and revalidate;
-2. synchronize canonical OpenAPI public route/schema contract;
-3. keep root and embedded OpenAPI byte-identical;
-4. regenerate the canonical TypeScript API client from OpenAPI;
-5. update route inventory/count assertions from the previous surface to the new source-backed surface;
-6. add dedicated production E2E/mock assertions for the ETA Reliability user path rather than relying only on unrelated Playwright success;
-7. complete a full exact-head GitHub CI matrix and Vercel check;
-8. verify review threads/reviews and mergeability on the exact final head.
+1. complete a full exact-head GitHub CI matrix and Vercel check;
+2. remediate any SHA-specific failure without transferring earlier pass evidence;
+3. verify review threads/reviews and mergeability on the exact final head;
+4. align this document and the PR body to the final exact-head evidence, then revalidate that final documentation SHA.
 
-The Stage 23 documentation/claim-boundary regression test, README alignment, Document Index registration and roadmap registration are already present and are no longer listed as unfinished engineering work.
+The Stage 23 documentation/claim-boundary regression test, README, Document Index, roadmap and Implementation Sequence are aligned to the in-progress feature.
 
 ## 19. Review-ready gate
 

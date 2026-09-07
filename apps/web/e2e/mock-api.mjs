@@ -36,6 +36,7 @@ export const openAPIPaths = new Set([
   '/api/v1/historical-intelligence/aggregates/latest',
   '/api/v1/historical-intelligence/aggregates/history',
   '/api/v1/trajectories/{id}/projection-intelligence',
+  '/api/v1/trajectories/{id}/eta-reliability',
   '/api/v1/trajectories/{id}/stability-intelligence',
   '/api/v1/trajectories/{id}/weather-context',
   '/api/v1/airspace/regions/{code}/analytics',
@@ -52,6 +53,7 @@ export const supportedScenarios = new Set([
   'airport-error',
   'historical-error',
   'intelligence-error',
+  'eta-reliability',
 ])
 
 const regions = [
@@ -1213,6 +1215,40 @@ const airspaceAnalytics = {
   generated_at: '2026-08-04T18:00:06Z',
 }
 
+const etaReliability = {
+  version: 'eta-reliability-v1',
+  status: 'limited',
+  trajectory_id: advancedTrajectoryID,
+  route: { origin_icao_code: 'UBBB', destination_icao_code: 'LTFM' },
+  method: { name: 'continuation', version: 'v1', decision_class: 'derived' },
+  target_lead_seconds: 1800,
+  lead_tolerance_seconds: 300,
+  endpoint_radius_km: 25,
+  candidate_count: 8,
+  eligible_sample_count: 6,
+  metrics: {
+    sample_count: 6,
+    median_absolute_error_seconds: 258,
+    p80_absolute_error_seconds: 462,
+    within_five_minutes_ratio: 0.667,
+    within_ten_minutes_ratio: 0.833,
+    interval_coverage_ratio: 0.833,
+  },
+  evidence_class: 'historically_recomputed_from_persisted_observations_with_endpoint_proxy',
+  limitations: [
+    {
+      code: 'trajectory_endpoint_arrival_proxy',
+      message: 'Historical arrival truth uses the last persisted trajectory observation within 25 km of LTFM; it is not an official touchdown, gate or schedule timestamp.',
+    },
+    {
+      code: 'limited_sample_size',
+      message: 'Reliability is based on 6 samples; more evidence is required for complete status.',
+    },
+  ],
+  input_fingerprint: `sha256:${'f'.repeat(64)}`,
+  generated_at: '2026-08-04T18:00:07Z',
+}
+
 const routeIntelligenceTrajectoryID =
   '11111111-1111-4111-8111-111111111111'
 const routeIntelligenceRecordID =
@@ -1452,6 +1488,9 @@ function normalizePath(pathname) {
   }
   if (/^\/api\/v1\/trajectories\/[^/]+\/projection-intelligence$/.test(pathname)) {
     return '/api/v1/trajectories/{id}/projection-intelligence'
+  }
+  if (/^\/api\/v1\/trajectories\/[^/]+\/eta-reliability$/.test(pathname)) {
+    return '/api/v1/trajectories/{id}/eta-reliability'
   }
   if (/^\/api\/v1\/trajectories\/[^/]+\/stability-intelligence$/.test(pathname)) {
     return '/api/v1/trajectories/{id}/stability-intelligence'
@@ -1807,6 +1846,12 @@ export function resolveMockResponse({
       '/api/v1/trajectories/{id}/projection-intelligence'
   ) {
     return success(projectionFixture())
+  }
+  if (
+    method === 'GET' &&
+    normalizePath(pathname) === '/api/v1/trajectories/{id}/eta-reliability'
+  ) {
+    return success(etaReliability)
   }
   if (
     method === 'GET' &&

@@ -32,8 +32,8 @@ test('mock API mirrors the exact OpenAPI path surface', () => {
 
 test('Playwright version and browser scenario count are pinned', () => {
   assert.equal(expectedPlaywrightVersion, '1.62.0')
-  assert.equal(expectedBrowserScenarioCount, 20)
-  assert.equal(countBrowserScenarios(process.cwd()), 20)
+  assert.equal(expectedBrowserScenarioCount, 21)
+  assert.equal(countBrowserScenarios(process.cwd()), 21)
 })
 
 test('mock failure scenario surface is explicit and bounded', () => {
@@ -49,6 +49,7 @@ test('mock failure scenario surface is explicit and bounded', () => {
       'healthy',
       'historical-error',
       'intelligence-error',
+      'eta-reliability',
       'regions-error',
       'traffic-error',
     ],
@@ -142,6 +143,27 @@ test('advanced intelligence fixtures preserve evidence pagination and uncertaint
   })
   assert.equal(airspace.body.data.status, 'available')
   assert.equal(airspace.body.data.metrics.temporal_coverage, 1)
+})
+
+
+test('ETA Reliability fixture preserves bounded endpoint-proxy evidence', () => {
+  const result = resolveMockResponse({
+    method: 'GET',
+    requestURL:
+      'http://127.0.0.1:8091/api/v1/trajectories/11111111-1111-4111-8111-111111111111/eta-reliability?as_of_time=2026-08-04T18:00:00Z&duration_seconds=300',
+    scenario: 'eta-reliability',
+  })
+  assert.equal(result.status, 200)
+  assert.equal(result.body.data.status, 'limited')
+  assert.equal(result.body.data.candidate_count, 8)
+  assert.equal(result.body.data.eligible_sample_count, 6)
+  assert.equal(result.body.data.metrics.median_absolute_error_seconds, 258)
+  assert.equal(result.body.data.metrics.p80_absolute_error_seconds, 462)
+  assert.equal(
+    result.body.data.evidence_class,
+    'historically_recomputed_from_persisted_observations_with_endpoint_proxy',
+  )
+  assert.match(result.body.data.limitations[0].message, /not an official touchdown, gate or schedule timestamp/i)
 })
 
 test('Stability Intelligence fixture mirrors requested analytical timestamps', () => {

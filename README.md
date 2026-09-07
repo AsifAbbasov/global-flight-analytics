@@ -112,12 +112,8 @@ gate-arrival, schedule or operational flight-status timestamp. Sample size and l
 remain visible, and insufficient evidence stays unavailable or limited instead of becoming
 a fabricated reliability percentage.
 
-Stage 23 reuses the existing Go/PostgreSQL Projection Intelligence and Projection Evaluation
-stack, Next.js and TanStack Query. It introduces no paid aviation provider, new database
-table, migration, server, background materializer, Redis, Kafka or GPU. The current source
-route is still being reconciled with the canonical OpenAPI contract, so the repository-wide
-public OpenAPI surface remains the previously closed 39-operation contract until that sync
-passes exact-head validation.
+Stage 23 reuses the existing Go/PostgreSQL Production Projection Intelligence, Next.js and TanStack Query. The production server does not depend on the offline-only Projection Evaluation package. It introduces no paid aviation provider, new database
+table, migration, server, background materializer, Redis, Kafka or GPU. The feature branch now carries a source-backed 40-operation OpenAPI candidate (39 public GET reads plus one protected Route Intelligence POST) and a regenerated TypeScript client. Canonical `main` remains on the previously closed 39-operation contract until PR #171 is merged and independently verified.
 
 Canonical Stage 23 pre-merge engineering history is recorded in
 [`docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md`](docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md).
@@ -392,11 +388,7 @@ renders evidence without recomputing server-owned analytics.
 
 ## Contract and Test Surface
 
-The current **closed canonical** repository contract exposes 39 source-backed OpenAPI
-operations: 38 unauthenticated public read operations and one protected Route Intelligence
-mutation. Stage 23 has added a source route while its OpenAPI reconciliation is still in
-progress, so the feature must not be represented as a closed 40-operation public contract
-until source/OpenAPI/generated-client gates agree on one exact head.
+Canonical `main` currently exposes the closed 39-operation contract (38 public GET reads and one protected Route Intelligence POST). The Stage 23 feature branch candidate exposes 40 source-backed operations (39 public GET reads and the same protected POST); that 40-operation surface is not canonical until the feature merges and independent post-merge validation succeeds.
 
 Browser verification contains deterministic Chromium product journeys and private mock
 scenarios covering workspace navigation, aircraft, airport and analytical surfaces, exports,

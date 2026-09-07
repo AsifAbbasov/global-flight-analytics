@@ -10,7 +10,7 @@ import {
 } from '../apps/web/e2e/mock-api.mjs'
 
 export const expectedPlaywrightVersion = '1.62.0'
-export const expectedBrowserScenarioCount = 20
+export const expectedBrowserScenarioCount = 21
 export const expectedScenarios = new Set([
   'healthy',
   'traffic-error',
@@ -19,6 +19,7 @@ export const expectedScenarios = new Set([
   'airport-error',
   'historical-error',
   'intelligence-error',
+  'eta-reliability',
 ])
 
 export const productTestFiles = Object.freeze([
@@ -246,6 +247,9 @@ export function validatePlaywrightFoundation(root) {
       'Projection uncertainty effect',
       'Mean forecast stability score',
       'Attribution and scope guards',
+      'Historical ETA Reliability',
+      '6 eligible / 8 checked',
+      'Evidence boundary',
     ],
     'advanced intelligence journey',
   )
@@ -350,6 +354,8 @@ export function validatePlaywrightFoundation(root) {
       "'/api/v1/historical-intelligence/aggregates/history'",
       "'/api/v1/trajectories/{id}/projection-intelligence'",
       "'/api/v1/trajectories/{id}/stability-intelligence'",
+      "'/api/v1/trajectories/{id}/eta-reliability'",
+      "'eta-reliability'",
       'stabilityIntelligenceFixture(requestedAsOfTimes)',
       "url.searchParams.get('as_of_times')",
       "'/api/v1/airspace/regions/{code}/analytics'",
