@@ -61,8 +61,8 @@ func TestEmbeddedOpenAPIContainsCompletePublicOperationSurface(t *testing.T) {
 			}
 		}
 	}
-	if operations != 39 {
-		t.Fatalf("expected 39 embedded OpenAPI operations, got %d", operations)
+	if operations != 40 {
+		t.Fatalf("expected 40 embedded OpenAPI operations, got %d", operations)
 	}
 }
 
