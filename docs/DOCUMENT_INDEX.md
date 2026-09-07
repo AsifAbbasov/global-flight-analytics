@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v2.3
+Status: Documentation Index v2.4
 Project: Global Flight Analytics
 
 ---
@@ -1347,7 +1347,6 @@ implementation commit `fb7fecd759a26c8d65d979ab8f541284ed82ed36`, GitHub Actions
 the permanent cross-module audit, and formal closure with zero open confirmed cross-module findings.
 
 <!-- BACKEND-CONTEXT-OWNERSHIP-AUDIT-CLOSURE:DOCUMENT-INDEX -->
-
 ## Document 147 — Backend Context Ownership Audit Closure
 
 `147_BACKEND_CONTEXT_OWNERSHIP_AUDIT_CLOSURE.md` records the repository-wide
@@ -1881,3 +1880,9 @@ exact-head CI and Chromium evidence, and the nonblocking pixel-golden decision.
 ## Document 213 — Version 2 Reconciliation Post-Merge Closure
 
 `213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md` records the guarded PR #169 merge, rejected validation history, exact pre-merge and independent post-merge CI/Vercel evidence, API Load non-trigger policy, bounded 14/1/3 Version 2 release disposition, the `GFA-GOV-457` closure gate, and the independent `GFA-SEC-445` repository-security boundary.
+
+<!-- SECURITY-OPERATIONAL-HARDENING:DOCUMENT-INDEX -->
+
+## Document 215 — Security and Operational Hardening
+
+`215_SECURITY_AND_OPERATIONAL_HARDENING.md` records the bounded API log-privacy and transport hardening, HSTS, checksum-pinned full-history Gitleaks scanning with an exact historical false-positive fingerprint boundary, CycloneDX SBOM evidence, Go fuzz safety, disposable PostgreSQL backup/restore verification, rejected validation history, zero-Python technology boundary, exact pre-documentation CI/Vercel evidence, and the independent `GFA-SEC-445` hosting-side verification boundary.
