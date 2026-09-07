@@ -1,6 +1,6 @@
 /* eslint-disable */
 // This file is generated from openapi/openapi.json. Do not edit manually.
-// OpenAPI SHA-256: 2446750ae07a53e18fac0bde2b2842997e022108bc09afc9d1ef7ef070c23ee5
+// OpenAPI SHA-256: 37c8543b9802e02ebe3cfab143e6af2ed3ed302be5c4c8849ef5d4bbc9279668
 
 export type ActiveAircraftMetric = {
   readonly metric: "active_aircraft"
@@ -720,6 +720,48 @@ export type ErrorBody = {
 export type ErrorResponse = {
   readonly success: false
   readonly error: ErrorBody
+}
+
+export type ETAReliability = {
+  readonly version: "eta-reliability-v1"
+  readonly status: "unavailable" | "limited" | "complete"
+  readonly trajectory_id: string
+  readonly route: ETAReliabilityRoute
+  readonly method: ProjectionMethod
+  readonly target_lead_seconds: number
+  readonly lead_tolerance_seconds: number
+  readonly endpoint_radius_km: number
+  readonly candidate_count: number
+  readonly eligible_sample_count: number
+  readonly metrics?: ETAReliabilityMetrics
+  readonly evidence_class: "historically_recomputed_from_persisted_observations_with_endpoint_proxy"
+  readonly limitations: ReadonlyArray<ETAReliabilityNotice>
+  readonly input_fingerprint: string
+  readonly generated_at: string
+}
+
+export type ETAReliabilityMetrics = {
+  readonly sample_count: number
+  readonly median_absolute_error_seconds: number
+  readonly p80_absolute_error_seconds: number
+  readonly within_five_minutes_ratio: number
+  readonly within_ten_minutes_ratio: number
+  readonly interval_coverage_ratio: number
+}
+
+export type ETAReliabilityNotice = {
+  readonly code: string
+  readonly message: string
+}
+
+export type ETAReliabilityResponse = {
+  readonly success: true
+  readonly data: ETAReliability
+}
+
+export type ETAReliabilityRoute = {
+  readonly origin_icao_code: string
+  readonly destination_icao_code: string
 }
 
 export type FlightListItem = {
@@ -1778,6 +1820,15 @@ export interface OperationParameters {
       readonly lon: number
     }
   }
+  readonly getETAReliabilityByTrajectoryID: {
+    readonly path: {
+      readonly id: string
+    }
+    readonly query: {
+      readonly as_of_time: string
+      readonly duration_seconds?: number
+    }
+  }
   readonly getFlightByID: {
     readonly path: {
       readonly id: string
@@ -1910,6 +1961,7 @@ export interface OperationResponses {
   readonly getAnalyticalTrafficDensity: AnalyticalMetricResponse
   readonly getCurrentTraffic: CurrentTrafficResponse
   readonly getCurrentWeather: CurrentWeatherResponse
+  readonly getETAReliabilityByTrajectoryID: ETAReliabilityResponse
   readonly getFlightByID: FlightResponse
   readonly getHealth: HealthResponse
   readonly getLatestFlightStateByICAO24: FlightStateResponse
@@ -2055,6 +2107,13 @@ export const operationDefinitions = {
       protected: false,
       hasBody: false,
       parameters: [{"name":"lat","in":"query","required":true},{"name":"lon","in":"query","required":true}],
+    },
+  getETAReliabilityByTrajectoryID: {
+      method: "GET",
+      path: "/api/v1/trajectories/{id}/eta-reliability",
+      protected: false,
+      hasBody: false,
+      parameters: [{"name":"id","in":"path","required":true},{"name":"as_of_time","in":"query","required":true},{"name":"duration_seconds","in":"query","required":false}],
     },
   getFlightByID: {
       method: "GET",
