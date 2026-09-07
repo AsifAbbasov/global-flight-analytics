@@ -113,7 +113,7 @@ jobs:
           finding_count="$(jq 'length' "$report_path")"
           printf '%s\n' "GITLEAKS_REPOSITORY_SCAN=FAIL findings=$finding_count" >&2
           jq -r \
-            '.[] | "GITLEAKS_FINDING rule=\(.RuleID) file=\(.File) commit=\(.Commit)"' \
+            '.[] | "GITLEAKS_FINDING fingerprint=\(.Fingerprint) rule=\(.RuleID) file=\(.File) commit=\(.Commit)"' \
             "$report_path" >&2
           exit 1
 
