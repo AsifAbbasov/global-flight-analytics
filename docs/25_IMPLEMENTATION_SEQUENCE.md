@@ -1,6 +1,6 @@
 # Document 25 — Implementation Sequence
 
-Status: Implementation Baseline v1.6
+Status: Implementation Baseline v1.7
 Project: Global Flight Analytics
 Scope: Ordered implementation stages and first coding slice
 
@@ -971,3 +971,63 @@ Status: IMPLEMENTED PENDING PROTECTED-MAIN AND RUNTIME ACTIVATION EVIDENCE.
 The existing provider, canonical processing, quality, trajectory and PostgreSQL path now has a bounded `--once` command mode and a serialized free scheduled workflow. Source closure requires the production ingestion contract tests. Runtime closure additionally requires the repository database secret, a successful manual workflow dispatch, fresh public traffic evidence and a later scheduled run that advances `observed_at`.
 
 This increment does not add a paid Render worker and does not claim guaranteed real-time or operational surveillance continuity.
+
+<!-- VERSION-2-RECONCILIATION:IMPLEMENTATION -->
+
+## Version 2 Repository-Real Progression and Reconciliation
+
+Status: RECONCILIATION CANDIDATE. Canonical closure requires exact-head validation, merge, and independent post-merge validation as defined by Document 212.
+
+After the earlier foundation/review work, the repository-real product sequence continued through these bounded stages:
+
+```text
+Stage 15 — Historical Flight Replay Product and Evidence Hardening
+           evidence: docs/197_STAGE_15_HISTORICAL_FLIGHT_REPLAY_PRODUCT_AND_EVIDENCE_HARDENING.md
+
+Stage 16 — Time-Based Historical Replay Navigation
+           evidence: docs/198_STAGE_16_TIME_BASED_HISTORICAL_REPLAY_NAVIGATION.md
+           closure:  docs/199_STAGE_16_TIME_BASED_REPLAY_POST_MERGE_CLOSURE.md
+
+Stage 17 — Observed Interval Comparison
+           evidence: docs/200_STAGE_17_OBSERVED_INTERVAL_COMPARISON.md
+           closure:  docs/201_STAGE_17_OBSERVED_INTERVAL_COMPARISON_POST_MERGE_CLOSURE.md
+
+Stage 18 — Replay Evidence Quality Profile
+           evidence: docs/202_STAGE_18_REPLAY_EVIDENCE_QUALITY_PROFILE.md
+           closure:  docs/203_STAGE_18_REPLAY_EVIDENCE_QUALITY_POST_MERGE_CLOSURE.md
+
+Stage 19 — Replay Evidence Provenance Profile
+           evidence: docs/204_STAGE_19_REPLAY_EVIDENCE_PROVENANCE_PROFILE.md
+           closure:  docs/205_STAGE_19_REPLAY_EVIDENCE_PROVENANCE_POST_MERGE_CLOSURE.md
+
+Stage 20 — Airspace Intelligence Frontend Integration
+           evidence: docs/206_STAGE_20_AIRSPACE_INTELLIGENCE_FRONTEND_INTEGRATION.md
+           closure:  docs/209_STAGE_20_AIRSPACE_INTELLIGENCE_POST_MERGE_CLOSURE.md
+
+Stage 21 — Airport Congestion Intelligence
+           evidence: docs/207_STAGE_21_AIRPORT_CONGESTION_INTELLIGENCE.md
+           closure:  docs/210_STAGE_21_AIRPORT_CONGESTION_INTELLIGENCE_POST_MERGE_CLOSURE.md
+
+Stage 22 — Estimated Time of Arrival Evolution Analyzer
+           evidence: docs/208_STAGE_22_ETA_EVOLUTION_ANALYZER.md
+           closure:  docs/211_STAGE_22_ETA_EVOLUTION_POST_MERGE_CLOSURE.md
+```
+
+The Version 2 reconciliation does not create a Stage 23 feature. It reconciles the original Version 2 planning list against the Stage 22-closed canonical baseline and keeps advanced research outside the release when production evidence does not exist.
+
+```text
+VERSION_2_RECONCILIATION=CANDIDATE
+DISCRETE_FRECHET=DEFERRED_RESEARCH
+TRAJECTORY_SPATIAL_INDEX=DEFERRED_RESEARCH
+WEATHER_GRID=DEFERRED_RESEARCH
+SIMILARITY_THRESHOLD_POLICY=IMPLEMENTED_BOUNDED_UNCALIBRATED
+AIRPORT_CONGESTION=IMPLEMENTED_AS_RELATIVE_OBSERVED_ACTIVITY_PROXY
+ETA_EVOLUTION=HISTORICALLY_RECOMPUTED_FROM_PERSISTED_OBSERVATIONS
+NEW_ANALYTICAL_ENGINE=NONE
+NEW_BACKEND_ENDPOINT=NONE
+NEW_DATABASE_TABLE=NONE
+NEW_MIGRATION=NONE
+ADDITIONAL_COST=0_RUB
+```
+
+Document 212 is the canonical reconciliation audit. Historical pre-merge stage documents remain immutable historical records; later closure documents own their post-merge state.
