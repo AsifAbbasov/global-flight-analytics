@@ -1,21 +1,24 @@
 'use client'
 
+import { ETAEvolutionPanel } from '@/components/aircraft/eta-evolution-panel'
 import { APIRequestError, getRequestErrorMessage } from '@/lib/api/client'
+import { useLatestAircraftTrajectory } from '@/lib/queries/trajectory'
 import type { ProjectionIntelligenceResponse } from '@/types/projection-intelligence'
 
 interface Props { selectedICAO24:string|null; trajectoryID:string|null; result:ProjectionIntelligenceResponse|undefined; isPending:boolean; isFetching:boolean; error:Error|null; onRetry:()=>void }
 
 export function ProjectionIntelligencePanel({selectedICAO24,trajectoryID,result,isPending,isFetching,error,onRetry}:Props){
+  const etaTrajectoryQuery=useLatestAircraftTrajectory(selectedICAO24)
   if(selectedICAO24===null)return null
   const unavailable=error instanceof APIRequestError&&(error.status===404||error.status===422)
-  return <aside className='rounded-xl border border-slate-700 bg-slate-950/95 p-5' aria-labelledby='projection-intelligence-title'>
+  return <><aside className='rounded-xl border border-slate-700 bg-slate-950/95 p-5' aria-labelledby='projection-intelligence-title'>
     <div className='flex items-start justify-between gap-4'><div><p className='text-xs font-semibold uppercase tracking-[0.18em] text-violet-300'>Research projection</p><h3 id='projection-intelligence-title' className='mt-2 text-lg font-semibold text-white'>Projection and Estimated Arrival</h3><p className='mt-1 text-xs leading-5 text-slate-400'>Bounded future estimate. It is not operational flight guidance.</p></div>{isFetching?<span className='text-xs text-sky-300'>Updating…</span>:null}</div>
     {result?<Content result={result}/>:null}
     {trajectoryID===null&&!error?<p className='mt-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-sm leading-6 text-slate-400'>Waiting for a persisted trajectory before requesting Projection Intelligence.</p>:null}
     {trajectoryID!==null&&isPending&&!error?<p className='mt-4 text-sm leading-6 text-slate-400'>Calculating a bounded projection from the latest persisted trajectory evidence…</p>:null}
     {unavailable?<p className='mt-4 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300'>Projection Intelligence is unavailable or denied for the current trajectory evidence.</p>:null}
     {error&&!unavailable?<div className='mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 p-3'><p className='text-sm leading-6 text-amber-100'>{getRequestErrorMessage(error)}</p><button type='button' onClick={onRetry} disabled={isFetching} className='mt-3 rounded-md border border-amber-300/40 px-3 py-1.5 text-sm font-medium text-amber-100 disabled:opacity-60'>Retry Projection Intelligence</button></div>:null}
-  </aside>
+  </aside><ETAEvolutionPanel selectedICAO24={selectedICAO24} trajectory={etaTrajectoryQuery.data}/></>
 }
 
 function Content({result}:{result:ProjectionIntelligenceResponse}){const projection=result.projection;return <>

@@ -20,6 +20,7 @@
     "lib/map/map-evidence-controls.ts",
     "lib/product/application-status.ts",
     "lib/product/runtime-resilience-model.ts",
+    "lib/projection/eta-evolution-model.ts",
     "lib/replay/flight-replay-model.ts",
     "lib/replay/flight-replay-interval-model.ts",
     "lib/replay/flight-replay-evidence-quality-model.ts",
@@ -35,6 +36,7 @@
     "types/aircraft.ts",
     "types/flight-replay.ts",
     "types/historical-intelligence.ts",
+    "types/projection-intelligence.ts",
     "types/traffic.ts",
     "types/airport-intelligence.ts",
     "tests/test-globals.d.ts"
