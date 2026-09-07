@@ -13,7 +13,6 @@ import (
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
-	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionevaluation"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionproduction"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectionread"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/routeintelligence/routecontract"
@@ -35,14 +34,9 @@ type SnapshotReader interface {
 	LoadSnapshot(context.Context, projectionread.SnapshotRequest) (projectionread.Snapshot, error)
 }
 
-type ArrivalEvaluator interface {
-	Evaluate(projectionevaluation.Request) (projectionevaluation.Result, error)
-}
-
 type ServiceConfig struct {
 	ProjectionReader ProjectionReader
 	SnapshotReader   SnapshotReader
-	Evaluator        ArrivalEvaluator
 	Policy           Policy
 	Now              func() time.Time
 }
@@ -50,21 +44,20 @@ type ServiceConfig struct {
 type Service struct {
 	projectionReader ProjectionReader
 	snapshotReader   SnapshotReader
-	evaluator        ArrivalEvaluator
 	policy           Policy
 	now              func() time.Time
 }
 
 type sample struct {
-	TrajectoryID          string
-	AsOfTime              time.Time
-	AbsoluteErrorSeconds  float64
-	IntervalCovered       bool
-	EvaluationFingerprint string
+	TrajectoryID         string
+	AsOfTime             time.Time
+	AbsoluteErrorSeconds float64
+	IntervalCovered      bool
+	ProjectionFingerprint string
 }
 
 func New(config ServiceConfig) (*Service, error) {
-	if config.ProjectionReader == nil || config.SnapshotReader == nil || config.Evaluator == nil {
+	if config.ProjectionReader == nil || config.SnapshotReader == nil {
 		return nil, ErrServiceUnavailable
 	}
 	if err := config.Policy.Validate(); err != nil {
@@ -77,14 +70,13 @@ func New(config ServiceConfig) (*Service, error) {
 	return &Service{
 		projectionReader: config.ProjectionReader,
 		snapshotReader:   config.SnapshotReader,
-		evaluator:        config.Evaluator,
 		policy:           config.Policy,
 		now:              now,
 	}, nil
 }
 
 func (service *Service) Get(ctx context.Context, request projectionread.Request) (Result, error) {
-	if service == nil || service.projectionReader == nil || service.snapshotReader == nil || service.evaluator == nil {
+	if service == nil || service.projectionReader == nil || service.snapshotReader == nil {
 		return Result{}, ErrServiceUnavailable
 	}
 	if err := ctx.Err(); err != nil {
@@ -167,35 +159,21 @@ func (service *Service) Get(ctx context.Context, request projectionread.Request)
 			continue
 		}
 
-		evaluatedAt := service.now().UTC()
-		if !evaluatedAt.After(historicalProjection.Projection.GeneratedAt.UTC()) {
-			evaluatedAt = historicalProjection.Projection.GeneratedAt.UTC().Add(time.Nanosecond)
-		}
-		availability := truthAvailability(candidate, evaluatedAt)
-		actualArrival := &projectionevaluation.ActualArrival{
-			AirportICAOCode: destination,
-			BoundaryTime:    endpoint.ObservedAt.UTC(),
-			SourceName:      "persisted_trajectory_endpoint_proxy",
-			ObservedAt:      endpoint.ObservedAt.UTC(),
-			AvailableAt:     evaluatedAt,
-		}
-		evaluation, err := service.evaluator.Evaluate(projectionevaluation.Request{
-			Projection:        historicalProjection.Projection,
-			ActualTrajectory:  candidate,
-			TruthAvailability: availability,
-			ActualArrival:     actualArrival,
-			EvaluatedAt:       evaluatedAt,
-		})
-		if err != nil || !evaluation.Arrival.Available || !evaluation.Arrival.AirportMatched {
+		absoluteErrorSeconds, intervalCovered, ok := evaluateArrivalSample(
+			historicalProjection.Projection.Arrival,
+			endpoint.ObservedAt.UTC(),
+			destination,
+		)
+		if !ok {
 			rejected++
 			continue
 		}
 		samples = append(samples, sample{
 			TrajectoryID:          candidate.ID,
 			AsOfTime:              historicalAsOf,
-			AbsoluteErrorSeconds:  evaluation.Arrival.EstimatedAbsoluteErrorSeconds,
-			IntervalCovered:       evaluation.Arrival.IntervalCoveredActual,
-			EvaluationFingerprint: evaluation.EvaluationInputFingerprint,
+			AbsoluteErrorSeconds:  absoluteErrorSeconds,
+			IntervalCovered:       intervalCovered,
+			ProjectionFingerprint: historicalProjection.CompositionFingerprint,
 		})
 	}
 
@@ -227,7 +205,7 @@ func (service *Service) Get(ctx context.Context, request projectionread.Request)
 	if rejected > 0 {
 		limitations = append(limitations, Notice{
 			Code:    "historical_candidates_rejected",
-			Message: fmt.Sprintf("%d bounded historical candidates were excluded because endpoint, lead-time, route, method or evaluation evidence was not comparable.", rejected),
+			Message: fmt.Sprintf("%d bounded historical candidates were excluded because endpoint, lead-time, route, method or arrival evidence was not comparable.", rejected),
 		})
 	}
 	if len(snapshot.HistoricalCandidates) > len(candidates) {
@@ -308,24 +286,23 @@ func selectHistoricalAsOf(item trajectory.FlightTrajectory, endpointTime time.Ti
 	return best, true
 }
 
-func truthAvailability(item trajectory.FlightTrajectory, availableAt time.Time) []projectionevaluation.TruthAvailability {
-	result := make([]projectionevaluation.TruthAvailability, 0, len(item.Points))
-	for _, point := range item.Points {
-		pointID := strings.TrimSpace(point.ID)
-		if pointID == "" {
-			continue
-		}
-		source := strings.TrimSpace(point.SourceName)
-		if source == "" {
-			source = "persisted_trajectory"
-		}
-		result = append(result, projectionevaluation.TruthAvailability{
-			PointID:     pointID,
-			SourceName:  source + ":eta_reliability_read",
-			AvailableAt: availableAt,
-		})
+func evaluateArrivalSample(predicted *projectioncontract.ArrivalEstimate, actualBoundaryTime time.Time, destination string) (float64, bool, bool) {
+	if predicted == nil || actualBoundaryTime.IsZero() {
+		return 0, false, false
 	}
-	return result
+	if strings.ToUpper(strings.TrimSpace(predicted.AirportICAOCode)) != strings.ToUpper(strings.TrimSpace(destination)) {
+		return 0, false, false
+	}
+	earliest := predicted.EarliestTime.UTC()
+	estimated := predicted.EstimatedTime.UTC()
+	latest := predicted.LatestTime.UTC()
+	actual := actualBoundaryTime.UTC()
+	if earliest.IsZero() || estimated.IsZero() || latest.IsZero() || latest.Before(earliest) || estimated.Before(earliest) || estimated.After(latest) {
+		return 0, false, false
+	}
+	absoluteErrorSeconds := math.Abs(estimated.Sub(actual).Seconds())
+	intervalCovered := !actual.Before(earliest) && !actual.After(latest)
+	return absoluteErrorSeconds, intervalCovered, true
 }
 
 func sameMethod(left, right projectioncontract.Method) bool {
@@ -414,7 +391,7 @@ func reliabilityFingerprint(request projectionread.Request, current projectionpr
 		write(item.AsOfTime.UTC().Format(time.RFC3339Nano))
 		write(fmt.Sprintf("%.6f", item.AbsoluteErrorSeconds))
 		write(fmt.Sprintf("%t", item.IntervalCovered))
-		write(item.EvaluationFingerprint)
+		write(item.ProjectionFingerprint)
 	}
 	return "sha256:" + hex.EncodeToString(digest.Sum(nil))
 }

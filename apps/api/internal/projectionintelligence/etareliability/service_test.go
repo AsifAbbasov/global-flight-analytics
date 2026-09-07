@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/trajectory"
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/projectionintelligence/projectioncontract"
 )
 
 func TestSelectHistoricalAsOfUsesPersistedObservationNearComparableLead(t *testing.T) {
@@ -22,6 +23,40 @@ func TestSelectHistoricalAsOfUsesPersistedObservationNearComparableLead(t *testi
 	want := endpoint.Add(-30 * time.Minute)
 	if !selected.Equal(want) {
 		t.Fatalf("selected = %s, want %s", selected, want)
+	}
+}
+
+func TestEvaluateArrivalSampleMatchesProjectionEvaluationArrivalSemantics(t *testing.T) {
+	actual := time.Date(2026, 9, 1, 13, 2, 0, 0, time.UTC)
+	predicted := &projectioncontract.ArrivalEstimate{
+		AirportICAOCode: "UBBB",
+		EarliestTime:    actual.Add(-7 * time.Minute),
+		EstimatedTime:   actual.Add(3 * time.Minute),
+		LatestTime:      actual.Add(8 * time.Minute),
+	}
+
+	absoluteErrorSeconds, intervalCovered, ok := evaluateArrivalSample(predicted, actual, "UBBB")
+	if !ok {
+		t.Fatal("expected comparable arrival sample")
+	}
+	if absoluteErrorSeconds != 180 {
+		t.Fatalf("absolute error = %v, want 180", absoluteErrorSeconds)
+	}
+	if !intervalCovered {
+		t.Fatal("actual endpoint proxy should be inside the published ETA interval")
+	}
+}
+
+func TestEvaluateArrivalSampleRejectsMismatchedAirport(t *testing.T) {
+	actual := time.Date(2026, 9, 1, 13, 2, 0, 0, time.UTC)
+	predicted := &projectioncontract.ArrivalEstimate{
+		AirportICAOCode: "UGTB",
+		EarliestTime:    actual.Add(-7 * time.Minute),
+		EstimatedTime:   actual.Add(3 * time.Minute),
+		LatestTime:      actual.Add(8 * time.Minute),
+	}
+	if _, _, ok := evaluateArrivalSample(predicted, actual, "UBBB"); ok {
+		t.Fatal("airport mismatch must not produce an ETA reliability sample")
 	}
 }
 
