@@ -1,6 +1,6 @@
 # Security and Operational Hardening
 
-Status: PRE-MERGE REVIEW CANDIDATE — TECHNICAL BASELINE CI_VERIFIED; FINAL DOCUMENTATION SHA VALIDATION PENDING  
+Status: PRE-MERGE REVIEW CANDIDATE — TECHNICAL BASELINE CI_VERIFIED; FINAL EXACT-HEAD VALIDATION OWNED BY PR/CHECK EVIDENCE  
 Date: 2026-09-08  
 Repository: `AsifAbbasov/global-flight-analytics`  
 Pull request: `#172` — `security: harden API and operational resilience`  
@@ -300,7 +300,18 @@ Security Hardening Gate
 
 The exact same SHA also has Vercel status `SUCCESS` with description `Deployment has completed`.
 
-This section is intentionally called **pre-documentation evidence**. The documentation commit changes the branch SHA; therefore these green results are not transferred to the final review candidate.
+This section is intentionally called **pre-documentation evidence**. It is immutable historical evidence and is not transferred to a later review head.
+
+### Final exact-head evidence ownership
+
+The final pre-merge head SHA cannot be embedded into this file without changing that SHA and creating recursive evidence drift. Therefore final mutable pre-merge evidence is deliberately owned by:
+
+1. the PR #172 body, which records the current candidate SHA and exact run IDs;
+2. GitHub Actions checks bound to that exact SHA;
+3. Vercel commit status bound to that exact SHA;
+4. PR mergeability and unresolved-review-thread state read directly from GitHub.
+
+This document owns the stable gate definition and immutable historical baseline; it does not self-embed a final commit identifier.
 
 ---
 
@@ -348,7 +359,7 @@ This document therefore does **not** mark `GFA-SEC-445` closed. The canonical fi
 
 ## 14. Review-ready gate
 
-PR #172 may be considered review-ready only when the **final documentation-aligned exact head SHA** independently proves:
+PR #172 may be considered review-ready only when its **current exact head SHA** independently proves:
 
 ```text
 BACKEND_CI=SUCCESS
@@ -356,6 +367,7 @@ FRONTEND_CI=SUCCESS
 OPENAPI_CONTRACT=SUCCESS
 API_LOAD_BASELINE=SUCCESS
 CODEQL=SUCCESS
+PLAYWRIGHT_E2E=SUCCESS
 SECURITY_HARDENING=SUCCESS
 VERCEL=SUCCESS
 DOCUMENT_INDEX_ALIGNMENT=PASS
@@ -364,7 +376,9 @@ MERGEABLE=TRUE
 UNRESOLVED_REVIEW_BLOCKERS=0
 ```
 
-No status from `46f5ce361f01d016a63ee2077f961e86b702eafb` may be transferred to a later SHA.
+No status from `46f5ce361f01d016a63ee2077f961e86b702eafb` or any other earlier SHA may be transferred to the current head.
+
+Because embedding the final head SHA in this file would itself change the head SHA, satisfaction of this gate is recorded externally in the PR body and exact commit checks rather than by another self-referential documentation commit.
 
 ---
 
@@ -402,8 +416,11 @@ TECHNICAL_BASELINE_SHA=46f5ce361f01d016a63ee2077f961e86b702eafb
 TECHNICAL_BASELINE_GITHUB_CI=6_OF_6_SUCCESS
 TECHNICAL_BASELINE_SECURITY_HARDENING=SUCCESS
 TECHNICAL_BASELINE_VERCEL=SUCCESS
-FINAL_DOCUMENTATION_SHA_VALIDATION=PENDING
+FINAL_EXACT_HEAD_VALIDATION=OWNED_BY_PR_AND_COMMIT_CHECKS
+DOCUMENT_INDEX_ALIGNMENT=PASS
 GFA_SEC_445=IN_PROGRESS_INDEPENDENT_BOUNDARY
 PYTHON=NONE
+REDIS=NONE
+VALKEY=NONE
 MERGE_AUTHORIZATION=NOT_GRANTED
 ```
