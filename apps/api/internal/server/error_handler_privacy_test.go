@@ -1,7 +1,8 @@
-package middleware
+package server
 
 import (
 	"bytes"
+	"errors"
 	"log/slog"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func TestRequestLoggerDoesNotRecordClientIdentityOrRawPath(
+func TestServerErrorLogDoesNotRecordRawPath(
 	t *testing.T,
 ) {
 	var output bytes.Buffer
@@ -21,68 +22,68 @@ func TestRequestLoggerDoesNotRecordClientIdentityOrRawPath(
 		),
 	)
 
-	app := fiber.New()
-	app.Use(
-		RequestLogger(
-			log,
-			func(
-				*fiber.Ctx,
-			) string {
-				return "203.0.113.50"
-			},
-		),
+	app, err := New(
+		Config{
+			Logger: log,
+		},
 	)
+	if err != nil {
+		t.Fatalf(
+			"create server: %v",
+			err,
+		)
+	}
+
 	app.Get(
-		"/api/v1/trajectories/:id",
+		"/api/v1/trajectories/:id/failure",
 		func(
-			c *fiber.Ctx,
+			*fiber.Ctx,
 		) error {
-			return c.SendStatus(
-				fiber.StatusNoContent,
+			return errors.New(
+				"sensitive implementation failure",
 			)
 		},
 	)
 
-	httpResponse, err := app.Test(
+	response, err := app.Test(
 		httptest.NewRequest(
 			fiber.MethodGet,
-			"/api/v1/trajectories/sensitive-aircraft-id?token=secret-value",
+			"/api/v1/trajectories/sensitive-aircraft-id/failure?token=secret-value",
 			nil,
 		),
 	)
 	if err != nil {
 		t.Fatalf(
-			"execute request: %v",
+			"execute failing request: %v",
 			err,
 		)
 	}
-	defer httpResponse.Body.Close()
+	defer response.Body.Close()
 
 	logged := output.String()
 	if !strings.Contains(
 		logged,
-		`"route":"/api/v1/trajectories/:id"`,
+		`"route":"/api/v1/trajectories/:id/failure"`,
 	) {
 		t.Fatalf(
-			"expected route template in log, got %s",
+			"expected route template in error log, got %s",
 			logged,
 		)
 	}
 
 	for _, forbidden := range []string{
-		`"ip":`,
 		`"path":`,
-		"203.0.113.50",
 		"sensitive-aircraft-id",
 		"secret-value",
 		"token=",
+		"sensitive implementation failure",
 	} {
 		if strings.Contains(
 			logged,
 			forbidden,
 		) {
 			t.Fatalf(
-				"request log leaked forbidden value %q: %s",
+				"error log leaked forbidden value %q: %s",
 				forbidden,
 				logged,
 			)
