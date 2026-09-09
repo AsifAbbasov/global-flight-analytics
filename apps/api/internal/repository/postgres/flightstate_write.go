@@ -31,6 +31,7 @@ const insertFlightStateQuery = `
 		aircraft_category,
 		aircraft_category_available,
 		observed_at,
+		message_observed_at,
 		source_name,
 		ingestion_run_id
 	)
@@ -57,7 +58,8 @@ const insertFlightStateQuery = `
 		$20,
 		$21,
 		$22,
-		$23
+		$23,
+		$24
 	)
 	ON CONFLICT (source_name, icao24, observed_at)
 	DO NOTHING;
@@ -200,6 +202,7 @@ func prepareFlightStateInsertArguments(
 		aircraftCategory,
 		item.AircraftCategoryAvailable,
 		item.ObservedAt,
+		item.MessageObservedAt,
 		requiredSourceNameValue(item.SourceName),
 		nullableUUID(item.IngestionRunID),
 	}, nil

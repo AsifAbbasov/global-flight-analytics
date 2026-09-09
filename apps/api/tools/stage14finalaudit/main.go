@@ -1211,6 +1211,7 @@ func auditFlightStateRepositoryFixtureParity(root string) []auditFailure {
 		"position_source",
 		"aircraft_category",
 		"aircraft_category_available",
+		"message_observed_at",
 	}
 	failures := make([]auditFailure, 0)
 	for _, entry := range entries {

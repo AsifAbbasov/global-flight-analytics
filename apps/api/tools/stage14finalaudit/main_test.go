@@ -773,13 +773,13 @@ func rollbackMigrationTransaction() { ctx, cancel := context.WithTimeout(context
 		t,
 		root,
 		"apps/api/internal/repository/postgres/flightstate_altitude_integration_test.go",
-		"package postgres\n// CREATE TABLE flight_states (\n// squawk_code text\n// special_purpose_indicator boolean\n// position_source text\n// aircraft_category smallint\n// aircraft_category_available boolean\n// NewFlightStateRepository(\n",
+		"package postgres\n// CREATE TABLE flight_states (\n// squawk_code text\n// special_purpose_indicator boolean\n// position_source text\n// aircraft_category smallint\n// aircraft_category_available boolean\n// message_observed_at timestamptz\n// NewFlightStateRepository(\n",
 	)
 	writeFixtureFile(
 		t,
 		root,
 		"apps/api/internal/repository/postgres/flightstate_reconciliation_repository_integration_test.go",
-		"package postgres\n// CREATE TABLE flight_states (\n// squawk_code text\n// special_purpose_indicator boolean\n// position_source text\n// aircraft_category smallint\n// aircraft_category_available boolean\n// NewFlightStateRepository(\n",
+		"package postgres\n// CREATE TABLE flight_states (\n// squawk_code text\n// special_purpose_indicator boolean\n// position_source text\n// aircraft_category smallint\n// aircraft_category_available boolean\n// message_observed_at timestamptz\n// NewFlightStateRepository(\n",
 	)
 	writeFixtureFile(
 		t,

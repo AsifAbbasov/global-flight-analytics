@@ -111,6 +111,7 @@ type AircraftItem struct {
 	Track        OptionalFloat64    `json:"track"`
 	BaroRate     OptionalFloat64    `json:"baro_rate"`
 	Seen         OptionalFloat64    `json:"seen"`
+	SeenPos      OptionalFloat64    `json:"seen_pos"`
 	Type         string             `json:"type"`
 	Registration string             `json:"r"`
 	AircraftType string             `json:"t"`

@@ -107,6 +107,21 @@ func ObservationTime(
 	return base.Add(-age).UTC()
 }
 
+func OptionalObservationTime(
+	snapshotAt time.Time,
+	seen OptionalFloat64,
+) *time.Time {
+	if snapshotAt.IsZero() {
+		return nil
+	}
+	age, ok := SafeSeenDuration(seen)
+	if !ok {
+		return nil
+	}
+	value := snapshotAt.UTC().Add(-age).UTC()
+	return &value
+}
+
 func MapAircraft(
 	sourceName string,
 	item AircraftItem,
@@ -119,6 +134,16 @@ func MapAircraft(
 	verticalRate, verticalRateAvailable := OptionalVerticalRate(item.BaroRate)
 	onGroundAvailable := barometricAltitude.Status == flightstate.AltitudeStatusGround ||
 		barometricAltitude.Status == flightstate.AltitudeStatusObserved
+
+	positionObservedAt := OptionalObservationTime(snapshotAt, item.SeenPos)
+	if positionObservedAt == nil {
+		positionObservedAt = OptionalObservationTime(snapshotAt, item.Seen)
+	}
+	observedAt := snapshotAt.UTC()
+	if positionObservedAt != nil {
+		observedAt = *positionObservedAt
+	}
+	messageObservedAt := OptionalObservationTime(snapshotAt, item.Seen)
 
 	return flightstate.FlightState{
 		ICAO24:                     strings.ToUpper(strings.TrimSpace(item.Hex)),
@@ -139,7 +164,8 @@ func MapAircraft(
 		OnGround:                   barometricAltitude.Status == flightstate.AltitudeStatusGround,
 		OnGroundAvailable:          onGroundAvailable,
 		TelemetryAvailabilityKnown: true,
-		ObservedAt:                 ObservationTime(snapshotAt, item.Seen),
+		ObservedAt:                 observedAt,
+		MessageObservedAt:          messageObservedAt,
 		SourceName:                 strings.TrimSpace(sourceName),
 	}
 }

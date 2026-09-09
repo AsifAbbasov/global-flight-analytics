@@ -68,6 +68,7 @@ type FlightState struct {
 	AircraftCategory           int
 	AircraftCategoryAvailable  bool
 	ObservedAt                 time.Time
+	MessageObservedAt          *time.Time
 	SourceName                 string
 }
 

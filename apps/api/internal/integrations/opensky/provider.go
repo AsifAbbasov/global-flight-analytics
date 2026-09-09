@@ -254,6 +254,8 @@ func MapStateVector(
 			state.VerticalRateMPS,
 		)
 
+	messageObservedAt := state.LastContact.UTC()
+
 	mapped := flightstate.FlightState{
 		ICAO24:                     strings.ToUpper(state.ICAO24),
 		Latitude:                   *state.Latitude,
@@ -278,6 +280,7 @@ func MapStateVector(
 		AircraftCategory:           int(state.Category),
 		AircraftCategoryAvailable:  state.CategoryAvailable,
 		ObservedAt:                 state.TimePosition.UTC(),
+		MessageObservedAt:          &messageObservedAt,
 		SourceName:                 sourceName,
 	}
 	if state.Callsign != nil {
