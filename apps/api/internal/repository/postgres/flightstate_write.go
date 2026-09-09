@@ -31,6 +31,7 @@ const insertFlightStateQuery = `
 		aircraft_category,
 		aircraft_category_available,
 		observed_at,
+		message_observed_at,
 		source_name,
 		ingestion_run_id
 	)
@@ -57,10 +58,24 @@ const insertFlightStateQuery = `
 		$20,
 		$21,
 		$22,
-		$23
+		$23,
+		$24
 	)
 	ON CONFLICT (source_name, icao24, observed_at)
 	DO NOTHING;
+`
+
+const refreshFlightStateMessageObservationQuery = `
+	UPDATE flight_states
+	SET message_observed_at = $4
+	WHERE source_name = $1
+		AND icao24 = $2
+		AND observed_at = $3
+		AND $4::timestamptz IS NOT NULL
+		AND (
+			message_observed_at IS NULL
+			OR message_observed_at < $4
+		);
 `
 
 func saveFlightStateBatch(
@@ -93,7 +108,27 @@ func saveFlightStateBatch(
 			)
 		}
 
-		insertedCount += int(commandTag.RowsAffected())
+		inserted := int(commandTag.RowsAffected())
+		if inserted == 0 && item.MessageObservedAt != nil {
+			_, err = tx.Exec(
+				ctx,
+				refreshFlightStateMessageObservationQuery,
+				requiredSourceNameValue(item.SourceName),
+				item.ICAO24,
+				item.ObservedAt,
+				item.MessageObservedAt,
+			)
+			if err != nil {
+				return 0, fmt.Errorf(
+					"refresh flight state message observation at index %d for icao24 %s: %w",
+					index,
+					item.ICAO24,
+					err,
+				)
+			}
+		}
+
+		insertedCount += inserted
 	}
 
 	return insertedCount, nil
@@ -200,6 +235,7 @@ func prepareFlightStateInsertArguments(
 		aircraftCategory,
 		item.AircraftCategoryAvailable,
 		item.ObservedAt,
+		item.MessageObservedAt,
 		requiredSourceNameValue(item.SourceName),
 		nullableUUID(item.IngestionRunID),
 	}, nil

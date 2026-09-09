@@ -56,6 +56,7 @@ func TestFlightStateRepositoryListsReconciliationScopeUsingCanonicalICAO24(
 				aircraft_category smallint,
 				aircraft_category_available boolean,
 				observed_at timestamptz NOT NULL,
+				message_observed_at timestamptz,
 				source_name text NOT NULL
 			);
 		`,

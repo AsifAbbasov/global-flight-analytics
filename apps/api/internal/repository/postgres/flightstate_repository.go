@@ -116,6 +116,7 @@ func (r *FlightStateRepository) ListByFlightID(
 			aircraft_category,
 			COALESCE(aircraft_category_available, false),
 			observed_at,
+			message_observed_at,
 			source_name
 		FROM flight_states
 		WHERE flight_id = $1
@@ -151,6 +152,7 @@ func (r *FlightStateRepository) ListByFlightID(
 		var geometricStatus string
 		var positionSource string
 		var aircraftCategory pgtype.Int2
+		var messageObservedAt pgtype.Timestamptz
 
 		if err := rows.Scan(
 			&item.ID,
@@ -176,9 +178,15 @@ func (r *FlightStateRepository) ListByFlightID(
 			&aircraftCategory,
 			&item.AircraftCategoryAvailable,
 			&item.ObservedAt,
+			&messageObservedAt,
 			&item.SourceName,
 		); err != nil {
 			return nil, err
+		}
+
+		if messageObservedAt.Valid {
+			value := messageObservedAt.Time.UTC()
+			item.MessageObservedAt = &value
 		}
 
 		item.PositionSource = flightstate.PositionSource(
@@ -248,6 +256,7 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 			aircraft_category,
 			COALESCE(aircraft_category_available, false),
 			observed_at,
+			message_observed_at,
 			source_name
 		FROM flight_states
 		WHERE icao24 = $1
@@ -268,6 +277,7 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 	var geometricStatus string
 	var positionSource string
 	var aircraftCategory pgtype.Int2
+	var messageObservedAt pgtype.Timestamptz
 
 	err := r.db.QueryRow(
 		ctx,
@@ -297,6 +307,7 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		&aircraftCategory,
 		&item.AircraftCategoryAvailable,
 		&item.ObservedAt,
+		&messageObservedAt,
 		&item.SourceName,
 	)
 	if err != nil {
@@ -309,6 +320,11 @@ func (r *FlightStateRepository) GetLatestByICAO24(
 		}
 
 		return flightstate.FlightState{}, err
+	}
+
+	if messageObservedAt.Valid {
+		value := messageObservedAt.Time.UTC()
+		item.MessageObservedAt = &value
 	}
 
 	item.PositionSource = flightstate.PositionSource(

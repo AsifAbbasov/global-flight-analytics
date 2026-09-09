@@ -50,20 +50,22 @@ func toCurrentTrafficItems(items []traffic.CurrentTrafficItem) []dto.CurrentTraf
 
 	for _, item := range items {
 		result = append(result, dto.CurrentTrafficItem{
-			ICAO24:         item.ICAO24,
-			Callsign:       item.Callsign,
-			Latitude:       item.Latitude,
-			Longitude:      item.Longitude,
-			AltitudeM:      item.AltitudeM,
-			AltitudeStatus: item.AltitudeStatus,
-			AltitudeSource: item.AltitudeSource,
-			VelocityMPS:    item.VelocityMPS,
-			HeadingDegrees: item.HeadingDegrees,
-			OnGround:       item.OnGround,
-			ObservedAt:     item.ObservedAt,
-			AircraftModel:  item.AircraftModel,
-			Airline:        item.Airline,
-			OriginCountry:  item.OriginCountry,
+			ICAO24:             item.ICAO24,
+			Callsign:           item.Callsign,
+			Latitude:           item.Latitude,
+			Longitude:          item.Longitude,
+			AltitudeM:          item.AltitudeM,
+			AltitudeStatus:     item.AltitudeStatus,
+			AltitudeSource:     item.AltitudeSource,
+			VelocityMPS:        item.VelocityMPS,
+			HeadingDegrees:     item.HeadingDegrees,
+			OnGround:           item.OnGround,
+			ObservedAt:         item.ObservedAt,
+			PositionObservedAt: item.ObservedAt,
+			MessageObservedAt:  item.MessageObservedAt,
+			AircraftModel:      item.AircraftModel,
+			Airline:            item.Airline,
+			OriginCountry:      item.OriginCountry,
 		})
 	}
 

@@ -1,6 +1,6 @@
 /* eslint-disable */
 // This file is generated from openapi/openapi.json. Do not edit manually.
-// OpenAPI SHA-256: 37c8543b9802e02ebe3cfab143e6af2ed3ed302be5c4c8849ef5d4bbc9279668
+// OpenAPI SHA-256: 676897602f64f74b20a6c1bf53919e38a0539190fd80208a07eb8f876763ff17
 
 export type ActiveAircraftMetric = {
   readonly metric: "active_aircraft"
@@ -616,6 +616,8 @@ export type CurrentTrafficItem = {
   readonly aircraft_model: string
   readonly airline: string
   readonly origin_country: string
+  readonly position_observed_at: string
+  readonly message_observed_at: string | null
 }
 
 export type CurrentTrafficResponse = {

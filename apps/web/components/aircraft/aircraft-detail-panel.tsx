@@ -9,6 +9,12 @@ import {
   type AircraftIntelligenceField,
 } from '@/lib/aircraft/aircraft-intelligence-display'
 import { useAircraftProfile } from '@/lib/queries/aircraft'
+import {
+  buildTrafficFreshnessEvidence,
+  formatTrafficEvidenceAge,
+  type TrafficFreshnessEvidence,
+  type TrafficPositionFreshnessStatus,
+} from '@/lib/traffic/traffic-freshness'
 import type {
   AircraftRouteContext,
   RouteContextAirportCandidate,
@@ -23,6 +29,7 @@ import type {
 interface AircraftDetailPanelProps {
   selectedICAO24: string | null
   aircraft: TrafficAircraft | undefined
+  trafficSnapshotUpdatedAt: number
   routeContext: AircraftRouteContext | undefined
   routeContextIsPending: boolean
   routeContextIsFetching: boolean
@@ -41,6 +48,7 @@ const primaryTelemetryKeys = new Set(['altitude', 'speed', 'heading', 'status'])
 export function AircraftDetailPanel({
   selectedICAO24,
   aircraft,
+  trafficSnapshotUpdatedAt,
   routeContext,
   routeContextIsPending,
   routeContextIsFetching,
@@ -82,6 +90,9 @@ export function AircraftDetailPanel({
   const secondaryObservation = display.observedFields.filter(
     field => !primaryTelemetryKeys.has(field.key)
   )
+  const freshnessEvidence = aircraft
+    ? buildTrafficFreshnessEvidence(aircraft, trafficSnapshotUpdatedAt)
+    : null
 
   return (
     <aside
@@ -126,6 +137,10 @@ export function AircraftDetailPanel({
       <div className='p-3.5'>
         {primaryTelemetry.length > 0 ? (
           <PrimaryTelemetry fields={primaryTelemetry} />
+        ) : null}
+
+        {freshnessEvidence ? (
+          <ObservationFreshnessSection evidence={freshnessEvidence} />
         ) : null}
 
         <RouteContextSection
@@ -801,4 +816,107 @@ function formatTimestamp(value: string): string {
   const timestamp = new Date(value)
   if (Number.isNaN(timestamp.getTime())) return ''
   return timestamp.toLocaleString()
+}
+
+function ObservationFreshnessSection({
+  evidence,
+}: {
+  evidence: TrafficFreshnessEvidence
+}) {
+  const positionAge = formatTrafficEvidenceAge(evidence.positionAgeMilliseconds)
+  const messageAge = formatTrafficEvidenceAge(evidence.messageAgeMilliseconds)
+
+  return (
+    <section
+      className='mt-4 border-t border-white/10 pt-4'
+      aria-labelledby='observation-freshness-title'
+    >
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <div>
+          <h4 id='observation-freshness-title' className='text-xs font-semibold text-slate-100'>
+            Observation freshness
+          </h4>
+          <p className='mt-0.5 text-[10px] leading-4 text-slate-500'>
+            Position age is evaluated independently from the latest provider message.
+          </p>
+        </div>
+        <FreshnessBadge status={evidence.positionStatus} />
+      </div>
+
+      <dl className='mt-2 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2'>
+        <FreshnessField
+          label='Position observed'
+          value={formatEvidenceTimestamp(evidence.positionObservedAt)}
+          detail={positionAge}
+        />
+        {evidence.messageObservedAt ? (
+          <FreshnessField
+            label='Last message'
+            value={formatEvidenceTimestamp(evidence.messageObservedAt)}
+            detail={messageAge}
+          />
+        ) : null}
+      </dl>
+    </section>
+  )
+}
+
+function FreshnessField({
+  label,
+  value,
+  detail,
+}: {
+  label: string
+  value: string
+  detail: string | null
+}) {
+  return (
+    <div className='min-w-0 bg-[#202328] p-2.5'>
+      <dt className='text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500'>
+        {label}
+      </dt>
+      <dd className='mt-1 break-words text-xs font-semibold text-slate-100'>{value}</dd>
+      {detail ? <dd className='mt-0.5 text-[10px] text-slate-500'>{detail}</dd> : null}
+    </div>
+  )
+}
+
+function FreshnessBadge({ status }: { status: TrafficPositionFreshnessStatus }) {
+  const presentation: Record<
+    TrafficPositionFreshnessStatus,
+    { label: string; className: string }
+  > = {
+    fresh: {
+      label: 'Fresh position',
+      className: 'border-emerald-300/30 bg-emerald-300/10 text-emerald-200',
+    },
+    older: {
+      label: 'Older position',
+      className: 'border-amber-300/30 bg-amber-300/10 text-amber-100',
+    },
+    future: {
+      label: 'Clock-skew warning',
+      className: 'border-rose-300/30 bg-rose-300/10 text-rose-100',
+    },
+    invalid: {
+      label: 'Invalid position time',
+      className: 'border-rose-300/30 bg-rose-300/10 text-rose-100',
+    },
+    'reference-unavailable': {
+      label: 'Freshness unavailable',
+      className: 'border-slate-600 bg-slate-900 text-slate-300',
+    },
+  }
+  const item = presentation[status]
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${item.className}`}>
+      {item.label}
+    </span>
+  )
+}
+
+function formatEvidenceTimestamp(value: string): string {
+  const timestamp = new Date(value)
+  if (Number.isNaN(timestamp.getTime())) return value
+  return timestamp.toISOString()
 }

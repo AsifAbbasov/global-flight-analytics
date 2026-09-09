@@ -615,6 +615,7 @@ func createLegacyFlightStatesTable(
 				aircraft_category smallint,
 				aircraft_category_available boolean,
 				observed_at timestamptz NOT NULL,
+				message_observed_at timestamptz,
 				source_name text NOT NULL,
 				ingestion_run_id uuid,
 				created_at timestamptz NOT NULL DEFAULT now()

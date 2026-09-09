@@ -3278,7 +3278,8 @@
           },
           "observed_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Compatibility alias for the canonical position observation timestamp. New consumers should prefer position_observed_at."
           },
           "aircraft_model": {
             "type": "string"
@@ -3288,6 +3289,19 @@
           },
           "origin_country": {
             "type": "string"
+          },
+          "position_observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the position observation represented by latitude and longitude. This is the canonical freshness timestamp for map, trajectory, and analytical position semantics."
+          },
+          "message_observed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Optional timestamp of the latest provider message or contact. It may be newer than position_observed_at and must not be used as a substitute for position freshness."
           }
         },
         "required": [
@@ -3304,7 +3318,9 @@
           "observed_at",
           "aircraft_model",
           "airline",
-          "origin_country"
+          "origin_country",
+          "position_observed_at",
+          "message_observed_at"
         ]
       },
       "HealthResponse": {

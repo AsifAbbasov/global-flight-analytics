@@ -367,6 +367,7 @@ func createTrafficAltitudeSchema(
 				heading_degrees double precision,
 				on_ground boolean,
 				observed_at timestamptz NOT NULL,
+				message_observed_at timestamptz,
 				origin_country text
 			)
 		`,

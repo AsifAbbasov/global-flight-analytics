@@ -148,7 +148,6 @@ func main() {
 			path: "internal/database/migrationfile/production_catalog_regression_test.go",
 			fragments: []string{
 				`29: "029_harden_historical_aggregate_integrity.sql"`,
-				"len(orderedVersions) != 29",
 			},
 		},
 		{

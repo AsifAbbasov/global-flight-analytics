@@ -2,6 +2,7 @@ package providercompat_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
@@ -99,7 +100,13 @@ func TestADSBLOLAndAirplanesLivePreserveOverlappingV2CanonicalSemantics(
 		)
 	}
 
-	if normalizeSource(adsbStates[0]) != normalizeSource(airplanesStates[0]) {
+	// Canonical states can contain optional pointer-backed evidence. Compare
+	// their values recursively rather than pointer identity while retaining
+	// provider source ownership as the only expected outer-boundary difference.
+	if !reflect.DeepEqual(
+		normalizeSource(adsbStates[0]),
+		normalizeSource(airplanesStates[0]),
+	) {
 		t.Fatalf(
 			"overlapping v2 canonical mapping drift:\nadsb.lol=%+v\nairplanes.live=%+v",
 			adsbStates[0],
