@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"math"
 
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/ingestionrun"
@@ -60,6 +61,7 @@ func (
 			fs.barometric_altitude_status,
 			fs.velocity_mps,
 			fs.heading_degrees,
+			fs.vertical_rate_mps,
 			fs.on_ground,
 			fs.observed_at,
 			fs.message_observed_at,
@@ -137,6 +139,7 @@ func (
 			fs.barometric_altitude_status,
 			fs.velocity_mps,
 			fs.heading_degrees,
+			fs.vertical_rate_mps,
 			fs.on_ground,
 			fs.observed_at,
 			fs.message_observed_at,
@@ -198,6 +201,7 @@ func scanCurrentTrafficRows(
 		var barometricStatus string
 		var messageObservedAt pgtype.Timestamptz
 		var positionSource string
+		var verticalRate pgtype.Float8
 
 		if err := rows.Scan(
 			&item.ICAO24,
@@ -210,6 +214,7 @@ func scanCurrentTrafficRows(
 			&barometricStatus,
 			&item.VelocityMPS,
 			&item.HeadingDegrees,
+			&verticalRate,
 			&item.OnGround,
 			&item.ObservedAt,
 			&messageObservedAt,
@@ -222,6 +227,8 @@ func scanCurrentTrafficRows(
 			return nil,
 				err
 		}
+
+		item.VerticalRateMPS = nullableTrafficVerticalRate(verticalRate)
 
 		if messageObservedAt.Valid {
 			value := messageObservedAt.Time.UTC()
@@ -268,6 +275,17 @@ func scanCurrentTrafficRows(
 
 	return items,
 		nil
+}
+
+func nullableTrafficVerticalRate(
+	value pgtype.Float8,
+) *float64 {
+	if !value.Valid || math.IsNaN(value.Float64) || math.IsInf(value.Float64, 0) {
+		return nil
+	}
+
+	result := value.Float64
+	return &result
 }
 
 func nullableTrafficAltitude(

@@ -36,21 +36,7 @@ func TestTrafficRepositoryPreservesAltitudeSemantics(
 		time.UTC,
 	)
 
-	mustExecTrafficAltitudeSQL(
-		t,
-		fixture.pool,
-		`
-			INSERT INTO ingestion_runs (
-				id,
-				finished_at,
-				status,
-				created_at
-			)
-			VALUES ($1, $2, 'success', $2)
-		`,
-		runID,
-		finishedAt,
-	)
+	insertTrafficTestRun(t, fixture.pool, runID, finishedAt)
 
 	insertTrafficAltitudeState(
 		t,
@@ -194,6 +180,64 @@ func TestTrafficRepositoryPreservesAltitudeSemantics(
 		flightstate.AltitudeStatusObserved,
 		traffic.AltitudeSourceBarometric,
 	)
+}
+
+func TestTrafficRepositoryPreservesVerticalRateAvailability(t *testing.T) {
+	fixture := newTrafficAltitudeFixture(t)
+	ctx := context.Background()
+	runID := "22222222-2222-2222-2222-222222222222"
+	finishedAt := time.Date(2026, time.September, 9, 15, 0, 0, 0, time.UTC)
+
+	insertTrafficTestRun(t, fixture.pool, runID, finishedAt)
+	insertTrafficAltitudeState(t, fixture.pool, runID, "VRATE01", 40.0, 49.0, intPointer(1500), "observed", intPointer(1450), "observed", false, finishedAt)
+	insertTrafficAltitudeState(t, fixture.pool, runID, "VRATE02", 40.1, 49.1, intPointer(1400), "observed", intPointer(1350), "observed", false, finishedAt.Add(time.Second))
+	insertTrafficAltitudeState(t, fixture.pool, runID, "VRATE03", 40.2, 49.2, intPointer(1300), "observed", intPointer(1250), "observed", false, finishedAt.Add(2*time.Second))
+
+	mustExecTrafficAltitudeSQL(
+		t,
+		fixture.pool,
+		`
+			UPDATE flight_states
+			SET vertical_rate_mps = CASE icao24
+				WHEN 'VRATE01' THEN 4.25
+				WHEN 'VRATE02' THEN -3.5
+				ELSE NULL
+			END
+			WHERE ingestion_run_id = $1
+		`,
+		runID,
+	)
+
+	items, err := fixture.repository.GetCurrent(ctx)
+	if err != nil {
+		t.Fatalf("get current traffic: %v", err)
+	}
+	if len(items) != 3 {
+		t.Fatalf("current traffic count = %d, want 3", len(items))
+	}
+
+	assertVerticalRate := func(index int, icao24 string, expected *float64) {
+		t.Helper()
+		item := items[index]
+		if item.ICAO24 != icao24 {
+			t.Fatalf("item %d icao24 = %s, want %s", index, item.ICAO24, icao24)
+		}
+		if expected == nil {
+			if item.VerticalRateMPS != nil {
+				t.Fatalf("%s vertical rate = %v, want unavailable", icao24, *item.VerticalRateMPS)
+			}
+			return
+		}
+		if item.VerticalRateMPS == nil || *item.VerticalRateMPS != *expected {
+			t.Fatalf("%s vertical rate = %#v, want %v", icao24, item.VerticalRateMPS, *expected)
+		}
+	}
+
+	climb := 4.25
+	descent := -3.5
+	assertVerticalRate(0, "VRATE01", &climb)
+	assertVerticalRate(1, "VRATE02", &descent)
+	assertVerticalRate(2, "VRATE03", nil)
 }
 
 type trafficAltitudeFixture struct {
@@ -365,6 +409,7 @@ func createTrafficAltitudeSchema(
 				barometric_altitude_status text NOT NULL,
 				velocity_mps double precision,
 				heading_degrees double precision,
+				vertical_rate_mps double precision,
 				on_ground boolean,
 				observed_at timestamptz NOT NULL,
 				message_observed_at timestamptz,
@@ -373,6 +418,31 @@ func createTrafficAltitudeSchema(
 				origin_country text
 			)
 		`,
+	)
+}
+
+func insertTrafficTestRun(
+	t *testing.T,
+	pool *pgxpool.Pool,
+	runID string,
+	finishedAt time.Time,
+) {
+	t.Helper()
+
+	mustExecTrafficAltitudeSQL(
+		t,
+		pool,
+		`
+			INSERT INTO ingestion_runs (
+				id,
+				finished_at,
+				status,
+				created_at
+			)
+			VALUES ($1, $2, 'success', $2)
+		`,
+		runID,
+		finishedAt,
 	)
 }
 

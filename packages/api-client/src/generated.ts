@@ -1,6 +1,6 @@
 /* eslint-disable */
 // This file is generated from openapi/openapi.json. Do not edit manually.
-// OpenAPI SHA-256: f94001026f2ccfc82390326b81a08d751df368e1667d6f687804e047ffe82581
+// OpenAPI SHA-256: 76d14ee97d36592de7e515d7527dd99efcb67bdd03087bb02a78800d6d2e5ce7
 
 export type ActiveAircraftMetric = {
   readonly metric: "active_aircraft"
@@ -611,6 +611,7 @@ export type CurrentTrafficItem = {
   readonly altitude_source: "geometric" | "barometric" | "ground" | "none"
   readonly velocity_mps: number
   readonly heading_degrees: number
+  readonly vertical_rate_mps: number | null
   readonly on_ground: boolean
   readonly observed_at: string
   readonly aircraft_model: string

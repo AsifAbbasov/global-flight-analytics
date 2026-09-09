@@ -224,7 +224,7 @@ export function validateRepository(root) {
   const airportDTO = read(root, 'apps/api/internal/http/dto/airport.go')
   requireIncludes(errors, airportDTO, ['json:"icao_code"','json:"iata_code"','json:"elevation_m"','json:"elevation_status"','json:"timezone"'], 'airport DTO')
   const trafficDTO = read(root, 'apps/api/internal/http/dto/traffic.go')
-  requireIncludes(errors, trafficDTO, ['json:"icao24"','json:"altitude_m"','json:"altitude_status"','json:"altitude_source"','json:"observed_at"','json:"position_observed_at"','json:"message_observed_at"','json:"position_source"','json:"source_name"'], 'traffic DTO')
+  requireIncludes(errors, trafficDTO, ['json:"icao24"','json:"altitude_m"','json:"altitude_status"','json:"altitude_source"','json:"vertical_rate_mps"','json:"observed_at"','json:"position_observed_at"','json:"message_observed_at"','json:"position_source"','json:"source_name"'], 'traffic DTO')
   const trafficHandler = read(root, 'apps/api/internal/http/handlers/traffic.go')
   requireIncludes(errors, trafficHandler, ['c.Query("region")', '"REGION_NOT_FOUND"'], 'traffic handler')
   const metricsDTO = read(root, 'apps/api/internal/http/dto/metrics.go')

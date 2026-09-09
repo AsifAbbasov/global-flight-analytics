@@ -17,6 +17,7 @@ type CurrentTrafficItem struct {
 	AltitudeSource     traffic.AltitudeSource      `json:"altitude_source"`
 	VelocityMPS        float64                     `json:"velocity_mps"`
 	HeadingDegrees     float64                     `json:"heading_degrees"`
+	VerticalRateMPS    *float64                    `json:"vertical_rate_mps"`
 	OnGround           bool                        `json:"on_ground"`
 	ObservedAt         time.Time                   `json:"observed_at"`
 	PositionObservedAt time.Time                   `json:"position_observed_at"`

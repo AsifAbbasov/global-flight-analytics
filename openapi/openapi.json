@@ -3273,6 +3273,13 @@
             "minimum": 0,
             "maximum": 360
           },
+          "vertical_rate_mps": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Observed vertical rate in metres per second. Positive values indicate climb, negative values indicate descent, and null means the provider did not supply usable vertical-rate evidence."
+          },
           "on_ground": {
             "type": "boolean"
           },
@@ -3335,6 +3342,7 @@
           "altitude_source",
           "velocity_mps",
           "heading_degrees",
+          "vertical_rate_mps",
           "on_ground",
           "observed_at",
           "aircraft_model",

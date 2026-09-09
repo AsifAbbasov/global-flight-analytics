@@ -19,6 +19,11 @@ import {
   buildPositionProvenanceEvidence,
   type PositionProvenanceEvidence,
 } from '@/lib/traffic/position-provenance'
+import {
+  buildVerticalMotionEvidence,
+  type VerticalMotionEvidence,
+  type VerticalMotionStatus,
+} from '@/lib/traffic/vertical-motion'
 import type {
   AircraftRouteContext,
   RouteContextAirportCandidate,
@@ -100,6 +105,9 @@ export function AircraftDetailPanel({
   const positionProvenanceEvidence = aircraft
     ? buildPositionProvenanceEvidence(aircraft)
     : null
+  const verticalMotionEvidence = aircraft
+    ? buildVerticalMotionEvidence(aircraft)
+    : null
 
   return (
     <aside
@@ -144,6 +152,10 @@ export function AircraftDetailPanel({
       <div className='p-3.5'>
         {primaryTelemetry.length > 0 ? (
           <PrimaryTelemetry fields={primaryTelemetry} />
+        ) : null}
+
+        {verticalMotionEvidence ? (
+          <VerticalMotionSection evidence={verticalMotionEvidence} />
         ) : null}
 
         {freshnessEvidence ? (
@@ -261,6 +273,74 @@ function PrimaryTelemetry({ fields }: { fields: AircraftIntelligenceField[] }) {
         ))}
       </dl>
     </section>
+  )
+}
+
+function VerticalMotionSection({
+  evidence,
+}: {
+  evidence: VerticalMotionEvidence
+}) {
+  return (
+    <section
+      className='mt-4 border-t border-white/10 pt-4'
+      aria-labelledby='vertical-motion-title'
+    >
+      <div className='flex flex-wrap items-start justify-between gap-3'>
+        <div>
+          <h4 id='vertical-motion-title' className='text-xs font-semibold text-slate-100'>
+            Vertical motion
+          </h4>
+          <p className='mt-0.5 text-[10px] leading-4 text-slate-500'>
+            Provider-observed vertical rate; movement label is presentation-only.
+          </p>
+        </div>
+        <VerticalMotionBadge status={evidence.status} label={evidence.label} />
+      </div>
+
+      <dl className='mt-2 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2'>
+        <div className='bg-[#202328] p-2.5'>
+          <dt className='text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500'>
+            Vertical rate
+          </dt>
+          <dd className='mt-1 text-xs font-semibold text-slate-100'>
+            {evidence.displayRate}
+          </dd>
+        </div>
+        <div className='bg-[#202328] p-2.5'>
+          <dt className='text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500'>
+            Evidence note
+          </dt>
+          <dd className='mt-1 text-[10px] leading-4 text-slate-400'>
+            {evidence.description}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  )
+}
+
+function VerticalMotionBadge({
+  status,
+  label,
+}: {
+  status: VerticalMotionStatus
+  label: string
+}) {
+  const className: Record<VerticalMotionStatus, string> = {
+    climbing: 'border-emerald-300/30 bg-emerald-300/10 text-emerald-200',
+    descending: 'border-sky-300/30 bg-sky-300/10 text-sky-200',
+    level: 'border-slate-300/20 bg-slate-300/10 text-slate-200',
+    ground: 'border-amber-300/30 bg-amber-300/10 text-amber-200',
+    unavailable: 'border-slate-600 bg-slate-800/80 text-slate-400',
+  }
+
+  return (
+    <span
+      className={'rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] ' + className[status]}
+    >
+      {label}
+    </span>
   )
 }
 

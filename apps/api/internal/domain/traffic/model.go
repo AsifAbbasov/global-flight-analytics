@@ -16,6 +16,7 @@ type CurrentTrafficItem struct {
 	AltitudeSource    AltitudeSource
 	VelocityMPS       float64
 	HeadingDegrees    float64
+	VerticalRateMPS   *float64
 	OnGround          bool
 	ObservedAt        time.Time
 	MessageObservedAt *time.Time

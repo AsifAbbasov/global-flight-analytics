@@ -32,6 +32,7 @@
     "lib/traffic/traffic-snapshot-export.ts",
     "lib/traffic/traffic-data-quality-model.ts",
     "lib/traffic/traffic-freshness.ts",
+    "lib/traffic/vertical-motion.ts",
     "lib/traffic/position-provenance.ts",
     "lib/analytics/airport-intelligence-workspace-model.ts",
     "lib/traffic/workspace-url-state.ts",

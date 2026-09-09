@@ -70,6 +70,7 @@ func toCurrentTrafficItems(items []traffic.CurrentTrafficItem) []dto.CurrentTraf
 			AltitudeSource:     item.AltitudeSource,
 			VelocityMPS:        item.VelocityMPS,
 			HeadingDegrees:     item.HeadingDegrees,
+			VerticalRateMPS:    item.VerticalRateMPS,
 			OnGround:           item.OnGround,
 			ObservedAt:         item.ObservedAt,
 			PositionObservedAt: item.ObservedAt,

@@ -30,6 +30,7 @@ export interface TrafficAircraft {
   altitude_source: TrafficAltitudeSource
   velocity_mps: number
   heading_degrees: number
+  vertical_rate_mps: number | null
   on_ground: boolean
   observed_at: string
   position_observed_at: string
