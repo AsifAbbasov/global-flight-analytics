@@ -23,6 +23,9 @@ type PositionSource string
 const (
 	PositionSourceUnknown PositionSource = ""
 	PositionSourceADSB    PositionSource = "adsb"
+	PositionSourceADSR    PositionSource = "adsr"
+	PositionSourceTISB    PositionSource = "tisb"
+	PositionSourceADSC    PositionSource = "adsc"
 	PositionSourceASTERIX PositionSource = "asterix"
 	PositionSourceMLAT    PositionSource = "mlat"
 	PositionSourceFLARM   PositionSource = "flarm"
@@ -88,6 +91,9 @@ func NormalizePositionSource(
 	switch normalized {
 	case PositionSourceUnknown,
 		PositionSourceADSB,
+		PositionSourceADSR,
+		PositionSourceTISB,
+		PositionSourceADSC,
 		PositionSourceASTERIX,
 		PositionSourceMLAT,
 		PositionSourceFLARM:

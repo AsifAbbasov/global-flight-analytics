@@ -368,6 +368,8 @@ func createTrafficAltitudeSchema(
 				on_ground boolean,
 				observed_at timestamptz NOT NULL,
 				message_observed_at timestamptz,
+				position_source text NOT NULL DEFAULT '',
+				source_name text NOT NULL DEFAULT '',
 				origin_country text
 			)
 		`,

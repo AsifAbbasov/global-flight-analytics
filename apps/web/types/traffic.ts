@@ -11,6 +11,15 @@ export type TrafficAltitudeSource =
   | 'ground'
   | 'none'
 
+export type TrafficPositionSource =
+  | 'adsb'
+  | 'adsr'
+  | 'tisb'
+  | 'adsc'
+  | 'asterix'
+  | 'mlat'
+  | 'flarm'
+
 export interface TrafficAircraft {
   icao24: string
   callsign: string
@@ -25,6 +34,8 @@ export interface TrafficAircraft {
   observed_at: string
   position_observed_at: string
   message_observed_at: string | null
+  position_source?: TrafficPositionSource | null
+  source_name?: string
   aircraft_model: string
   airline: string
   origin_country: string
