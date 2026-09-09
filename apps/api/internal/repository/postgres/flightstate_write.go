@@ -65,6 +65,19 @@ const insertFlightStateQuery = `
 	DO NOTHING;
 `
 
+const refreshFlightStateMessageObservationQuery = `
+	UPDATE flight_states
+	SET message_observed_at = $4
+	WHERE source_name = $1
+		AND icao24 = $2
+		AND observed_at = $3
+		AND $4::timestamptz IS NOT NULL
+		AND (
+			message_observed_at IS NULL
+			OR message_observed_at < $4
+		);
+`
+
 func saveFlightStateBatch(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -95,7 +108,27 @@ func saveFlightStateBatch(
 			)
 		}
 
-		insertedCount += int(commandTag.RowsAffected())
+		inserted := int(commandTag.RowsAffected())
+		if inserted == 0 && item.MessageObservedAt != nil {
+			_, err = tx.Exec(
+				ctx,
+				refreshFlightStateMessageObservationQuery,
+				requiredSourceNameValue(item.SourceName),
+				item.ICAO24,
+				item.ObservedAt,
+				item.MessageObservedAt,
+			)
+			if err != nil {
+				return 0, fmt.Errorf(
+					"refresh flight state message observation at index %d for icao24 %s: %w",
+					index,
+					item.ICAO24,
+					err,
+				)
+			}
+		}
+
+		insertedCount += inserted
 	}
 
 	return insertedCount, nil

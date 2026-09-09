@@ -32,7 +32,7 @@ If a readsb-compatible response does not expose `seen_pos`, the existing `seen`-
 
 ## Persistence
 
-Migration `030_add_flight_state_message_observation_time.sql` adds nullable `flight_states.message_observed_at`. Existing `flight_states.observed_at` remains the position timestamp used by current traffic, trajectories, replay, projection inputs and position-based analytics.
+Migration `030_add_flight_state_message_observation_time.sql` adds nullable `flight_states.message_observed_at`. Existing `flight_states.observed_at` remains the position timestamp used by current traffic, trajectories, replay, projection inputs and position-based analytics. Duplicate replay identities remain a single position state: if the same `(source_name, icao24, observed_at)` is observed again with a newer non-null message timestamp, persistence monotonically refreshes only `message_observed_at`; the duplicate is not counted as a newly inserted flight state, and older or missing message evidence cannot move the timestamp backward or erase it.
 
 ## Public traffic contract
 
@@ -72,7 +72,7 @@ Additional cost         = 0 RUB
 
 ## Regression protection
 
-Permanent tests cover readsb `seen_pos`/`seen` separation, compatibility fallback, missing-message null semantics, OpenSky `time_position`/`last_contact` separation, migration non-backfill policy, cross-provider canonical compatibility, frontend freshness classification and shared project freshness thresholds.
+Permanent tests cover readsb `seen_pos`/`seen` separation, compatibility fallback, missing-message null semantics, OpenSky `time_position`/`last_contact` separation, migration non-backfill policy, cross-provider canonical compatibility, frontend freshness classification, shared project freshness thresholds, and monotonic replay refresh of newer message evidence without duplicating a position state.
 
 ## Merge boundary
 
