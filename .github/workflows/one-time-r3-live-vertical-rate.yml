@@ -1,0 +1,110 @@
+name: One-time R3 Live Vertical Rate
+
+on:
+  push:
+    branches:
+      - feat/r3-live-vertical-rate
+    paths:
+      - '.github/workflows/one-time-r3-live-vertical-rate.yml'
+      - 'scripts/apply-r3-live-vertical-rate.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-r3:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8080
+
+    steps:
+      - name: Checkout R3 branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: feat/r3-live-vertical-rate
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+        with:
+          version: 11.8.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.9.0'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Apply R3 source changes
+        run: node scripts/apply-r3-live-vertical-rate.mjs
+
+      - name: Format and validate backend
+        working-directory: apps/api
+        run: |
+          gofmt -w \
+            internal/domain/traffic/model.go \
+            internal/http/dto/traffic.go \
+            internal/http/handlers/traffic.go \
+            internal/http/handlers/traffic_vertical_rate_test.go \
+            internal/repository/postgres/traffic_altitude_semantics_integration_test.go \
+            internal/repository/postgres/traffic_repository.go
+          go test -count=1 ./...
+          go vet ./...
+          go run ./tools/stage14finalaudit --strict
+
+      - name: Validate OpenAPI source contract
+        run: |
+          node --test scripts/verify-openapi-route-inventory.test.mjs
+          node scripts/verify-openapi-route-inventory.mjs
+          node --test scripts/verify-openapi-contract.test.mjs
+          node scripts/verify-openapi-contract.mjs
+          node --test scripts/verify-openapi-developer-experience.test.mjs
+          node scripts/verify-openapi-developer-experience.mjs
+          node scripts/generate-openapi-client.mjs --check
+
+      - name: Enable one-time engineering dependency validation
+        run: |
+          pnpm config set minimumReleaseAge 0 --location=user
+          pnpm install --frozen-lockfile
+
+      - name: Validate dependency contracts
+        run: |
+          pnpm run test:dependency-maintenance
+          pnpm run verify:dependency-maintenance
+          pnpm run test:web-dependency-policy
+          pnpm run verify:web-dependencies
+          pnpm audit --prod --audit-level moderate
+
+      - name: Validate generated client and frontend
+        run: |
+          pnpm --dir packages/api-client typecheck
+          pnpm --dir packages/api-client test
+          pnpm --dir apps/web lint
+          pnpm --dir apps/web typecheck
+          pnpm --dir apps/web test
+          pnpm --dir apps/web build
+
+      - name: Remove one-time implementation files
+        run: |
+          rm .github/workflows/one-time-r3-live-vertical-rate.yml
+          rm scripts/apply-r3-live-vertical-rate.mjs
+
+      - name: Commit validated R3 product slice
+        run: |
+          git config user.name "AsifAbbasov"
+          git config user.email "aassifabbasov@gmail.com"
+          git add -A
+          git diff --cached --check
+          git status --short
+          git commit -m "feat: add live vertical rate intelligence"
+          git push origin HEAD:feat/r3-live-vertical-rate
