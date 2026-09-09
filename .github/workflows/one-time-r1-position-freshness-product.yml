@@ -1,0 +1,606 @@
+name: One-time R1 Position Freshness Product Surface
+
+on:
+  push:
+    branches:
+      - feat/r1-position-freshness
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    env:
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8080
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/r1-position-freshness
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+        with:
+          version: 11.8.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24.9.0'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Extend OpenAPI freshness contract
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          function updateSpec(path) {
+            const spec = JSON.parse(fs.readFileSync(path, 'utf8'))
+            const schema = spec?.components?.schemas?.CurrentTrafficItem
+            if (!schema || !schema.properties || !Array.isArray(schema.required)) {
+              throw new Error(`${path}: CurrentTrafficItem schema is missing`)
+            }
+            if (!schema.properties.observed_at) {
+              throw new Error(`${path}: observed_at compatibility field is missing`)
+            }
+            schema.properties.observed_at.description =
+              'Compatibility alias for the canonical position observation timestamp. New consumers should prefer position_observed_at.'
+            schema.properties.position_observed_at = {
+              type: 'string',
+              format: 'date-time',
+              description:
+                'Timestamp of the position observation represented by latitude and longitude. This is the canonical freshness timestamp for map, trajectory, and analytical position semantics.',
+            }
+            schema.properties.message_observed_at = {
+              type: ['string', 'null'],
+              format: 'date-time',
+              description:
+                'Optional timestamp of the latest provider message or contact. It may be newer than position_observed_at and must not be used as a substitute for position freshness.',
+            }
+            for (const field of ['position_observed_at', 'message_observed_at']) {
+              if (!schema.required.includes(field)) schema.required.push(field)
+            }
+            fs.writeFileSync(path, `${JSON.stringify(spec, null, 2)}\n`)
+          }
+
+          updateSpec('openapi/openapi.json')
+          updateSpec('apps/api/internal/http/apidocs/openapi.json')
+          NODE
+
+          node scripts/generate-openapi-client.mjs --write
+
+      - name: Add frontend freshness model and contracts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          function replaceExact(path, before, after, expected = 1) {
+            const input = fs.readFileSync(path, 'utf8')
+            const count = input.split(before).length - 1
+            if (count !== expected) {
+              throw new Error(`${path}: expected ${expected} occurrence(s), found ${count}`)
+            }
+            fs.writeFileSync(path, input.split(before).join(after))
+          }
+
+          replaceExact(
+            'scripts/verify-openapi-contract.mjs',
+            `['json:"icao24"','json:"altitude_m"','json:"altitude_status"','json:"altitude_source"','json:"observed_at"']`,
+            `['json:"icao24"','json:"altitude_m"','json:"altitude_status"','json:"altitude_source"','json:"observed_at"','json:"position_observed_at"','json:"message_observed_at"']`
+          )
+
+          replaceExact(
+            'apps/web/types/traffic.ts',
+            `  observed_at: string\n  aircraft_model: string`,
+            `  observed_at: string\n  position_observed_at: string\n  message_observed_at: string | null\n  aircraft_model: string`
+          )
+
+          replaceExact(
+            'apps/web/tsconfig.test.json',
+            `    "lib/traffic/traffic-data-quality-model.ts",`,
+            `    "lib/traffic/traffic-data-quality-model.ts",\n    "lib/traffic/traffic-freshness.ts",`
+          )
+
+          replaceExact(
+            'apps/web/lib/traffic/traffic-data-quality-model.ts',
+            `import type { TrafficAircraft } from '../../types/traffic'\n`,
+            `import type { TrafficAircraft } from '../../types/traffic'\nimport {\n  defaultFutureClockSkewToleranceMilliseconds,\n  defaultRecentObservationWindowMilliseconds,\n  resolvePositionObservationTimestamp,\n} from './traffic-freshness'\n`
+          )
+          replaceExact(
+            'apps/web/lib/traffic/traffic-data-quality-model.ts',
+            `const defaultRecentObservationWindowMilliseconds = 5 * 60 * 1000\nconst defaultFutureClockSkewToleranceMilliseconds = 60 * 1000\n`,
+            ``
+          )
+          replaceExact(
+            'apps/web/lib/traffic/traffic-data-quality-model.ts',
+            `    const observationTime = parseTimestamp(item.observed_at)`,
+            `    const observationTime = parseTimestamp(resolvePositionObservationTimestamp(item))`
+          )
+
+          replaceExact(
+            'apps/web/components/aircraft/aircraft-detail-panel.tsx',
+            `import { useAircraftProfile } from '@/lib/queries/aircraft'\n`,
+            `import { useAircraftProfile } from '@/lib/queries/aircraft'\nimport {\n  buildTrafficFreshnessEvidence,\n  formatTrafficEvidenceAge,\n  type TrafficFreshnessEvidence,\n  type TrafficPositionFreshnessStatus,\n} from '@/lib/traffic/traffic-freshness'\n`
+          )
+          replaceExact(
+            'apps/web/components/aircraft/aircraft-detail-panel.tsx',
+            `  aircraft: TrafficAircraft | undefined\n  routeContext:`,
+            `  aircraft: TrafficAircraft | undefined\n  trafficSnapshotUpdatedAt: number\n  routeContext:`
+          )
+          replaceExact(
+            'apps/web/components/aircraft/aircraft-detail-panel.tsx',
+            `  aircraft,\n  routeContext,`,
+            `  aircraft,\n  trafficSnapshotUpdatedAt,\n  routeContext,`
+          )
+          replaceExact(
+            'apps/web/components/aircraft/aircraft-detail-panel.tsx',
+            `  const secondaryObservation = display.observedFields.filter(\n    field => !primaryTelemetryKeys.has(field.key)\n  )\n`,
+            `  const secondaryObservation = display.observedFields.filter(\n    field => !primaryTelemetryKeys.has(field.key)\n  )\n  const freshnessEvidence = aircraft\n    ? buildTrafficFreshnessEvidence(aircraft, trafficSnapshotUpdatedAt)\n    : null\n`
+          )
+          replaceExact(
+            'apps/web/components/aircraft/aircraft-detail-panel.tsx',
+            `        {primaryTelemetry.length > 0 ? (\n          <PrimaryTelemetry fields={primaryTelemetry} />\n        ) : null}\n\n        <RouteContextSection`,
+            `        {primaryTelemetry.length > 0 ? (\n          <PrimaryTelemetry fields={primaryTelemetry} />\n        ) : null}\n\n        {freshnessEvidence ? (\n          <ObservationFreshnessSection evidence={freshnessEvidence} />\n        ) : null}\n\n        <RouteContextSection`
+          )
+
+          replaceExact(
+            'apps/web/components/traffic-dashboard.tsx',
+            `                    aircraft={selectedAircraft}\n                    routeContext=`,
+            `                    aircraft={selectedAircraft}\n                    trafficSnapshotUpdatedAt={trafficQuery.dataUpdatedAt}\n                    routeContext=`
+          )
+
+          replaceExact(
+            'apps/web/e2e/mock-api.mjs',
+            `    observed_at: '2026-08-04T18:00:00Z',\n    aircraft_model: 'Airbus A320',`,
+            `    observed_at: '2026-08-04T18:00:00Z',\n    position_observed_at: '2026-08-04T18:00:00Z',\n    message_observed_at: '2026-08-04T18:00:03Z',\n    aircraft_model: 'Airbus A320',`
+          )
+          replaceExact(
+            'apps/web/e2e/mock-api.mjs',
+            `    observed_at: '2026-08-04T18:00:05Z',\n    aircraft_model: 'Boeing 737-800',`,
+            `    observed_at: '2026-08-04T18:00:05Z',\n    position_observed_at: '2026-08-04T18:00:05Z',\n    message_observed_at: '2026-08-04T18:00:05.500Z',\n    aircraft_model: 'Boeing 737-800',`
+          )
+
+          replaceExact(
+            'docs/DOCUMENT_INDEX.md',
+            `\n## Document 214 — Stage 23 ETA Reliability Intelligence\n\n\`214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md\` is the canonical pre-merge Stage 23 record for the zero-cost ETA Reliability vertical product slice. It defines historically recomputed persisted-observation semantics, the persisted endpoint-proxy boundary instead of official arrival truth, bounded on-demand computation, sample-size disclosure, the Aircraft Detail frontend consumer, real rejected CI/remediation history, and the exact review/merge/post-merge closure gates required before the feature can be called complete.`,
+            `\n## Document 214 — Stage 23 ETA Reliability Intelligence\n\n\`214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md\` is the canonical pre-merge Stage 23 record for the zero-cost ETA Reliability vertical product slice. It defines historically recomputed persisted-observation semantics, the persisted endpoint-proxy boundary instead of official arrival truth, bounded on-demand computation, sample-size disclosure, the Aircraft Detail frontend consumer, real rejected CI/remediation history, and the exact review/merge/post-merge closure gates required before the feature can be called complete.\n\n## Document 216 — readsb-Inspired Position Freshness\n\n\`216_READSB_POSITION_FRESHNESS.md\` records the zero-cost R1 separation of position observation time from latest message/contact time, readsb \`seen_pos\` semantics, OpenSky \`time_position\` versus \`last_contact\`, nullable persistence, public traffic contract evolution, frontend freshness evidence, and the rule that message freshness never upgrades stale position evidence.`
+          )
+          NODE
+
+          cat > apps/web/lib/traffic/traffic-freshness.ts <<'TS'
+          import type { TrafficAircraft } from '../../types/traffic'
+
+          export const defaultRecentObservationWindowMilliseconds = 5 * 60 * 1000
+          export const defaultFutureClockSkewToleranceMilliseconds = 60 * 1000
+
+          export type TrafficPositionFreshnessStatus =
+            | 'fresh'
+            | 'older'
+            | 'future'
+            | 'invalid'
+            | 'reference-unavailable'
+
+          export interface TrafficFreshnessOptions {
+            recentObservationWindowMilliseconds?: number
+            futureClockSkewToleranceMilliseconds?: number
+          }
+
+          export interface TrafficFreshnessEvidence {
+            positionObservedAt: string
+            messageObservedAt: string | null
+            positionStatus: TrafficPositionFreshnessStatus
+            positionAgeMilliseconds: number | null
+            messageAgeMilliseconds: number | null
+          }
+
+          export function resolvePositionObservationTimestamp(
+            aircraft: TrafficAircraft
+          ): string {
+            const explicit = aircraft.position_observed_at?.trim()
+            return explicit || aircraft.observed_at.trim()
+          }
+
+          export function buildTrafficFreshnessEvidence(
+            aircraft: TrafficAircraft,
+            referenceTimeMilliseconds: number,
+            options: TrafficFreshnessOptions = {}
+          ): TrafficFreshnessEvidence {
+            const positionObservedAt = resolvePositionObservationTimestamp(aircraft)
+            const messageObservedAt = cleanOptionalTimestamp(aircraft.message_observed_at)
+            const recentWindow = normalizePositiveDuration(
+              options.recentObservationWindowMilliseconds,
+              defaultRecentObservationWindowMilliseconds
+            )
+            const futureTolerance = normalizeNonNegativeDuration(
+              options.futureClockSkewToleranceMilliseconds,
+              defaultFutureClockSkewToleranceMilliseconds
+            )
+            const referenceTime = normalizeReferenceTime(referenceTimeMilliseconds)
+            const positionTime = parseTimestamp(positionObservedAt)
+            const messageTime = parseTimestamp(messageObservedAt)
+
+            let positionStatus: TrafficPositionFreshnessStatus = 'invalid'
+            let positionAgeMilliseconds: number | null = null
+
+            if (positionTime !== null) {
+              if (referenceTime === null) {
+                positionStatus = 'reference-unavailable'
+              } else {
+                positionAgeMilliseconds = referenceTime - positionTime
+                if (positionAgeMilliseconds < -futureTolerance) {
+                  positionStatus = 'future'
+                } else if (positionAgeMilliseconds <= recentWindow) {
+                  positionStatus = 'fresh'
+                } else {
+                  positionStatus = 'older'
+                }
+              }
+            }
+
+            const messageAgeMilliseconds =
+              referenceTime !== null && messageTime !== null
+                ? referenceTime - messageTime
+                : null
+
+            return {
+              positionObservedAt,
+              messageObservedAt,
+              positionStatus,
+              positionAgeMilliseconds,
+              messageAgeMilliseconds,
+            }
+          }
+
+          export function formatTrafficEvidenceAge(
+            ageMilliseconds: number | null
+          ): string | null {
+            if (ageMilliseconds === null || !Number.isFinite(ageMilliseconds)) {
+              return null
+            }
+            if (ageMilliseconds < 0) {
+              const aheadSeconds = Math.max(1, Math.round(Math.abs(ageMilliseconds) / 1000))
+              return `${aheadSeconds}s ahead of snapshot`
+            }
+            const seconds = Math.round(ageMilliseconds / 1000)
+            if (seconds < 1) return '<1s old'
+            if (seconds < 60) return `${seconds}s old`
+            const minutes = Math.round(seconds / 60)
+            if (minutes < 60) return `${minutes}m old`
+            const hours = Math.round(minutes / 60)
+            return `${hours}h old`
+          }
+
+          function cleanOptionalTimestamp(value: string | null | undefined): string | null {
+            const normalized = value?.trim() ?? ''
+            return normalized.length > 0 ? normalized : null
+          }
+
+          function parseTimestamp(value: string | null): number | null {
+            if (!value) return null
+            const parsed = Date.parse(value)
+            return Number.isFinite(parsed) ? parsed : null
+          }
+
+          function normalizeReferenceTime(value: number): number | null {
+            return Number.isFinite(value) && value > 0 ? value : null
+          }
+
+          function normalizePositiveDuration(value: number | undefined, fallback: number): number {
+            return value !== undefined && Number.isFinite(value) && value > 0 ? value : fallback
+          }
+
+          function normalizeNonNegativeDuration(value: number | undefined, fallback: number): number {
+            return value !== undefined && Number.isFinite(value) && value >= 0 ? value : fallback
+          }
+          TS
+
+          cat >> apps/web/components/aircraft/aircraft-detail-panel.tsx <<'TS'
+
+          function ObservationFreshnessSection({
+            evidence,
+          }: {
+            evidence: TrafficFreshnessEvidence
+          }) {
+            const positionAge = formatTrafficEvidenceAge(evidence.positionAgeMilliseconds)
+            const messageAge = formatTrafficEvidenceAge(evidence.messageAgeMilliseconds)
+
+            return (
+              <section
+                className='mt-4 border-t border-white/10 pt-4'
+                aria-labelledby='observation-freshness-title'
+              >
+                <div className='flex flex-wrap items-center justify-between gap-2'>
+                  <div>
+                    <h4 id='observation-freshness-title' className='text-xs font-semibold text-slate-100'>
+                      Observation freshness
+                    </h4>
+                    <p className='mt-0.5 text-[10px] leading-4 text-slate-500'>
+                      Position age is evaluated independently from the latest provider message.
+                    </p>
+                  </div>
+                  <FreshnessBadge status={evidence.positionStatus} />
+                </div>
+
+                <dl className='mt-2 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2'>
+                  <FreshnessField
+                    label='Position observed'
+                    value={formatEvidenceTimestamp(evidence.positionObservedAt)}
+                    detail={positionAge}
+                  />
+                  {evidence.messageObservedAt ? (
+                    <FreshnessField
+                      label='Last message'
+                      value={formatEvidenceTimestamp(evidence.messageObservedAt)}
+                      detail={messageAge}
+                    />
+                  ) : null}
+                </dl>
+              </section>
+            )
+          }
+
+          function FreshnessField({
+            label,
+            value,
+            detail,
+          }: {
+            label: string
+            value: string
+            detail: string | null
+          }) {
+            return (
+              <div className='min-w-0 bg-[#202328] p-2.5'>
+                <dt className='text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500'>
+                  {label}
+                </dt>
+                <dd className='mt-1 break-words text-xs font-semibold text-slate-100'>{value}</dd>
+                {detail ? <dd className='mt-0.5 text-[10px] text-slate-500'>{detail}</dd> : null}
+              </div>
+            )
+          }
+
+          function FreshnessBadge({ status }: { status: TrafficPositionFreshnessStatus }) {
+            const presentation: Record<
+              TrafficPositionFreshnessStatus,
+              { label: string; className: string }
+            > = {
+              fresh: {
+                label: 'Fresh position',
+                className: 'border-emerald-300/30 bg-emerald-300/10 text-emerald-200',
+              },
+              older: {
+                label: 'Older position',
+                className: 'border-amber-300/30 bg-amber-300/10 text-amber-100',
+              },
+              future: {
+                label: 'Clock-skew warning',
+                className: 'border-rose-300/30 bg-rose-300/10 text-rose-100',
+              },
+              invalid: {
+                label: 'Invalid position time',
+                className: 'border-rose-300/30 bg-rose-300/10 text-rose-100',
+              },
+              'reference-unavailable': {
+                label: 'Freshness unavailable',
+                className: 'border-slate-600 bg-slate-900 text-slate-300',
+              },
+            }
+            const item = presentation[status]
+            return (
+              <span className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] ${item.className}`}>
+                {item.label}
+              </span>
+            )
+          }
+
+          function formatEvidenceTimestamp(value: string): string {
+            const timestamp = new Date(value)
+            if (Number.isNaN(timestamp.getTime())) return value
+            return timestamp.toISOString()
+          }
+          TS
+
+          cat > apps/web/tests/traffic-freshness.test.mjs <<'JS'
+          import assert from 'node:assert/strict'
+          import test from 'node:test'
+
+          const moduleURL = new URL('../.test-dist/lib/traffic/traffic-freshness.js', import.meta.url)
+          const {
+            buildTrafficFreshnessEvidence,
+            defaultFutureClockSkewToleranceMilliseconds,
+            defaultRecentObservationWindowMilliseconds,
+            formatTrafficEvidenceAge,
+          } = await import(moduleURL.href)
+
+          function aircraft(overrides = {}) {
+            return {
+              icao24: '4b1801',
+              callsign: 'AZAL101',
+              latitude: 40.4093,
+              longitude: 49.8671,
+              altitude_m: 10668,
+              altitude_status: 'observed',
+              altitude_source: 'barometric',
+              velocity_mps: 230,
+              heading_degrees: 285,
+              on_ground: false,
+              observed_at: '2026-09-09T12:00:00Z',
+              position_observed_at: '2026-09-09T12:00:00Z',
+              message_observed_at: '2026-09-09T12:00:08Z',
+              aircraft_model: 'Airbus A320',
+              airline: 'Azerbaijan Airlines',
+              origin_country: 'Azerbaijan',
+              ...overrides,
+            }
+          }
+
+          test('separates fresh position age from newer message age', () => {
+            const reference = Date.parse('2026-09-09T12:00:10Z')
+            const evidence = buildTrafficFreshnessEvidence(aircraft(), reference)
+            assert.equal(evidence.positionStatus, 'fresh')
+            assert.equal(evidence.positionAgeMilliseconds, 10_000)
+            assert.equal(evidence.messageAgeMilliseconds, 2_000)
+            assert.equal(formatTrafficEvidenceAge(evidence.positionAgeMilliseconds), '10s old')
+          })
+
+          test('marks an old position older even when the latest message is fresh', () => {
+            const reference = Date.parse('2026-09-09T12:10:00Z')
+            const evidence = buildTrafficFreshnessEvidence(
+              aircraft({
+                position_observed_at: '2026-09-09T12:00:00Z',
+                observed_at: '2026-09-09T12:00:00Z',
+                message_observed_at: '2026-09-09T12:09:58Z',
+              }),
+              reference
+            )
+            assert.equal(evidence.positionStatus, 'older')
+            assert.equal(evidence.messageAgeMilliseconds, 2_000)
+          })
+
+          test('preserves the existing five-minute and one-minute project thresholds', () => {
+            assert.equal(defaultRecentObservationWindowMilliseconds, 5 * 60 * 1000)
+            assert.equal(defaultFutureClockSkewToleranceMilliseconds, 60 * 1000)
+          })
+
+          test('flags position timestamps beyond the accepted future clock skew', () => {
+            const reference = Date.parse('2026-09-09T12:00:00Z')
+            const evidence = buildTrafficFreshnessEvidence(
+              aircraft({ position_observed_at: '2026-09-09T12:01:01Z' }),
+              reference
+            )
+            assert.equal(evidence.positionStatus, 'future')
+          })
+
+          test('uses observed_at as a rolling-deployment compatibility fallback', () => {
+            const reference = Date.parse('2026-09-09T12:00:10Z')
+            const legacy = aircraft({ position_observed_at: '' })
+            const evidence = buildTrafficFreshnessEvidence(legacy, reference)
+            assert.equal(evidence.positionObservedAt, legacy.observed_at)
+            assert.equal(evidence.positionStatus, 'fresh')
+          })
+
+          test('does not fabricate a last-message timestamp when provider evidence is absent', () => {
+            const reference = Date.parse('2026-09-09T12:00:10Z')
+            const evidence = buildTrafficFreshnessEvidence(
+              aircraft({ message_observed_at: null }),
+              reference
+            )
+            assert.equal(evidence.messageObservedAt, null)
+            assert.equal(evidence.messageAgeMilliseconds, null)
+          })
+          JS
+
+          cat > docs/216_READSB_POSITION_FRESHNESS.md <<'MD'
+          # Document 216 — readsb-Inspired Position Freshness
+
+          Status: implementation candidate pending exact-head repository CI and stacked-base reconciliation
+          Date: 2026-09-09
+          Scope: `R1_POSITION_FRESHNESS`
+
+          ## Purpose
+
+          This increment adopts the useful `seen` versus `seen_pos` distinction from readsb as an independently implemented GFA evidence contract. It does not embed readsb, copy readsb C code, require SDR hardware, or add any paid provider or infrastructure.
+
+          ## Evidence semantics
+
+          GFA now separates two timestamps:
+
+          ```text
+          position_observed_at  = time represented by latitude/longitude
+          message_observed_at   = optional latest provider message/contact time
+          ```
+
+          `observed_at` remains a compatibility alias for the canonical position observation time. Message freshness must never make an older position appear fresh.
+
+          Provider mappings:
+
+          ```text
+          readsb-compatible seen_pos -> position_observed_at
+          readsb-compatible seen     -> message_observed_at
+          OpenSky time_position      -> position_observed_at
+          OpenSky last_contact       -> message_observed_at
+          ```
+
+          If a readsb-compatible response does not expose `seen_pos`, the existing `seen`-based position timestamp remains as a compatibility fallback. Missing message time remains null. Historical rows are not backfilled because no evidence exists from which to reconstruct a historical latest-message timestamp safely.
+
+          ## Persistence
+
+          Migration `030_add_flight_state_message_observation_time.sql` adds nullable `flight_states.message_observed_at`. Existing `flight_states.observed_at` remains the position timestamp used by current traffic, trajectories, replay, projection inputs and position-based analytics.
+
+          ## Public traffic contract
+
+          `GET /api/v1/traffic/current` retains `observed_at` and adds:
+
+          ```text
+          position_observed_at: RFC3339 timestamp
+          message_observed_at:  RFC3339 timestamp or null
+          ```
+
+          The OpenAPI contract documents that `message_observed_at` cannot substitute for position freshness.
+
+          ## Frontend
+
+          The selected-aircraft intelligence surface shows position observation time independently from optional latest-message time. Freshness is evaluated relative to the successful traffic-query response timestamp using the same existing project policy as the Traffic Data Quality Lens:
+
+          ```text
+          recent position window     = 5 minutes
+          accepted future clock skew = 1 minute
+          browser Date.now evidence  = not used
+          ```
+
+          User-visible states are `Fresh position`, `Older position`, `Clock-skew warning`, `Invalid position time`, and `Freshness unavailable`.
+
+          ## Zero-budget boundary
+
+          ```text
+          New paid provider       = NO
+          New server              = NO
+          New cache               = NO
+          Redis / Valkey          = NO
+          New runtime service     = NO
+          SDR hardware required   = NO
+          readsb runtime required = NO
+          Additional cost         = 0 RUB
+          ```
+
+          ## Regression protection
+
+          Permanent tests cover readsb `seen_pos`/`seen` separation, compatibility fallback, missing-message null semantics, OpenSky `time_position`/`last_contact` separation, migration non-backfill policy, cross-provider canonical compatibility, frontend freshness classification and shared project freshness thresholds.
+
+          ## Merge boundary
+
+          This branch is stacked on the dependency-security hotfix branch while PR #174 remains open. Validation on the stacked head does not authorize a later rebased head. After #174 enters canonical `main`, this branch must be reconciled to that exact main revision and the full required CI/Vercel matrix must pass again before merge authorization can be requested.
+          MD
+
+      - name: Install dependencies for generation validation
+        run: pnpm install --frozen-lockfile --config.minimumReleaseAge=0
+
+      - name: Validate OpenAPI and frontend product slice
+        shell: bash
+        run: |
+          pnpm run test:openapi-contract
+          pnpm run verify:openapi-contract
+          pnpm run generate:openapi-client
+          git diff --exit-code -- packages/api-client/src/generated.ts
+          pnpm run typecheck:api-client
+          pnpm run test:api-client
+          pnpm --filter web lint
+          pnpm --filter web typecheck
+          pnpm --filter web test
+          pnpm --filter web build
+
+      - name: Commit product slice and self-remove workflow
+        shell: bash
+        run: |
+          rm .github/workflows/one-time-r1-position-freshness-product.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: expose position freshness evidence"
+          git push origin HEAD:feat/r1-position-freshness
