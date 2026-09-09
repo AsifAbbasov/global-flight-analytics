@@ -32,19 +32,26 @@ jobs:
           from pathlib import Path
 
           path = Path('apps/api/tools/analyticalcorefinalaudit/main.go')
-          text = path.read_text()
-          replacements = {
-              '"next": "16.2.12"': '"next": "16.3.4"',
-              '"eslint-config-next": "16.2.12"': '"eslint-config-next": "16.3.4"',
-              'MINIMUM_SAFE_NEXT_VERSION = "16.2.12"': 'MINIMUM_SAFE_NEXT_VERSION = "16.3.3"',
-              'PINNED_NEXT_VERSION = "16.2.12"': 'PINNED_NEXT_VERSION = "16.3.4"',
-          }
-          for old, new in replacements.items():
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'expected exactly one occurrence of {old!r}, found {count}')
-              text = text.replace(old, new)
-          path.write_text(text)
+          lines = path.read_text().splitlines(keepends=True)
+          rules = [
+              ('next', '16.2.12', '16.3.4'),
+              ('eslint-config-next', '16.2.12', '16.3.4'),
+              ('MINIMUM_SAFE_NEXT_VERSION', '16.2.12', '16.3.3'),
+              ('PINNED_NEXT_VERSION', '16.2.12', '16.3.4'),
+          ]
+          counts = {key: 0 for key, _, _ in rules}
+          output = []
+          for line in lines:
+              updated = line
+              for key, old, new in rules:
+                  if key in updated and old in updated:
+                      updated = updated.replace(old, new)
+                      counts[key] += 1
+              output.append(updated)
+          bad = {key: count for key, count in counts.items() if count != 1}
+          if bad:
+              raise SystemExit(f'unexpected replacement counts: {bad}; all={counts}')
+          path.write_text(''.join(output))
           PY
           gofmt -w apps/api/tools/analyticalcorefinalaudit/main.go
 
