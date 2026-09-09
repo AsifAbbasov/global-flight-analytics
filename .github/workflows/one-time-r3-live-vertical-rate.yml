@@ -45,6 +45,40 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Repair one-time generator quoting
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+
+          const path = 'scripts/apply-r3-live-vertical-rate.mjs'
+          let source = fs.readFileSync(path, 'utf8')
+          const replacements = [
+            [
+              "    `Observed vertical rate is within the ±${validDeadband.toFixed(1)} m/s presentation deadband.`\\n",
+              "    'Observed vertical rate is within the ±' +\\n      validDeadband.toFixed(1) +\\n      ' m/s presentation deadband.'\\n",
+            ],
+            [
+              "  return `${mpsPrefix}${verticalRateMPS.toFixed(1)} m/s (${fpmPrefix}${fpmRounded.toLocaleString('en-US')} ft/min)`\\n",
+              "  return [mpsPrefix, verticalRateMPS.toFixed(1), ' m/s (', fpmPrefix, fpmRounded.toLocaleString('en-US'), ' ft/min)'].join('')\\n",
+            ],
+            [
+              "      className={\\`rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] ${className[status]}\\`}\\n",
+              "      className={'rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] ' + className[status]}\\n",
+            ],
+          ]
+
+          for (const [from, to] of replacements) {
+            const count = source.split(from).length - 1
+            if (count !== 1) {
+              throw new Error(`generator quoting replacement expected 1 match, found ${count}`)
+            }
+            source = source.replace(from, to)
+          }
+
+          fs.writeFileSync(path, source)
+          NODE
+          node --check scripts/apply-r3-live-vertical-rate.mjs
+
       - name: Apply R3 source changes
         run: node scripts/apply-r3-live-vertical-rate.mjs
 
