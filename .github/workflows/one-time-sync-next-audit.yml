@@ -1,0 +1,65 @@
+name: One-time Sync Next Security Audit
+
+on:
+  push:
+    branches:
+      - security/frontend-dependency-hotfix
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: security/frontend-dependency-hotfix
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Synchronize analytical-core dependency audit expectations
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/api/tools/analyticalcorefinalaudit/main.go')
+          text = path.read_text()
+          replacements = {
+              '`"next": "16.2.12"`': '`"next": "16.3.4"`',
+              '`"eslint-config-next": "16.2.12"`': '`"eslint-config-next": "16.3.4"`',
+              '`MINIMUM_SAFE_NEXT_VERSION = "16.2.12"`': '`MINIMUM_SAFE_NEXT_VERSION = "16.3.3"`',
+              '`PINNED_NEXT_VERSION = "16.2.12"`': '`PINNED_NEXT_VERSION = "16.3.4"`',
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one occurrence of {old!r}, found {count}')
+              text = text.replace(old, new)
+          path.write_text(text)
+          PY
+          gofmt -w apps/api/tools/analyticalcorefinalaudit/main.go
+
+      - name: Verify analytical-core audit
+        shell: bash
+        run: |
+          cd apps/api
+          go test -count=1 ./tools/analyticalcorefinalaudit
+
+      - name: Commit audit synchronization and remove one-time workflow
+        shell: bash
+        run: |
+          rm .github/workflows/one-time-sync-next-audit.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/api/tools/analyticalcorefinalaudit/main.go .github/workflows/one-time-sync-next-audit.yml
+          git commit -m "test: sync Next security audit expectations"
+          git push origin HEAD:security/frontend-dependency-hotfix
