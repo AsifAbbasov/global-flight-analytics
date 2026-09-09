@@ -25,16 +25,16 @@ const secureWorkspace = `packages:
 overrides:
   'nanoid@<3.3.18': 3.3.18
   'postcss@<8.5.23': 8.5.23
-  'sharp@<0.35.0': 0.35.3
+  'sharp@<0.35.4': 0.35.4
 `;
 
 const secureWebPackage = JSON.stringify({
   dependencies: {
-    next: "16.2.12",
-    sharp: "0.35.3",
+    next: "16.3.4",
+    sharp: "0.35.4",
   },
   devDependencies: {
-    "eslint-config-next": "16.2.12",
+    "eslint-config-next": "16.3.4",
   },
 });
 
@@ -59,15 +59,15 @@ importers:
   apps/web:
     dependencies:
       next:
-        specifier: 16.2.12
-        version: 16.2.12(react@19.2.4)
+        specifier: 16.3.4
+        version: 16.3.4(react@19.2.4)
       sharp:
-        specifier: 0.35.3
-        version: 0.35.3
+        specifier: 0.35.4
+        version: 0.35.4
     devDependencies:
       eslint-config-next:
-        specifier: 16.2.12
-        version: 16.2.12
+        specifier: 16.3.4
+        version: 16.3.4
 
 packages:
   nanoid@3.3.18:
@@ -76,11 +76,11 @@ packages:
   postcss@8.5.23:
     resolution: {integrity: sha512-postcss}
 
-  sharp@0.35.3:
+  sharp@0.35.4:
     resolution: {integrity: sha512-sharp}
 
 snapshots:
-  next@16.2.12(react@19.2.4):
+  next@16.3.4(react@19.2.4):
     dependencies:
       postcss: 8.5.23
   nanoid@3.3.18: {}
@@ -89,7 +89,7 @@ snapshots:
     dependencies:
       nanoid: 3.3.18
 
-  sharp@0.35.3: {}
+  sharp@0.35.4: {}
 `;
 
 function verify({
@@ -111,7 +111,7 @@ function verify({
 test("semantic versions are compared numerically", () => {
   assert.equal(compareVersions("0.34.9", "0.35.0"), -1);
   assert.equal(compareVersions("0.35.0", "0.35.0"), 0);
-  assert.equal(compareVersions("0.35.3", "0.35.0"), 1);
+  assert.equal(compareVersions("0.35.4", "0.35.0"), 1);
 });
 
 test("nanoid resolutions are collected deterministically", () => {
@@ -137,7 +137,7 @@ test("sharp resolutions are collected deterministically", () => {
     collectSharpVersions(
       `${secureLockfile}\n  sharp@0.35.1:\n    resolution: {integrity: sha512-second}\n`,
     ),
-    ["0.35.1", "0.35.3"],
+    ["0.35.1", "0.35.4"],
   );
 });
 
@@ -162,13 +162,13 @@ test("web application pins the patched Next.js toolchain", () => {
 
 test("vulnerable Next.js release fails", () => {
   const vulnerablePackage = secureWebPackage.replaceAll(
-    "16.2.12",
+    "16.3.4",
     "16.2.9",
   );
 
   assert.throws(
     () => verify({ webPackageText: vulnerablePackage }),
-    /must pin next and eslint-config-next 16\.2\.12/,
+    /must pin next and eslint-config-next 16\.3\.4/,
   );
 });
 
@@ -182,7 +182,7 @@ test("secure dependency graph passes", () => {
   const result = verify();
   assert.deepEqual(result.nanoidVersions, ["3.3.18"]);
   assert.deepEqual(result.postcssVersions, ["8.5.23"]);
-  assert.deepEqual(result.sharpVersions, ["0.35.3"]);
+  assert.deepEqual(result.sharpVersions, ["0.35.4"]);
 });
 
 test("vulnerable nanoid resolution fails", () => {
@@ -211,7 +211,7 @@ test("vulnerable PostCSS resolution fails", () => {
 
 test("vulnerable sharp resolution fails", () => {
   const vulnerableLockfile = secureLockfile.replaceAll(
-    "0.35.3",
+    "0.35.4",
     "0.34.5",
   );
 
@@ -235,7 +235,7 @@ test("missing nanoid override fails", () => {
 
 test("missing sharp override fails", () => {
   const workspaceText = secureWorkspace.replace(
-    "  'sharp@<0.35.0': 0.35.3\n",
+    "  'sharp@<0.35.4': 0.35.4\n",
     "",
   );
 
@@ -250,22 +250,22 @@ test("missing direct sharp pin fails", () => {
     () =>
       verify({
         webPackageText: JSON.stringify({
-          dependencies: { next: "16.2.12" },
+          dependencies: { next: "16.3.4" },
         }),
       }),
-    /must pin sharp 0\.35\.3/,
+    /must pin sharp 0\.35\.4/,
   );
 });
 
 test("missing web importer sharp resolution fails", () => {
   const lockfileText = secureLockfile.replace(
-    "      sharp:\n        specifier: 0.35.3\n        version: 0.35.3\n",
+    "      sharp:\n        specifier: 0.35.4\n        version: 0.35.4\n",
     "",
   );
 
   assert.throws(
     () => verify({ lockfileText }),
-    /apps\/web importer does not resolve sharp 0\.35\.3/,
+    /apps\/web importer does not resolve sharp 0\.35\.4/,
   );
 });
 

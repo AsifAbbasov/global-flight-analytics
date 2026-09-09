@@ -38,14 +38,14 @@ const expected = new Map([
 for (const [name, actual] of expected) {
   const targets = {
     '@tanstack/react-query': '^5.101.4',
-    next: '16.2.12',
+    next: '16.3.4',
     react: '19.2.8',
     'react-dom': '19.2.8',
     three: '^0.185.1',
     '@types/react': '^19.2.18',
     '@types/react-dom': '^19.2.4',
     '@types/three': '^0.185.1',
-    'eslint-config-next': '16.2.12',
+    'eslint-config-next': '16.3.4',
     '@tailwindcss/postcss': '^4.3.3',
     tailwindcss: '^4.3.3',
     typescript: '^5',
