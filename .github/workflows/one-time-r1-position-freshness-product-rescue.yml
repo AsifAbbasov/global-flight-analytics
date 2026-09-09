@@ -33,6 +33,25 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: apps/api/go.mod
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Merge exact dependency hotfix baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=f4b2f2555ba4d6ca021acf1f6b36fbf91aa21c1b
+          git fetch origin security/frontend-dependency-hotfix
+          actual="$(git rev-parse origin/security/frontend-dependency-hotfix)"
+          test "$actual" = "$expected"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git merge --no-ff --no-edit "$expected"
+
       - name: Reuse reviewed product generator steps
         shell: bash
         run: |
@@ -55,14 +74,25 @@ jobs:
           test -s /tmp/r1-frontend.sh
           bash /tmp/r1-openapi.sh
           bash /tmp/r1-frontend.sh
+          git diff --check
 
-      - name: Validate R1 product slice
+      - name: Validate R1 backend and product slice
         shell: bash
         run: |
           set -euo pipefail
+          (
+            cd apps/api
+            go test ./...
+            go run ./tools/stage14finalaudit -strict
+          )
           pnpm config set minimumReleaseAge 0 --location=user
           test "$(pnpm config get minimumReleaseAge)" = "0"
           pnpm install --frozen-lockfile
+          pnpm run test:dependency-maintenance
+          pnpm run verify:dependency-maintenance
+          pnpm run test:web-dependency-policy
+          pnpm run verify:web-dependencies
+          pnpm audit --prod --audit-level moderate
           pnpm run test:openapi-contract
           pnpm run verify:openapi-contract
           cp packages/api-client/src/generated.ts /tmp/generated-before.ts
@@ -81,8 +111,6 @@ jobs:
           set -euo pipefail
           rm .github/workflows/one-time-r1-position-freshness-product.yml
           rm .github/workflows/one-time-r1-position-freshness-product-rescue.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --check
           git commit -m "feat: expose position freshness evidence"
