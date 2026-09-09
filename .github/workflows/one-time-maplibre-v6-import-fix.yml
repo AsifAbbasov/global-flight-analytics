@@ -33,20 +33,32 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Apply MapLibre v6 namespace import
+      - name: Apply MapLibre v6 and dependency-target compatibility fixes
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('apps/web/components/map/traffic-map.tsx')
-          text = path.read_text()
-          before = "import maplibregl from 'maplibre-gl'"
-          after = "import * as maplibregl from 'maplibre-gl'"
-          count = text.count(before)
-          if count != 1:
-              raise SystemExit(f'expected exactly one MapLibre default import, found {count}')
-          path.write_text(text.replace(before, after))
+
+          map_path = Path('apps/web/components/map/traffic-map.tsx')
+          map_text = map_path.read_text()
+          before_import = "import maplibregl from 'maplibre-gl'"
+          after_import = "import * as maplibregl from 'maplibre-gl'"
+          if map_text.count(before_import) != 1:
+              raise SystemExit('expected exactly one MapLibre default import')
+          map_path.write_text(map_text.replace(before_import, after_import))
+
+          test_path = Path('scripts/verify-dependency-maintenance.test.mjs')
+          test_text = test_path.read_text()
+          replacements = {
+              "assert.equal(web.dependencies.next, '16.2.12');": "assert.equal(web.dependencies.next, '16.3.4');",
+              "assert.equal(web.devDependencies['eslint-config-next'], '16.2.12');": "assert.equal(web.devDependencies['eslint-config-next'], '16.3.4');",
+          }
+          for before, after in replacements.items():
+              if test_text.count(before) != 1:
+                  raise SystemExit(f'expected exactly one dependency target: {before}')
+              test_text = test_text.replace(before, after)
+          test_path.write_text(test_text)
           PY
           git diff --check
 
@@ -67,7 +79,7 @@ jobs:
           pnpm --filter web test
           pnpm --filter web build
 
-      - name: Commit validated compatibility fix
+      - name: Commit validated compatibility fixes
         shell: bash
         run: |
           set -euo pipefail
@@ -76,5 +88,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --check
-          git commit -m "fix: support MapLibre v6 module exports"
+          git commit -m "fix: complete frontend dependency hotfix compatibility"
           git push origin HEAD:security/frontend-dependency-hotfix
