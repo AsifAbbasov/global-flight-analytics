@@ -38,7 +38,7 @@ jobs:
             if (count !== expected) {
               throw new Error(`${path}: expected ${expected} occurrence(s), found ${count}`)
             }
-            fs.writeFileSync(path, input.replace(before, after))
+            fs.writeFileSync(path, input.split(before).join(after))
           }
 
           replaceExact(
@@ -76,7 +76,6 @@ jobs:
             '\tmapped := flightstate.FlightState{',
             '\tmessageObservedAt := state.LastContact.UTC()\n\n\tmapped := flightstate.FlightState{'
           )
-
           replaceExact(
             'apps/api/internal/integrations/opensky/provider.go',
             '\t\tObservedAt:                 state.TimePosition.UTC(),\n\t\tSourceName:',
@@ -88,13 +87,11 @@ jobs:
             '\t\tobserved_at,\n\t\tsource_name,',
             '\t\tobserved_at,\n\t\tmessage_observed_at,\n\t\tsource_name,'
           )
-
           replaceExact(
             'apps/api/internal/repository/postgres/flightstate_write.go',
             '\t\t$21,\n\t\t$22,\n\t\t$23\n',
             '\t\t$21,\n\t\t$22,\n\t\t$23,\n\t\t$24\n'
           )
-
           replaceExact(
             'apps/api/internal/repository/postgres/flightstate_write.go',
             '\t\titem.ObservedAt,\n\t\trequiredSourceNameValue(item.SourceName),',
@@ -102,34 +99,59 @@ jobs:
           )
 
           replaceExact(
-            'apps/api/internal/domain/traffic/model.go',
-            '\tObservedAt     time.Time\n\tAircraftModel',
-            '\tObservedAt     time.Time\n\tMessageObservedAt *time.Time\n\tAircraftModel'
+            'apps/api/internal/repository/postgres/flightstate_repository.go',
+            '\t\t\tobserved_at,\n\t\t\tsource_name',
+            '\t\t\tobserved_at,\n\t\t\tmessage_observed_at,\n\t\t\tsource_name',
+            2
+          )
+          replaceExact(
+            'apps/api/internal/repository/postgres/flightstate_repository.go',
+            '\tvar aircraftCategory pgtype.Int2\n',
+            '\tvar aircraftCategory pgtype.Int2\n\tvar messageObservedAt pgtype.Timestamptz\n',
+            2
+          )
+          replaceExact(
+            'apps/api/internal/repository/postgres/flightstate_repository.go',
+            '\t\t\t&item.ObservedAt,\n\t\t\t&item.SourceName,',
+            '\t\t\t&item.ObservedAt,\n\t\t\t&messageObservedAt,\n\t\t\t&item.SourceName,'
+          )
+          replaceExact(
+            'apps/api/internal/repository/postgres/flightstate_repository.go',
+            '\t\t&item.ObservedAt,\n\t\t&item.SourceName,',
+            '\t\t&item.ObservedAt,\n\t\t&messageObservedAt,\n\t\t&item.SourceName,'
+          )
+          replaceExact(
+            'apps/api/internal/repository/postgres/flightstate_repository.go',
+            '\t\titem.PositionSource = flightstate.PositionSource(',
+            '\t\tif messageObservedAt.Valid {\n\t\t\tvalue := messageObservedAt.Time.UTC()\n\t\t\titem.MessageObservedAt = &value\n\t\t}\n\n\t\titem.PositionSource = flightstate.PositionSource('
+          )
+          replaceExact(
+            'apps/api/internal/repository/postgres/flightstate_repository.go',
+            '\titem.PositionSource = flightstate.PositionSource(',
+            '\tif messageObservedAt.Valid {\n\t\tvalue := messageObservedAt.Time.UTC()\n\t\titem.MessageObservedAt = &value\n\t}\n\n\titem.PositionSource = flightstate.PositionSource('
           )
 
-          for (const marker of [
+          replaceExact(
+            'apps/api/internal/domain/traffic/model.go',
+            '\tObservedAt     time.Time\n\tAircraftModel',
+            '\tObservedAt        time.Time\n\tMessageObservedAt *time.Time\n\tAircraftModel'
+          )
+          replaceExact(
+            'apps/api/internal/repository/postgres/traffic_repository.go',
             '\t\t\tfs.observed_at,\n\t\t\tCOALESCE(am.model, \'\'),',
-          ]) {
-            replaceExact(
-              'apps/api/internal/repository/postgres/traffic_repository.go',
-              marker,
-              '\t\t\tfs.observed_at,\n\t\t\tfs.message_observed_at,\n\t\t\tCOALESCE(am.model, \'\'),',
-              2
-            )
-          }
-
+            '\t\t\tfs.observed_at,\n\t\t\tfs.message_observed_at,\n\t\t\tCOALESCE(am.model, \'\'),',
+            2
+          )
           replaceExact(
             'apps/api/internal/repository/postgres/traffic_repository.go',
             '\t\tvar barometricStatus string\n\n\t\tif err := rows.Scan(',
             '\t\tvar barometricStatus string\n\t\tvar messageObservedAt pgtype.Timestamptz\n\n\t\tif err := rows.Scan('
           )
-
           replaceExact(
             'apps/api/internal/repository/postgres/traffic_repository.go',
             '\t\t\t&item.ObservedAt,\n\t\t\t&item.AircraftModel,',
             '\t\t\t&item.ObservedAt,\n\t\t\t&messageObservedAt,\n\t\t\t&item.AircraftModel,'
           )
-
           replaceExact(
             'apps/api/internal/repository/postgres/traffic_repository.go',
             '\t\titem.AltitudeM,\n',
@@ -141,7 +163,6 @@ jobs:
             '\tObservedAt     time.Time                  `json:"observed_at"`\n\tAircraftModel',
             '\tObservedAt         time.Time                  `json:"observed_at"`\n\tPositionObservedAt time.Time                  `json:"position_observed_at"`\n\tMessageObservedAt  *time.Time                 `json:"message_observed_at"`\n\tAircraftModel'
           )
-
           replaceExact(
             'apps/api/internal/http/handlers/traffic.go',
             '\t\t\tObservedAt:     item.ObservedAt,\n\t\t\tAircraftModel:',
@@ -153,25 +174,39 @@ jobs:
             '\t\t28: "028_harden_historical_read_snapshot.sql",\n\t\t29: "029_harden_historical_aggregate_integrity.sql",',
             '\t\t28: "028_harden_historical_read_snapshot.sql",\n\t\t29: "029_harden_historical_aggregate_integrity.sql",\n\t\t30: "030_add_flight_state_message_observation_time.sql",'
           )
+          replaceExact(
+            'apps/api/internal/database/migrationfile/production_catalog_regression_test.go',
+            'if len(orderedVersions) != 29 {\n\t\tt.Fatalf(\n\t\t\t"production migration count = %d, want 29 (%s)",',
+            'if len(orderedVersions) != 30 {\n\t\tt.Fatalf(\n\t\t\t"production migration count = %d, want 30 (%s)",'
+          )
 
           replaceExact(
             'apps/api/tools/stage14finalaudit/main.go',
             '\t\t"aircraft_category_available",\n\t}',
             '\t\t"aircraft_category_available",\n\t\t"message_observed_at",\n\t}'
           )
+          replaceExact(
+            'apps/api/tools/stage14finalaudit/main_test.go',
+            '// aircraft_category_available boolean\\n// NewFlightStateRepository(',
+            '// aircraft_category_available boolean\\n// message_observed_at timestamptz\\n// NewFlightStateRepository(',
+            2
+          )
 
           for (const path of [
             'apps/api/internal/repository/postgres/flightstate_altitude_integration_test.go',
             'apps/api/internal/repository/postgres/flightstate_reconciliation_repository_integration_test.go',
-            'apps/api/internal/repository/postgres/traffic_altitude_semantics_integration_test.go',
           ]) {
             replaceExact(
               path,
               '\t\t\t\taircraft_category_available boolean,\n\t\t\t\tobserved_at timestamptz NOT NULL,',
-              '\t\t\t\taircraft_category_available boolean,\n\t\t\t\tobserved_at timestamptz NOT NULL,\n\t\t\t\tmessage_observed_at timestamptz,',
-              1
+              '\t\t\t\taircraft_category_available boolean,\n\t\t\t\tobserved_at timestamptz NOT NULL,\n\t\t\t\tmessage_observed_at timestamptz,'
             )
           }
+          replaceExact(
+            'apps/api/internal/repository/postgres/traffic_altitude_semantics_integration_test.go',
+            '\t\t\t\ton_ground boolean,\n\t\t\t\tobserved_at timestamptz NOT NULL,\n\t\t\t\torigin_country text',
+            '\t\t\t\ton_ground boolean,\n\t\t\t\tobserved_at timestamptz NOT NULL,\n\t\t\t\tmessage_observed_at timestamptz,\n\t\t\t\torigin_country text'
+          )
           NODE
 
           cat > database/migrations/030_add_flight_state_message_observation_time.sql <<'SQL'
@@ -199,65 +234,31 @@ jobs:
 
           func TestMapAircraftSeparatesPositionAndMessageObservationTimes(t *testing.T) {
               snapshotAt := time.Date(2026, time.September, 9, 12, 0, 0, 0, time.UTC)
-              item := AircraftItem{
-                  Hex:       "abc123",
-                  Latitude:  40.4093,
-                  Longitude: 49.8671,
-                  Seen:      OptionalFloat64{Value: 0.5, Available: true},
-                  SeenPos:   OptionalFloat64{Value: 18, Available: true},
-              }
-
+              item := AircraftItem{Hex: "abc123", Latitude: 40.4093, Longitude: 49.8671, Seen: OptionalFloat64{Value: 0.5, Available: true}, SeenPos: OptionalFloat64{Value: 18, Available: true}}
               mapped := MapAircraft("test-readsb", item, snapshotAt)
-
               expectedPosition := snapshotAt.Add(-18 * time.Second)
-              if !mapped.ObservedAt.Equal(expectedPosition) {
-                  t.Fatalf("position observed_at = %s, want %s", mapped.ObservedAt, expectedPosition)
-              }
-              if mapped.MessageObservedAt == nil {
-                  t.Fatal("expected message observation time")
-              }
+              if !mapped.ObservedAt.Equal(expectedPosition) { t.Fatalf("position observed_at = %s, want %s", mapped.ObservedAt, expectedPosition) }
+              if mapped.MessageObservedAt == nil { t.Fatal("expected message observation time") }
               expectedMessage := snapshotAt.Add(-500 * time.Millisecond)
-              if !mapped.MessageObservedAt.Equal(expectedMessage) {
-                  t.Fatalf("message observed_at = %s, want %s", mapped.MessageObservedAt, expectedMessage)
-              }
+              if !mapped.MessageObservedAt.Equal(expectedMessage) { t.Fatalf("message observed_at = %s, want %s", mapped.MessageObservedAt, expectedMessage) }
           }
 
           func TestMapAircraftFallsBackToMessageAgeWhenSeenPosUnavailable(t *testing.T) {
               snapshotAt := time.Date(2026, time.September, 9, 12, 0, 0, 0, time.UTC)
-              item := AircraftItem{
-                  Hex:       "abc123",
-                  Latitude:  40.4093,
-                  Longitude: 49.8671,
-                  Seen:      OptionalFloat64{Value: 2, Available: true},
-              }
-
+              item := AircraftItem{Hex: "abc123", Latitude: 40.4093, Longitude: 49.8671, Seen: OptionalFloat64{Value: 2, Available: true}}
               mapped := MapAircraft("test-readsb", item, snapshotAt)
               expected := snapshotAt.Add(-2 * time.Second)
-              if !mapped.ObservedAt.Equal(expected) {
-                  t.Fatalf("fallback observed_at = %s, want %s", mapped.ObservedAt, expected)
-              }
-              if mapped.MessageObservedAt == nil || !mapped.MessageObservedAt.Equal(expected) {
-                  t.Fatalf("message observation fallback = %#v, want %s", mapped.MessageObservedAt, expected)
-              }
+              if !mapped.ObservedAt.Equal(expected) { t.Fatalf("fallback observed_at = %s, want %s", mapped.ObservedAt, expected) }
+              if mapped.MessageObservedAt == nil || !mapped.MessageObservedAt.Equal(expected) { t.Fatalf("message observation fallback = %#v, want %s", mapped.MessageObservedAt, expected) }
           }
 
           func TestMapAircraftKeepsMessageTimeUnavailableWhenSeenMissing(t *testing.T) {
               snapshotAt := time.Date(2026, time.September, 9, 12, 0, 0, 0, time.UTC)
-              item := AircraftItem{
-                  Hex:       "abc123",
-                  Latitude:  40.4093,
-                  Longitude: 49.8671,
-                  SeenPos:   OptionalFloat64{Value: 3, Available: true},
-              }
-
+              item := AircraftItem{Hex: "abc123", Latitude: 40.4093, Longitude: 49.8671, SeenPos: OptionalFloat64{Value: 3, Available: true}}
               mapped := MapAircraft("test-readsb", item, snapshotAt)
-              if mapped.MessageObservedAt != nil {
-                  t.Fatalf("unexpected message observation time: %s", mapped.MessageObservedAt)
-              }
+              if mapped.MessageObservedAt != nil { t.Fatalf("unexpected message observation time: %v", mapped.MessageObservedAt) }
               expectedPosition := snapshotAt.Add(-3 * time.Second)
-              if !mapped.ObservedAt.Equal(expectedPosition) {
-                  t.Fatalf("position observed_at = %s, want %s", mapped.ObservedAt, expectedPosition)
-              }
+              if !mapped.ObservedAt.Equal(expectedPosition) { t.Fatalf("position observed_at = %s, want %s", mapped.ObservedAt, expectedPosition) }
           }
           GO
 
@@ -272,28 +273,13 @@ jobs:
           func TestMapStateVectorPreservesPositionAndLastContactTimesSeparately(t *testing.T) {
               positionAt := time.Date(2026, time.September, 9, 12, 0, 0, 0, time.UTC)
               contactAt := positionAt.Add(7 * time.Second)
-              latitude := 40.4093
-              longitude := 49.8671
-
-              mapped, usable, err := MapStateVector(StateVector{
-                  ICAO24:       "abc123",
-                  Latitude:     &latitude,
-                  Longitude:    &longitude,
-                  TimePosition: &positionAt,
-                  LastContact:  contactAt,
-              })
-              if err != nil {
-                  t.Fatalf("map state vector: %v", err)
-              }
-              if !usable {
-                  t.Fatal("expected state vector to be usable")
-              }
-              if !mapped.ObservedAt.Equal(positionAt) {
-                  t.Fatalf("position observed_at = %s, want %s", mapped.ObservedAt, positionAt)
-              }
-              if mapped.MessageObservedAt == nil || !mapped.MessageObservedAt.Equal(contactAt) {
-                  t.Fatalf("message observed_at = %#v, want %s", mapped.MessageObservedAt, contactAt)
-              }
+              snapshotAt := contactAt.Add(time.Second)
+              latitude, longitude := 40.4093, 49.8671
+              mapped, usable, err := MapStateVector(StateVector{ICAO24: "abc123", Latitude: &latitude, Longitude: &longitude, TimePosition: &positionAt, LastContact: contactAt, SnapshotTime: snapshotAt})
+              if err != nil { t.Fatalf("map state vector: %v", err) }
+              if !usable { t.Fatal("expected state vector to be usable") }
+              if !mapped.ObservedAt.Equal(positionAt) { t.Fatalf("position observed_at = %s, want %s", mapped.ObservedAt, positionAt) }
+              if mapped.MessageObservedAt == nil || !mapped.MessageObservedAt.Equal(contactAt) { t.Fatalf("message observed_at = %#v, want %s", mapped.MessageObservedAt, contactAt) }
           }
           GO
 
@@ -310,30 +296,15 @@ jobs:
 
           func TestMessageObservationMigrationKeepsPositionTimeCanonical(t *testing.T) {
               _, currentFile, _, ok := runtime.Caller(0)
-              if !ok {
-                  t.Fatal("resolve current file")
-              }
-              path := filepath.Clean(filepath.Join(
-                  filepath.Dir(currentFile),
-                  "../../../../../database/migrations/030_add_flight_state_message_observation_time.sql",
-              ))
+              if !ok { t.Fatal("resolve current file") }
+              path := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "../../../../../database/migrations/030_add_flight_state_message_observation_time.sql"))
               content, err := os.ReadFile(path)
-              if err != nil {
-                  t.Fatalf("read migration: %v", err)
-              }
+              if err != nil { t.Fatalf("read migration: %v", err) }
               text := string(content)
-              for _, required := range []string{
-                  "ADD COLUMN message_observed_at timestamptz",
-                  "Time of the position observation",
-                  "must not replace position freshness",
-              } {
-                  if !strings.Contains(text, required) {
-                      t.Fatalf("migration missing %q", required)
-                  }
+              for _, required := range []string{"ADD COLUMN message_observed_at timestamptz", "Time of the position observation", "must not replace position freshness"} {
+                  if !strings.Contains(text, required) { t.Fatalf("migration missing %q", required) }
               }
-              if strings.Contains(text, "UPDATE flight_states") {
-                  t.Fatal("migration must not fabricate historical message timestamps")
-              }
+              if strings.Contains(text, "UPDATE flight_states") { t.Fatal("migration must not fabricate historical message timestamps") }
           }
           GO
 
@@ -348,17 +319,20 @@ jobs:
             apps/api/internal/integrations/opensky/provider.go \
             apps/api/internal/integrations/opensky/position_freshness_test.go \
             apps/api/internal/repository/postgres/flightstate_write.go \
+            apps/api/internal/repository/postgres/flightstate_repository.go \
             apps/api/internal/repository/postgres/traffic_repository.go \
             apps/api/internal/repository/postgres/message_observation_migration_contract_test.go \
             apps/api/internal/domain/traffic/model.go \
             apps/api/internal/http/dto/traffic.go \
             apps/api/internal/http/handlers/traffic.go \
             apps/api/internal/database/migrationfile/production_catalog_regression_test.go \
-            apps/api/tools/stage14finalaudit/main.go
+            apps/api/tools/stage14finalaudit/main.go \
+            apps/api/tools/stage14finalaudit/main_test.go
           cd apps/api
-          go test ./internal/integrations/readsbcompat ./internal/integrations/opensky ./internal/domain/flightstate ./internal/domain/traffic ./internal/http/dto ./internal/http/handlers ./internal/database/migrationfile ./internal/repository/postgres ./tools/stage14finalaudit
+          go test ./...
+          go run ./tools/stage14finalaudit -strict
 
-      - name: Commit generated backend slice and self-remove workflow
+      - name: Commit backend slice and self-remove workflow
         shell: bash
         run: |
           rm .github/workflows/one-time-r1-position-freshness-backend.yml
