@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/one-time-r2-position-source-provenance.yml'
       - 'scripts/apply-r2-position-source-provenance.mjs'
+      - 'scripts/patch-r2-stage14-fixture.mjs'
 
 permissions:
   contents: write
@@ -46,7 +47,9 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Apply R2 source changes
-        run: node scripts/apply-r2-position-source-provenance.mjs
+        run: |
+          node scripts/apply-r2-position-source-provenance.mjs
+          node scripts/patch-r2-stage14-fixture.mjs
 
       - name: Format and validate backend
         working-directory: apps/api
@@ -103,6 +106,7 @@ jobs:
         run: |
           rm .github/workflows/one-time-r2-position-source-provenance.yml
           rm scripts/apply-r2-position-source-provenance.mjs
+          rm scripts/patch-r2-stage14-fixture.mjs
 
       - name: Commit validated R2 product slice
         run: |
