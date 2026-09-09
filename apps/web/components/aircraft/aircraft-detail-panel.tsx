@@ -15,6 +15,10 @@ import {
   type TrafficFreshnessEvidence,
   type TrafficPositionFreshnessStatus,
 } from '@/lib/traffic/traffic-freshness'
+import {
+  buildPositionProvenanceEvidence,
+  type PositionProvenanceEvidence,
+} from '@/lib/traffic/position-provenance'
 import type {
   AircraftRouteContext,
   RouteContextAirportCandidate,
@@ -93,6 +97,9 @@ export function AircraftDetailPanel({
   const freshnessEvidence = aircraft
     ? buildTrafficFreshnessEvidence(aircraft, trafficSnapshotUpdatedAt)
     : null
+  const positionProvenanceEvidence = aircraft
+    ? buildPositionProvenanceEvidence(aircraft)
+    : null
 
   return (
     <aside
@@ -141,6 +148,10 @@ export function AircraftDetailPanel({
 
         {freshnessEvidence ? (
           <ObservationFreshnessSection evidence={freshnessEvidence} />
+        ) : null}
+
+        {positionProvenanceEvidence ? (
+          <PositionProvenanceSection evidence={positionProvenanceEvidence} />
         ) : null}
 
         <RouteContextSection
@@ -816,6 +827,46 @@ function formatTimestamp(value: string): string {
   const timestamp = new Date(value)
   if (Number.isNaN(timestamp.getTime())) return ''
   return timestamp.toLocaleString()
+}
+
+function PositionProvenanceSection({
+  evidence,
+}: {
+  evidence: PositionProvenanceEvidence
+}) {
+  return (
+    <section
+      className='mt-4 border-t border-white/10 pt-4'
+      aria-labelledby='position-provenance-title'
+    >
+      <SectionHeading
+        id='position-provenance-title'
+        label='Position provenance'
+        evidence='Observed metadata'
+      />
+      <dl className='mt-2 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10'>
+        <div className='min-w-0 bg-[#202328] p-2.5'>
+          <dt className='text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500'>
+            Method
+          </dt>
+          <dd className='mt-1 text-xs font-semibold text-slate-100'>
+            {evidence.methodLabel}
+          </dd>
+        </div>
+        <div className='min-w-0 bg-[#202328] p-2.5'>
+          <dt className='text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500'>
+            Data feed
+          </dt>
+          <dd className='mt-1 break-words text-xs font-semibold text-slate-100'>
+            {evidence.sourceName ?? 'Unavailable'}
+          </dd>
+        </div>
+      </dl>
+      <p className='mt-2 text-[10px] leading-4 text-slate-500'>
+        {evidence.description}
+      </p>
+    </section>
+  )
 }
 
 function ObservationFreshnessSection({

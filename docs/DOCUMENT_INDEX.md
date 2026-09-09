@@ -1891,3 +1891,7 @@ exact-head CI and Chromium evidence, and the nonblocking pixel-golden decision.
 ## Document 216 — readsb-Inspired Position Freshness
 
 `216_READSB_POSITION_FRESHNESS.md` records the zero-cost R1 separation of position observation time from latest message/contact time, readsb `seen_pos` semantics, OpenSky `time_position` versus `last_contact`, nullable persistence, public traffic contract evolution, frontend freshness evidence, and the rule that message freshness never upgrades stale position evidence.
+
+## Document 217 — readsb-Inspired Position Source Provenance
+
+`217_READSB_POSITION_SOURCE_PROVENANCE.md` records the zero-cost R2 preservation of readsb position-method evidence, strict separation of provider/feed identity from position method, canonical ADS-B/ADS-R/TIS-B/ADS-C/MLAT mapping, nullable public API semantics, and Aircraft Detail provenance presentation without synthetic confidence or accuracy claims.

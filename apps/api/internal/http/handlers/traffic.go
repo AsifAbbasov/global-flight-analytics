@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 
+	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/flightstate"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/region"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/domain/traffic"
 	"github.com/AsifAbbasov/global-flight-analytics/apps/api/internal/http/dto"
@@ -45,6 +46,16 @@ func (h *TrafficHandler) GetCurrent(c *fiber.Ctx) error {
 	return response.OK(c, toCurrentTrafficItems(items))
 }
 
+func nullablePositionSource(
+	value flightstate.PositionSource,
+) *flightstate.PositionSource {
+	if value == flightstate.PositionSourceUnknown {
+		return nil
+	}
+	result := value
+	return &result
+}
+
 func toCurrentTrafficItems(items []traffic.CurrentTrafficItem) []dto.CurrentTrafficItem {
 	result := make([]dto.CurrentTrafficItem, 0, len(items))
 
@@ -63,6 +74,8 @@ func toCurrentTrafficItems(items []traffic.CurrentTrafficItem) []dto.CurrentTraf
 			ObservedAt:         item.ObservedAt,
 			PositionObservedAt: item.ObservedAt,
 			MessageObservedAt:  item.MessageObservedAt,
+			PositionSource:     nullablePositionSource(item.PositionSource),
+			SourceName:         item.SourceName,
 			AircraftModel:      item.AircraftModel,
 			Airline:            item.Airline,
 			OriginCountry:      item.OriginCountry,

@@ -3302,6 +3302,27 @@
             ],
             "format": "date-time",
             "description": "Optional timestamp of the latest provider message or contact. It may be newer than position_observed_at and must not be used as a substitute for position freshness."
+          },
+          "position_source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "adsb",
+              "adsr",
+              "tisb",
+              "adsc",
+              "asterix",
+              "mlat",
+              "flarm",
+              null
+            ],
+            "description": "Canonical position method when observed. Null means the method is unavailable; this is distinct from the data feed identity."
+          },
+          "source_name": {
+            "type": "string",
+            "description": "Canonical provider/feed identity that supplied the persisted observation. It is not a position-method or accuracy claim."
           }
         },
         "required": [
@@ -3320,7 +3341,9 @@
           "airline",
           "origin_country",
           "position_observed_at",
-          "message_observed_at"
+          "message_observed_at",
+          "position_source",
+          "source_name"
         ]
       },
       "HealthResponse": {

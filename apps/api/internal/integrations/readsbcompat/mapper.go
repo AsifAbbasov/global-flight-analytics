@@ -122,6 +122,25 @@ func OptionalObservationTime(
 	return &value
 }
 
+func PositionSource(
+	value string,
+) flightstate.PositionSource {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "adsb_icao", "adsb_icao_nt", "adsb_other":
+		return flightstate.PositionSourceADSB
+	case "adsr_icao", "adsr_other":
+		return flightstate.PositionSourceADSR
+	case "tisb_icao", "tisb_other", "tisb_trackfile":
+		return flightstate.PositionSourceTISB
+	case "adsc":
+		return flightstate.PositionSourceADSC
+	case "mlat":
+		return flightstate.PositionSourceMLAT
+	default:
+		return flightstate.PositionSourceUnknown
+	}
+}
+
 func MapAircraft(
 	sourceName string,
 	item AircraftItem,
@@ -149,6 +168,7 @@ func MapAircraft(
 		ICAO24:                     strings.ToUpper(strings.TrimSpace(item.Hex)),
 		Callsign:                   strings.TrimSpace(item.Flight),
 		SquawkCode:                 strings.TrimSpace(item.Squawk),
+		PositionSource:             PositionSource(item.Type),
 		Latitude:                   item.Latitude,
 		Longitude:                  item.Longitude,
 		BarometricAltitudeM:        barometricAltitude.Meters,

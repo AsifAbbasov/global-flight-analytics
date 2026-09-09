@@ -19,6 +19,8 @@ type CurrentTrafficItem struct {
 	OnGround          bool
 	ObservedAt        time.Time
 	MessageObservedAt *time.Time
+	PositionSource    flightstate.PositionSource
+	SourceName        string
 	AircraftModel     string
 	Airline           string
 	OriginCountry     string

@@ -63,6 +63,8 @@ func (
 			fs.on_ground,
 			fs.observed_at,
 			fs.message_observed_at,
+			fs.position_source,
+			COALESCE(fs.source_name, ''),
 			COALESCE(am.model, ''),
 			COALESCE(al.name, ''),
 			COALESCE(fs.origin_country, '')
@@ -138,6 +140,8 @@ func (
 			fs.on_ground,
 			fs.observed_at,
 			fs.message_observed_at,
+			fs.position_source,
+			COALESCE(fs.source_name, ''),
 			COALESCE(am.model, ''),
 			COALESCE(al.name, ''),
 			COALESCE(fs.origin_country, '')
@@ -193,6 +197,7 @@ func scanCurrentTrafficRows(
 		var barometricAltitude pgtype.Float8
 		var barometricStatus string
 		var messageObservedAt pgtype.Timestamptz
+		var positionSource string
 
 		if err := rows.Scan(
 			&item.ICAO24,
@@ -208,6 +213,8 @@ func scanCurrentTrafficRows(
 			&item.OnGround,
 			&item.ObservedAt,
 			&messageObservedAt,
+			&positionSource,
+			&item.SourceName,
 			&item.AircraftModel,
 			&item.Airline,
 			&item.OriginCountry,
@@ -220,6 +227,14 @@ func scanCurrentTrafficRows(
 			value := messageObservedAt.Time.UTC()
 			item.MessageObservedAt = &value
 		}
+
+		normalizedPositionSource, err := flightstate.NormalizePositionSource(
+			flightstate.PositionSource(positionSource),
+		)
+		if err != nil {
+			return nil, err
+		}
+		item.PositionSource = normalizedPositionSource
 
 		item.AltitudeM,
 			item.AltitudeStatus,
