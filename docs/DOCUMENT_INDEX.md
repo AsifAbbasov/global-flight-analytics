@@ -1887,3 +1887,7 @@ exact-head CI and Chromium evidence, and the nonblocking pixel-golden decision.
 ## Document 214 — Stage 23 ETA Reliability Intelligence
 
 `214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md` is the canonical pre-merge Stage 23 record for the zero-cost ETA Reliability vertical product slice. It defines historically recomputed persisted-observation semantics, the persisted endpoint-proxy boundary instead of official arrival truth, bounded on-demand computation, sample-size disclosure, the Aircraft Detail frontend consumer, real rejected CI/remediation history, and the exact review/merge/post-merge closure gates required before the feature can be called complete.
+
+## Document 216 — readsb-Inspired Position Freshness
+
+`216_READSB_POSITION_FRESHNESS.md` records the zero-cost R1 separation of position observation time from latest message/contact time, readsb `seen_pos` semantics, OpenSky `time_position` versus `last_contact`, nullable persistence, public traffic contract evolution, frontend freshness evidence, and the rule that message freshness never upgrades stale position evidence.

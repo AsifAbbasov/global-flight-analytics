@@ -351,6 +351,7 @@ export function TrafficDashboard({
                   <AircraftDetailPanel
                     selectedICAO24={selectedAircraftICAO24}
                     aircraft={selectedAircraft}
+                    trafficSnapshotUpdatedAt={trafficQuery.dataUpdatedAt}
                     routeContext={routeContextQuery.data}
                     routeContextIsPending={routeContextQuery.isPending}
                     routeContextIsFetching={routeContextQuery.isFetching}

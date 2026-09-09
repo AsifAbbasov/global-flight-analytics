@@ -1,5 +1,10 @@
 // FRONTEND_TRAFFIC_DATA_QUALITY_LENS_V1
 import type { TrafficAircraft } from '../../types/traffic'
+import {
+  defaultFutureClockSkewToleranceMilliseconds,
+  defaultRecentObservationWindowMilliseconds,
+  resolvePositionObservationTimestamp,
+} from './traffic-freshness'
 
 export type TrafficDataQualitySeverity =
   | 'critical'
@@ -74,8 +79,6 @@ export interface TrafficDataQualityOptions {
   futureClockSkewToleranceMilliseconds?: number
 }
 
-const defaultRecentObservationWindowMilliseconds = 5 * 60 * 1000
-const defaultFutureClockSkewToleranceMilliseconds = 60 * 1000
 const icao24Pattern = /^[0-9a-f]{6}$/
 
 const issueDefinitions: Record<
@@ -202,7 +205,7 @@ export function buildTrafficDataQualityModel(
       validMotionCount++
     }
 
-    const observationTime = parseTimestamp(item.observed_at)
+    const observationTime = parseTimestamp(resolvePositionObservationTimestamp(item))
     const observationTimeValid = observationTime !== null
     if (observationTimeValid) {
       validObservationTimestampCount++

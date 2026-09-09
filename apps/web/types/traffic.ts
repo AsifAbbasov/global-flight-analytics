@@ -23,6 +23,8 @@ export interface TrafficAircraft {
   heading_degrees: number
   on_ground: boolean
   observed_at: string
+  position_observed_at: string
+  message_observed_at: string | null
   aircraft_model: string
   airline: string
   origin_country: string
