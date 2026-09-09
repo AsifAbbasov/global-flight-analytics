@@ -50,6 +50,17 @@ sharp@<0.35.4 -> 0.35.4
 
 The lockfile is regenerated from the consolidated patched dependency set. The generation workflow also runs the repository dependency-security contract tests and `pnpm audit --prod --audit-level moderate` before it is allowed to commit the generated candidate.
 
+## Compatibility remediation evidence
+
+Validation of the consolidated dependency candidate exposed two additional compatibility/governance defects that were not visible while the normal package-age gate prevented installation:
+
+- MapLibre GL v6 no longer satisfies the previous TypeScript default-import assumption in `traffic-map.tsx`; the consumer now uses the supported namespace import;
+- the dependency-maintenance regression test and verifier still pinned the pre-remediation Next.js and `eslint-config-next` target `16.2.12`; both governance contracts now require the hotfix target `16.3.4`.
+
+A one-time validation workflow applied those corrective changes and, with a runner-local `minimumReleaseAge=0` override only for candidate validation, successfully executed the dependency-maintenance tests and verifier, frontend dependency-security tests and verifier, production dependency audit, ESLint, TypeScript validation, frontend tests, and production frontend build before the corrective source commit was created. This evidence proves the compatibility correction itself, but it is deliberately **not** treated as final release evidence because the repository minimum-release-age policy was temporarily bypassed only inside that disposable validation run.
+
+The final exact PR head must therefore repeat the normal repository checks without that override before merge readiness can be claimed.
+
 ## Release-age policy boundary
 
 A separate Dependabot MapLibre validation exposed `@maplibre/maplibre-gl-style-spec@26.4.2` as younger than the normal package minimum-release-age window.
