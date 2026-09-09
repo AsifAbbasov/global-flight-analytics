@@ -65,8 +65,9 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run test:openapi-contract
           pnpm run verify:openapi-contract
+          cp packages/api-client/src/generated.ts /tmp/generated-before.ts
           pnpm run generate:openapi-client
-          git diff --exit-code -- packages/api-client/src/generated.ts
+          cmp /tmp/generated-before.ts packages/api-client/src/generated.ts
           pnpm run typecheck:api-client
           pnpm run test:api-client
           pnpm --filter web lint
