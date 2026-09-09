@@ -52,14 +52,16 @@ The current free-tier budget and recovery evidence are recorded in
 [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md).
 
 <!-- VERSION-2-RECONCILIATION:README -->
-## Version 2 Reconciliation Candidate
+## Version 2 Reconciliation
 
 Stages 15 through 22 are implemented and their repository evidence is preserved through
-Documents 197–211. Document 212 reconciles those delivered capabilities against the older
-Version 2 planning list without inventing missing advanced analytics.
+Documents 197–211. Documents 212 and 213 reconcile those delivered capabilities against
+the older Version 2 planning list and record the independent post-merge closure evidence
+without inventing missing advanced analytics.
 
 ```text
-VERSION_2_RECONCILIATION=CANDIDATE
+VERSION_2_RECONCILIATION=CLOSED
+VERSION_2_RECONCILIATION_CI_VERIFIED=YES
 VERSION_2_ORIGINAL_SCOPE_ITEMS=18
 VERSION_2_IMPLEMENTED_CAPABILITIES=14
 VERSION_2_BOUNDED_UNCALIBRATED_CAPABILITIES=1
@@ -79,9 +81,42 @@ Congestion remains a relative observed-activity proxy rather than an airport-cap
 official congestion claim; ETA Evolution recomputes the current projection implementation
 at persisted historical observation times rather than claiming stored historical forecasts.
 
-This reconciliation is not canonically closed until its exact-head validation, merge, and
-independent post-merge validation complete. The independent repository-security finding
-`GFA-SEC-445` remains `IN_PROGRESS` and is not an analytical Version 2 blocker.
+The reconciliation was closed on canonical `main` after the guarded reconciliation merge,
+separate post-merge closure merge and independent final-main GitHub CI/Vercel validation.
+The independent repository-security finding `GFA-SEC-445` remains `IN_PROGRESS` and is not
+an analytical Version 2 blocker.
+
+<!-- STAGE-23-ETA-RELIABILITY:README -->
+## Stage 23 — ETA Reliability Intelligence
+
+Stage 23 is the next zero-budget product slice and is currently **IN_PROGRESS** on draft
+PR #171. It extends the existing Aircraft Detail / Estimated Arrival surface with bounded
+historical ETA reliability evidence instead of creating a separate analytics dashboard.
+
+```text
+STAGE_23_ETA_RELIABILITY=IN_PROGRESS
+STAGE_23_FRONTEND_CONSUMER=YES
+STAGE_23_ADDITIONAL_COST=0_RUB
+STAGE_23_HISTORICAL_ARRIVAL_EVIDENCE=PERSISTED_ENDPOINT_PROXY
+OFFICIAL_ARRIVAL_TRUTH=NONE
+STAGE_23_MAX_HISTORICAL_CANDIDATES=8
+STAGE_23_FRONTEND_POLLING=NONE
+STAGE_23_REVIEW_READY=NO
+STAGE_23_MERGE_READY=NO
+```
+
+The reliability surface is historically recomputed from persisted observations. The
+historical comparison target is the last qualifying persisted trajectory observation near
+the inferred destination airport. That endpoint proxy is **not** an official touchdown,
+gate-arrival, schedule or operational flight-status timestamp. Sample size and limitations
+remain visible, and insufficient evidence stays unavailable or limited instead of becoming
+a fabricated reliability percentage.
+
+Stage 23 reuses the existing Go/PostgreSQL Production Projection Intelligence, Next.js and TanStack Query. The production server does not depend on the offline-only Projection Evaluation package. It introduces no paid aviation provider, new database
+table, migration, server, background materializer, Redis, Kafka or GPU. The feature branch now carries a source-backed 40-operation OpenAPI candidate (39 public GET reads plus one protected Route Intelligence POST) and a regenerated TypeScript client. Canonical `main` remains on the previously closed 39-operation contract until PR #171 is merged and independently verified.
+
+Canonical Stage 23 pre-merge engineering history is recorded in
+[`docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md`](docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md).
 
 <!-- ANALYTICAL-CORE-REVIEW-CLOSURE:README -->
 ## Analytical Core Review Closure
@@ -353,8 +388,7 @@ renders evidence without recomputing server-owned analytics.
 
 ## Contract and Test Surface
 
-The current repository contract exposes **39 source-backed OpenAPI operations**: 38
-unauthenticated public read operations and one protected Route Intelligence mutation.
+Canonical `main` currently exposes the closed 39-operation contract (38 public GET reads and one protected Route Intelligence POST). The Stage 23 feature branch candidate exposes 40 source-backed operations (39 public GET reads and the same protected POST); that 40-operation surface is not canonical until the feature merges and independent post-merge validation succeeds.
 
 Browser verification contains deterministic Chromium product journeys and private mock
 scenarios covering workspace navigation, aircraft, airport and analytical surfaces, exports,
@@ -367,7 +401,8 @@ OPENAPI_CONTRACT_OPERATIONS=39
 OPENAPI_PUBLIC_READ_OPERATIONS=38
 OPENAPI_PROTECTED_MUTATION_OPERATIONS=1
 STAGE_14_OVERALL_STATUS=CLOSED
-VERSION_2_RECONCILIATION=CANDIDATE
+VERSION_2_RECONCILIATION=CLOSED
+STAGE_23_ETA_RELIABILITY=IN_PROGRESS
 ```
 
 ### Historical v1.0.0 release-contract baseline
@@ -376,7 +411,7 @@ The published v1 release contract remains immutable historical evidence. At that
 boundary the README recorded **38 source-backed OpenAPI paths**, **twenty deterministic
 Chromium product journeys**, and **seven deterministic private mock scenarios**. These
 markers are retained only for the v1 release verifier; they do not describe the current
-Version 2 candidate surface above.
+Version 2 / Stage 23 engineering surface above.
 
 ```text
 OPENAPI_CONTRACT_PATHS=38
@@ -460,10 +495,12 @@ audits, Docker configuration and repository integrity.
 - [`docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md`](docs/194_FREE_TIER_PRODUCTION_INFRASTRUCTURE_BUDGET.md) — free-tier compute budget, cadence policy and `GFA-OPS-456` closure evidence;
 - [`docs/195_FRONTEND_PRODUCT_CLOSURE.md`](docs/195_FRONTEND_PRODUCT_CLOSURE.md) — frontend product closure and post-closure visual boundary;
 - [`docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md`](docs/196_FRONTEND_VISUAL_POLISH_V2_CLOSURE.md) — zero-budget Visual Polish V2 evidence and Flightradar24-reference boundary;
-- [`docs/212_VERSION_2_RECONCILIATION_AUDIT.md`](docs/212_VERSION_2_RECONCILIATION_AUDIT.md) — current Version 2 roadmap/release-boundary reconciliation candidate;
+- [`docs/212_VERSION_2_RECONCILIATION_AUDIT.md`](docs/212_VERSION_2_RECONCILIATION_AUDIT.md) — Version 2 roadmap/release-boundary reconciliation;
+- [`docs/213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md`](docs/213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md) — canonical Version 2 reconciliation closure evidence;
+- [`docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md`](docs/214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md) — Stage 23 pre-merge product/evidence/validation record;
 - [`docs/FINDING_REGISTER.md`](docs/FINDING_REGISTER.md) — canonical engineering finding/status register and remediation ownership index;
 - [`docs/DOCUMENTATION_POLICY.md`](docs/DOCUMENTATION_POLICY.md) — normative remediation-history and evidence-honesty standard;
-- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register, including Documents 197–212.
+- [`docs/DOCUMENT_INDEX.md`](docs/DOCUMENT_INDEX.md) — engineering document register, including the current Stage 23 record.
 
 ## Portfolio v1.0.0 Release
 

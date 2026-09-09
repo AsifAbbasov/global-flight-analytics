@@ -1,8 +1,8 @@
 # Document 24 — MVP and Version Roadmap
 
-Status: Architecture Baseline v1.2  
+Status: Architecture Baseline v1.3  
 Project: Global Flight Analytics  
-Scope: MVP, Version 1, Version 2, and release boundaries
+Scope: MVP, Version 1, Version 2, Stage 23 product increment, and release boundaries
 
 ---
 
@@ -341,6 +341,7 @@ No regulated aviation claims anywhere in the product.
 MVP = reliable trajectory and basic route intelligence
 Version 1 = features, historical patterns, replay, projection, confidence
 Version 2 = advanced similarity, airspace intelligence, multi-aircraft context, stability
+Post-Version-2 product increments = user-facing, zero-cost vertical slices selected explicitly from demonstrated product need
 Research Backlog = heavy models, satellite fusion, climate models, regulated operational systems
 ```
 
@@ -424,11 +425,100 @@ Stage 22 ETA Evolution                       HISTORICALLY_RECOMPUTED_FROM_PERSIS
 
 No airport-capacity model, official congestion status, persisted historical forecast history, ETA interpolation, causal explanation or operational guidance is implied.
 
-### 20.5 Candidate release status
+### 20.5 Canonical release closure
 
-This roadmap amendment does not close itself. Document 212, the synchronized documentation surfaces and the permanent reconciliation test must first pass exact-head validation, be squash-merged under an exact-head guard, and pass independent post-merge validation on the resulting canonical `main` SHA.
+The reconciliation candidate defined by Document 212 was subsequently merged and independently validated. Document 213 owns the post-merge closure evidence. The final canonical Version 2 reconciliation main SHA is `9e806f2f44c24d69f695ae37ab02a0f5a0df94f3`.
 
 ```text
 VERSION_2_SCOPE_RECONCILED=YES
-VERSION_2_RELEASE_CLOSURE=PENDING_DOCUMENT_212_EXACT_HEAD_CI_MERGE_AND_POST_MERGE_VALIDATION
+VERSION_2_RELEASE_CLOSURE=CLOSED
+VERSION_2_RECONCILIATION_CI_VERIFIED=YES
+VERSION_2_RECONCILIATION_CLOSURE_DOCUMENT=213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md
 ```
+
+The independent external repository-security finding `GFA-SEC-445` remains outside the analytical Version 2 closure boundary.
+
+---
+
+<!-- STAGE-23-ETA-RELIABILITY:ROADMAP -->
+## 21. Stage 23 Product Increment — ETA Reliability Intelligence
+
+Stage 23 was started only after Version 2 reconciliation was fully closed and after an explicit product decision that future work must satisfy all of the following constraints:
+
+```text
+ADDITIONAL_PAID_COST=0_RUB
+FRONTEND_CONSUMER=REQUIRED
+USER_QUESTION=REQUIRED
+REUSABLE_PRODUCT_CAPABILITY=REQUIRED
+DATA_FOR_DATA_SAKE=FORBIDDEN
+ARCHITECTURE_FOR_ARCHITECTURE_SAKE=FORBIDDEN
+```
+
+### 21.1 User problem
+
+The existing Aircraft Detail surface can show an Estimated Arrival and bounded confidence, but a user cannot yet see how comparable historical ETA estimates behaved against persisted observed evidence.
+
+Stage 23 therefore asks one concrete product question:
+
+```text
+How reliable have comparable ETA estimates been on persisted historical observations?
+```
+
+### 21.2 Vertical product path
+
+```text
+persisted trajectory observations
+        ↓
+existing historical Projection Intelligence recomputation
+        ↓
+bounded ETA reliability aggregation
+        ↓
+read-only HTTP contract
+        ↓
+TypeScript client + TanStack Query
+        ↓
+Aircraft Detail / Estimated Arrival UI
+```
+
+The feature is not complete if the analytical output has no frontend consumer.
+
+### 21.3 Evidence boundary
+
+```text
+STAGE_23_EVIDENCE_CLASS=HISTORICALLY_RECOMPUTED_FROM_PERSISTED_OBSERVATIONS
+STAGE_23_HISTORICAL_ARRIVAL_EVIDENCE=PERSISTED_ENDPOINT_PROXY
+STAGE_23_OFFICIAL_ARRIVAL_TRUTH=NONE
+STAGE_23_OPERATIONAL_GUIDANCE=NONE
+```
+
+The persisted endpoint proxy is not an official touchdown, gate-arrival, schedule, airport-operations or ATC timestamp.
+
+### 21.4 Zero-cost and scaling boundary
+
+```text
+STAGE_23_ADDITIONAL_COST=0_RUB
+STAGE_23_MAX_HISTORICAL_CANDIDATES=8
+STAGE_23_FRONTEND_POLLING=NONE
+STAGE_23_NEW_PAID_PROVIDER=NONE
+STAGE_23_NEW_DATABASE_TABLE=NONE
+STAGE_23_NEW_MIGRATION=NONE
+STAGE_23_NEW_BACKGROUND_MATERIALIZER=NONE
+```
+
+Stage 23 reuses existing persisted observations, Projection Intelligence, Projection Evaluation, PostgreSQL/Neon, Go, Next.js and TanStack Query.
+
+The same evidence model may later be reused at airport or route level only if Stage 23 proves useful. Those extensions are not pre-authorized and must not be built speculatively.
+
+### 21.5 Current stage status
+
+Document 214 is the canonical Stage 23 pre-merge engineering record.
+
+```text
+STAGE_23_ETA_RELIABILITY=IN_PROGRESS
+STAGE_23_PR=171
+STAGE_23_REVIEW_READY=NO
+STAGE_23_MERGE_READY=NO
+STAGE_23_MERGE_AUTHORIZATION=NOT_GRANTED
+```
+
+Stage 23 closure requires an exact-head green validation matrix, explicit exact-head merge authorization, merge into canonical `main`, and independent post-merge validation. No future Stage 24 is implied by this roadmap amendment.

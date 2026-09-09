@@ -42,6 +42,7 @@ export const expectedPublicOperations = Object.freeze([
   ['GET', '/api/v1/historical-intelligence/aggregates/latest'],
   ['GET', '/api/v1/historical-intelligence/aggregates/history'],
   ['GET', '/api/v1/trajectories/{id}/projection-intelligence'],
+  ['GET', '/api/v1/trajectories/{id}/eta-reliability'],
   ['GET', '/api/v1/trajectories/{id}/stability-intelligence'],
   ['GET', '/api/v1/trajectories/{id}/weather-context'],
   ['GET', '/api/v1/airspace/regions/{code}/analytics'],
@@ -252,11 +253,11 @@ export function validateRepository(root) {
   const openAPIOperations = extractOpenAPIOperations(spec)
   const gap = compareOperationSets(publicOperations, openAPIOperations)
 
-  if (publicOperations.length !== 39) errors.push(`public operation count must be 39; found ${publicOperations.length}`)
-  if (publicOperations.filter(([method]) => method === 'GET').length !== 38) errors.push('public GET operation count must be 38')
+  if (publicOperations.length !== 40) errors.push(`public operation count must be 40; found ${publicOperations.length}`)
+  if (publicOperations.filter(([method]) => method === 'GET').length !== 39) errors.push('public GET operation count must be 39')
   if (publicOperations.filter(([method]) => method === 'POST').length !== 1) errors.push('public POST operation count must be 1')
   if (internalOperations.length !== 1) errors.push(`internal operation count must be 1; found ${internalOperations.length}`)
-  if (openAPIOperations.length !== 39) errors.push(`complete OpenAPI operation count must be 39; found ${openAPIOperations.length}`)
+  if (openAPIOperations.length !== 40) errors.push(`complete OpenAPI operation count must be 40; found ${openAPIOperations.length}`)
   if (gap.missing.length !== 0) errors.push(`OpenAPI missing operation count must be 0; found ${gap.missing.length}`)
   if (gap.extra.length !== 0) errors.push(`OpenAPI contains operations absent from the source: ${gap.extra.join(', ')}`)
   if (openAPIOperations.some(([, routePath]) => routePath.startsWith('/internal/'))) {

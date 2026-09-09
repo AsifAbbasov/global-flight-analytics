@@ -1,6 +1,6 @@
 # Document 25 — Implementation Sequence
 
-Status: Implementation Baseline v1.7
+Status: Implementation Baseline v1.8
 Project: Global Flight Analytics
 Scope: Ordered implementation stages and first coding slice
 
@@ -976,7 +976,7 @@ This increment does not add a paid Render worker and does not claim guaranteed r
 
 ## Version 2 Repository-Real Progression and Reconciliation
 
-Status: RECONCILIATION CANDIDATE. Canonical closure requires exact-head validation, merge, and independent post-merge validation as defined by Document 212.
+Status: CLOSED / CI_VERIFIED. Documents 212 and 213 own the reconciliation decision and independent post-merge closure evidence.
 
 After the earlier foundation/review work, the repository-real product sequence continued through these bounded stages:
 
@@ -1016,7 +1016,7 @@ Stage 22 — Estimated Time of Arrival Evolution Analyzer
 The Version 2 reconciliation does not create a Stage 23 feature. It reconciles the original Version 2 planning list against the Stage 22-closed canonical baseline and keeps advanced research outside the release when production evidence does not exist.
 
 ```text
-VERSION_2_RECONCILIATION=CANDIDATE
+VERSION_2_RECONCILIATION=CLOSED
 DISCRETE_FRECHET=DEFERRED_RESEARCH
 TRAJECTORY_SPATIAL_INDEX=DEFERRED_RESEARCH
 WEATHER_GRID=DEFERRED_RESEARCH
@@ -1031,3 +1031,43 @@ ADDITIONAL_COST=0_RUB
 ```
 
 Document 212 is the canonical reconciliation audit. Historical pre-merge stage documents remain immutable historical records; later closure documents own their post-merge state.
+
+<!-- STAGE-23-ETA-RELIABILITY:IMPLEMENTATION -->
+
+## Stage 23 — ETA Reliability Intelligence
+
+Status: IN PROGRESS on draft PR #171.
+
+Stage 23 is an explicit post-Version-2 product decision; it was not created by the Version 2 reconciliation itself. It is allowed only as a zero-budget vertical slice with an existing frontend consumer.
+
+```text
+persisted observations
+        ↓
+production Projection Intelligence recomputed at persisted historical as_of_time
+        ↓
+bounded ETA reliability aggregation (maximum 8 historical candidates)
+        ↓
+GET /api/v1/trajectories/{id}/eta-reliability
+        ↓
+OpenAPI + generated TypeScript client + TanStack Query
+        ↓
+Aircraft Detail / Estimated Arrival / Historical ETA Reliability UI
+```
+
+Evidence and cost boundaries:
+
+```text
+STAGE_23_ADDITIONAL_COST=0_RUB
+STAGE_23_FRONTEND_CONSUMER=YES
+STAGE_23_OFFICIAL_ARRIVAL_TRUTH=NONE
+STAGE_23_HISTORICAL_ARRIVAL_EVIDENCE=PERSISTED_ENDPOINT_PROXY
+STAGE_23_MAX_HISTORICAL_CANDIDATES=8
+STAGE_23_FRONTEND_POLLING=NONE
+STAGE_23_NEW_DATABASE_TABLE=NONE
+STAGE_23_NEW_MIGRATION=NONE
+STAGE_23_NEW_PAID_PROVIDER=NONE
+```
+
+The production server must not depend on the offline-only Projection Evaluation package. ETA Reliability reuses production Projection Intelligence and computes only the bounded arrival-error and interval-coverage definitions required by the user-facing feature.
+
+Document 214 is the canonical Stage 23 pre-merge engineering record. No Stage 24 follows automatically; any later increment requires a new product decision with the same zero-cost and frontend-value gate.

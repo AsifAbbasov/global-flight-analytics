@@ -1,6 +1,7 @@
 'use client'
 
 import { ETAEvolutionPanel } from '@/components/aircraft/eta-evolution-panel'
+import { ETAReliabilityPanel } from '@/components/aircraft/eta-reliability-panel'
 import { APIRequestError, getRequestErrorMessage } from '@/lib/api/client'
 import { useLatestAircraftTrajectory } from '@/lib/queries/trajectory'
 import type { ProjectionIntelligenceResponse } from '@/types/projection-intelligence'
@@ -13,7 +14,7 @@ export function ProjectionIntelligencePanel({selectedICAO24,trajectoryID,result,
   const unavailable=error instanceof APIRequestError&&(error.status===404||error.status===422)
   return <><aside className='rounded-xl border border-slate-700 bg-slate-950/95 p-5' aria-labelledby='projection-intelligence-title'>
     <div className='flex items-start justify-between gap-4'><div><p className='text-xs font-semibold uppercase tracking-[0.18em] text-violet-300'>Research projection</p><h3 id='projection-intelligence-title' className='mt-2 text-lg font-semibold text-white'>Projection and Estimated Arrival</h3><p className='mt-1 text-xs leading-5 text-slate-400'>Bounded future estimate. It is not operational flight guidance.</p></div>{isFetching?<span className='text-xs text-sky-300'>Updating…</span>:null}</div>
-    {result?<Content result={result}/>:null}
+    {result?<Content result={result} trajectoryID={trajectoryID}/>:null}
     {trajectoryID===null&&!error?<p className='mt-4 rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-sm leading-6 text-slate-400'>Waiting for a persisted trajectory before requesting Projection Intelligence.</p>:null}
     {trajectoryID!==null&&isPending&&!error?<p className='mt-4 text-sm leading-6 text-slate-400'>Calculating a bounded projection from the latest persisted trajectory evidence…</p>:null}
     {unavailable?<p className='mt-4 rounded-lg border border-slate-700 bg-slate-900/70 p-3 text-sm leading-6 text-slate-300'>Projection Intelligence is unavailable or denied for the current trajectory evidence.</p>:null}
@@ -21,9 +22,10 @@ export function ProjectionIntelligencePanel({selectedICAO24,trajectoryID,result,
   </aside><ETAEvolutionPanel selectedICAO24={selectedICAO24} trajectory={etaTrajectoryQuery.data}/></>
 }
 
-function Content({result}:{result:ProjectionIntelligenceResponse}){const projection=result.projection;return <>
+function Content({result,trajectoryID}:{result:ProjectionIntelligenceResponse;trajectoryID:string|null}){const projection=result.projection;return <>
   <div className='mt-4 rounded-lg border border-slate-800 bg-slate-900/70 p-3'><div className='flex flex-wrap items-center justify-between gap-3'><Status value={projection.status}/><Confidence level={projection.confidence.level} score={projection.confidence.score}/></div><div className='mt-3 h-2 overflow-hidden rounded-full bg-slate-800' role='progressbar' aria-label='Projection confidence score' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(projection.confidence.score*100)}><div className='h-full rounded-full bg-violet-400' style={{width:`${projection.confidence.score*100}%`}}/></div><dl className='mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm'><Detail label='Method' value={projection.method.name}/><Detail label='Strategy' value={result.strategy}/><Detail label='Horizon' value={duration(projection.horizon.duration_seconds)}/><Detail label='Forecast points' value={String(projection.points.length)}/><Detail label='As of' value={date(projection.horizon.as_of_time)}/><Detail label='Horizon end' value={date(projection.horizon.end_time)}/></dl>{result.fallback_reason?<p className='mt-3 rounded-md border border-amber-400/20 bg-amber-400/5 p-2 text-xs leading-5 text-amber-100'>Fallback: {result.fallback_reason}</p>:null}<p className='mt-3 break-all font-mono text-[11px] leading-5 text-slate-500'>{projection.schema_version} · {projection.scope_guard}</p></div>
   <Arrival result={result}/>
+  <ETAReliabilityPanel trajectoryID={trajectoryID} projection={result}/>
   <Section title='Confidence reasons' items={projection.confidence.reasons.map(item=>item.message)} empty='No confidence reasons were reported.'/>
   <Section title='Limitations' items={projection.limitations.map(item=>item.message)} empty='No projection limitations were reported.' warning/>
   <Section title='Explanations' items={projection.explanations.map(item=>item.message)} empty='No projection explanations were reported.'/>

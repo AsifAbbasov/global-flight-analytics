@@ -10,79 +10,52 @@ import (
 )
 
 type projectionDatabaseRuntime struct {
-	projection handlers.ProjectionIntelligenceReader
-	stability  handlers.StabilityIntelligenceReader
-	weather    handlers.WeatherContextReader
+	projection     handlers.ProjectionIntelligenceReader
+	etaReliability handlers.ETAReliabilityReader
+	stability      handlers.StabilityIntelligenceReader
+	weather        handlers.WeatherContextReader
 }
 
 func registerProjectionDatabaseContext(
 	v1 fiber.Router,
 	dbPool *pgxpool.Pool,
 ) error {
-	runtime, err :=
-		composeProjectionDatabaseRuntime(
-			dbPool,
-		)
+	runtime, err := composeProjectionDatabaseRuntime(dbPool)
 	if err != nil {
 		return err
 	}
-
-	return registerProjectionDatabaseRoutes(
-		v1,
-		runtime,
-	)
+	return registerProjectionDatabaseRoutes(v1, runtime)
 }
 
 func composeProjectionDatabaseRuntime(
 	dbPool *pgxpool.Pool,
-) (
-	projectionDatabaseRuntime,
-	error,
-) {
-	projectionReader, err :=
-		newProjectionIntelligencePostgresReader(
-			dbPool,
-		)
+) (projectionDatabaseRuntime, error) {
+	projectionReader, err := newProjectionIntelligencePostgresReader(dbPool)
 	if err != nil {
-		return projectionDatabaseRuntime{},
-			fmt.Errorf(
-				"compose production Projection Intelligence reader: %w",
-				err,
-			)
+		return projectionDatabaseRuntime{}, fmt.Errorf("compose production Projection Intelligence reader: %w", err)
 	}
 
-	stabilityService, err :=
-		stabilityproduction.New(
-			stabilityproduction.Config{
-				ProjectionReader: stabilityProjectionReaderAdapter{
-					reader: projectionReader,
-				},
-			},
-		)
+	etaReliabilityReader, err := newETAReliabilityPostgresReader(dbPool)
 	if err != nil {
-		return projectionDatabaseRuntime{},
-			fmt.Errorf(
-				"compose production Stability Intelligence service: %w",
-				err,
-			)
+		return projectionDatabaseRuntime{}, fmt.Errorf("compose production ETA Reliability reader: %w", err)
 	}
 
-	weatherReader, err :=
-		newWeatherContextPostgresReader(
-			dbPool,
-			projectionReader,
-		)
+	stabilityService, err := stabilityproduction.New(stabilityproduction.Config{
+		ProjectionReader: stabilityProjectionReaderAdapter{reader: projectionReader},
+	})
 	if err != nil {
-		return projectionDatabaseRuntime{},
-			fmt.Errorf(
-				"compose production Weather Context reader: %w",
-				err,
-			)
+		return projectionDatabaseRuntime{}, fmt.Errorf("compose production Stability Intelligence service: %w", err)
+	}
+
+	weatherReader, err := newWeatherContextPostgresReader(dbPool, projectionReader)
+	if err != nil {
+		return projectionDatabaseRuntime{}, fmt.Errorf("compose production Weather Context reader: %w", err)
 	}
 
 	return projectionDatabaseRuntime{
-		projection: projectionReader,
-		stability:  stabilityService,
-		weather:    weatherReader,
+		projection:     projectionReader,
+		etaReliability: etaReliabilityReader,
+		stability:      stabilityService,
+		weather:        weatherReader,
 	}, nil
 }

@@ -1,6 +1,6 @@
 # Documentation Index — Global Flight Analytics
 
-Status: Documentation Index v2.3
+Status: Documentation Index v2.4
 Project: Global Flight Analytics
 
 ---
@@ -1881,3 +1881,9 @@ exact-head CI and Chromium evidence, and the nonblocking pixel-golden decision.
 ## Document 213 — Version 2 Reconciliation Post-Merge Closure
 
 `213_VERSION_2_RECONCILIATION_POST_MERGE_CLOSURE.md` records the guarded PR #169 merge, rejected validation history, exact pre-merge and independent post-merge CI/Vercel evidence, API Load non-trigger policy, bounded 14/1/3 Version 2 release disposition, the `GFA-GOV-457` closure gate, and the independent `GFA-SEC-445` repository-security boundary.
+
+<!-- STAGE-23-ETA-RELIABILITY:DOCUMENT-INDEX -->
+
+## Document 214 — Stage 23 ETA Reliability Intelligence
+
+`214_STAGE_23_ETA_RELIABILITY_INTELLIGENCE.md` is the canonical pre-merge Stage 23 record for the zero-cost ETA Reliability vertical product slice. It defines historically recomputed persisted-observation semantics, the persisted endpoint-proxy boundary instead of official arrival truth, bounded on-demand computation, sample-size disclosure, the Aircraft Detail frontend consumer, real rejected CI/remediation history, and the exact review/merge/post-merge closure gates required before the feature can be called complete.
