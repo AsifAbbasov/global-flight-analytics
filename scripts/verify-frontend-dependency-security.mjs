@@ -5,10 +5,10 @@ export const MINIMUM_SAFE_NANOID_VERSION = "3.3.18";
 export const PINNED_NANOID_VERSION = "3.3.18";
 export const MINIMUM_SAFE_POSTCSS_VERSION = "8.5.23";
 export const PINNED_POSTCSS_VERSION = "8.5.23";
-export const MINIMUM_SAFE_SHARP_VERSION = "0.35.0";
-export const PINNED_SHARP_VERSION = "0.35.3";
-export const MINIMUM_SAFE_NEXT_VERSION = "16.2.12";
-export const PINNED_NEXT_VERSION = "16.2.12";
+export const MINIMUM_SAFE_SHARP_VERSION = "0.35.4";
+export const PINNED_SHARP_VERSION = "0.35.4";
+export const MINIMUM_SAFE_NEXT_VERSION = "16.3.3";
+export const PINNED_NEXT_VERSION = "16.3.4";
 export const NEXT_VERSION = PINNED_NEXT_VERSION;
 
 export function parseVersion(value) {
