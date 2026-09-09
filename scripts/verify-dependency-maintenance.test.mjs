@@ -5,14 +5,14 @@ import fs from 'node:fs';
 test('dependency targets stay coordinated', () => {
   const web = JSON.parse(fs.readFileSync('apps/web/package.json', 'utf8'));
   assert.equal(web.dependencies['@tanstack/react-query'], '^5.101.4');
-  assert.equal(web.dependencies.next, '16.2.12');
+  assert.equal(web.dependencies.next, '16.3.4');
   assert.equal(web.dependencies.react, web.dependencies['react-dom']);
   assert.equal(web.dependencies.react, '19.2.8');
   assert.equal(web.dependencies.three, '^0.185.1');
   assert.equal(web.devDependencies['@types/react'], '^19.2.18');
   assert.equal(web.devDependencies['@types/react-dom'], '^19.2.4');
   assert.equal(web.devDependencies['@types/three'], '^0.185.1');
-  assert.equal(web.devDependencies['eslint-config-next'], '16.2.12');
+  assert.equal(web.devDependencies['eslint-config-next'], '16.3.4');
   assert.equal(web.devDependencies.typescript, '^5');
 });
 
